@@ -5,6 +5,8 @@ import CalendarView from './CalendarView';
 import TimeSlots from './TimeSlots';
 import { DeliveryAddress, DeliverySlot } from './CheckoutScreen';
 import { COLORS } from '../../utils/theme';
+import { GoogleMapsService } from '../../services/googleMapsService';
+import { GOOGLE_MAPS_CONFIG } from '../../config/googleMaps';
 
 interface DeliveryStepProps {
   address: DeliveryAddress;
@@ -23,21 +25,59 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
   const [queueCount, setQueueCount] = useState<number>(0);
   const [isSameDay, setIsSameDay] = useState<boolean>(false);
   
+  // Check if the address is in a special location using Google Maps service
+  const deliveryZoneInfo = useMemo(() => {
+    // Try to create a coordinate from the address for checking
+    // In a real implementation, you might geocode the address first
+    // For now, we'll check if it's a known Marina Bay area location
+    const marinaBayKeywords = ['Marina Bay', 'Marina', 'Gardens by the Bay', 'Raffles', 'Downtown Core'];
+    const isMarinaBayArea = marinaBayKeywords.some(keyword => 
+      address.street?.includes(keyword) || address.city?.includes(keyword)
+    );
+
+    if (isMarinaBayArea) {
+      // Find the Marina Bay zone from config
+      const marinaBayZone = GOOGLE_MAPS_CONFIG.deliveryZones.find(zone => 
+        zone.name === 'Marina Bay' || zone.specialPricing
+      );
+      
+      return {
+        isSpecialLocation: true,
+        zone: marinaBayZone,
+        zoneName: 'Marina Bay'
+      };
+    }
+
+    return {
+      isSpecialLocation: false,
+      zone: null,
+      zoneName: null
+    };
+  }, [address]);
+  
   // Delivery fee calculation - memoized to prevent recalculation
   const deliveryFeeData = useMemo(() => {
-    const FREE_DELIVERY_THRESHOLD = 250;
+    const { isSpecialLocation, zone } = deliveryZoneInfo;
+    
+    // Use zone-specific pricing if available
+    const FREE_DELIVERY_THRESHOLD = isSpecialLocation ? 200 : 250;
     const isFreeDelivery = subtotal >= FREE_DELIVERY_THRESHOLD;
-    const standardDeliveryFee = 9.99;
-    const sameDayDeliveryFee = 19.99;
+    
+    // Special pricing for Marina Bay and other special zones
+    const standardDeliveryFee = isSpecialLocation ? 7.99 : 9.99;
+    const sameDayDeliveryFee = isSpecialLocation ? 14.99 : 19.99;
     const deliveryFee = isFreeDelivery ? 0 : (isSameDay ? sameDayDeliveryFee : standardDeliveryFee);
     
     return {
       isFreeDelivery,
       standardDeliveryFee,
       sameDayDeliveryFee,
-      deliveryFee
+      deliveryFee,
+      thresholdAmount: FREE_DELIVERY_THRESHOLD,
+      isSpecialLocation,
+      zoneName: deliveryZoneInfo.zoneName
     };
-  }, [subtotal, isSameDay]);
+  }, [subtotal, isSameDay, deliveryZoneInfo]);
   
   // Check if the selected date is today (same day delivery)
   useEffect(() => {
@@ -81,15 +121,18 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
         timeSlot: selectedTimeText,
         queueCount: queueCount,
         sameDayAvailable: isSameDay,
-        price: deliveryFeeData.deliveryFee
+        price: deliveryFeeData.deliveryFee,
+        isSpecialLocation: deliveryFeeData.isSpecialLocation
       };
       
       onSelectSlot(slot);
     }
-  }, [selectedDate, selectedTimeSlot, selectedTimeText, queueCount, isSameDay, deliveryFeeData.deliveryFee, onSelectSlot]);
+  }, [selectedDate, selectedTimeSlot, selectedTimeText, queueCount, isSameDay, deliveryFeeData.deliveryFee, deliveryFeeData.isSpecialLocation, onSelectSlot]);
   
   // Memoize the address display to prevent unnecessary re-renders
   const addressDisplay = useMemo(() => {
+    const { isSpecialLocation, zoneName } = deliveryFeeData;
+    
     return (
       <View style={styles.addressCard}>
         <View style={styles.addressHeader}>
@@ -106,14 +149,21 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
             {address.city}, {address.postalCode}
           </Text>
           <Text style={styles.addressText}>{address.phone}</Text>
+          
+          {isSpecialLocation && zoneName && (
+            <View style={styles.specialLocationBadge}>
+              <Ionicons name="star" size={12} color="#FFD700" />
+              <Text style={styles.specialLocationText}>{zoneName} Area</Text>
+            </View>
+          )}
         </View>
       </View>
     );
-  }, [address]);
+  }, [address, deliveryFeeData]);
   
   // Memoize the delivery fee display to prevent unnecessary re-renders
   const deliveryFeeDisplay = useMemo(() => {
-    const { isFreeDelivery, standardDeliveryFee, sameDayDeliveryFee } = deliveryFeeData;
+    const { isFreeDelivery, standardDeliveryFee, sameDayDeliveryFee, thresholdAmount, isSpecialLocation, zoneName } = deliveryFeeData;
     
     return (
       <View style={styles.feeContainer}>
@@ -123,7 +173,7 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
           <View style={styles.feeInfo}>
             <Text style={styles.feeName}>Standard Delivery</Text>
             <Text style={styles.feeDescription}>
-              {isFreeDelivery ? 'Free for orders over $250' : `$${standardDeliveryFee.toFixed(2)}`}
+              {isFreeDelivery ? `Free for orders over $${thresholdAmount}` : `$${standardDeliveryFee.toFixed(2)}`}
             </Text>
           </View>
           
@@ -148,6 +198,15 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
             </View>
           )}
         </View>
+        
+        {isSpecialLocation && zoneName && (
+          <View style={styles.specialNotice}>
+            <Ionicons name="information-circle" size={16} color="#4A90E2" style={styles.noticeIcon} />
+            <Text style={styles.noticeText}>
+              {zoneName} area receives priority delivery service with lower fees and extended hours.
+            </Text>
+          </View>
+        )}
       </View>
     );
   }, [deliveryFeeData, isSameDay]);
@@ -170,6 +229,7 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
           selectedTimeSlot={selectedTimeSlot}
           onSelectTimeSlot={handleSelectTimeSlot}
           isSameDay={isSameDay}
+          isSpecialLocation={deliveryFeeData.isSpecialLocation}
         />
       )}
       
@@ -271,6 +331,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#4CAF50',
+  },
+  specialLocationBadge: {
+    backgroundColor: '#FFD700',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginTop: 4,
+  },
+  specialLocationText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#000',
+  },
+  specialNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  noticeIcon: {
+    marginRight: 8,
+  },
+  noticeText: {
+    fontSize: 13,
+    color: COLORS.text,
   },
 });
 

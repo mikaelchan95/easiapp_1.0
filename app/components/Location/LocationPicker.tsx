@@ -1,68 +1,19 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, StyleSheet, AccessibilityInfo } from 'react-native';
+import { View, StyleSheet, AccessibilityInfo, Alert, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { LocationPickerProps, LocationSuggestion, LocationPickerState, LocationCoordinate } from '../../types/location';
 import { COLORS, SHADOWS, SPACING } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
+import { GoogleMapsService } from '../../services/googleMapsService';
+import { GOOGLE_MAPS_CONFIG } from '../../config/googleMaps';
 
 import LocationHeader from './LocationHeader';
 import LocationBottomSheet from './LocationBottomSheet';
 
-// Mock data for demonstration
-const mockRecentLocations: LocationSuggestion[] = [
-  {
-    id: '1',
-    title: 'Marina Bay Sands',
-    subtitle: '10 Bayfront Ave, Singapore 018956',
-    type: 'recent',
-    coordinate: { latitude: 1.2834, longitude: 103.8607 },
-    address: '10 Bayfront Ave, Singapore 018956'
-  },
-  {
-    id: '2',
-    title: 'Gardens by the Bay',
-    subtitle: '18 Marina Gardens Dr, Singapore 018953',
-    type: 'recent',
-    coordinate: { latitude: 1.2816, longitude: 103.8636 },
-    address: '18 Marina Gardens Dr, Singapore 018953'
-  },
-  {
-    id: '3',
-    title: 'Raffles Hotel Singapore',
-    subtitle: '1 Beach Rd, Singapore 189673',
-    type: 'recent',
-    coordinate: { latitude: 1.2947, longitude: 103.8547 },
-    address: '1 Beach Rd, Singapore 189673'
-  }
-];
-
-const mockSuggestions: LocationSuggestion[] = [
-  {
-    id: 's1',
-    title: 'Clarke Quay',
-    subtitle: '3 River Valley Rd, Singapore 179024',
-    type: 'suggestion',
-    coordinate: { latitude: 1.2888, longitude: 103.8467 },
-    address: '3 River Valley Rd, Singapore 179024'
-  },
-  {
-    id: 's2',
-    title: 'Orchard Road',
-    subtitle: 'Orchard, Singapore',
-    type: 'suggestion',
-    coordinate: { latitude: 1.3048, longitude: 103.8318 },
-    address: 'Orchard, Singapore'
-  },
-  {
-    id: 's3',
-    title: 'Chinatown',
-    subtitle: 'Chinatown, Singapore',
-    type: 'suggestion',
-    coordinate: { latitude: 1.2826, longitude: 103.8441 },
-    address: 'Chinatown, Singapore'
-  }
-];
+const RECENT_LOCATIONS_KEY = 'recent_locations';
+const MAX_RECENT_LOCATIONS = 5;
 
 const LocationPicker: React.FC<LocationPickerProps> = ({
   currentLocation = 'Marina Bay Sands',
@@ -70,26 +21,53 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   onLocationUpdate,
   style,
   placeholder = 'Search for a location...',
-  mapRegion = {
-    latitude: 1.2834,
-    longitude: 103.8607,
-    latitudeDelta: 0.05,
-    longitudeDelta: 0.05
-  }
+  mapRegion = GOOGLE_MAPS_CONFIG.marinaBayRegion
 }) => {
   const [state, setState] = useState<LocationPickerState>({
     isOpen: false,
     isMapMode: false,
     selectedLocation: null,
     searchText: '',
-    suggestions: mockSuggestions,
-    recentLocations: mockRecentLocations,
+    suggestions: [],
+    recentLocations: [],
     isLoadingCurrent: false,
     currentLocation: null
   });
 
   // Animation refs
   const headerAnimationValue = useRef(new Animated.Value(0)).current;
+
+  // Search timeout ref
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load recent locations from storage
+  const loadRecentLocations = useCallback(async () => {
+    try {
+      const stored = await AsyncStorage.getItem(RECENT_LOCATIONS_KEY);
+      if (stored) {
+        const recentLocations = JSON.parse(stored);
+        setState(prev => ({ ...prev, recentLocations }));
+      } else {
+        // Load popular locations as initial suggestions
+        const popularLocations = GoogleMapsService.getPopularLocations();
+        setState(prev => ({ ...prev, recentLocations: popularLocations.slice(0, 3) }));
+      }
+    } catch (error) {
+      console.error('Error loading recent locations:', error);
+      // Fallback to popular locations
+      const popularLocations = GoogleMapsService.getPopularLocations();
+      setState(prev => ({ ...prev, recentLocations: popularLocations.slice(0, 3) }));
+    }
+  }, []);
+
+  // Save recent locations to storage
+  const saveRecentLocations = useCallback(async (locations: LocationSuggestion[]) => {
+    try {
+      await AsyncStorage.setItem(RECENT_LOCATIONS_KEY, JSON.stringify(locations));
+    } catch (error) {
+      console.error('Error saving recent locations:', error);
+    }
+  }, []);
 
   // Handle opening the bottom sheet
   const handleOpenPicker = useCallback(async () => {
@@ -101,6 +79,10 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     }
 
     setState(prev => ({ ...prev, isOpen: true }));
+    
+    // Load initial suggestions (popular locations)
+    const popularLocations = GoogleMapsService.getPopularLocations();
+    setState(prev => ({ ...prev, suggestions: popularLocations }));
     
     // Announce to screen readers
     AccessibilityInfo.announceForAccessibility('Location picker opened');
@@ -115,22 +97,41 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       searchText: '',
       selectedLocation: null
     }));
+    
+    // Clear search timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
   }, []);
 
-  // Handle search text changes
+  // Handle search text changes with debouncing
   const handleSearchTextChange = useCallback((text: string) => {
     setState(prev => ({ ...prev, searchText: text }));
     
-    // Filter suggestions based on search text
-    if (text.trim()) {
-      const filteredSuggestions = mockSuggestions.filter(suggestion =>
-        suggestion.title.toLowerCase().includes(text.toLowerCase()) ||
-        (suggestion.subtitle && suggestion.subtitle.toLowerCase().includes(text.toLowerCase()))
-      );
-      setState(prev => ({ ...prev, suggestions: filteredSuggestions }));
-    } else {
-      setState(prev => ({ ...prev, suggestions: mockSuggestions }));
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
+    
+    // Set new timeout for search
+    searchTimeoutRef.current = setTimeout(async () => {
+      if (text.trim()) {
+        try {
+          const suggestions = await GoogleMapsService.getAutocompleteSuggestions(text);
+          setState(prev => ({ ...prev, suggestions }));
+        } catch (error) {
+          console.error('Error fetching search suggestions:', error);
+          // Fallback to popular locations
+          const popularLocations = GoogleMapsService.getPopularLocations();
+          setState(prev => ({ ...prev, suggestions: popularLocations }));
+        }
+      } else {
+        // Show popular locations when search is empty
+        const popularLocations = GoogleMapsService.getPopularLocations();
+        setState(prev => ({ ...prev, suggestions: popularLocations }));
+      }
+    }, 300); // 300ms debounce
   }, []);
 
   // Handle location selection
@@ -142,15 +143,24 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       // Haptics might not be available on all devices
     }
 
-    setState(prev => ({ ...prev, selectedLocation: location }));
+    // If location has placeId but no coordinates, fetch details
+    let fullLocation = location;
+    if (location.placeId && !location.coordinate) {
+      const placeDetails = await GoogleMapsService.getPlaceDetails(location.placeId);
+      if (placeDetails) {
+        fullLocation = placeDetails;
+      }
+    }
+
+    setState(prev => ({ ...prev, selectedLocation: fullLocation }));
     
     // If it's a current location tap, close immediately
     if (location.type === 'current') {
-      handleConfirmLocation(location);
+      handleConfirmLocation(fullLocation);
     }
     
     // Announce to screen readers
-    AccessibilityInfo.announceForAccessibility(`Selected ${location.title}`);
+    AccessibilityInfo.announceForAccessibility(`Selected ${fullLocation.title}`);
   }, []);
 
   // Handle current location refresh
@@ -164,16 +174,8 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       // Haptics might not be available on all devices
     }
 
-    // Simulate GPS fetch
-    setTimeout(() => {
-      const currentLoc: LocationSuggestion = {
-        id: 'current',
-        title: 'Current Location',
-        subtitle: '1 Marina Boulevard, Singapore 018989',
-        type: 'current',
-        coordinate: { latitude: 1.2826, longitude: 103.8565 },
-        address: '1 Marina Boulevard, Singapore 018989'
-      };
+    try {
+      const currentLoc = await GoogleMapsService.getCurrentLocation();
       
       setState(prev => ({ 
         ...prev, 
@@ -183,19 +185,33 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       
       // Announce to screen readers
       AccessibilityInfo.announceForAccessibility('Current location updated');
-    }, 1500);
+    } catch (error) {
+      console.error('Error getting current location:', error);
+      setState(prev => ({ ...prev, isLoadingCurrent: false }));
+      
+      // Show error feedback
+      Alert.alert(
+        "Location Error",
+        "Unable to get your current location. Please check your location permissions.",
+        [{ text: "OK" }]
+      );
+    }
   }, []);
 
   // Handle deleting recent location
-  const handleDeleteRecent = useCallback((id: string) => {
+  const handleDeleteRecent = useCallback(async (id: string) => {
+    const updatedRecentLocations = state.recentLocations.filter(loc => loc.id !== id);
     setState(prev => ({
       ...prev,
-      recentLocations: prev.recentLocations.filter(loc => loc.id !== id)
+      recentLocations: updatedRecentLocations
     }));
+    
+    // Save to storage
+    await saveRecentLocations(updatedRecentLocations);
     
     // Announce to screen readers
     AccessibilityInfo.announceForAccessibility('Recent location removed');
-  }, []);
+  }, [state.recentLocations, saveRecentLocations]);
 
   // Handle toggling map mode
   const handleToggleMapMode = useCallback(() => {
@@ -208,6 +224,32 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     
     if (!selectedLoc) return;
 
+    // Check if the selected location has delivery available
+    if (selectedLoc.coordinate) {
+      const deliveryCheck = GoogleMapsService.isDeliveryAvailable(selectedLoc.coordinate);
+      
+      if (!deliveryCheck.available) {
+        // Provide error haptic feedback
+        try {
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        } catch (error) {
+          // Haptics might not be available on all devices
+        }
+        
+        // Show alert for unavailable delivery
+        Alert.alert(
+          "Delivery Unavailable",
+          `Sorry, delivery to ${selectedLoc.title} is not available at this time. We currently deliver within Singapore city areas.`,
+          [{ text: "OK" }]
+        );
+        
+        // Announce to screen readers
+        AccessibilityInfo.announceForAccessibility(`Delivery to ${selectedLoc.title} is not available`);
+        
+        return;
+      }
+    }
+
     // Provide haptic feedback
     try {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -219,19 +261,28 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     Animations.springAnimation(headerAnimationValue, 1, 'gentle');
     
     // Update the header location display
-    setTimeout(() => {
+    setTimeout(async () => {
       onLocationSelect(selectedLoc);
       
-      // Add to recent locations if it's not already there
-      if (selectedLoc.type !== 'recent') {
+      // Add to recent locations if it's not already there and not current location
+      if (selectedLoc.type !== 'recent' && selectedLoc.type !== 'current') {
         const newRecent: LocationSuggestion = {
           ...selectedLoc,
           type: 'recent'
         };
+        
+        const updatedRecentLocations = [
+          newRecent, 
+          ...state.recentLocations.filter(loc => loc.id !== selectedLoc.id)
+        ].slice(0, MAX_RECENT_LOCATIONS);
+        
         setState(prev => ({
           ...prev,
-          recentLocations: [newRecent, ...prev.recentLocations.slice(0, 4)]
+          recentLocations: updatedRecentLocations
         }));
+        
+        // Save to storage
+        await saveRecentLocations(updatedRecentLocations);
       }
       
       // Close the picker
@@ -243,24 +294,47 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     
     // Announce to screen readers
     AccessibilityInfo.announceForAccessibility(`Location confirmed: ${selectedLoc.title}`);
-  }, [state.selectedLocation, onLocationSelect, handleClosePicker, headerAnimationValue]);
+  }, [state.selectedLocation, state.recentLocations, onLocationSelect, handleClosePicker, headerAnimationValue, saveRecentLocations]);
 
   // Handle pin drop in map mode
-  const handlePinDrop = useCallback((coordinate: LocationCoordinate) => {
-    // Create a location suggestion from coordinates
-    const droppedLocation: LocationSuggestion = {
-      id: 'dropped-pin',
-      title: 'Dropped Pin',
-      subtitle: `${coordinate.latitude.toFixed(4)}, ${coordinate.longitude.toFixed(4)}`,
-      type: 'suggestion',
-      coordinate,
-      address: `${coordinate.latitude.toFixed(4)}, ${coordinate.longitude.toFixed(4)}`
-    };
-    
-    setState(prev => ({ ...prev, selectedLocation: droppedLocation }));
+  const handlePinDrop = useCallback(async (coordinate: LocationCoordinate) => {
+    try {
+      // Reverse geocode the coordinate to get address information
+      const locationData = await GoogleMapsService.reverseGeocode(coordinate);
+      
+      const droppedLocation: LocationSuggestion = locationData || {
+        id: 'dropped-pin',
+        title: 'Dropped Pin',
+        subtitle: `${coordinate.latitude.toFixed(4)}, ${coordinate.longitude.toFixed(4)}`,
+        type: 'suggestion',
+        coordinate,
+        address: `${coordinate.latitude.toFixed(4)}, ${coordinate.longitude.toFixed(4)}`
+      };
+      
+      setState(prev => ({ ...prev, selectedLocation: droppedLocation }));
+    } catch (error) {
+      console.error('Error reverse geocoding dropped pin:', error);
+      
+      // Fallback to coordinate-only location
+      const droppedLocation: LocationSuggestion = {
+        id: 'dropped-pin',
+        title: 'Dropped Pin',
+        subtitle: `${coordinate.latitude.toFixed(4)}, ${coordinate.longitude.toFixed(4)}`,
+        type: 'suggestion',
+        coordinate,
+        address: `${coordinate.latitude.toFixed(4)}, ${coordinate.longitude.toFixed(4)}`
+      };
+      
+      setState(prev => ({ ...prev, selectedLocation: droppedLocation }));
+    }
   }, []);
 
-  // Effect to load current location on mount
+  // Load recent locations on mount
+  useEffect(() => {
+    loadRecentLocations();
+  }, [loadRecentLocations]);
+
+  // Get current location on mount
   useEffect(() => {
     handleRefreshLocation();
   }, [handleRefreshLocation]);
