@@ -15,6 +15,7 @@ interface DeliveryLocationHeaderProps {
   onPress: () => void;
   isLoading?: boolean;
   showChangeButton?: boolean;
+  showDeliveryInfo?: boolean;
   style?: any;
 }
 
@@ -23,6 +24,7 @@ const DeliveryLocationHeader: React.FC<DeliveryLocationHeaderProps> = ({
   onPress,
   isLoading = false,
   showChangeButton = true,
+  showDeliveryInfo = false,
   style,
 }) => {
   return (
@@ -31,6 +33,14 @@ const DeliveryLocationHeader: React.FC<DeliveryLocationHeaderProps> = ({
       onPress={onPress}
       disabled={isLoading}
       activeOpacity={0.7}
+      accessible={true}
+      accessibilityLabel={
+        location 
+          ? `Current delivery location: ${location.title}. Tap to change.`
+          : "No delivery location set. Tap to choose location."
+      }
+      accessibilityRole="button"
+      accessibilityHint="Opens location picker to select delivery address"
     >
       <View style={styles.content}>
         {/* Location Icon */}
@@ -57,6 +67,14 @@ const DeliveryLocationHeader: React.FC<DeliveryLocationHeaderProps> = ({
                 <Text style={styles.locationSubtitle} numberOfLines={1}>
                   {location.subtitle}
                 </Text>
+              )}
+              {/* Show delivery info if available and requested */}
+              {showDeliveryInfo && (location as any).deliveryInfo && (
+                <View style={styles.deliveryInfo}>
+                  <Text style={styles.deliveryInfoText}>
+                    {(location as any).deliveryInfo.estimatedTime} • ${(location as any).deliveryInfo.deliveryFee}
+                  </Text>
+                </View>
               )}
             </>
           ) : (
@@ -145,6 +163,19 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
     marginRight: 4,
+  },
+  deliveryInfo: {
+    marginTop: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    backgroundColor: COLORS.background,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+  },
+  deliveryInfoText: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.success,
+    fontWeight: '500',
   },
 });
 
