@@ -14,7 +14,7 @@ import CartItem from './CartItem';
 import SwipeableCartItem from './SwipeableCartItem';
 import EmptyCart from './EmptyCart';
 import SuggestedAddons from './SuggestedAddons';
-import { products, Product } from '../../data/mockProducts';
+import { products, Product as MockProduct } from '../../data/mockProducts';
 
 // Import app context
 import { AppContext } from '../../context/AppContext';
@@ -28,7 +28,8 @@ import {
   formatPrice, 
   getProductPrice,
   getStockStatus,
-  isProductInStock 
+  isProductInStock,
+  Product as PricingProduct
 } from '../../utils/pricing';
 
 interface CartItemType {
@@ -77,17 +78,26 @@ export default function CartScreen() {
   // Calculate totals using centralized pricing utility
   const cartTotals = calculateCartTotals(state.cart, state.user?.role || 'retail');
   
+  // Find product image from products list
+  const getProductImageById = (productId: string) => {
+    const foundProduct = products.find(p => p.id === productId);
+    return foundProduct ? foundProduct.imageUrl : null;
+  };
+  
   // Map cart items from context to the format needed by the UI
   const cartItems = state.cart.map(item => {
     const stockStatus = getStockStatus(item.product);
     const priceWithGST = getProductPrice(item.product, state.user?.role || 'retail');
+    
+    // Get proper image from products array
+    const productImage = getProductImageById(item.product.id);
     
     return {
       id: item.product.id,
       productId: item.product.id,
       name: item.product.name,
       price: priceWithGST,
-      imageUrl: item.product.image,
+      imageUrl: productImage || item.product.image, // Use product image from products list or fallback to stored image
       quantity: item.quantity,
       inStock: isProductInStock(item.product, item.quantity),
       stockStatus: stockStatus
@@ -200,26 +210,27 @@ export default function CartScreen() {
     }
   };
 
-  const handleAddSuggested = (product: Product) => {
+  const handleAddSuggested = (product: MockProduct) => {
     setIsAddingProduct(true);
+    
+    // Convert MockProduct to PricingProduct format
+    const pricingProduct: PricingProduct = {
+      id: product.id,
+      name: product.name,
+      retailPrice: product.retailPrice,
+      tradePrice: product.tradePrice,
+      stock: product.inStock ? 10 : 0,
+      category: product.category || '',
+      description: product.description || '',
+      sku: product.sku,
+      image: product.imageUrl, // Store image reference
+    };
     
     // Add to cart using context
     dispatch({ 
       type: 'ADD_TO_CART', 
       payload: { 
-        product: {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          image: product.imageUrl, // Use imageUrl directly
-          stock: product.inStock ? 10 : 0,
-          // Add other required product properties
-          category: product.category || '',
-          description: product.description || '',
-          sku: product.id, // Use id as sku
-          retailPrice: product.price,
-          tradePrice: product.price * 0.9,
-        }, 
+        product: pricingProduct,
         quantity: 1 
       } 
     });

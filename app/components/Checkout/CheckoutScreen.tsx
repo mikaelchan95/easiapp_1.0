@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -82,6 +82,9 @@ export default function CheckoutScreen() {
   const { deliveryLocation } = useDeliveryLocation();
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('address');
   const [isProcessing, setIsProcessing] = useState(false);
+  // Create a ref for the scroll view
+  const scrollViewRef = useRef<ScrollView>(null);
+  
   // Convert delivery location to address format
   const getInitialAddress = (): DeliveryAddress => {
     if (deliveryLocation) {
@@ -153,12 +156,21 @@ export default function CheckoutScreen() {
   const deliveryFee = orderTotals.deliveryFee;
   const total = orderTotals.finalTotal;
   
+  // Helper function to change step and scroll to top
+  const changeStep = (newStep: CheckoutStep) => {
+    setCurrentStep(newStep);
+    // Scroll to top when changing steps
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: 0, animated: true });
+    }
+  };
+  
   const handleUpdateAddress = (address: DeliveryAddress) => {
     setCheckoutState({
       ...checkoutState,
       address
     });
-    setCurrentStep('delivery');
+    changeStep('delivery');
   };
   
   const handleSelectDeliverySlot = (slot: DeliverySlot) => {
@@ -166,7 +178,7 @@ export default function CheckoutScreen() {
       ...checkoutState,
       deliverySlot: slot
     });
-    setCurrentStep('payment');
+    changeStep('payment');
   };
   
   const handleSelectPaymentMethod = (method: PaymentMethod) => {
@@ -174,11 +186,11 @@ export default function CheckoutScreen() {
       ...checkoutState,
       paymentMethod: method
     });
-    setCurrentStep('review');
+    changeStep('review');
   };
   
   const handlePlaceOrder = () => {
-    setCurrentStep('processing');
+    changeStep('processing');
     setIsProcessing(true);
     
     // Simulate order processing
@@ -202,11 +214,11 @@ export default function CheckoutScreen() {
     if (currentStep === 'address') {
       navigation.goBack();
     } else if (currentStep === 'delivery') {
-      setCurrentStep('address');
+      changeStep('address');
     } else if (currentStep === 'payment') {
-      setCurrentStep('delivery');
+      changeStep('delivery');
     } else if (currentStep === 'review') {
-      setCurrentStep('payment');
+      changeStep('payment');
     }
   };
   
@@ -334,6 +346,7 @@ export default function CheckoutScreen() {
       
       {/* Content */}
       <ScrollView 
+        ref={scrollViewRef}
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
@@ -388,11 +401,11 @@ export default function CheckoutScreen() {
             label="Continue"
             onPress={() => {
               if (currentStep === 'address' && canContinue()) {
-                setCurrentStep('delivery');
+                changeStep('delivery');
               } else if (currentStep === 'delivery' && canContinue()) {
-                setCurrentStep('payment');
+                changeStep('payment');
               } else if (currentStep === 'payment' && canContinue()) {
-                setCurrentStep('review');
+                changeStep('review');
               }
             }}
             disabled={!canContinue()}

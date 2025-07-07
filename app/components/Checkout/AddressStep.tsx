@@ -14,47 +14,38 @@ interface AddressStepProps {
   onContinue: (address: DeliveryAddress) => void;
 }
 
-const AddressStep: React.FC<AddressStepProps> = ({ 
-  address: initialAddress,
-  onContinue
-}) => {
+const AddressStep: React.FC<AddressStepProps> = ({ address: initialAddress, onContinue }) => {
   const navigation = useNavigation();
   const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
-  
-  // Use useEffect to set the initial address to avoid direct state initialization
-  // that might cause infinite renders
-  const [address, setAddress] = useState<DeliveryAddress>({
-    name: '',
-    street: '',
-    unit: '',
-    city: '',
-    postalCode: '',
-    phone: '',
-    isDefault: false
-  });
-  
-  // Remove local selectedLocation state - use global deliveryLocation instead
+  const [address, setAddress] = useState<DeliveryAddress>(initialAddress);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
-  // Initialize address with initialAddress only once when the component mounts
-  // or when initialAddress changes
-  useEffect(() => {
-    setAddress(initialAddress);
-  }, [JSON.stringify(initialAddress)]);
-  
-  const updateField = (field: keyof DeliveryAddress, value: string) => {
+  const [saveAsDefault, setSaveAsDefault] = useState(initialAddress.isDefault || false);
+
+  // Update address when form fields change
+  const handleChange = (field: keyof DeliveryAddress, value: string) => {
     setAddress(prev => ({
       ...prev,
       [field]: value
     }));
     
-    // Clear error when typing
+    // Clear error when field is edited
     if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
     }
+  };
+
+  // Handle save as default toggle
+  const toggleSaveAsDefault = () => {
+    const newValue = !saveAsDefault;
+    setSaveAsDefault(newValue);
+    setAddress(prev => ({
+      ...prev,
+      isDefault: newValue
+    }));
   };
 
   // Handle location selection from picker with validation
@@ -206,52 +197,60 @@ const AddressStep: React.FC<AddressStepProps> = ({
 
         {/* Contact Details */}
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Full Name</Text>
+          <Text style={styles.label}>Contact Name</Text>
           <TextInput
             style={[styles.input, errors.name && styles.inputError]}
-            placeholder="Enter your full name"
-            placeholderTextColor={COLORS.textSecondary}
             value={address.name}
-            onChangeText={(value) => updateField('name', value)}
+            onChangeText={(value) => handleChange('name', value)}
+            placeholder="Enter recipient's name"
+            placeholderTextColor={COLORS.placeholder}
+            autoCapitalize="words"
           />
           {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
         </View>
         
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Unit/Apt/Suite (Optional)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="E.g., Apt #1234, Unit 567"
-            placeholderTextColor={COLORS.textSecondary}
-            value={address.unit}
-            onChangeText={(value) => updateField('unit', value)}
-          />
+        <View style={styles.formRow}>
+          <View style={[styles.formGroup, styles.unitInput]}>
+            <Text style={styles.label}>Unit / Floor</Text>
+            <TextInput
+              style={styles.input}
+              value={address.unit}
+              onChangeText={(value) => handleChange('unit', value)}
+              placeholder="#01-23"
+              placeholderTextColor={COLORS.placeholder}
+            />
+          </View>
+          
+          <View style={[styles.formGroup, styles.phoneInput]}>
+            <Text style={styles.label}>Phone Number</Text>
+            <TextInput
+              style={[styles.input, errors.phone && styles.inputError]}
+              value={address.phone}
+              onChangeText={(value) => handleChange('phone', value)}
+              placeholder="9123 4567"
+              placeholderTextColor={COLORS.placeholder}
+              keyboardType="phone-pad"
+            />
+            {errors.phone ? <Text style={styles.errorText}>{errors.phone}</Text> : null}
+          </View>
         </View>
         
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Phone Number</Text>
-          <TextInput
-            style={[styles.input, errors.phone && styles.inputError]}
-            placeholder="Enter phone number"
-            placeholderTextColor={COLORS.textSecondary}
-            value={address.phone}
-            onChangeText={(value) => updateField('phone', value)}
-            keyboardType="phone-pad"
-          />
-          {errors.phone ? <Text style={styles.errorText}>{errors.phone}</Text> : null}
-        </View>
-        
-        <View style={styles.checkboxRow}>
-          <TouchableOpacity
-            style={styles.checkbox}
-            onPress={() => updateField('isDefault', address.isDefault ? 'false' : 'true')}
-          >
-            <View style={[styles.checkboxInner, address.isDefault && styles.checkboxChecked]}>
-              {address.isDefault && <Ionicons name="checkmark" size={16} color={COLORS.card} />}
+        {/* Save as Default Checkbox */}
+        <TouchableOpacity 
+          style={styles.checkboxContainer} 
+          onPress={toggleSaveAsDefault}
+          accessible={true}
+          accessibilityLabel={saveAsDefault ? "Uncheck save as default delivery address" : "Check save as default delivery address"}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: saveAsDefault }}
+        >
+          <View style={styles.checkbox}>
+            <View style={[styles.checkboxInner, saveAsDefault && styles.checkboxChecked]}>
+              {saveAsDefault && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
             </View>
-          </TouchableOpacity>
-          <Text style={styles.checkboxLabel}>Save as my default address</Text>
-        </View>
+          </View>
+          <Text style={styles.checkboxLabel}>Save as default delivery address</Text>
+        </TouchableOpacity>
       </View>
       
       <View style={styles.deliveryInfo}>
@@ -262,22 +261,6 @@ const AddressStep: React.FC<AddressStepProps> = ({
           We deliver to most areas in Singapore. Your address will be verified in the next step.
         </Text>
       </View>
-
-      {/* Continue Button */}
-      <TouchableOpacity
-        style={[styles.continueButton, !isFormValid() && styles.continueButtonDisabled]}
-        onPress={handleContinue}
-        disabled={!isFormValid()}
-      >
-        <Text style={[styles.continueButtonText, !isFormValid() && styles.continueButtonTextDisabled]}>
-          Continue to Delivery Time
-        </Text>
-        <Ionicons 
-          name="arrow-forward" 
-          size={20} 
-          color={!isFormValid() ? COLORS.textSecondary : COLORS.card} 
-        />
-      </TouchableOpacity>
     </ScrollView>
   );
 };
@@ -368,7 +351,17 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.small,
     marginTop: SPACING.xs,
   },
-  checkboxRow: {
+  formRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  unitInput: {
+    flex: 1,
+  },
+  phoneInput: {
+    flex: 1,
+  },
+  checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: SPACING.xs,
@@ -417,28 +410,6 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.text,
     lineHeight: 20,
-  },
-  continueButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.primary,
-    borderRadius: 8,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    ...SHADOWS.medium,
-  },
-  continueButtonDisabled: {
-    backgroundColor: COLORS.border,
-  },
-  continueButtonText: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '600',
-    color: COLORS.card,
-    marginRight: SPACING.xs,
-  },
-  continueButtonTextDisabled: {
-    color: COLORS.textSecondary,
   },
 });
 

@@ -22,7 +22,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import ExpandableSearch from '../Products/ExpandableSearch';
 import { HapticFeedback } from '../../utils/haptics';
-import DeliveryLocationHeader from '../Location/DeliveryLocationHeader';
 import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 import { useAppContext } from '../../context/AppContext';
 
@@ -125,22 +124,17 @@ export default function HomeScreen() {
   
   return (
     <View style={styles.container}>
-      <View style={[styles.statusBarBackground, { height: insets.top }]} />
       <StatusBar barStyle="dark-content" />
       
-      <View style={styles.headerContainer}>
-        {/* Delivery Location Header */}
-        <View style={styles.locationHeaderContainer}>
-                  <DeliveryLocationHeader
-          location={deliveryLocation}
-          onPress={handleAddressPress}
-          showDeliveryInfo={true}
-          style={styles.locationHeader}
+      <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
+        {/* Use MobileHeader with location */}
+        <MobileHeader
+          showBackButton={false}
+          showLocationHeader={true}
+          showSearch={true}
+          onAddressPress={handleAddressPress}
+          currentAddress={deliveryLocation ? { name: deliveryLocation.title } : undefined}
         />
-        </View>
-        
-        {/* Search Bar */}
-        <ExpandableSearch onProductSelect={handleProductSelect} />
       </View>
       
       {/* Scrollable Content */}
@@ -208,23 +202,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  statusBarBackground: {
-    backgroundColor: '#FFFFFF',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 999,
-  },
   headerContainer: {
     backgroundColor: '#FFFFFF',
-  },
-  locationHeaderContainer: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-  },
-  locationHeader: {
-    marginBottom: 0,
+    zIndex: 10,
   },
   content: {
     flex: 1,

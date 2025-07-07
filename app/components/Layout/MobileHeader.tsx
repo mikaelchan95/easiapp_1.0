@@ -17,6 +17,7 @@ interface MobileHeaderProps {
   showBackButton?: boolean;
   showCartButton?: boolean;
   showSearch?: boolean;
+  showLocationHeader?: boolean;
   onAddressPress?: () => void;
   onCartPress?: () => void;
   onBackPress?: () => void;
@@ -30,6 +31,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
   showBackButton = false,
   showCartButton = true,
   showSearch = true,
+  showLocationHeader = false,
   onAddressPress,
   onCartPress,
   onBackPress,
@@ -84,24 +86,26 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
   return (
     <SafeAreaView style={styles.container}>
       {/* Delivery Address */}
-      <View style={styles.addressContainer}>
-        <TouchableOpacity 
-          style={styles.addressButton}
-          onPress={onAddressPress}
-          activeOpacity={0.8}
-        >
-          <View style={styles.addressContent}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="location" size={20} color="#FFFFFF" />
+      {showLocationHeader && (
+        <View style={styles.addressContainer}>
+          <TouchableOpacity 
+            style={styles.addressButton}
+            onPress={onAddressPress}
+            activeOpacity={0.8}
+          >
+            <View style={styles.addressContent}>
+              <View style={styles.iconContainer}>
+                <Ionicons name="location" size={20} color="#FFFFFF" />
+              </View>
+              <View>
+                <Text style={styles.deliverToLabel}>Deliver to</Text>
+                <Text style={styles.addressName}>{currentAddress.name}</Text>
+              </View>
             </View>
-            <View>
-              <Text style={styles.deliverToLabel}>Deliver to</Text>
-              <Text style={styles.addressName}>{currentAddress.name}</Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-down" size={22} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+            <Ionicons name="chevron-down" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Search Bar - Using a non-functional placeholder */}
       {showSearch && (
