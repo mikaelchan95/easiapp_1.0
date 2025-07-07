@@ -12,11 +12,14 @@ const OrderSuccessScreen: React.FC = () => {
   const { orderId, deliveryDate, deliveryTime } = route.params || {};
   const [countdown, setCountdown] = useState(5);
   
-  // Simulated auto-redirect countdown
+  // Auto-redirect countdown with actual navigation
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
+    } else {
+      // Auto redirect to home when countdown reaches 0
+      handleContinueShopping();
     }
   }, [countdown]);
   

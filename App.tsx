@@ -35,8 +35,8 @@ import OrderSuccessScreen from './app/components/Checkout/OrderSuccessScreen';
 import OrderTrackingScreen from './app/components/Checkout/OrderTrackingScreen';
 import MomentumShowcase from './app/components/UI/MomentumShowcase';
 
-// Import Activities screens
-import ActivitiesScreen from './app/components/Activities/ActivitiesScreen';
+// Import Chat screen
+import ChatScreen from './app/components/Chat/ChatScreen';
 import OrderHistoryScreen from './app/components/Activities/OrderHistoryScreen';
 import WishlistScreen from './app/components/Activities/WishlistScreen';
 import ReviewsScreen from './app/components/Activities/ReviewsScreen';
@@ -148,7 +148,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         if (route.name === 'Home') iconName = 'home';
         else if (route.name === 'Products') iconName = isFocused ? 'compass' : 'compass-outline';
         else if (route.name === 'Cart') iconName = isFocused ? 'cart' : 'cart-outline';
-        else if (route.name === 'Activities') iconName = isFocused ? 'grid' : 'grid-outline';
+        else if (route.name === 'Chat') iconName = isFocused ? 'chatbubble' : 'chatbubble-outline';
         else if (route.name === 'Profile') iconName = isFocused ? 'person' : 'person-outline';
 
         const onPress = () => {
@@ -219,7 +219,7 @@ function MainTabs() {
           if (route.name === 'Home') iconName = 'home';
           else if (route.name === 'Products') iconName = focused ? 'compass' : 'compass-outline';
           else if (route.name === 'Cart') iconName = focused ? 'cart' : 'cart-outline';
-          else if (route.name === 'Activities') iconName = focused ? 'grid' : 'grid-outline';
+          else if (route.name === 'Chat') iconName = focused ? 'chatbubble' : 'chatbubble-outline';
           else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
           return (
             <View style={styles.tabIconContainer}>
@@ -232,7 +232,7 @@ function MainTabs() {
           if (route.name === 'Home') label = 'Home';
           else if (route.name === 'Products') label = 'Explore';
           else if (route.name === 'Cart') label = 'Cart';
-          else if (route.name === 'Activities') label = 'Activities';
+          else if (route.name === 'Chat') label = 'Chat';
           else if (route.name === 'Profile') label = 'Profile';
           return <Text style={{ fontSize: 12, color: focused ? COLORS.primary : COLORS.inactive }}>{label}</Text>;
         },
@@ -254,8 +254,8 @@ function MainTabs() {
         component={HomeScreen}
       />
       <Tab.Screen 
-        name="Activities" 
-        component={ActivitiesScreen}
+        name="Chat" 
+        component={ChatScreen}
       />
       <Tab.Screen 
         name="Profile" 
