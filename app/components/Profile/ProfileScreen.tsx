@@ -1,277 +1,570 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import React, { useContext } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  ScrollView, 
+  SafeAreaView,
+  Pressable,
+  Alert
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
+import { AppContext } from '../../context/AppContext';
+import MobileHeader from '../Layout/MobileHeader';
 
-// Mock user data
+// Mock user data with more details
 const user = {
   name: 'Jane Doe',
   email: 'jane@example.com',
   phone: '+65 8123 4567',
+  memberSince: 'March 2023',
+  totalOrders: 12,
+  rewardPoints: 1250,
+  preferredStore: 'Marina Bay'
 };
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
-  
+  const insets = useSafeAreaInsets();
+  const { state } = useContext(AppContext);
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', style: 'destructive', onPress: () => console.log('Logged out') }
+      ]
+    );
+  };
+
+  const handleFeaturePress = (feature: string) => {
+    console.log(`Pressed: ${feature}`);
+    // Navigation logic would go here
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>Profile</Text>
-      </View>
+    <View style={styles.container}>
+      {/* Status Bar Background */}
+      <View style={[styles.statusBarBackground, { height: insets.top }]} />
+      
+      {/* Header */}
+      <MobileHeader 
+        title="Profile" 
+        showBackButton={false} 
+        showSearch={false}
+        showCartButton={false}
+      />
+
       <ScrollView 
+        style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent} 
         showsVerticalScrollIndicator={false}
-        style={styles.scrollContainer}
       >
-        {/* User Info Card */}
-        <View style={styles.userCard}>
-          <View style={styles.avatar}><Ionicons name="person" size={36} color="#fff" /></View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.userName}>{user.name}</Text>
-            <Text style={styles.userEmail}>{user.email}</Text>
-            <Text style={styles.userPhone}>{user.phone}</Text>
+        {/* User Profile Card */}
+        <View style={styles.profileCard}>
+          <View style={styles.profileHeader}>
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatar}>
+                <Ionicons name="person" size={32} color="#FFFFFF" />
+              </View>
+              <View style={styles.verifiedBadge}>
+                <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+              </View>
+            </View>
+            
+            <View style={styles.userInfo}>
+              <Text style={styles.userName}>{user.name}</Text>
+              <Text style={styles.userEmail}>{user.email}</Text>
+              <Text style={styles.memberSince}>Member since {user.memberSince}</Text>
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.editButton}
+              onPress={() => handleFeaturePress('Edit Profile')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="create-outline" size={20} color="#000000" />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.editButton}>
-            <Ionicons name="create-outline" size={18} color="#007AFF" />
-          </TouchableOpacity>
+
+          {/* User Stats */}
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{user.totalOrders}</Text>
+              <Text style={styles.statLabel}>Orders</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{user.rewardPoints}</Text>
+              <Text style={styles.statLabel}>Points</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>4.9</Text>
+              <Text style={styles.statLabel}>Rating</Text>
+            </View>
+          </View>
         </View>
 
-        {/* Quick Actions Grid */}
-        <View style={styles.quickGrid}>
-          <TouchableOpacity style={styles.quickItem}>
-            <Ionicons name="cube-outline" size={22} color="#1a1a1a" />
-            <Text style={styles.quickLabel}>Orders</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickItem}>
-            <Ionicons name="gift-outline" size={22} color="#1a1a1a" />
-            <Text style={styles.quickLabel}>Rewards</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickItem}>
-            <Ionicons name="help-circle-outline" size={22} color="#1a1a1a" />
-            <Text style={styles.quickLabel}>Support</Text>
-          </TouchableOpacity>
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.quickActionsGrid}>
+            <TouchableOpacity 
+              style={styles.quickActionItem}
+              onPress={() => handleFeaturePress('Order History')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.quickActionIcon}>
+                <Ionicons name="receipt-outline" size={24} color="#000000" />
+              </View>
+              <Text style={styles.quickActionLabel}>Order History</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.quickActionItem}
+              onPress={() => navigation.navigate('Main', { screen: 'Rewards' })}
+              activeOpacity={0.7}
+            >
+              <View style={styles.quickActionIcon}>
+                <Ionicons name="gift-outline" size={24} color="#000000" />
+              </View>
+              <Text style={styles.quickActionLabel}>Rewards</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.quickActionItem}
+              onPress={() => handleFeaturePress('Wishlist')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.quickActionIcon}>
+                <Ionicons name="heart-outline" size={24} color="#000000" />
+              </View>
+              <Text style={styles.quickActionLabel}>Wishlist</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.quickActionItem}
+              onPress={() => handleFeaturePress('Support')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.quickActionIcon}>
+                <Ionicons name="help-circle-outline" size={24} color="#000000" />
+              </View>
+              <Text style={styles.quickActionLabel}>Support</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* List Sections */}
+        {/* Account Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
-          <TouchableOpacity style={styles.sectionItem}>
-            <Ionicons name="person-outline" size={18} color="#666" style={styles.sectionIcon} />
-            <Text style={styles.sectionLabel}>Personal Info</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.sectionItem}>
-            <Ionicons name="location-outline" size={18} color="#666" style={styles.sectionIcon} />
-            <Text style={styles.sectionLabel}>Addresses</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.sectionItem}>
-            <Ionicons name="card-outline" size={18} color="#666" style={styles.sectionIcon} />
-            <Text style={styles.sectionLabel}>Payment Methods</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.sectionItem}>
-            <Ionicons name="shield-outline" size={18} color="#666" style={styles.sectionIcon} />
-            <Text style={styles.sectionLabel}>Security</Text>
-          </TouchableOpacity>
+          <View style={styles.menuContainer}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => handleFeaturePress('Personal Information')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={styles.menuIcon}>
+                  <Ionicons name="person-outline" size={20} color="#000000" />
+                </View>
+                <Text style={styles.menuLabel}>Personal Information</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#666666" />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => handleFeaturePress('Delivery Addresses')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={styles.menuIcon}>
+                  <Ionicons name="location-outline" size={20} color="#000000" />
+                </View>
+                <Text style={styles.menuLabel}>Delivery Addresses</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#666666" />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => handleFeaturePress('Payment Methods')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={styles.menuIcon}>
+                  <Ionicons name="card-outline" size={20} color="#000000" />
+                </View>
+                <Text style={styles.menuLabel}>Payment Methods</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#666666" />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => handleFeaturePress('Security & Privacy')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={styles.menuIcon}>
+                  <Ionicons name="shield-checkmark-outline" size={20} color="#000000" />
+                </View>
+                <Text style={styles.menuLabel}>Security & Privacy</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#666666" />
+            </TouchableOpacity>
+          </View>
         </View>
 
+        {/* App Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
-          <TouchableOpacity style={styles.sectionItem}>
-            <Ionicons name="notifications-outline" size={18} color="#666" style={styles.sectionIcon} />
-            <Text style={styles.sectionLabel}>Notifications</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.sectionItem}>
-            <Ionicons name="settings-outline" size={18} color="#666" style={styles.sectionIcon} />
-            <Text style={styles.sectionLabel}>App Preferences</Text>
-          </TouchableOpacity>
+          <View style={styles.menuContainer}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => handleFeaturePress('Notifications')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={styles.menuIcon}>
+                  <Ionicons name="notifications-outline" size={20} color="#000000" />
+                </View>
+                <Text style={styles.menuLabel}>Notifications</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#666666" />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => handleFeaturePress('App Settings')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={styles.menuIcon}>
+                  <Ionicons name="settings-outline" size={20} color="#000000" />
+                </View>
+                <Text style={styles.menuLabel}>App Settings</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#666666" />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('MomentumShowcase')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={styles.menuIcon}>
+                  <Ionicons name="trending-up" size={20} color="#000000" />
+                </View>
+                <Text style={styles.menuLabel}>Progress & Momentum</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#666666" />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Demo & Features</Text>
-          <TouchableOpacity 
-            style={styles.sectionItem}
-            onPress={() => navigation.navigate('MomentumShowcase')}
-          >
-            <Ionicons name="trending-up" size={18} color="#666" style={styles.sectionIcon} />
-            <Text style={styles.sectionLabel}>Progress & Momentum</Text>
-          </TouchableOpacity>
-        </View>
-
+        {/* Support & Legal */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Support</Text>
-          <TouchableOpacity style={styles.sectionItem}>
-            <Ionicons name="help-circle-outline" size={18} color="#666" style={styles.sectionIcon} />
-            <Text style={styles.sectionLabel}>Help Center</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.sectionItem}>
-            <Ionicons name="mail-outline" size={18} color="#666" style={styles.sectionIcon} />
-            <Text style={styles.sectionLabel}>Contact Support</Text>
-          </TouchableOpacity>
+          <View style={styles.menuContainer}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => handleFeaturePress('Help Center')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={styles.menuIcon}>
+                  <Ionicons name="help-circle-outline" size={20} color="#000000" />
+                </View>
+                <Text style={styles.menuLabel}>Help Center</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#666666" />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => handleFeaturePress('Contact Support')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={styles.menuIcon}>
+                  <Ionicons name="chatbubble-outline" size={20} color="#000000" />
+                </View>
+                <Text style={styles.menuLabel}>Contact Support</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#666666" />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => handleFeaturePress('Terms & Privacy')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={styles.menuIcon}>
+                  <Ionicons name="document-text-outline" size={20} color="#000000" />
+                </View>
+                <Text style={styles.menuLabel}>Terms & Privacy</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#666666" />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton}>
-          <Ionicons name="log-out-outline" size={18} color="#D32F2F" style={styles.sectionIcon} />
-          <Text style={styles.logoutText}>Logout</Text>
+        {/* Sign Out Button */}
+        <TouchableOpacity 
+          style={styles.signOutButton}
+          onPress={handleLogout}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
+          <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
 
         {/* App Version */}
-        <Text style={styles.version}>EASI by Epico v1.0.0</Text>
+        <View style={styles.versionContainer}>
+          <Text style={styles.versionText}>EASI by Epico</Text>
+          <Text style={styles.versionNumber}>Version 1.0.0</Text>
+        </View>
+
+        {/* Bottom Padding */}
+        <View style={styles.bottomPadding} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8F8F8', // Frame background (98% lightness)
   },
-  headerContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+  statusBarBackground: {
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1a1a1a',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 999,
   },
   scrollContainer: {
-    backgroundColor: '#FFFFFF',
+    flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 100,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.md,
   },
-  userCard: {
+
+  // Profile Card
+  profileCard: {
+    backgroundColor: '#FFFFFF', // Canvas white
+    borderRadius: 16,
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
+    ...SHADOWS.medium,
+  },
+  profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    marginBottom: SPACING.lg,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginRight: SPACING.md,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#007AFF',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#000000', // Black background
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+  },
+  verifiedBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  userInfo: {
+    flex: 1,
   },
   userName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1a1a1a',
+    ...TYPOGRAPHY.h3,
+    marginBottom: 2,
   },
   userEmail: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
+    ...TYPOGRAPHY.caption,
+    marginBottom: 2,
   },
-  userPhone: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
+  memberSince: {
+    ...TYPOGRAPHY.small,
   },
   editButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#f5f5f5',
-    marginLeft: 8,
-  },
-  quickGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  quickItem: {
-    flex: 1,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F8F8F8',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    paddingVertical: 18,
-    marginHorizontal: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#E5E5E5', // Border color (90% lightness)
   },
-  quickLabel: {
-    fontSize: 13,
-    color: '#1a1a1a',
-    fontWeight: '600',
-    marginTop: 8,
+
+  // Stats
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
   },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statNumber: {
+    ...TYPOGRAPHY.h2,
+    marginBottom: 4,
+  },
+  statLabel: {
+    ...TYPOGRAPHY.small,
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: '#E5E5E5',
+  },
+
+  // Sections
   section: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 1,
+    marginBottom: SPACING.md,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 8,
-    marginLeft: 4,
+    ...TYPOGRAPHY.h4,
+    marginBottom: SPACING.sm,
+    paddingHorizontal: 4,
   },
-  sectionItem: {
+
+  // Quick Actions
+  quickActionsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  quickActionItem: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: SPACING.md,
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 4,
+    ...SHADOWS.light,
+    minHeight: 88, // Ensure proper touch target
+  },
+  quickActionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F8F8F8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  quickActionLabel: {
+    ...TYPOGRAPHY.small,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+
+  // Menu
+  menuContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    overflow: 'hidden',
+    ...SHADOWS.light,
+  },
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderRadius: 8,
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    minHeight: 56, // Proper touch target
+    borderBottomWidth: 1,
+    borderBottomColor: '#F8F8F8',
   },
-  sectionIcon: {
-    marginRight: 12,
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
-  sectionLabel: {
-    fontSize: 15,
-    color: '#1a1a1a',
+  menuIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F8F8F8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.sm,
+  },
+  menuLabel: {
+    ...TYPOGRAPHY.body,
     fontWeight: '500',
   },
-  logoutButton: {
+
+  // Sign Out Button
+  signOutButton: {
+    backgroundColor: '#000000', // Black button
+    borderRadius: 12,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    paddingVertical: 16,
-    marginTop: 12,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
+    marginVertical: SPACING.lg,
+    ...SHADOWS.medium,
+    minHeight: 48, // Proper touch target
   },
-  logoutText: {
-    color: '#D32F2F',
+  signOutText: {
+    color: '#FFFFFF', // White text on black button
     fontSize: 16,
-    fontWeight: '700',
-    marginLeft: 8,
+    fontWeight: '600',
+    marginLeft: SPACING.sm,
   },
-  version: {
-    textAlign: 'center',
-    color: '#999',
-    fontSize: 13,
-    marginTop: 16,
-    marginBottom: 32,
+
+  // Version
+  versionContainer: {
+    alignItems: 'center',
+    paddingVertical: SPACING.lg,
+  },
+  versionText: {
+    ...TYPOGRAPHY.small,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  versionNumber: {
+    ...TYPOGRAPHY.small,
+  },
+
+  // Bottom Padding
+  bottomPadding: {
+    height: 100,
   },
 }); 
