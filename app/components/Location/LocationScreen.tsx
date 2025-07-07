@@ -12,10 +12,14 @@ import { LocationSuggestion, SavedAddress, DeliveryDetails } from '../../types/l
 import LocationSelectionUI from './LocationSelectionUI';
 import { HapticFeedback } from '../../utils/haptics';
 
+interface LocationScreenProps {
+  onLocationSelect?: (location: LocationSuggestion) => void;
+}
+
 /**
  * Main screen for location selection, integrating all location-related components
  */
-export default function LocationScreen() {
+export default function LocationScreen({ onLocationSelect }: LocationScreenProps) {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   
@@ -40,6 +44,16 @@ export default function LocationScreen() {
   const handleLocationSelect = (location: LocationSuggestion) => {
     // Add to recent locations
     GoogleMapsService.addToRecentLocations(location);
+    
+    // Call parent callback if provided
+    if (onLocationSelect) {
+      onLocationSelect(location);
+    } else {
+      // Default behavior - navigate back
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      }
+    }
   };
   
   // Handle address details submission

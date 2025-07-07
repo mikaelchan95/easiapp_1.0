@@ -9,6 +9,7 @@ import {
   getMaxQuantity,
   isProductInStock 
 } from '../utils/pricing';
+import { LocationSuggestion } from '../types/location';
 
 interface User {
   id: string;
@@ -24,6 +25,7 @@ interface AppState {
   loading: boolean;
   searchQuery: string;
   selectedCategory: string;
+  selectedLocation: LocationSuggestion | null;
 }
 
 type AppAction =
@@ -35,7 +37,8 @@ type AppAction =
   | { type: 'CLEAR_CART' }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_SEARCH_QUERY'; payload: string }
-  | { type: 'SET_SELECTED_CATEGORY'; payload: string };
+  | { type: 'SET_SELECTED_CATEGORY'; payload: string }
+  | { type: 'SET_SELECTED_LOCATION'; payload: LocationSuggestion | null };
 
 // Initial state
 const initialState: AppState = {
@@ -50,6 +53,16 @@ const initialState: AppState = {
   loading: false,
   searchQuery: '',
   selectedCategory: 'all',
+  selectedLocation: {
+    id: 'marina-bay',
+    title: 'Marina Bay',
+    subtitle: 'Marina Bay, Singapore',
+    type: 'suggestion',
+    coordinate: {
+      latitude: 1.2834,
+      longitude: 103.8607
+    }
+  }, // Default location
 };
 
 // Reducer
@@ -112,6 +125,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, searchQuery: action.payload };
     case 'SET_SELECTED_CATEGORY':
       return { ...state, selectedCategory: action.payload };
+    case 'SET_SELECTED_LOCATION':
+      return { ...state, selectedLocation: action.payload };
     default:
       return state;
   }
@@ -130,10 +145,11 @@ export const AppContext = createContext<{
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-  // Load cart from storage on mount
+  // Load cart and location from storage on mount
   useEffect(() => {
-    const loadCart = async () => {
+    const loadStoredData = async () => {
       try {
+        // Load cart
         const savedCart = await AsyncStorage.getItem('cart');
         if (savedCart) {
           const parsedCart = JSON.parse(savedCart);
@@ -142,11 +158,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             dispatch({ type: 'ADD_TO_CART', payload: item });
           });
         }
+        
+        // Load selected location
+        const savedLocation = await AsyncStorage.getItem('selectedLocation');
+        if (savedLocation) {
+          const parsedLocation = JSON.parse(savedLocation);
+          dispatch({ type: 'SET_SELECTED_LOCATION', payload: parsedLocation });
+        }
       } catch (error) {
-        console.error('Failed to load cart from storage:', error);
+        console.error('Failed to load data from storage:', error);
       }
     };
-    loadCart();
+    loadStoredData();
   }, []);
 
   // Save cart to storage whenever it changes
@@ -165,6 +188,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       AsyncStorage.removeItem('cart').catch(console.error);
     }
   }, [state.cart]);
+  
+  // Save selected location to storage whenever it changes
+  useEffect(() => {
+    const saveLocation = async () => {
+      try {
+        if (state.selectedLocation) {
+          await AsyncStorage.setItem('selectedLocation', JSON.stringify(state.selectedLocation));
+        }
+      } catch (error) {
+        console.error('Failed to save location to storage:', error);
+      }
+    };
+    saveLocation();
+  }, [state.selectedLocation]);
 
   // Load products from mock data
   useEffect(() => {
