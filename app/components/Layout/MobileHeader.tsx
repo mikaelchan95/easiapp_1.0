@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { COLORS, SPACING, TYPOGRAPHY } from '../../utils/theme';
+import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from '../../utils/theme';
 
 interface MobileHeaderProps {
   title?: string;
@@ -88,18 +88,18 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
         <TouchableOpacity 
           style={styles.addressButton}
           onPress={onAddressPress}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
         >
           <View style={styles.addressContent}>
             <View style={styles.iconContainer}>
-              <Ionicons name="location" size={20} color="#FFFFFF" />
+              <Ionicons name="location" size={20} color={COLORS.primary} />
             </View>
             <View>
               <Text style={styles.deliverToLabel}>Deliver to</Text>
               <Text style={styles.addressName}>{currentAddress.name}</Text>
             </View>
           </View>
-          <Ionicons name="chevron-down" size={22} color="#FFFFFF" />
+          <Ionicons name="chevron-down" size={22} color={COLORS.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -162,19 +162,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addressButton: {
-    backgroundColor: '#000000',
-    borderRadius: 24,
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 0,
-    shadowColor: 'rgba(0,0,0,0.2)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.light,
     width: '100%',
   },
   addressContent: {
@@ -185,17 +182,17 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 42,
     height: 42,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: COLORS.background,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: COLORS.border,
   },
   deliverToLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.8)',
+    color: COLORS.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 2,
@@ -203,7 +200,7 @@ const styles = StyleSheet.create({
   addressName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: COLORS.text,
   },
   searchContainer: {
     paddingHorizontal: 16,
