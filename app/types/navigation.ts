@@ -30,6 +30,10 @@ export type RootStackParamList = {
   LocationPickerDemo: undefined;
   LocationPickerScreen: undefined;
   UberStyleLocationScreen: undefined;
+  DeliveryLocationScreen: {
+    onLocationSelect?: (location: any) => void;
+    initialLocation?: any;
+  };
 };
 
 declare global {
