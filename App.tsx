@@ -43,6 +43,7 @@ import WishlistScreen from './app/components/Activities/WishlistScreen';
 import ReviewsScreen from './app/components/Activities/ReviewsScreen';
 import SupportScreen from './app/components/Activities/SupportScreen';
 import ActivitiesScreen from './app/components/Activities/ActivitiesScreen';
+import LocationPickerDemo from './app/components/Location/LocationPickerDemo';
 
 // Import types and theme
 import { RootStackParamList, MainTabParamList } from './app/types/navigation';
@@ -374,6 +375,10 @@ export default function App() {
                   <Stack.Screen 
                     name="Referrals" 
                     component={ActivitiesScreen}
+                  />
+                  <Stack.Screen 
+                    name="LocationPickerDemo" 
+                    component={LocationPickerDemo}
                   />
                 </Stack.Navigator>
               </NavigationContainer>
