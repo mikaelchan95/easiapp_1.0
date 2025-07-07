@@ -229,6 +229,41 @@ export default function CartScreen() {
     }, 500);
   };
 
+  // Handle save for later
+  const handleSaveForLater = (productId: string) => {
+    // Find the item to save
+    const itemToSave = state.cart.find(item => item.product.id === productId);
+    if (!itemToSave) return;
+
+    // TODO: Add to saved items context/storage
+    // For now, just remove from cart and show feedback
+    dispatch({ type: 'REMOVE_FROM_CART', payload: productId });
+    
+    // Show feedback
+    setFeedback({
+      visible: true,
+      type: 'info',
+      message: 'Saved for later'
+    });
+  };
+
+  // Handle add to favorites
+  const handleAddToFavorites = (productId: string) => {
+    // Find the item to favorite
+    const itemToFavorite = state.cart.find(item => item.product.id === productId);
+    if (!itemToFavorite) return;
+
+    // TODO: Add to favorites context/storage
+    // For now, just show feedback without removing from cart
+    
+    // Show feedback
+    setFeedback({
+      visible: true,
+      type: 'success',
+      message: 'Added to favorites'
+    });
+  };
+
   const handleCheckout = () => {
     // Animation for checkout button press
     Animations.pulseAnimation(new Animated.Value(1), false);
@@ -269,6 +304,8 @@ export default function CartScreen() {
           item={item} 
           onQuantityChange={(quantity) => handleQuantityChange(item.productId, quantity)}
           onDelete={() => handleQuantityChange(item.productId, 0)}
+          onSaveForLater={() => handleSaveForLater(item.productId)}
+          onAddToFavorites={() => handleAddToFavorites(item.productId)}
           onSwipeStart={() => setActiveSwipe(item.id)}
           onSwipeEnd={() => setActiveSwipe(null)}
         />
