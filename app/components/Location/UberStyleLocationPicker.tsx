@@ -20,6 +20,7 @@ import { COLORS, SHADOWS, SPACING } from '../../utils/theme';
 import { GOOGLE_MAPS_CONFIG } from '../../config/googleMaps';
 import { LocationSuggestion, LocationCoordinate } from '../../types/location';
 import { GoogleMapsService } from '../../services/googleMapsService';
+import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 
 const { width, height } = Dimensions.get('window');
 
@@ -33,6 +34,8 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapView>(null);
+  const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
+  
   const [mapReady, setMapReady] = useState(false);
   const [searchMode, setSearchMode] = useState(false);
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
@@ -42,12 +45,26 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
   const searchBarOpacity = useRef(new Animated.Value(0)).current;
   const cardTranslateY = useRef(new Animated.Value(0)).current;
   
-  // Location states
+  // Location states - use global state for current location but local for pickup/dropoff in Uber style
   const [currentLocation, setCurrentLocation] = useState<LocationSuggestion | null>(null);
   const [pickupLocation, setPickupLocation] = useState<LocationSuggestion | null>(null);
   const [dropoffLocation, setDropoffLocation] = useState<LocationSuggestion | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState<LocationSuggestion | null>(null);
   const [mapRegion, setMapRegion] = useState(GOOGLE_MAPS_CONFIG.marinaBayRegion);
+
+  // Initialize with current delivery location
+  useEffect(() => {
+    if (deliveryLocation) {
+      setPickupLocation(deliveryLocation);
+      if (deliveryLocation.coordinate) {
+        setMapRegion({
+          latitude: deliveryLocation.coordinate.latitude,
+          longitude: deliveryLocation.coordinate.longitude,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
+        });
+      }
+    }
+  }, [deliveryLocation]);
 
   // Handle back button
   const handleBackPress = () => {
@@ -104,6 +121,8 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
   const handleLocationSelection = (location: LocationSuggestion, isPickup: boolean) => {
     if (isPickup) {
       setPickupLocation(location);
+      // Update global delivery location when pickup changes
+      setDeliveryLocation(location);
     } else {
       setDropoffLocation(location);
     }
@@ -119,13 +138,17 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
 
     setSearchMode(false);
     animateSearchBar(false);
-    setSelectedLocation(location);
   };
 
   // Handle confirmation
   const handleConfirmLocation = () => {
-    if (selectedLocation) {
-      onLocationSelect(selectedLocation);
+    // Use pickup location as the main delivery location for this context
+    const locationToConfirm = pickupLocation || deliveryLocation;
+    if (locationToConfirm) {
+      // Update global delivery location
+      setDeliveryLocation(locationToConfirm);
+      // Call parent callback
+      onLocationSelect(locationToConfirm);
     }
   };
 
@@ -136,8 +159,12 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
         const location = await GoogleMapsService.getCurrentLocation();
         if (location) {
           setCurrentLocation(location);
-          setPickupLocation(location);
-          if (location.coordinate) {
+          // If no pickup location is set, use current location
+          if (!pickupLocation) {
+            setPickupLocation(location);
+            setDeliveryLocation(location);
+          }
+          if (location.coordinate && !deliveryLocation) {
             setMapRegion({
               latitude: location.coordinate.latitude,
               longitude: location.coordinate.longitude,
@@ -212,11 +239,12 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
           showsMyLocationButton={false}
           onMapReady={() => setMapReady(true)}
         >
-          {selectedLocation?.coordinate && (
+          {/* Show delivery location marker */}
+          {deliveryLocation?.coordinate && (
             <Marker
-              coordinate={selectedLocation.coordinate}
-              title={selectedLocation.title}
-              description={selectedLocation.subtitle || ''}
+              coordinate={deliveryLocation.coordinate}
+              title={deliveryLocation.title}
+              description={deliveryLocation.subtitle || ''}
               pinColor="#000000"
             />
           )}
@@ -273,8 +301,20 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
           </View>
         </View>
         
-        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmLocation}>
-          <Text style={styles.confirmButtonText}>Confirm</Text>
+        <TouchableOpacity 
+          style={[
+            styles.confirmButton,
+            (!pickupLocation && !deliveryLocation) && styles.confirmButtonDisabled
+          ]} 
+          onPress={handleConfirmLocation}
+          disabled={!pickupLocation && !deliveryLocation}
+        >
+          <Text style={[
+            styles.confirmButtonText,
+            (!pickupLocation && !deliveryLocation) && styles.confirmButtonTextDisabled
+          ]}>
+            Confirm
+          </Text>
         </TouchableOpacity>
       </Animated.View>
     </SafeAreaView>
@@ -460,6 +500,12 @@ const styles = StyleSheet.create({
   },
   suggestionSubtitle: {
     fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  confirmButtonDisabled: {
+    backgroundColor: COLORS.border,
+  },
+  confirmButtonTextDisabled: {
     color: COLORS.textSecondary,
   },
 });
