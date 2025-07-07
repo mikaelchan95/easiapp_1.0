@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
+import QuantitySelector from '../UI/QuantitySelector';
 
 type CartItemProps = {
   item: {
@@ -25,50 +26,25 @@ type ProductNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Prod
 const CartItem: React.FC<CartItemProps> = ({ item, onQuantityChange }) => {
   const navigation = useNavigation<ProductNavigationProp>();
   
-  // Animation values
+  // Animation values for item removal
   const scaleValue = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
   const opacityValue = useRef(new Animated.Value(1)).current;
-  const quantityAnim = useRef(new Animated.Value(item.quantity)).current;
   
   // State to track removing animation
   const [isRemoving, setIsRemoving] = useState(false);
   
-  // Animation for increment and decrement
-  const animateQuantityChange = (newQuantity: number) => {
-    Animated.sequence([
-      Animated.timing(scaleValue, {
-        toValue: 0.95,
-        duration: 100,
-        useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
-      }),
-      Animated.timing(scaleValue, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
-      })
-    ]).start();
-    
-    Animated.timing(quantityAnim, {
-      toValue: newQuantity,
-      duration: 200,
-      useNativeDriver: false,
-      easing: Animations.TIMING.easeOut
-    }).start();
+  const handleItemPress = () => {
+    navigation.navigate('ProductDetail', { id: item.productId });
   };
   
-  // Handle quantity increment
-  const incrementQuantity = () => {
-    const newQuantity = item.quantity + 1;
-    animateQuantityChange(newQuantity);
-    onQuantityChange(newQuantity);
-  };
+  // Format price with proper currency
+  const formattedPrice = `$${(item.price * item.quantity).toFixed(2)}`;
+  const formattedUnitPrice = `$${item.price.toFixed(2)}`;
   
-  // Handle quantity decrement or removal
-  const decrementQuantity = () => {
-    if (item.quantity === 1) {
+  // Handle quantity change with the new standardized component
+  const handleQuantityChange = (newQuantity: number) => {
+    if (newQuantity === 0) {
       // Item will be removed, animate the removal
       setIsRemoving(true);
       
@@ -88,56 +64,10 @@ const CartItem: React.FC<CartItemProps> = ({ item, onQuantityChange }) => {
       ]).start(() => {
         onQuantityChange(0); // Remove the item
       });
-    } else {
-      // Just decrement the quantity
-      const newQuantity = item.quantity - 1;
-      animateQuantityChange(newQuantity);
-      onQuantityChange(newQuantity);
-    }
-  };
-  
-  const handleItemPress = () => {
-    navigation.navigate('ProductDetail', { id: item.productId });
-  };
-  
-  // Format price with proper currency
-  const formattedPrice = `$${(item.price * item.quantity).toFixed(2)}`;
-  const formattedUnitPrice = `$${item.price.toFixed(2)}`;
-  
-  // Render quantity display
-  const renderQuantity = () => {
-    return (
-      <View style={styles.quantityContainer}>
-        <TouchableOpacity 
-          style={styles.quantityButton} 
-          onPress={decrementQuantity}
-          activeOpacity={0.8}
-          accessibilityLabel={`Decrease quantity of ${item.name}`}
-          accessibilityHint={item.quantity === 1 ? "Double tap to remove item from cart" : "Double tap to decrease quantity"}
-          accessibilityRole="button"
-        >
-          <Ionicons name="remove" size={16} color={COLORS.text} />
-        </TouchableOpacity>
-        
-        <Animated.Text style={styles.quantityText}>
-          {quantityAnim.interpolate({
-            inputRange: [0, 100],
-            outputRange: Array.from({ length: 101 }, (_, i) => i.toString())
-          })}
-        </Animated.Text>
-        
-        <TouchableOpacity 
-          style={styles.quantityButton} 
-          onPress={incrementQuantity}
-          activeOpacity={0.8}
-          accessibilityLabel={`Increase quantity of ${item.name}`}
-          accessibilityHint="Double tap to increase quantity"
-          accessibilityRole="button"
-        >
-          <Ionicons name="add" size={16} color={COLORS.text} />
-        </TouchableOpacity>
-      </View>
-    );
+         } else {
+       // Update quantity
+       onQuantityChange(newQuantity);
+     }
   };
   
   return (
@@ -172,7 +102,12 @@ const CartItem: React.FC<CartItemProps> = ({ item, onQuantityChange }) => {
         <Text style={styles.unitPrice}>{formattedUnitPrice} each</Text>
         
         <View style={styles.actionRow}>
-          {renderQuantity()}
+          <QuantitySelector
+            value={item.quantity}
+            onChange={handleQuantityChange}
+            size="medium"
+            productName={item.name}
+          />
           <Text style={styles.price}>{formattedPrice}</Text>
         </View>
       </View>
@@ -225,28 +160,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: COLORS.text,
-  },
-  quantityContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    paddingHorizontal: 4,
-  },
-  quantityButton: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 4,
-  },
-  quantityText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
-    paddingHorizontal: SPACING.sm,
-    minWidth: 24,
-    textAlign: 'center',
   }
 });
 

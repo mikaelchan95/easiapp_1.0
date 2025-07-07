@@ -16,6 +16,7 @@ import { RectButton } from 'react-native-gesture-handler';
 import { COLORS, SHADOWS, SPACING } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
 import { HapticFeedback, HapticPatterns } from '../../utils/haptics';
+import QuantitySelector from '../UI/QuantitySelector';
 
 interface CartItemProps {
   item: {
@@ -60,31 +61,7 @@ const SwipeableCartItem: React.FC<CartItemProps> = ({
   // Refs
   const swipeableRef = useRef<Swipeable>(null);
   
-  // Handle quantity changes with animation
-  const incrementQuantity = () => {
-    if (item.inStock && !isDeleting) {
-      HapticFeedback.light();
-      
-      // Bounce animation for feedback
-      Animations.bounceAnimation(quantityBounce);
-      
-      onQuantityChange(item.quantity + 1);
-    }
-  };
-  
-  const decrementQuantity = () => {
-    if (item.quantity > 1 && !isDeleting) {
-      HapticFeedback.light();
-      
-      // Bounce animation for feedback
-      Animations.bounceAnimation(quantityBounce);
-      
-      onQuantityChange(item.quantity - 1);
-    } else if (item.quantity === 1) {
-      // Show quick delete confirmation
-      confirmQuickDelete();
-    }
-  };
+
   
   // Quick delete confirmation with haptic
   const confirmQuickDelete = () => {
@@ -328,42 +305,21 @@ const SwipeableCartItem: React.FC<CartItemProps> = ({
               <Text style={styles.price}>${item.price.toFixed(0)}</Text>
               
               {/* Quantity Selector */}
-              <Animated.View 
-                style={[
-                  styles.quantityContainer,
-                  { transform: [{ scale: quantityBounce }] }
-                ]}
-              >
-                <TouchableOpacity
-                  onPress={decrementQuantity}
-                  style={[styles.quantityButton, styles.decrementButton]}
-                  disabled={isDeleting}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="remove" size={16} color={COLORS.text} />
-                </TouchableOpacity>
-                
-                <View style={styles.quantityDisplay}>
-                  <Text style={styles.quantityText}>{item.quantity}</Text>
-                </View>
-                
-                <TouchableOpacity
-                  onPress={incrementQuantity}
-                  style={[
-                    styles.quantityButton, 
-                    styles.incrementButton,
-                    !item.inStock && styles.disabledButton
-                  ]}
-                  disabled={!item.inStock || isDeleting}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons 
-                    name="add" 
-                    size={16} 
-                    color={item.inStock ? COLORS.text : COLORS.inactive} 
-                  />
-                </TouchableOpacity>
-              </Animated.View>
+              <QuantitySelector
+                value={item.quantity}
+                onChange={(newQuantity) => {
+                  if (newQuantity === 0) {
+                    confirmQuickDelete();
+                  } else {
+                    HapticFeedback.light();
+                    Animations.bounceAnimation(quantityBounce);
+                    onQuantityChange(newQuantity);
+                  }
+                }}
+                disabled={isDeleting || !item.inStock}
+                size="medium"
+                productName={item.name}
+              />
             </View>
             
             {/* Total Price */}
@@ -438,44 +394,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
     marginBottom: 12,
-  },
-  quantityContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'hsl(0, 0%, 96%)',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  quantityButton: {
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  decrementButton: {
-    borderTopLeftRadius: 12,
-    borderBottomLeftRadius: 12,
-  },
-  incrementButton: {
-    borderTopRightRadius: 12,
-    borderBottomRightRadius: 12,
-  },
-  disabledButton: {
-    opacity: 0.4,
-  },
-  quantityDisplay: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: COLORS.card,
-    marginHorizontal: 1,
-  },
-  quantityText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
-    textAlign: 'center',
-    minWidth: 20,
   },
   totalContainer: {
     alignItems: 'flex-end',
