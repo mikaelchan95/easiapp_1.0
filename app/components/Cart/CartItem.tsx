@@ -112,6 +112,9 @@ const CartItem: React.FC<CartItemProps> = ({ item, onQuantityChange }) => {
           style={styles.quantityButton} 
           onPress={decrementQuantity}
           activeOpacity={0.8}
+          accessibilityLabel={`Decrease quantity of ${item.name}`}
+          accessibilityHint={item.quantity === 1 ? "Double tap to remove item from cart" : "Double tap to decrease quantity"}
+          accessibilityRole="button"
         >
           <Ionicons name="remove" size={16} color={COLORS.text} />
         </TouchableOpacity>
@@ -127,6 +130,9 @@ const CartItem: React.FC<CartItemProps> = ({ item, onQuantityChange }) => {
           style={styles.quantityButton} 
           onPress={incrementQuantity}
           activeOpacity={0.8}
+          accessibilityLabel={`Increase quantity of ${item.name}`}
+          accessibilityHint="Double tap to increase quantity"
+          accessibilityRole="button"
         >
           <Ionicons name="add" size={16} color={COLORS.text} />
         </TouchableOpacity>
@@ -228,8 +234,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   quantityButton: {
-    width: 28,
-    height: 28,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 4,

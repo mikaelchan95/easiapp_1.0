@@ -1,4 +1,5 @@
 import React, { createContext, useReducer, ReactNode, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { products } from '../data/mockProducts';
 import { 
   Product, 
@@ -128,6 +129,42 @@ export const AppContext = createContext<{
 // Provider
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
+
+  // Load cart from storage on mount
+  useEffect(() => {
+    const loadCart = async () => {
+      try {
+        const savedCart = await AsyncStorage.getItem('cart');
+        if (savedCart) {
+          const parsedCart = JSON.parse(savedCart);
+          // Restore cart items
+          parsedCart.forEach((item: CartItem) => {
+            dispatch({ type: 'ADD_TO_CART', payload: item });
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load cart from storage:', error);
+      }
+    };
+    loadCart();
+  }, []);
+
+  // Save cart to storage whenever it changes
+  useEffect(() => {
+    const saveCart = async () => {
+      try {
+        await AsyncStorage.setItem('cart', JSON.stringify(state.cart));
+      } catch (error) {
+        console.error('Failed to save cart to storage:', error);
+      }
+    };
+    if (state.cart.length > 0) {
+      saveCart();
+    } else {
+      // Clear cart from storage if empty
+      AsyncStorage.removeItem('cart').catch(console.error);
+    }
+  }, [state.cart]);
 
   // Load products from mock data
   useEffect(() => {
