@@ -1,263 +1,294 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  ScrollView,
   FlatList,
-  Alert,
+  Alert
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SHADOWS } from '../../utils/theme';
-import { SavedAddress } from '../../types/location';
-import * as Haptics from 'expo-haptics';
+import { MaterialIcons } from '@expo/vector-icons';
+import { SavedLocationsProps, SavedAddress } from '../../types/location';
+import { HapticFeedback } from '../../utils/haptics';
 
-interface SavedLocationsProps {
-  locations: SavedAddress[];
-  onSelect: (location: SavedAddress) => void;
-  onEdit: (location: SavedAddress) => void;
-  onDelete: (id: string) => void;
-  onAdd: () => void;
-}
-
-const SavedLocations: React.FC<SavedLocationsProps> = ({
-  locations,
+/**
+ * Component for displaying and managing saved delivery locations
+ */
+export default function SavedLocations({
+  savedAddresses,
   onSelect,
   onEdit,
   onDelete,
-  onAdd,
-}) => {
-  const handleDelete = (location: SavedAddress) => {
+  onAdd
+}: SavedLocationsProps) {
+  // Icons mapped to common location types
+  const getIconForLabel = (label: string): string => {
+    const iconMap: Record<string, string> = {
+      'Home': 'home',
+      'Work': 'work',
+      'Office': 'business',
+      'Gym': 'fitness-center',
+      'School': 'school',
+      'Partner': 'favorite',
+      'Family': 'family-restroom',
+      'Friend': 'people',
+      'Other': 'place'
+    };
+    
+    return iconMap[label] || 'place';
+  };
+  
+  // Get color for label
+  const getColorForLabel = (label: string, customColor?: string): string => {
+    if (customColor) return customColor;
+    
+    const colorMap: Record<string, string> = {
+      'Home': '#4CAF50', // Green
+      'Work': '#2196F3', // Blue
+      'Office': '#607D8B', // Blue Grey
+      'Gym': '#FF5722', // Deep Orange
+      'School': '#9C27B0', // Purple
+      'Partner': '#E91E63', // Pink
+      'Family': '#3F51B5', // Indigo
+      'Friend': '#00BCD4', // Cyan
+      'Other': '#757575'  // Grey
+    };
+    
+    return colorMap[label] || '#757575';
+  };
+
+  // Confirm deletion
+  const confirmDelete = (address: SavedAddress) => {
     Alert.alert(
-      'Delete Location',
-      `Are you sure you want to delete "${location.label}"?`,
+      'Delete Saved Location',
+      `Are you sure you want to delete "${address.label}"?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
         {
           text: 'Delete',
-          style: 'destructive',
           onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            onDelete(location.id);
+            HapticFeedback.warning();
+            onDelete(address.id);
           },
-        },
+          style: 'destructive'
+        }
       ]
     );
   };
 
-  const getIconName = (label: string) => {
-    switch (label.toLowerCase()) {
-      case 'home':
-        return 'home';
-      case 'office':
-      case 'work':
-        return 'business';
-      default:
-        return 'location';
-    }
+  // Handle selection with haptic feedback
+  const handleSelect = (address: SavedAddress) => {
+    HapticFeedback.light();
+    onSelect(address);
   };
 
-  const renderLocation = ({ item }: { item: SavedAddress }) => (
-    <TouchableOpacity
-      style={styles.locationCard}
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onSelect(item);
-      }}
-      activeOpacity={0.7}
-    >
-      <View style={styles.locationIcon}>
-        <Ionicons
-          name={getIconName(item.label)}
-          size={24}
-          color={COLORS.primary}
-        />
-      </View>
+  // Handle edit with haptic feedback
+  const handleEdit = (address: SavedAddress) => {
+    HapticFeedback.medium();
+    onEdit(address);
+  };
+  
+  // Render a saved address card
+  const renderAddressCard = ({ item }: { item: SavedAddress }) => (
+    <View style={styles.addressCard}>
+      <TouchableOpacity
+        style={styles.addressCardContent}
+        onPress={() => handleSelect(item)}
+      >
+        <View 
+          style={[
+            styles.iconContainer, 
+            { backgroundColor: getColorForLabel(item.label, item.color) }
+          ]}
+        >
+          <MaterialIcons 
+            name={(item.icon || getIconForLabel(item.label)) as any} 
+            size={24} 
+            color="white" 
+          />
+        </View>
+        
+        <View style={styles.addressInfo}>
+          <Text style={styles.addressLabel}>{item.label}</Text>
+          <Text style={styles.addressText} numberOfLines={1}>
+            {item.location.formattedAddress || item.location.subtitle || item.location.address}
+          </Text>
+          {item.unitNumber && (
+            <Text style={styles.detailText}>
+              Unit: {item.unitNumber}
+              {item.buildingName ? `, ${item.buildingName}` : ''}
+            </Text>
+          )}
+        </View>
+      </TouchableOpacity>
       
-      <View style={styles.locationDetails}>
-        <Text style={styles.locationLabel}>{item.label}</Text>
-        <Text style={styles.locationAddress} numberOfLines={1}>
-          {item.location.title}
-        </Text>
-        {item.location.subtitle && (
-          <Text style={styles.locationSubtitle} numberOfLines={1}>
-            {item.location.subtitle}
-          </Text>
-        )}
-        {item.unitNumber && (
-          <Text style={styles.locationUnit}>
-            Unit: {item.unitNumber}
-            {item.buildingName && ` • ${item.buildingName}`}
-          </Text>
-        )}
-      </View>
-
-      <View style={styles.locationActions}>
+      <View style={styles.actionButtons}>
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onEdit(item);
-          }}
+          onPress={() => handleEdit(item)}
         >
-          <Ionicons name="pencil" size={18} color={COLORS.textSecondary} />
+          <MaterialIcons name="edit" size={20} color="#555" />
         </TouchableOpacity>
+        
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => handleDelete(item)}
+          onPress={() => confirmDelete(item)}
         >
-          <Ionicons name="trash-outline" size={18} color={COLORS.error} />
+          <MaterialIcons name="delete" size={20} color="#d32f2f" />
         </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Saved Locations</Text>
+        <Text style={styles.title}>Saved Locations</Text>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onAdd();
-          }}
+          onPress={onAdd}
         >
-          <Ionicons name="add" size={20} color={COLORS.primary} />
+          <MaterialIcons name="add" size={20} color="white" />
           <Text style={styles.addButtonText}>Add New</Text>
         </TouchableOpacity>
       </View>
-
-      {locations.length === 0 ? (
+      
+      {savedAddresses.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons
-            name="location-outline"
-            size={48}
-            color={COLORS.inactive}
-            style={styles.emptyIcon}
-          />
-          <Text style={styles.emptyText}>No saved locations yet</Text>
-          <Text style={styles.emptySubtext}>
-            Add your home, office, or frequently visited places
+          <MaterialIcons name="bookmark-border" size={48} color="#bdbdbd" />
+          <Text style={styles.emptyStateText}>
+            No saved locations yet
+          </Text>
+          <Text style={styles.emptyStateSubtext}>
+            Add frequently used addresses for quick selection
           </Text>
         </View>
       ) : (
         <FlatList
-          data={locations}
-          renderItem={renderLocation}
+          data={savedAddresses}
+          renderItem={renderAddressCard}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={styles.addressList}
           showsVerticalScrollIndicator={false}
         />
       )}
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'hsl(0, 0%, 98%)',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'hsl(0, 0%, 90%)',
+    backgroundColor: 'hsl(0, 0%, 100%)',
   },
-  headerTitle: {
+  title: {
     fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.text,
+    fontWeight: '600',
+    color: 'hsl(0, 0%, 0%)',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'hsl(0, 0%, 0%)',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
+    borderRadius: 8,
   },
   addButtonText: {
-    marginLeft: 4,
-    fontSize: 14,
+    color: 'hsl(0, 0%, 100%)',
     fontWeight: '600',
-    color: COLORS.primary,
+    marginLeft: 4,
   },
-  list: {
-    paddingHorizontal: 20,
-  },
-  locationCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.card,
-    borderRadius: 12,
+  addressList: {
     padding: 16,
-    marginBottom: 12,
-    ...SHADOWS.light,
   },
-  locationIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.background,
+  addressCard: {
+    backgroundColor: 'hsl(0, 0%, 100%)',
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'hsl(0, 0%, 90%)',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 2.22,
+    elevation: 3,
+  },
+  addressCardContent: {
+    flexDirection: 'row',
+    padding: 16,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'hsl(0, 0%, 50%)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
-  locationDetails: {
+  addressInfo: {
     flex: 1,
   },
-  locationLabel: {
+  addressLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.text,
+    color: 'hsl(0, 0%, 0%)',
     marginBottom: 4,
   },
-  locationAddress: {
+  addressText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.text,
+    color: 'hsl(0, 0%, 30%)',
+    marginBottom: 4,
   },
-  locationSubtitle: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  locationUnit: {
+  detailText: {
     fontSize: 12,
-    color: COLORS.primary,
-    marginTop: 4,
+    color: 'hsl(0, 0%, 45%)',
   },
-  locationActions: {
+  actionButtons: {
     flexDirection: 'row',
-    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'hsl(0, 0%, 90%)',
   },
   actionButton: {
-    padding: 8,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
   },
   emptyState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 40,
+    padding: 24,
   },
-  emptyIcon: {
-    marginBottom: 16,
-  },
-  emptyText: {
+  emptyStateText: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.text,
+    color: 'hsl(0, 0%, 30%)',
+    marginTop: 16,
     marginBottom: 8,
   },
-  emptySubtext: {
+  emptyStateSubtext: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: 'hsl(0, 0%, 45%)',
     textAlign: 'center',
   },
 });
-
-export default SavedLocations;

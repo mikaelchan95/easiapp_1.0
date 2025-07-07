@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,54 +6,82 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  FlatList,
+  Keyboard
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { COLORS, SHADOWS } from '../../utils/theme';
 import { GoogleMapsService } from '../../services/googleMapsService';
 import { LocationSuggestion } from '../../types/location';
+import { HapticFeedback } from '../../utils/haptics';
 
 interface PostalCodeInputProps {
   onLocationFound: (location: LocationSuggestion) => void;
   onClose: () => void;
+  value: string;
+  onChangeText: (text: string) => void;
+  onSubmit: (text: string) => void;
+  error: string | undefined;
+  loading?: boolean;
+  onQuickSelect?: (postalCode: string) => void;
+  popularPostalCodes?: { code: string; label: string }[];
 }
 
 const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
   onLocationFound,
   onClose,
+  value,
+  onChangeText,
+  onSubmit,
+  error,
+  loading = false,
+  onQuickSelect,
+  popularPostalCodes = GoogleMapsService.getPopularPostalCodes()
 }) => {
-  const [postalCode, setPostalCode] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [focused, setFocused] = useState(false);
+  const [localError, setLocalError] = useState<string | undefined>(error);
+  
+  // Clear local error when error prop changes
+  useEffect(() => {
+    setLocalError(error);
+  }, [error]);
 
-  const handlePostalCodeChange = (text: string) => {
-    // Only allow numbers and limit to 6 digits for Singapore postal codes
-    const cleaned = text.replace(/[^0-9]/g, '').slice(0, 6);
-    setPostalCode(cleaned);
-    setError('');
+  // Handle validation on blur
+  const handleBlur = () => {
+    setFocused(false);
+    
+    if (value && !GoogleMapsService.isValidPostalCode(value)) {
+      setLocalError('Please enter a valid 6-digit postal code');
+    } else {
+      setLocalError(undefined);
+    }
   };
 
-  const searchPostalCode = async () => {
-    if (postalCode.length !== 6) {
-      setError('Please enter a valid 6-digit postal code');
+  // Handle submission
+  const handleSubmit = () => {
+    if (!value) {
+      setLocalError('Postal code is required');
       return;
     }
+    
+    if (!GoogleMapsService.isValidPostalCode(value)) {
+      setLocalError('Please enter a valid 6-digit postal code');
+      return;
+    }
+    
+    setLocalError(undefined);
+    Keyboard.dismiss();
+    onSubmit(value);
+  };
 
-    setLoading(true);
-    setError('');
-
-    try {
-      const results = await GoogleMapsService.getAutocompleteSuggestions(postalCode);
-      
-      if (results.length > 0) {
-        // Found a location for the postal code
-        onLocationFound(results[0]);
-      } else {
-        setError('No location found for this postal code');
-      }
-    } catch (err) {
-      setError('Error searching postal code. Please try again.');
-    } finally {
-      setLoading(false);
+  // Handle quick selection
+  const handleQuickSelect = (postalCode: string) => {
+    HapticFeedback.light();
+    onChangeText(postalCode);
+    if (onQuickSelect) {
+      onQuickSelect(postalCode);
+    } else {
+      onSubmit(postalCode);
     }
   };
 
@@ -70,58 +98,92 @@ const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
         Enter your Singapore postal code to quickly find your delivery address
       </Text>
 
-      <View style={styles.inputContainer}>
+      <View style={[
+        styles.inputContainer,
+        focused ? styles.inputContainerFocused : {},
+        localError ? styles.inputContainerError : {}
+      ]}>
+        <MaterialIcons name="location-on" size={24} color="#000" style={styles.icon} />
+        
         <TextInput
+          value={value}
+          onChangeText={(text) => {
+            // Only allow digits
+            const sanitized = text.replace(/[^0-9]/g, '');
+            // Limit to 6 digits
+            const formatted = sanitized.slice(0, 6);
+            onChangeText(formatted);
+            
+            // Clear error when typing
+            if (localError) {
+              setLocalError(undefined);
+            }
+          }}
           style={styles.input}
-          placeholder="e.g., 018956"
-          placeholderTextColor={COLORS.placeholder}
-          value={postalCode}
-          onChangeText={handlePostalCodeChange}
-          keyboardType="numeric"
+          placeholder="Enter 6-digit postal code"
+          keyboardType="number-pad"
           maxLength={6}
-          autoFocus
+          onFocus={() => setFocused(true)}
+          onBlur={handleBlur}
+          onSubmitEditing={handleSubmit}
         />
-        <TouchableOpacity
-          style={[
-            styles.searchButton,
-            postalCode.length !== 6 && styles.searchButtonDisabled,
-          ]}
-          onPress={searchPostalCode}
-          disabled={postalCode.length !== 6 || loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color={COLORS.card} />
-          ) : (
-            <Ionicons name="search" size={20} color={COLORS.card} />
-          )}
-        </TouchableOpacity>
+        
+        {loading ? (
+          <ActivityIndicator size="small" color="#000" style={styles.actionIcon} />
+        ) : value ? (
+          <TouchableOpacity 
+            onPress={() => onChangeText('')}
+            style={styles.actionIcon}
+          >
+            <MaterialIcons name="cancel" size={20} color="#777" />
+          </TouchableOpacity>
+        ) : null}
       </View>
-
-      {error ? (
-        <Text style={styles.errorText}>{error}</Text>
+      
+      {localError ? (
+        <Text style={styles.errorText}>{localError}</Text>
       ) : (
         <Text style={styles.helperText}>
           Singapore postal codes are 6 digits long
         </Text>
       )}
 
-      <View style={styles.examples}>
-        <Text style={styles.examplesTitle}>Popular Areas:</Text>
-        <View style={styles.exampleTags}>
-          {['018956', '238859', '098632', '819663'].map((code) => (
+      <View style={styles.quickAccessContainer}>
+        <Text style={styles.quickAccessLabel}>Popular locations:</Text>
+        
+        <FlatList
+          horizontal
+          data={popularPostalCodes}
+          keyExtractor={(item) => item.code}
+          showsHorizontalScrollIndicator={false}
+          renderItem={({ item }) => (
             <TouchableOpacity
-              key={code}
-              style={styles.exampleTag}
-              onPress={() => {
-                setPostalCode(code);
-                handlePostalCodeChange(code);
-              }}
+              style={styles.quickAccessItem}
+              onPress={() => handleQuickSelect(item.code)}
             >
-              <Text style={styles.exampleTagText}>{code}</Text>
+              <Text style={styles.quickAccessText}>{item.label}</Text>
+              <Text style={styles.quickAccessSubtext}>{item.code}</Text>
             </TouchableOpacity>
-          ))}
-        </View>
+          )}
+          contentContainerStyle={styles.quickAccessList}
+        />
       </View>
+      
+      <TouchableOpacity
+        style={[
+          styles.submitButton,
+          (!value || loading) ? styles.submitButtonDisabled : {}
+        ]}
+        onPress={handleSubmit}
+        disabled={!value || loading}
+      >
+        <Text style={styles.submitButtonText}>
+          {loading ? 'Searching...' : 'Search'}
+        </Text>
+        {!loading && (
+          <MaterialIcons name="search" size={20} color="#fff" style={styles.submitIcon} />
+        )}
+      </TouchableOpacity>
     </View>
   );
 };
@@ -157,6 +219,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 12,
   },
+  inputContainerFocused: {
+    borderColor: '#000',
+    borderWidth: 2,
+  },
+  inputContainerError: {
+    borderColor: '#d32f2f',
+  },
+  icon: {
+    marginRight: 8,
+  },
   input: {
     flex: 1,
     backgroundColor: COLORS.background,
@@ -170,16 +242,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     letterSpacing: 2,
   },
-  searchButton: {
-    marginLeft: 12,
-    backgroundColor: COLORS.primary,
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchButtonDisabled: {
-    backgroundColor: COLORS.inactive,
+  actionIcon: {
+    padding: 4,
   },
   errorText: {
     fontSize: 13,
@@ -191,32 +255,54 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 4,
   },
-  examples: {
+  quickAccessContainer: {
     marginTop: 24,
   },
-  examplesTitle: {
+  quickAccessLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 12,
   },
-  exampleTags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+  quickAccessList: {
+    paddingVertical: 4,
   },
-  exampleTag: {
+  quickAccessItem: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: COLORS.background,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: COLORS.border,
+    marginRight: 8,
   },
-  exampleTagText: {
+  quickAccessText: {
     fontSize: 14,
     fontWeight: '500',
     color: COLORS.text,
+  },
+  quickAccessSubtext: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  submitButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitButtonDisabled: {
+    backgroundColor: COLORS.inactive,
+  },
+  submitButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.card,
+  },
+  submitIcon: {
+    marginLeft: 8,
   },
 });
 

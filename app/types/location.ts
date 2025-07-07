@@ -16,11 +16,12 @@ export interface LocationSuggestion {
   subtitle?: string;
   coordinate?: Coordinate;
   isPremiumLocation?: boolean;
-  type?: 'suggestion' | 'recent' | 'current' | 'postal';
+  type?: 'suggestion' | 'recent' | 'current' | 'postal' | 'saved';
   address?: string;
   postalCode?: string;
   unitNumber?: string;
   buildingName?: string;
+  formattedAddress?: string;
 }
 
 export interface DeliveryDetails {
@@ -41,6 +42,8 @@ export interface SavedAddress extends DeliveryDetails {
   label: string; // "Home", "Office", etc.
   createdAt: Date;
   updatedAt: Date;
+  icon?: string; // Material icon name
+  color?: string; // Optional color for the icon background
 }
 
 export interface LocationPickerState {
@@ -133,4 +136,39 @@ export interface LocationConfirmButtonProps {
   onConfirm: () => void;
   selectedLocation: LocationSuggestion | null;
   disabled?: boolean;
+}
+
+export interface PostalCodeInputProps {
+  value: string;
+  onChangeText: (text: string) => void;
+  onSubmit: (postalCode: string) => void;
+  error?: string;
+  loading?: boolean;
+  onQuickSelect?: (postalCode: string) => void;
+  popularPostalCodes?: Array<{code: string, label: string}>;
+}
+
+export interface SavedLocationsProps {
+  savedAddresses: SavedAddress[];
+  onSelect: (address: SavedAddress) => void;
+  onEdit: (address: SavedAddress) => void;
+  onDelete: (id: string) => void;
+  onAdd: () => void;
+}
+
+export interface AddressDetailsFormProps {
+  location: LocationSuggestion;
+  initialValues?: Partial<DeliveryDetails>;
+  onSubmit: (details: DeliveryDetails) => void;
+  onSave?: (details: DeliveryDetails & {label: string}) => void;
+  onCancel: () => void;
+  isSaveMode?: boolean;
+}
+
+export interface LocationSelectionUIProps {
+  onLocationSelect: (location: LocationSuggestion) => void;
+  onAddressDetailsSubmit: (details: DeliveryDetails) => void;
+  onSaveAddress?: (address: SavedAddress) => void;
+  initialLocation?: LocationSuggestion;
+  savedAddresses?: SavedAddress[];
 }
