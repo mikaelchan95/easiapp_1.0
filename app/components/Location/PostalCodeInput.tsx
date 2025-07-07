@@ -63,7 +63,7 @@ const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
       setLocalError('Postal code is required');
       return;
     }
-    
+
     if (!GoogleMapsService.isValidPostalCode(value)) {
       setLocalError('Please enter a valid 6-digit postal code');
       return;
@@ -80,7 +80,7 @@ const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
     onChangeText(postalCode);
     if (onQuickSelect) {
       onQuickSelect(postalCode);
-    } else {
+      } else {
       onSubmit(postalCode);
     }
   };
@@ -131,15 +131,15 @@ const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
         {loading ? (
           <ActivityIndicator size="small" color="#000" style={styles.actionIcon} />
         ) : value ? (
-          <TouchableOpacity 
+        <TouchableOpacity
             onPress={() => onChangeText('')}
             style={styles.actionIcon}
-          >
+        >
             <MaterialIcons name="cancel" size={20} color="#777" />
-          </TouchableOpacity>
+        </TouchableOpacity>
         ) : null}
       </View>
-      
+
       {localError ? (
         <Text style={styles.errorText}>{localError}</Text>
       ) : (

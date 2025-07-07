@@ -95,10 +95,10 @@ export default function SavedLocations({
   // Render a saved address card
   const renderAddressCard = ({ item }: { item: SavedAddress }) => (
     <View style={styles.addressCard}>
-      <TouchableOpacity
+    <TouchableOpacity
         style={styles.addressCardContent}
         onPress={() => handleSelect(item)}
-      >
+    >
         <View 
           style={[
             styles.iconContainer, 
@@ -107,25 +107,25 @@ export default function SavedLocations({
         >
           <MaterialIcons 
             name={(item.icon || getIconForLabel(item.label)) as any} 
-            size={24} 
+          size={24}
             color="white" 
-          />
-        </View>
-        
+        />
+      </View>
+      
         <View style={styles.addressInfo}>
           <Text style={styles.addressLabel}>{item.label}</Text>
           <Text style={styles.addressText} numberOfLines={1}>
             {item.location.formattedAddress || item.location.subtitle || item.location.address}
           </Text>
-          {item.unitNumber && (
+        {item.unitNumber && (
             <Text style={styles.detailText}>
-              Unit: {item.unitNumber}
+            Unit: {item.unitNumber}
               {item.buildingName ? `, ${item.buildingName}` : ''}
-            </Text>
-          )}
-        </View>
+          </Text>
+        )}
+      </View>
       </TouchableOpacity>
-      
+
       <View style={styles.actionButtons}>
         <TouchableOpacity
           style={styles.actionButton}
@@ -156,7 +156,7 @@ export default function SavedLocations({
           <Text style={styles.addButtonText}>Add New</Text>
         </TouchableOpacity>
       </View>
-      
+
       {savedAddresses.length === 0 ? (
         <View style={styles.emptyState}>
           <MaterialIcons name="bookmark-border" size={48} color="#bdbdbd" />
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     shadowOffset: {
       width: 0,
       height: 1,
-    },
+  },
     shadowOpacity: 0.08,
     shadowRadius: 2.22,
     elevation: 3,

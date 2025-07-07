@@ -5,7 +5,7 @@ We've completely revamped the location selection feature to provide a modern, in
 
 ## Key Features Implemented
 
-### 1. **Postal Code Search**
+### 1. **Postal Code Search** 
 - Dedicated postal code input with validation for Singapore's 6-digit format
 - Real-time validation and error handling
 - Quick selection of popular postal codes

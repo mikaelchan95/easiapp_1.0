@@ -35,7 +35,7 @@ export default function LocationScreen() {
     
     loadSavedAddresses();
   }, []);
-  
+
   // Handle location selection
   const handleLocationSelect = (location: LocationSuggestion) => {
     // Add to recent locations
@@ -51,7 +51,7 @@ export default function LocationScreen() {
       navigation.goBack();
     }
   };
-  
+
   // Handle saving a new address
   const handleSaveAddress = async (address: SavedAddress) => {
     HapticFeedback.success();
@@ -81,7 +81,7 @@ export default function LocationScreen() {
       console.error('Error saving address:', error);
     }
   };
-  
+
   return (
     <SafeAreaView style={[
       styles.container,
