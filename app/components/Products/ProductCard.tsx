@@ -220,7 +220,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <Ionicons 
                 name={isAdding ? "checkmark" : "add"} 
                 size={18} 
-                color={COLORS.accent} 
+                color={COLORS.buttonText} 
               />
             </TouchableOpacity>
           </View>
@@ -240,81 +240,79 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 0,
-    shadowColor: 'rgba(0,0,0,0.08)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    ...SHADOWS.medium,
     marginBottom: SPACING.md,
-    height: 350, // Fixed height for standard card
+    // Dynamic height based on content instead of fixed
+    minHeight: 320,
   },
   touchableContainer: {
     width: '100%',
-    height: '100%',
+    flex: 1,
   },
   compactContainer: {
     width: 160,
-    height: 250, // Fixed height for compact card
+    minHeight: 240,
   },
   imageContainer: {
     width: '100%',
     aspectRatio: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.card,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
-    padding: 4,
+    padding: SPACING.element,
   },
   image: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#FFF',
-    borderRadius: 8,
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
   },
   stockIndicator: {
     position: 'absolute',
-    bottom: 8,
-    right: 8,
+    bottom: SPACING.element,
+    right: SPACING.element,
     width: 8,
     height: 8,
     borderRadius: 4,
   },
   infoContainer: {
     flex: 1,
-    padding: 12,
+    padding: SPACING.card,
     backgroundColor: COLORS.card,
     justifyContent: 'space-between',
+    minHeight: 100, // Ensure consistent spacing
   },
   category: {
-    fontSize: 12,
+    ...TYPOGRAPHY.small,
     color: COLORS.inactive,
-    marginBottom: 4,
+    marginBottom: SPACING.xs,
     textTransform: 'capitalize',
     fontWeight: '500',
   },
   name: {
+    ...TYPOGRAPHY.h4,
     fontSize: 15,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 8,
-    lineHeight: 20,
-    // Truncate to 2 lines
+    marginBottom: SPACING.element,
     flexShrink: 1,
   },
   compactName: {
     fontSize: 13,
-    marginBottom: 4,
-    lineHeight: 18,
+    marginBottom: SPACING.xs,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
+    alignItems: 'flex-end',
+    marginTop: SPACING.element,
+    paddingTop: SPACING.xs,
   },
   priceContainer: {
     flexDirection: 'column',
     alignItems: 'flex-start',
+    flex: 1,
   },
   price: {
     fontSize: 18,
@@ -323,7 +321,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   originalPrice: {
-    fontSize: 13,
+    ...TYPOGRAPHY.small,
     color: COLORS.inactive,
     textDecorationLine: 'line-through',
     marginTop: 2,
@@ -332,9 +330,11 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.buttonBg,
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: SPACING.element,
+    ...SHADOWS.light,
   },
   addButtonActive: {
     backgroundColor: COLORS.success,
