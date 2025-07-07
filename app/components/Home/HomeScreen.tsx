@@ -22,7 +22,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import ExpandableSearch from '../Products/ExpandableSearch';
 import { HapticFeedback } from '../../utils/haptics';
-import LocationPickerModal from '../Location/LocationPickerModal';
+import DeliveryLocationHeader from '../Location/DeliveryLocationHeader';
+import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 import { useAppContext } from '../../context/AppContext';
 
 type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -32,8 +33,8 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [currentBanner, setCurrentBanner] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  const [locationPickerVisible, setLocationPickerVisible] = useState(false);
   const { state } = useAppContext();
+  const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
   
   // Auto-rotate banner every 6 seconds
   useEffect(() => {
@@ -89,9 +90,13 @@ export default function HomeScreen() {
   }, [navigation]);
   
   const handleAddressPress = useCallback(() => {
-    // Navigate to the new Uber-style location picker
-    navigation.navigate('UberStyleLocationScreen');
-  }, [navigation]);
+    // Navigate to the new delivery location picker
+    // @ts-ignore - Navigation params will be handled by the screen
+    navigation.navigate('DeliveryLocationScreen', {
+      onLocationSelect: setDeliveryLocation,
+      initialLocation: deliveryLocation,
+    });
+  }, [navigation, setDeliveryLocation, deliveryLocation]);
   
   const handleRewardsPress = useCallback(() => {
     navigation.dispatch(
@@ -123,12 +128,14 @@ export default function HomeScreen() {
       <StatusBar barStyle="dark-content" />
       
       <View style={styles.headerContainer}>
-        {/* Sticky Header - Without Search */}
-        <MobileHeader 
-          onAddressPress={handleAddressPress} 
-          showSearch={false}
-          currentAddress={{ name: state.selectedLocation?.title || 'Select Location' }}
-        />
+        {/* Delivery Location Header */}
+        <View style={styles.locationHeaderContainer}>
+          <DeliveryLocationHeader
+            location={deliveryLocation}
+            onPress={handleAddressPress}
+            style={styles.locationHeader}
+          />
+        </View>
         
         {/* Search Bar */}
         <ExpandableSearch onProductSelect={handleProductSelect} />
@@ -190,12 +197,6 @@ export default function HomeScreen() {
         {/* Bottom padding for better scrolling experience */}
         <View style={styles.bottomPadding} />
       </ScrollView>
-      
-      {/* Location Picker Modal */}
-      <LocationPickerModal
-        visible={locationPickerVisible}
-        onClose={() => setLocationPickerVisible(false)}
-      />
     </View>
   );
 }
@@ -215,6 +216,13 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     backgroundColor: '#FFFFFF',
+  },
+  locationHeaderContainer: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  locationHeader: {
+    marginBottom: 0,
   },
   content: {
     flex: 1,

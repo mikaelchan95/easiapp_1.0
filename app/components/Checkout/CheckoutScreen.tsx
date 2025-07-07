@@ -21,6 +21,7 @@ import AnimatedButton from '../UI/AnimatedButton';
 import AnimatedFeedback from '../UI/AnimatedFeedback';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../../utils/theme';
 import { AppContext } from '../../context/AppContext';
+import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 import { calculateOrderTotal, formatPrice } from '../../utils/pricing';
 
 // Mock cart items for checkout demo
@@ -78,10 +79,32 @@ export default function CheckoutScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { state, dispatch } = React.useContext(AppContext);
+  const { deliveryLocation } = useDeliveryLocation();
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('address');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [checkoutState, setCheckoutState] = useState<CheckoutState>({
-    address: {
+  // Convert delivery location to address format
+  const getInitialAddress = (): DeliveryAddress => {
+    if (deliveryLocation) {
+      // Extract postal code from subtitle
+      const postalCodeMatch = deliveryLocation.subtitle?.match(/\b\d{6}\b/);
+      const postalCode = postalCodeMatch ? postalCodeMatch[0] : '';
+      
+      // Extract city (usually Singapore for SG addresses)
+      const city = deliveryLocation.subtitle?.includes('Singapore') ? 'Singapore' : '';
+      
+      return {
+        name: 'John Doe', // This will be filled by user in the form
+        street: deliveryLocation.title,
+        unit: '',
+        city: city,
+        postalCode: postalCode,
+        phone: '+65 9123 4567', // This will be filled by user in the form
+        isDefault: false
+      };
+    }
+    
+    // Default address if no delivery location is set
+    return {
       name: 'John Doe',
       street: '123 Marina Bay Sands',
       unit: '#12-34',
@@ -89,7 +112,11 @@ export default function CheckoutScreen() {
       postalCode: '018956',
       phone: '+65 9123 4567',
       isDefault: true
-    },
+    };
+  };
+
+  const [checkoutState, setCheckoutState] = useState<CheckoutState>({
+    address: getInitialAddress(),
     deliverySlot: null,
     paymentMethod: null
   });

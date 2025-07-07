@@ -46,6 +46,7 @@ import ActivitiesScreen from './app/components/Activities/ActivitiesScreen';
 import LocationPickerDemo from './app/components/Location/LocationPickerDemo';
 import LocationPickerScreen from './app/components/Location/LocationPickerScreen';
 import UberStyleLocationScreen from './app/components/Location/UberStyleLocationScreen';
+import DeliveryLocationScreen from './app/components/Location/DeliveryLocationScreen';
 
 // Import types and theme
 import { RootStackParamList, MainTabParamList } from './app/types/navigation';
@@ -393,6 +394,10 @@ export default function App() {
                   <Stack.Screen 
                     name="UberStyleLocationScreen" 
                     component={UberStyleLocationScreen}
+                  />
+                  <Stack.Screen 
+                    name="DeliveryLocationScreen" 
+                    component={DeliveryLocationScreen}
                   />
                 </Stack.Navigator>
               </NavigationContainer>
