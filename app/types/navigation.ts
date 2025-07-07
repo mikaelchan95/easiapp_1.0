@@ -6,6 +6,7 @@ export type MainTabParamList = {
   Products: undefined;
   Explore: undefined;
   Cart: { count?: number };
+  Rewards: undefined;
   Chat: undefined;
   Profile: undefined;
 };
