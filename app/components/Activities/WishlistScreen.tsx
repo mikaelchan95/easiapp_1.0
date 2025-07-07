@@ -51,7 +51,7 @@ const MOCK_WISHLIST: WishlistItem[] = [
     id: '2',
     name: 'Dom Pérignon 2013',
     price: 189.50,
-    imageUrl: require('../../../Dom Perignon 2013 750ml.webp'),
+    imageUrl: require('../../assets/Dom Perignon 2013 750ml.webp'),
     category: 'Champagne',
     inStock: true,
     rating: 4.9,
