@@ -5,12 +5,28 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   Pressable,
-  SafeAreaView,
   TextInput
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { COLORS, SPACING, TYPOGRAPHY } from '../../utils/theme';
+import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from '../../utils/theme';
+import { useAppContext } from '../../context/AppContext';
+
+// Cart Badge Component
+const CartBadge: React.FC = () => {
+  const { state } = useAppContext();
+  const cartItemCount = state.cart.reduce((total, item) => total + item.quantity, 0);
+  
+  if (cartItemCount === 0) return null;
+  
+  return (
+    <View style={styles.cartBadge}>
+      <Text style={styles.cartBadgeText}>
+        {cartItemCount > 99 ? '99+' : cartItemCount.toString()}
+      </Text>
+    </View>
+  );
+};
 
 interface MobileHeaderProps {
   title?: string;
@@ -75,6 +91,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="cart-outline" size={24} color={COLORS.text} />
+            <CartBadge />
           </TouchableOpacity>
         )}
       </View>
@@ -82,24 +99,24 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
   }
   
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Delivery Address */}
       <View style={styles.addressContainer}>
         <TouchableOpacity 
           style={styles.addressButton}
           onPress={onAddressPress}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
         >
           <View style={styles.addressContent}>
             <View style={styles.iconContainer}>
-              <Ionicons name="location" size={20} color="#FFFFFF" />
+              <Ionicons name="location" size={20} color={COLORS.primary} />
             </View>
             <View>
               <Text style={styles.deliverToLabel}>Deliver to</Text>
               <Text style={styles.addressName}>{currentAddress.name}</Text>
             </View>
           </View>
-          <Ionicons name="chevron-down" size={22} color="#FFFFFF" />
+          <Ionicons name="chevron-down" size={22} color={COLORS.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -118,7 +135,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
         </View>
       </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -162,19 +179,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addressButton: {
-    backgroundColor: '#000000',
-    borderRadius: 24,
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 0,
-    shadowColor: 'rgba(0,0,0,0.2)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.light,
     width: '100%',
   },
   addressContent: {
@@ -185,17 +199,17 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 42,
     height: 42,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: COLORS.background,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: COLORS.border,
   },
   deliverToLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.8)',
+    color: COLORS.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 2,
@@ -203,7 +217,7 @@ const styles = StyleSheet.create({
   addressName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: COLORS.text,
   },
   searchContainer: {
     paddingHorizontal: 16,
@@ -231,6 +245,24 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: COLORS.text,
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: COLORS.error,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.card,
+  },
+  cartBadgeText: {
+    color: COLORS.card,
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
 
