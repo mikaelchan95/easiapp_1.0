@@ -310,59 +310,59 @@ function LocationSelectionUI({
         
       default:
         // Selection screen (default)
-        return (
-          <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Choose Location Method</Text>
-              <View style={styles.quickActions}>
-                {quickActions.map((action, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.quickActionCard}
-                    onPress={action.onPress}
-                    disabled={action.loading}
-                  >
-                    <View style={[styles.quickActionIcon, { backgroundColor: `${action.color}15` }]}>
+  return (
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Choose Location Method</Text>
+        <View style={styles.quickActions}>
+          {quickActions.map((action, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.quickActionCard}
+              onPress={action.onPress}
+              disabled={action.loading}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: `${action.color}15` }]}>
                       <MaterialIcons
-                        name={action.icon as any}
-                        size={24}
-                        color={action.color}
-                      />
-                    </View>
-                    <View style={styles.quickActionContent}>
-                      <Text style={styles.quickActionTitle}>{action.title}</Text>
-                      <Text style={styles.quickActionSubtitle}>{action.subtitle}</Text>
-                    </View>
+                  name={action.icon as any}
+                  size={24}
+                  color={action.color}
+                />
+              </View>
+              <View style={styles.quickActionContent}>
+                <Text style={styles.quickActionTitle}>{action.title}</Text>
+                <Text style={styles.quickActionSubtitle}>{action.subtitle}</Text>
+              </View>
                     <MaterialIcons
                       name="chevron-right"
-                      size={20}
+                size={20}
                       color="#777"
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-            
-            {/* Saved Locations */}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Saved Locations */}
             {savedAddresses.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Saved Locations</Text>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Saved Locations</Text>
                   <TouchableOpacity onPress={() => setCurrentStep('selection')}>
-                    <Text style={styles.seeAllText}>See All</Text>
-                  </TouchableOpacity>
-                </View>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.savedLocationsScroll}
-                >
+              <Text style={styles.seeAllText}>See All</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.savedLocationsScroll}
+          >
                   {savedAddresses.slice(0, 3).map((address) => (
-                    <TouchableOpacity
+              <TouchableOpacity
                       key={address.id}
-                      style={styles.savedLocationCard}
+                style={styles.savedLocationCard}
                       onPress={() => handleLocationSelect(address.location)}
-                    >
+              >
                       <View 
                         style={[
                           styles.savedLocationIcon,
@@ -371,52 +371,52 @@ function LocationSelectionUI({
                       >
                         <MaterialIcons
                           name={(address.icon || 'place') as any}
-                          size={20}
+                    size={20}
                           color="white"
-                        />
-                      </View>
+                  />
+                </View>
                       <Text style={styles.savedLocationLabel}>{address.label}</Text>
-                      <Text style={styles.savedLocationAddress} numberOfLines={1}>
+                <Text style={styles.savedLocationAddress} numberOfLines={1}>
                         {address.location.title}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-            
-            {/* Recent Locations */}
-            {recentLocations.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Recent Locations</Text>
-                <View style={styles.recentLocations}>
-                  {recentLocations.slice(0, 5).map((location) => (
-                    <TouchableOpacity
-                      key={location.id}
-                      style={styles.recentLocationItem}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Recent Locations */}
+      {recentLocations.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Recent Locations</Text>
+          <View style={styles.recentLocations}>
+            {recentLocations.slice(0, 5).map((location) => (
+              <TouchableOpacity
+                key={location.id}
+                style={styles.recentLocationItem}
                       onPress={() => handleLocationSelect(location)}
-                    >
-                      <View style={styles.recentLocationIcon}>
+              >
+                <View style={styles.recentLocationIcon}>
                         <MaterialIcons
                           name="history"
-                          size={18}
+                    size={18}
                           color="#777"
-                        />
-                      </View>
-                      <View style={styles.recentLocationContent}>
-                        <Text style={styles.recentLocationTitle}>{location.title}</Text>
-                        {location.subtitle && (
-                          <Text style={styles.recentLocationSubtitle}>
-                            {location.subtitle}
-                          </Text>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  ))}
+                  />
                 </View>
-              </View>
-            )}
-          </ScrollView>
+                <View style={styles.recentLocationContent}>
+                  <Text style={styles.recentLocationTitle}>{location.title}</Text>
+                  {location.subtitle && (
+                    <Text style={styles.recentLocationSubtitle}>
+                      {location.subtitle}
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
+    </ScrollView>
         );
     }
   };

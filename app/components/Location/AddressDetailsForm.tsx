@@ -99,7 +99,7 @@ export default function AddressDetailsForm({
       onSave({
         ...details,
         label: saveLabel
-      });
+    });
     } else {
       onSubmit(details);
     }
@@ -122,7 +122,7 @@ export default function AddressDetailsForm({
             <MaterialIcons name="close" size={24} color="#000" />
           </TouchableOpacity>
         </View>
-        
+
         <View style={styles.locationCard}>
           <MaterialIcons name="location-on" size={24} color="#000" style={styles.locationIcon} />
           <View style={styles.locationInfo}>
@@ -131,10 +131,10 @@ export default function AddressDetailsForm({
             </Text>
             <Text style={styles.locationSubtitle} numberOfLines={2}>
               {location.formattedAddress || location.subtitle || location.address}
-            </Text>
+                </Text>
           </View>
         </View>
-        
+
         {isSaveMode && (
           <View style={styles.formGroup}>
             <Text style={styles.label}>Save as</Text>
@@ -162,24 +162,24 @@ export default function AddressDetailsForm({
               errors.unitNumber ? styles.inputError : {}
             ]}
             placeholder="#01-01, Block A, Level 2"
-            value={unitNumber}
-            onChangeText={setUnitNumber}
-          />
+              value={unitNumber}
+              onChangeText={setUnitNumber}
+            />
           {errors.unitNumber && (
             <Text style={styles.errorText}>{errors.unitNumber}</Text>
           )}
-        </View>
-        
+          </View>
+
         <View style={styles.formGroup}>
           <Text style={styles.label}>Building / Block Name</Text>
-          <TextInput
-            style={styles.input}
+            <TextInput
+              style={styles.input}
             placeholder="Optional: e.g. The Sail @ Marina Bay"
-            value={buildingName}
-            onChangeText={setBuildingName}
-          />
+              value={buildingName}
+              onChangeText={setBuildingName}
+            />
         </View>
-        
+
         <View style={styles.formGroup}>
           <Text style={styles.label}>Delivery Instructions</Text>
           <TextInput
@@ -192,7 +192,7 @@ export default function AddressDetailsForm({
             textAlignVertical="top"
           />
         </View>
-        
+
         <View style={styles.formGroup}>
           <Text style={styles.label}>Contact Number</Text>
           <TextInput
@@ -253,7 +253,7 @@ export default function AddressDetailsForm({
           </View>
         )}
       </ScrollView>
-      
+
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.cancelButton}
