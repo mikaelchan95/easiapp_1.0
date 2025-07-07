@@ -1,4 +1,4 @@
-import React, { useRef, useReducer } from 'react';
+import React, { useRef, useReducer, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -28,12 +28,14 @@ const useReducedMotion = () => {
 const LocationHeader: React.FC<LocationHeaderProps> = ({
   currentLocation,
   onPress,
-  isLoading = false
+  isLoading = false,
+  inHeaderNav = false
 }) => {
   // Animation values
   const scaleValue = useRef(new Animated.Value(1)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const arrowRotation = useRef(new Animated.Value(0)).current;
+  const [arrowFlipped, setArrowFlipped] = useState(false);
   
   const reducedMotion = useReducedMotion();
 
@@ -104,8 +106,9 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
   const handlePress = () => {
     // Animate arrow flip
     if (!reducedMotion) {
+      setArrowFlipped(!arrowFlipped);
       Animated.spring(arrowRotation, {
-        toValue: arrowRotation._value === 0 ? 1 : 0,
+        toValue: arrowFlipped ? 0 : 1,
         friction: 8,
         tension: 100,
         useNativeDriver: true
@@ -129,6 +132,7 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
     <Animated.View 
       style={[
         styles.container,
+        inHeaderNav ? styles.inHeaderContainer : null,
         {
           transform: [{ scale: scaleValue }]
         }
@@ -138,26 +142,26 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={handlePress}
-        style={styles.pressable}
+        style={[styles.pressable, inHeaderNav ? styles.inHeaderPressable : null]}
         accessibilityRole="button"
         accessibilityLabel={`Current delivery location: ${currentLocation}. Tap to change location.`}
         accessibilityHint="Opens location picker to select a new delivery address"
         accessible={true}
       >
-        <View style={styles.content}>
+        <View style={[styles.content, inHeaderNav ? styles.inHeaderContent : null]}>
           {/* Location icon */}
           <View style={styles.iconContainer}>
             <Ionicons 
               name="location" 
-              size={20} 
+              size={inHeaderNav ? 18 : 20} 
               color={COLORS.primary} 
             />
           </View>
           
           {/* Location text */}
           <View style={styles.textContainer}>
-            <Text style={styles.label}>Deliver to</Text>
-            <Text style={styles.location} numberOfLines={1}>
+            <Text style={[styles.label, inHeaderNav ? styles.inHeaderLabel : null]}>Deliver to</Text>
+            <Text style={[styles.location, inHeaderNav ? styles.inHeaderLocation : null]} numberOfLines={1}>
               {currentLocation}
             </Text>
           </View>
@@ -178,7 +182,7 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
               >
                 <Ionicons 
                   name="chevron-down" 
-                  size={20} 
+                  size={inHeaderNav ? 18 : 20} 
                   color={COLORS.textSecondary}
                 />
               </Animated.View>
@@ -205,20 +209,36 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
-    ...SHADOWS.light
+    ...SHADOWS.light,
+    marginBottom: SPACING.sm
+  },
+  inHeaderContainer: {
+    marginBottom: 0,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0
   },
   pressable: {
-    minHeight: 48, // Ensuring minimum 48dp tap target
+    minHeight: 56, // Increased height for better visibility
     borderRadius: 12,
     overflow: 'hidden',
     position: 'relative'
+  },
+  inHeaderPressable: {
+    minHeight: 40
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm + 2, // ~10dp for comfortable touch target
-    minHeight: 48 // Ensuring minimum height
+    paddingVertical: SPACING.sm + 4, // Increased padding for better visibility
+    minHeight: 56 // Ensuring minimum height
+  },
+  inHeaderContent: {
+    paddingVertical: SPACING.xs,
+    minHeight: 40
   },
   iconContainer: {
     marginRight: SPACING.sm,
@@ -234,12 +254,21 @@ const styles = StyleSheet.create({
   label: {
     ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
-    marginBottom: 2
+    marginBottom: 2,
+    fontSize: 13, // Slightly larger
+    fontWeight: '500' // Medium weight for better visibility
+  },
+  inHeaderLabel: {
+    fontSize: 11
   },
   location: {
     ...TYPOGRAPHY.body,
     fontWeight: '600',
-    color: COLORS.text
+    color: COLORS.text,
+    fontSize: 16 // Slightly larger
+  },
+  inHeaderLocation: {
+    fontSize: 14
   },
   rightContainer: {
     width: 24,

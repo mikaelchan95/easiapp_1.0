@@ -44,6 +44,8 @@ import ReviewsScreen from './app/components/Activities/ReviewsScreen';
 import SupportScreen from './app/components/Activities/SupportScreen';
 import ActivitiesScreen from './app/components/Activities/ActivitiesScreen';
 import LocationPickerDemo from './app/components/Location/LocationPickerDemo';
+import LocationPickerScreen from './app/components/Location/LocationPickerScreen';
+import UberStyleLocationScreen from './app/components/Location/UberStyleLocationScreen';
 
 // Import types and theme
 import { RootStackParamList, MainTabParamList } from './app/types/navigation';
@@ -357,6 +359,10 @@ export default function App() {
                     component={OrderHistoryScreen}
                   />
                   <Stack.Screen 
+                    name="OrderDetails" 
+                    component={OrderTrackingScreen}
+                  />
+                  <Stack.Screen 
                     name="Wishlist" 
                     component={WishlistScreen}
                   />
@@ -379,6 +385,14 @@ export default function App() {
                   <Stack.Screen 
                     name="LocationPickerDemo" 
                     component={LocationPickerDemo}
+                  />
+                  <Stack.Screen 
+                    name="LocationPickerScreen" 
+                    component={LocationPickerScreen}
+                  />
+                  <Stack.Screen 
+                    name="UberStyleLocationScreen" 
+                    component={UberStyleLocationScreen}
                   />
                 </Stack.Navigator>
               </NavigationContainer>

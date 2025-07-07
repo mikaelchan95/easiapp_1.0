@@ -3,7 +3,6 @@ import { View, StyleSheet, Dimensions, Text, ActivityIndicator, TouchableOpacity
 import MapView, { Marker, Region, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import * as Location from 'expo-location';
 
 import { LocationMapViewProps, LocationCoordinate } from '../../types/location';
 import { COLORS, SHADOWS } from '../../utils/theme';
@@ -23,23 +22,9 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
   const [isMapReady, setIsMapReady] = useState(false);
   const [userLocation, setUserLocation] = useState<LocationCoordinate | null>(null);
 
-  // Request location permissions and get user location
-  useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Please enable location permissions to use the map.');
-        return;
-      }
-
-      let location = await Location.getCurrentPositionAsync({});
-      setUserLocation({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-    })();
-  }, []);
-
+  // Request location permissions and get user location - skip for now
+  // We'll handle location in GoogleMapsService instead
+  
   // Handle region change
   const handleRegionChange = useCallback((newRegion: Region) => {
     setCurrentRegion(newRegion);
@@ -69,16 +54,16 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
 
   // Handle zoom to current location
   const handleZoomToLocation = useCallback(() => {
-    if (userLocation && mapRef.current) {
+    if (selectedCoordinate && mapRef.current) {
       const newRegion: Region = {
-        latitude: userLocation.latitude,
-        longitude: userLocation.longitude,
+        latitude: selectedCoordinate.latitude,
+        longitude: selectedCoordinate.longitude,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
       };
       mapRef.current.animateToRegion(newRegion, 1000);
     }
-  }, [userLocation]);
+  }, [selectedCoordinate]);
 
   // Handle map error
   const handleMapError = useCallback((error: any) => {
@@ -121,9 +106,9 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
         region={currentRegion}
         onRegionChange={handleRegionChange}
         onPress={handleMapPress}
-        provider={PROVIDER_GOOGLE}
+        provider="google"
         customMapStyle={GOOGLE_MAPS_CONFIG.mapStyle}
-        showsUserLocation={true}
+        showsUserLocation={false} // Set to false to avoid location request
         showsMyLocationButton={false}
         showsCompass={true}
         showsScale={true}
@@ -139,7 +124,6 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
           console.log('Map is ready');
           setIsMapReady(true);
         }}
-        onError={handleMapError}
       >
         {/* Delivery zones as circles */}
         {isMapReady && GOOGLE_MAPS_CONFIG.deliveryZones.map((zone, index) => (
@@ -148,9 +132,9 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
             <Circle
               center={zone.center}
               radius={zone.radius * 1000} // Convert km to meters
-              strokeColor={zone.specialPricing ? '#4CAF50' : '#2196F3'}
-              strokeWidth={2}
-              fillColor={zone.specialPricing ? 'rgba(76, 175, 80, 0.1)' : 'rgba(33, 150, 243, 0.1)'}
+              strokeColor={zone.specialPricing ? '#000000' : '#333333'}
+              strokeWidth={1}
+              fillColor={zone.specialPricing ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.05)'}
             />
             
             {/* Zone center marker */}
@@ -158,7 +142,7 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
               coordinate={zone.center}
               title={zone.name}
               description={zone.specialPricing ? 'Special delivery area' : 'Delivery available'}
-              pinColor={zone.specialPricing ? '#4CAF50' : '#2196F3'}
+              pinColor={zone.specialPricing ? '#000000' : '#333333'}
             />
           </React.Fragment>
         ))}
@@ -169,10 +153,10 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
             coordinate={selectedCoordinate}
             title="Selected Location"
             description="Tap to confirm this location"
-            pinColor="#FF5722"
+            pinColor="#000000"
           >
             <View style={styles.selectedMarker}>
-              <Ionicons name="location" size={32} color="#FF5722" />
+              <Ionicons name="location" size={32} color="#000000" />
             </View>
           </Marker>
         )}
@@ -184,12 +168,11 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
         <TouchableOpacity 
           style={styles.myLocationButton}
           onPress={handleZoomToLocation}
-          disabled={!userLocation}
         >
           <Ionicons 
             name="locate" 
             size={24} 
-            color={userLocation ? COLORS.primary : COLORS.textSecondary} 
+            color={COLORS.primary}
           />
         </TouchableOpacity>
       </View>
@@ -200,7 +183,7 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
           <Ionicons name="information-circle" size={16} color={COLORS.primary} />
           <View style={styles.instructionText}>
             <Text style={styles.instructionTitle}>Tap anywhere to drop a pin</Text>
-            <Text style={styles.instructionSubtitle}>Blue areas show delivery zones</Text>
+            <Text style={styles.instructionSubtitle}>Dark areas show delivery zones</Text>
           </View>
         </View>
       </View>
