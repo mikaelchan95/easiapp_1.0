@@ -5,7 +5,7 @@ We've completely revamped the location selection feature to provide a modern, in
 
 ## Key Features Implemented
 
-### 1. **Postal Code Search** 
+### 1. **Postal Code Search**
 - Dedicated postal code input with validation for Singapore's 6-digit format
 - Real-time validation and error handling
 - Quick selection of popular postal codes
@@ -42,15 +42,21 @@ We've completely revamped the location selection feature to provide a modern, in
 1. **SavedLocations.tsx** - Manages saved delivery addresses
 2. **AddressDetailsForm.tsx** - Comprehensive form for delivery details
 3. **PostalCodeInput.tsx** - Dedicated postal code search interface
-4. **LocationSelectionUI.tsx** - Modern selection interface with multiple options
+4. **LocationSelectionUI.tsx** - Modern selection interface
+5. **LocationScreen.tsx** - Main container orchestrating the flow
 
-## UI Improvements
+## Technical Implementation Details
 
-### Visual Design
-- Card-based layout with proper shadows
-- Color-coded action buttons
-- Consistent iconography
-- Clear visual hierarchy
+### Integration with Google Maps
+- Geocoding for address validation
+- Postal code lookup
+- Place autocomplete
+- Reverse geocoding for map pins
+
+### State Management
+- Efficient context providers
+- Persistent storage
+- Optimistic UI updates
 
 ### User Experience
 - One-tap selection for saved locations

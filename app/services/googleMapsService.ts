@@ -1,6 +1,7 @@
 import { GOOGLE_MAPS_CONFIG } from '../config/googleMaps';
 import { LocationCoordinate, Coordinate, LocationSuggestion } from '../types/location';
 import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface GooglePlaceDetails {
   place_id: string;
@@ -36,6 +37,7 @@ const POSTAL_CODE_DATABASE: Record<string, LocationSuggestion> = {
     coordinate: { latitude: 1.2839, longitude: 103.8607 },
     postalCode: '018956',
     type: 'postal',
+    formattedAddress: '10 Bayfront Avenue, Singapore 018956',
   },
   '238859': {
     id: 'postal_238859',
@@ -44,6 +46,7 @@ const POSTAL_CODE_DATABASE: Record<string, LocationSuggestion> = {
     coordinate: { latitude: 1.3036, longitude: 103.8318 },
     postalCode: '238859',
     type: 'postal',
+    formattedAddress: '2 Orchard Turn, Singapore 238859',
   },
   '098632': {
     id: 'postal_098632',
@@ -52,6 +55,7 @@ const POSTAL_CODE_DATABASE: Record<string, LocationSuggestion> = {
     coordinate: { latitude: 1.2494, longitude: 103.8303 },
     postalCode: '098632',
     type: 'postal',
+    formattedAddress: '8 Sentosa Gateway, Singapore 098632',
   },
   '819663': {
     id: 'postal_819663',
@@ -60,6 +64,7 @@ const POSTAL_CODE_DATABASE: Record<string, LocationSuggestion> = {
     coordinate: { latitude: 1.3644, longitude: 103.9915 },
     postalCode: '819663',
     type: 'postal',
+    formattedAddress: 'Airport Boulevard, Singapore 819663',
   },
 };
 
@@ -114,6 +119,8 @@ const NEIGHBORHOODS = [
 export class GoogleMapsService {
   private static baseUrl = 'https://maps.googleapis.com/maps/api';
   private static apiKey = GOOGLE_MAPS_CONFIG.apiKey;
+  private static readonly SAVED_ADDRESSES_KEY = '@easiapp:saved_addresses';
+  private static readonly RECENT_LOCATIONS_KEY = '@easiapp:recent_locations';
 
   /**
    * Get autocomplete suggestions for a search query
@@ -406,5 +413,217 @@ export class GoogleMapsService {
         address: '3 River Valley Rd, Singapore 179024',
       },
     ];
+  }
+
+  /**
+   * Get popular postal codes in Singapore
+   */
+  static getPopularPostalCodes(): Array<{code: string, label: string}> {
+    return [
+      { code: '018956', label: 'Marina Bay Sands' },
+      { code: '238859', label: 'ION Orchard' },
+      { code: '098632', label: 'Sentosa' },
+      { code: '819663', label: 'Changi Airport' },
+      { code: '189702', label: 'Bugis Junction' },
+    ];
+  }
+
+  /**
+   * Validate Singapore postal code format (6 digits)
+   */
+  static isValidPostalCode(postalCode: string): boolean {
+    return /^\d{6}$/.test(postalCode);
+  }
+
+  /**
+   * Get address by postal code
+   */
+  static async getAddressByPostalCode(postalCode: string): Promise<LocationSuggestion | null> {
+    // First check our local database
+    if (POSTAL_CODE_DATABASE[postalCode]) {
+      return POSTAL_CODE_DATABASE[postalCode];
+    }
+
+    // Otherwise call the Google Maps Geocoding API
+    try {
+      const params = new URLSearchParams({
+        address: `${postalCode} Singapore`,
+        key: this.apiKey,
+        components: 'country:SG',
+        language: GOOGLE_MAPS_CONFIG.geocoding.language,
+      });
+
+      const response = await fetch(
+        `${this.baseUrl}/geocode/json?${params.toString()}`
+      );
+      
+      const data = await response.json();
+      
+      if (!data.results || data.results.length === 0) return null;
+
+      const result = data.results[0];
+      
+      // Extract postal code from address components
+      const postalCodeComponent = result.address_components.find(
+        (component: any) => component.types.includes('postal_code')
+      );
+
+      return {
+        id: `postal_${postalCode}`,
+        title: this.extractLocationName(result.formatted_address),
+        subtitle: result.formatted_address,
+        type: 'postal',
+        coordinate: {
+          latitude: result.geometry.location.lat,
+          longitude: result.geometry.location.lng,
+        },
+        address: result.formatted_address,
+        formattedAddress: result.formatted_address,
+        placeId: result.place_id,
+        postalCode: postalCodeComponent?.long_name || postalCode,
+      };
+    } catch (error) {
+      console.error('Error fetching address by postal code:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Save an address to persistent storage
+   */
+  static async saveAddress(address: import('../types/location').SavedAddress): Promise<void> {
+    try {
+      // First get existing saved addresses
+      const savedAddresses = await this.getSavedAddresses();
+      
+      // Check if address with same ID already exists
+      const existingIndex = savedAddresses.findIndex(a => a.id === address.id);
+      
+      if (existingIndex >= 0) {
+        // Update existing address
+        savedAddresses[existingIndex] = {
+          ...address,
+          updatedAt: new Date(),
+        };
+      } else {
+        // Add new address
+        savedAddresses.push({
+          ...address,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+      
+      // Save updated list
+      await AsyncStorage.setItem(
+        this.SAVED_ADDRESSES_KEY,
+        JSON.stringify(savedAddresses)
+      );
+    } catch (error) {
+      console.error('Error saving address:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all saved addresses
+   */
+  static async getSavedAddresses(): Promise<import('../types/location').SavedAddress[]> {
+    try {
+      const savedAddressesJson = await AsyncStorage.getItem(this.SAVED_ADDRESSES_KEY);
+      
+      if (!savedAddressesJson) return [];
+      
+      const savedAddresses = JSON.parse(savedAddressesJson);
+      
+      // Convert string dates back to Date objects
+      return savedAddresses.map((address: any) => ({
+        ...address,
+        createdAt: new Date(address.createdAt),
+        updatedAt: new Date(address.updatedAt),
+      }));
+    } catch (error) {
+      console.error('Error getting saved addresses:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Delete a saved address
+   */
+  static async deleteAddress(id: string): Promise<void> {
+    try {
+      const savedAddresses = await this.getSavedAddresses();
+      const filteredAddresses = savedAddresses.filter(address => address.id !== id);
+      
+      await AsyncStorage.setItem(
+        this.SAVED_ADDRESSES_KEY,
+        JSON.stringify(filteredAddresses)
+      );
+    } catch (error) {
+      console.error('Error deleting address:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add a location to recent locations
+   */
+  static async addToRecentLocations(location: LocationSuggestion): Promise<void> {
+    try {
+      const recentLocations = await this.getRecentLocations();
+      
+      // Remove if already exists
+      const filteredLocations = recentLocations.filter(loc => loc.id !== location.id);
+      
+      // Add to beginning of array
+      filteredLocations.unshift({
+        ...location,
+        type: 'recent',
+      });
+      
+      // Limit to 5 recent locations
+      const limitedLocations = filteredLocations.slice(0, 5);
+      
+      await AsyncStorage.setItem(
+        this.RECENT_LOCATIONS_KEY,
+        JSON.stringify(limitedLocations)
+      );
+    } catch (error) {
+      console.error('Error adding to recent locations:', error);
+    }
+  }
+
+  /**
+   * Get recent locations
+   */
+  static async getRecentLocations(): Promise<LocationSuggestion[]> {
+    try {
+      const recentLocationsJson = await AsyncStorage.getItem(this.RECENT_LOCATIONS_KEY);
+      
+      if (!recentLocationsJson) return [];
+      
+      return JSON.parse(recentLocationsJson);
+    } catch (error) {
+      console.error('Error getting recent locations:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Delete a recent location
+   */
+  static async deleteRecentLocation(id: string): Promise<void> {
+    try {
+      const recentLocations = await this.getRecentLocations();
+      const filteredLocations = recentLocations.filter(location => location.id !== id);
+      
+      await AsyncStorage.setItem(
+        this.RECENT_LOCATIONS_KEY,
+        JSON.stringify(filteredLocations)
+      );
+    } catch (error) {
+      console.error('Error deleting recent location:', error);
+    }
   }
 }
