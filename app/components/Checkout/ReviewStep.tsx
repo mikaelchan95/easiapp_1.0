@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DeliveryAddress, DeliverySlot, PaymentMethod } from './CheckoutScreen';
+import { TYPOGRAPHY } from '../../utils/theme';
 
 interface CartItem {
   product: {
@@ -187,13 +188,12 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   title: {
-    fontSize: 24,
+    ...TYPOGRAPHY.h2,
     fontWeight: '700',
-    color: '#1a1a1a',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    ...TYPOGRAPHY.body,
     color: '#666',
     marginBottom: 24,
   },
@@ -206,9 +206,8 @@ const styles = StyleSheet.create({
     borderColor: '#f0f0f0',
   },
   sectionTitle: {
-    fontSize: 16,
+    ...TYPOGRAPHY.h5,
     fontWeight: '700',
-    color: '#1a1a1a',
     marginBottom: 16,
   },
   itemRow: {
@@ -229,19 +228,17 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   itemName: {
-    fontSize: 15,
+    ...TYPOGRAPHY.h6,
     fontWeight: '600',
-    color: '#1a1a1a',
     marginBottom: 6,
   },
   itemMeta: {
-    fontSize: 13,
+    ...TYPOGRAPHY.caption,
     color: '#666',
   },
   itemPrice: {
-    fontSize: 15,
+    ...TYPOGRAPHY.h6,
     fontWeight: '700',
-    color: '#1a1a1a',
     minWidth: 60,
     textAlign: 'right',
   },
@@ -262,15 +259,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailLabel: {
-    fontSize: 14,
+    ...TYPOGRAPHY.caption,
     fontWeight: '700',
-    color: '#1a1a1a',
     marginBottom: 4,
   },
   detailText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.caption,
     color: '#666',
-    lineHeight: 20,
   },
   badgeContainer: {
     flexDirection: 'row',
@@ -283,12 +278,12 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   sameDayText: {
-    fontSize: 12,
+    ...TYPOGRAPHY.label,
     fontWeight: '600',
     color: '#FF9800',
   },
   queueText: {
-    fontSize: 13,
+    ...TYPOGRAPHY.caption,
     color: '#666',
     marginTop: 4,
   },
@@ -309,13 +304,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   paymentName: {
-    fontSize: 15,
+    ...TYPOGRAPHY.h6,
     fontWeight: '600',
-    color: '#1a1a1a',
     marginBottom: 4,
   },
   paymentDescription: {
-    fontSize: 13,
+    ...TYPOGRAPHY.caption,
     color: '#666',
   },
   summarySection: {
@@ -332,13 +326,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   summaryLabel: {
-    fontSize: 14,
+    ...TYPOGRAPHY.caption,
     color: '#666',
   },
   summaryValue: {
-    fontSize: 14,
+    ...TYPOGRAPHY.caption,
     fontWeight: '600',
-    color: '#1a1a1a',
   },
   totalRow: {
     borderTopWidth: 1,
@@ -347,20 +340,18 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   totalLabel: {
-    fontSize: 16,
+    ...TYPOGRAPHY.h5,
     fontWeight: '700',
-    color: '#1a1a1a',
   },
   totalValue: {
-    fontSize: 18,
+    ...TYPOGRAPHY.h4,
     fontWeight: '700',
-    color: '#1a1a1a',
   },
   policyNote: {
     marginBottom: 16,
   },
   policyText: {
-    fontSize: 13,
+    ...TYPOGRAPHY.caption,
     color: '#666',
     textAlign: 'center',
   },
@@ -371,17 +362,15 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   errorTitle: {
-    fontSize: 18,
+    ...TYPOGRAPHY.h4,
     fontWeight: '700',
-    color: '#1a1a1a',
     marginTop: 16,
     marginBottom: 8,
   },
   errorText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.caption,
     color: '#666',
     textAlign: 'center',
-    lineHeight: 20,
   },
 });
 

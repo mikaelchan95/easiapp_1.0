@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PaymentMethod } from './CheckoutScreen';
+import { TYPOGRAPHY } from '../../utils/theme';
 
 // Payment method options
 const PAYMENT_METHODS: PaymentMethod[] = [
@@ -223,13 +224,12 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   title: {
-    fontSize: 24,
+    ...TYPOGRAPHY.h2,
     fontWeight: '700',
-    color: '#1a1a1a',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    ...TYPOGRAPHY.body,
     color: '#666',
     marginBottom: 24,
   },
@@ -275,9 +275,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   methodName: {
-    fontSize: 16,
+    ...TYPOGRAPHY.h5,
     fontWeight: '700',
-    color: '#1a1a1a',
     marginBottom: 4,
   },
   selectedMethodText: {
@@ -287,7 +286,7 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   methodDescription: {
-    fontSize: 14,
+    ...TYPOGRAPHY.caption,
     color: '#666',
   },
   errorText: {
@@ -323,9 +322,8 @@ const styles = StyleSheet.create({
     borderColor: '#f0f0f0',
   },
   detailsTitle: {
-    fontSize: 16,
+    ...TYPOGRAPHY.h5,
     fontWeight: '700',
-    color: '#1a1a1a',
     marginBottom: 16,
   },
   detailsContent: {
@@ -341,10 +339,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   detailsText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.caption,
     color: '#666',
     textAlign: 'center',
-    lineHeight: 20,
     marginBottom: 16,
   },
   cardLogos: {
@@ -369,7 +366,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   securityText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.caption,
     color: '#1a1a1a',
     marginLeft: 8,
     fontWeight: '600',

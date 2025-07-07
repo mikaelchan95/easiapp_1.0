@@ -141,13 +141,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   name: {
-    fontSize: 16,
+    ...TYPOGRAPHY.h5,
     fontWeight: '600',
-    color: COLORS.text,
     marginBottom: 4,
   },
   unitPrice: {
-    fontSize: 14,
+    ...TYPOGRAPHY.caption,
     color: COLORS.inactive,
     marginBottom: 8,
   },
@@ -157,9 +156,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   price: {
-    fontSize: 17,
+    ...TYPOGRAPHY.h4,
     fontWeight: '700',
-    color: COLORS.text,
   }
 });
 

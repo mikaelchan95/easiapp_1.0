@@ -25,6 +25,7 @@ export interface ProductCardProps {
   isCompact?: boolean;
   style?: StyleProp<ViewStyle>;
   animationDelay?: number;
+  variant?: 'default' | 'featured' | 'minimal';
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
@@ -32,7 +33,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   onPress,
   isCompact = false,
   style,
-  animationDelay = 0
+  animationDelay = 0,
+  variant = 'default'
 }) => {
   const {
     id, 
@@ -125,14 +127,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
         product: {
           id: product.id,
           name: product.name,
-          price: product.price,
           image: product.imageUrl,
           stock: product.inStock ? 10 : 0,
           category: product.category || '',
           description: product.description || '',
-          sku: product.id,
+          sku: product.sku,
           retailPrice: product.price,
-          tradePrice: product.price * 0.9,
+          tradePrice: product.tradePrice,
         }, 
         quantity: 1 
       } 
@@ -141,8 +142,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
     // After a short delay, show success and cart notification
     setTimeout(() => {
       setIsAdding(false);
-      // Show global cart notification
-      showCartNotification(name);
+      // Show global cart notification with quantity
+      showCartNotification(name, 1);
     }, 500);
   };
 
@@ -155,10 +156,37 @@ const ProductCard: React.FC<ProductCardProps> = ({
   // The imageUrl is already an ImageSourcePropType when using require()
   const imageSource: ImageSourcePropType = imageUrl;
 
+  // Get variant-specific styles
+  const getVariantStyles = () => {
+    switch (variant) {
+      case 'featured':
+        return {
+          container: styles.featuredContainer,
+          image: styles.featuredImage,
+          info: styles.featuredInfo
+        };
+      case 'minimal':
+        return {
+          container: styles.minimalContainer,
+          image: styles.minimalImage,
+          info: styles.minimalInfo
+        };
+      default:
+        return {
+          container: null,
+          image: null,
+          info: null
+        };
+    }
+  };
+
+  const variantStyles = getVariantStyles();
+
   return (
     <Animated.View
       style={[
         styles.container, 
+        variantStyles.container,
         isCompact ? styles.compactContainer : null,
         style,
         {
@@ -178,7 +206,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         activeOpacity={1}
       >
         {/* Product Image */}
-        <View style={styles.imageContainer}>
+        <View style={[styles.imageContainer, variantStyles.image]}>
           <Image 
             source={imageSource}
             style={styles.image}
@@ -190,10 +218,19 @@ const ProductCard: React.FC<ProductCardProps> = ({
             styles.stockIndicator, 
             { backgroundColor: inStock ? COLORS.success : COLORS.error }
           ]} />
+
+          {/* Discount badge */}
+          {hasDiscount && (
+            <View style={styles.discountBadge}>
+              <Text style={styles.discountText}>
+                {Math.round(((originalPrice! - price) / originalPrice!) * 100)}% OFF
+              </Text>
+            </View>
+          )}
         </View>
         
         {/* Product Info */}
-        <View style={styles.infoContainer}>
+        <View style={[styles.infoContainer, variantStyles.info]}>
           <Text style={styles.category} numberOfLines={1}>{category}</Text>
           <Text 
             style={[styles.name, isCompact && styles.compactName]} 
@@ -201,6 +238,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
           >
             {name}
           </Text>
+          
+          {/* Rating */}
+          {rating && (
+            <View style={styles.ratingContainer}>
+              <Ionicons name="star" size={12} color="#FFD700" />
+              <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+            </View>
+          )}
           
           <View style={styles.footer}>
             <View style={styles.priceContainer}>
@@ -210,6 +255,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               )}
             </View>
             
+<<<<<<< HEAD:app/components/Products/ProductCard.tsx
             <TouchableOpacity 
               style={[
                 styles.addButton,
@@ -223,6 +269,25 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 color={COLORS.buttonText} 
               />
             </TouchableOpacity>
+=======
+            <Animated.View style={{ transform: [{ scale: addButtonScaleAnim }] }}>
+              <TouchableOpacity 
+                style={[
+                  styles.addButton,
+                  isAdding && styles.addButtonActive,
+                  !inStock && styles.addButtonDisabled
+                ]}
+                onPress={handleAddButtonPress}
+                disabled={!inStock}
+              >
+                <Ionicons 
+                  name={isAdding ? "checkmark" : !inStock ? "close" : "add"} 
+                  size={18} 
+                  color={!inStock ? COLORS.inactive : COLORS.accent} 
+                />
+              </TouchableOpacity>
+            </Animated.View>
+>>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance):app/components/UI/ProductCard.tsx
           </View>
         </View>
       </TouchableOpacity>
@@ -240,7 +305,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 0,
+<<<<<<< HEAD:app/components/Products/ProductCard.tsx
     ...SHADOWS.medium,
+=======
+    ...SHADOWS.light,
+>>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance):app/components/UI/ProductCard.tsx
     marginBottom: SPACING.md,
     // Dynamic height based on content instead of fixed
     minHeight: 320,
@@ -253,6 +322,33 @@ const styles = StyleSheet.create({
     width: 160,
     minHeight: 240,
   },
+  
+  // Featured variant
+  featuredContainer: {
+    width: cardWidth * 1.2,
+    height: 380,
+    ...SHADOWS.medium,
+  },
+  featuredImage: {
+    height: '60%',
+  },
+  featuredInfo: {
+    padding: SPACING.md,
+  },
+  
+  // Minimal variant
+  minimalContainer: {
+    width: 140,
+    height: 200,
+    borderRadius: 12,
+  },
+  minimalImage: {
+    height: '65%',
+  },
+  minimalInfo: {
+    padding: SPACING.sm,
+  },
+  
   imageContainer: {
     width: '100%',
     aspectRatio: 1,
@@ -276,6 +372,20 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
   },
+  discountBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: COLORS.error,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  discountText: {
+    ...TYPOGRAPHY.tiny,
+    color: COLORS.accent,
+    fontWeight: 'bold',
+  },
   infoContainer: {
     flex: 1,
     padding: SPACING.card,
@@ -284,13 +394,19 @@ const styles = StyleSheet.create({
     minHeight: 100, // Ensure consistent spacing
   },
   category: {
+<<<<<<< HEAD:app/components/Products/ProductCard.tsx
     ...TYPOGRAPHY.small,
     color: COLORS.inactive,
     marginBottom: SPACING.xs,
+=======
+    ...TYPOGRAPHY.label,
+    marginBottom: 4,
+>>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance):app/components/UI/ProductCard.tsx
     textTransform: 'capitalize',
     fontWeight: '500',
   },
   name: {
+<<<<<<< HEAD:app/components/Products/ProductCard.tsx
     ...TYPOGRAPHY.h4,
     fontSize: 15,
     fontWeight: '700',
@@ -301,6 +417,28 @@ const styles = StyleSheet.create({
   compactName: {
     fontSize: 13,
     marginBottom: SPACING.xs,
+=======
+    ...TYPOGRAPHY.h5,
+    fontWeight: '700',
+    marginBottom: 8,
+    // Truncate to 2 lines
+    flexShrink: 1,
+  },
+  compactName: {
+    ...TYPOGRAPHY.bodySmall,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  ratingText: {
+    ...TYPOGRAPHY.label,
+    marginLeft: 2,
+    fontWeight: '600',
+>>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance):app/components/UI/ProductCard.tsx
   },
   footer: {
     flexDirection: 'row',
@@ -315,13 +453,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   price: {
-    fontSize: 18,
+    ...TYPOGRAPHY.h4,
     fontWeight: '700',
-    color: COLORS.text,
-    lineHeight: 22,
   },
   originalPrice: {
+<<<<<<< HEAD:app/components/Products/ProductCard.tsx
     ...TYPOGRAPHY.small,
+=======
+    ...TYPOGRAPHY.bodySmall,
+>>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance):app/components/UI/ProductCard.tsx
     color: COLORS.inactive,
     textDecorationLine: 'line-through',
     marginTop: 2,
@@ -333,11 +473,17 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.buttonBg,
     justifyContent: 'center',
     alignItems: 'center',
+<<<<<<< HEAD:app/components/Products/ProductCard.tsx
     marginLeft: SPACING.element,
+=======
+>>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance):app/components/UI/ProductCard.tsx
     ...SHADOWS.light,
   },
   addButtonActive: {
     backgroundColor: COLORS.success,
+  },
+  addButtonDisabled: {
+    backgroundColor: COLORS.border,
   }
 });
 

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { 
   View, 
   Text, 
@@ -6,7 +6,8 @@ import {
   FlatList, 
   TouchableOpacity, 
   Animated, 
-  Platform
+  Platform,
+  RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -18,11 +19,13 @@ import { products, Product as MockProduct } from '../../data/mockProducts';
 
 // Import app context
 import { AppContext } from '../../context/AppContext';
+import { CartNotificationContext } from '../../context/CartNotificationContext';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Animations from '../../utils/animations';
 import AnimatedButton from '../UI/AnimatedButton';
 import AnimatedFeedback from '../UI/AnimatedFeedback';
+import { HapticFeedback } from '../../utils/haptics';
 import { 
   calculateCartTotals, 
   formatPrice, 
@@ -40,6 +43,7 @@ interface CartItemType {
   imageUrl: any;
   quantity: number;
   inStock: boolean;
+  stockStatus?: string;
 }
 
 interface DeletedItemType {
@@ -50,14 +54,17 @@ interface DeletedItemType {
 export default function CartScreen() {
   const navigation = useNavigation();
   const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
   
   // Use the AppContext instead of local state
-  const { state, dispatch } = React.useContext(AppContext);
+  const { state, dispatch } = useContext(AppContext);
+  const { showCartNotification } = useContext(CartNotificationContext);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const summarySlideAnim = useRef(new Animated.Value(100)).current;
+  const headerScaleAnim = useRef(new Animated.Value(1)).current;
   
   // Feedback state
   const [feedback, setFeedback] = useState({
@@ -78,18 +85,24 @@ export default function CartScreen() {
   // Calculate totals using centralized pricing utility
   const cartTotals = calculateCartTotals(state.cart, state.user?.role || 'retail');
   
-  // Find product image from products list
+  // Improved product image lookup with fallback
   const getProductImageById = (productId: string) => {
     const foundProduct = products.find(p => p.id === productId);
-    return foundProduct ? foundProduct.imageUrl : null;
+    if (foundProduct?.imageUrl) {
+      return foundProduct.imageUrl;
+    }
+    
+    // Fallback to a default image or return null
+    console.warn(`No image found for product ${productId}`);
+    return null;
   };
   
-  // Map cart items from context to the format needed by the UI
-  const cartItems = state.cart.map(item => {
+  // Enhanced cart items mapping with better error handling
+  const cartItems: CartItemType[] = state.cart.map(item => {
     const stockStatus = getStockStatus(item.product);
     const priceWithGST = getProductPrice(item.product, state.user?.role || 'retail');
     
-    // Get proper image from products array
+    // Get proper image from products array with fallback
     const productImage = getProductImageById(item.product.id);
     
     return {
@@ -97,28 +110,38 @@ export default function CartScreen() {
       productId: item.product.id,
       name: item.product.name,
       price: priceWithGST,
-      imageUrl: productImage || item.product.image, // Use product image from products list or fallback to stored image
+      imageUrl: productImage || item.product.image, // Use product image from products list or fallback
       quantity: item.quantity,
       inStock: isProductInStock(item.product, item.quantity),
-      stockStatus: stockStatus
+      stockStatus: stockStatus?.status || 'in_stock'
     };
-  });
+  }).filter(item => item.imageUrl !== null); // Filter out items without images
   
   const cartProductIds = cartItems.map(item => item.productId);
   
-  // Animation values for list items (create one per item)
+  // Animation values for list items
   const itemAnimations = useRef<Animated.Value[]>([]).current;
   
-  // Make sure we have enough animation values
+  // Ensure we have enough animation values
   useEffect(() => {
     // Create animation values for each item if needed
     while (itemAnimations.length < cartItems.length) {
       itemAnimations.push(new Animated.Value(0));
     }
-  }, [cartItems]);
+    
+    // Remove excess animation values
+    if (itemAnimations.length > cartItems.length) {
+      itemAnimations.splice(cartItems.length);
+    }
+  }, [cartItems.length]);
   
-  // Animate components when they mount
+  // Enhanced mount animations
   useEffect(() => {
+    // Reset all animations
+    fadeAnim.setValue(0);
+    summarySlideAnim.setValue(100);
+    headerScaleAnim.setValue(0.95);
+    
     // Animate the main container
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -126,30 +149,45 @@ export default function CartScreen() {
       useNativeDriver: true
     }).start();
     
+    // Animate header with scale
+    Animated.timing(headerScaleAnim, {
+      toValue: 1,
+      duration: 300,
+      delay: 100,
+      easing: Animations.TIMING.easeOut,
+      useNativeDriver: true
+    }).start();
+    
     // Animate the summary bar with a slight delay
     Animated.timing(summarySlideAnim, {
       toValue: 0,
-      duration: 300,
-      delay: 300,
+      duration: 400,
+      delay: 200,
       easing: Animations.TIMING.easeOut,
       useNativeDriver: true
     }).start();
     
     // Animate each item with staggered timing
     const animations = itemAnimations.slice(0, cartItems.length).map((anim, index) => {
+      anim.setValue(0);
       return Animated.timing(anim, {
         toValue: 1,
         duration: 300,
-        delay: index * 50,
+        delay: index * 75,
         easing: Animations.TIMING.easeOut,
         useNativeDriver: true
       });
     });
     
-    Animated.stagger(50, animations).start();
-  }, []);
+    if (animations.length > 0) {
+      Animated.stagger(75, animations).start();
+    }
+  }, [cartItems.length]);
 
+  // Enhanced quantity change handler
   const handleQuantityChange = (productId: string, newQuantity: number) => {
+    HapticFeedback.light();
+    
     if (newQuantity === 0) {
       // Find the item being deleted
       const itemToDelete = state.cart.find(item => item.product.id === productId);
@@ -187,6 +225,8 @@ export default function CartScreen() {
   
   const handleUndo = () => {
     if (deletedItem.item) {
+      HapticFeedback.success();
+      
       // Clear the timeout
       if (deletedItem.timeout) {
         clearTimeout(deletedItem.timeout);
@@ -210,8 +250,10 @@ export default function CartScreen() {
     }
   };
 
+  // Enhanced add suggested product handler
   const handleAddSuggested = (product: MockProduct) => {
     setIsAddingProduct(true);
+    HapticFeedback.success();
     
     // Convert MockProduct to PricingProduct format
     const pricingProduct: PricingProduct = {
@@ -223,7 +265,7 @@ export default function CartScreen() {
       category: product.category || '',
       description: product.description || '',
       sku: product.sku,
-      image: product.imageUrl, // Store image reference
+      image: product.imageUrl,
     };
     
     // Add to cart using context
@@ -235,7 +277,10 @@ export default function CartScreen() {
       } 
     });
     
-    // Show feedback
+    // Show global cart notification
+    showCartNotification(product.name, 1);
+    
+    // Show local feedback
     setFeedback({
       visible: true,
       type: 'success',
@@ -250,15 +295,12 @@ export default function CartScreen() {
 
   // Handle save for later
   const handleSaveForLater = (productId: string) => {
-    // Find the item to save
     const itemToSave = state.cart.find(item => item.product.id === productId);
     if (!itemToSave) return;
 
-    // TODO: Add to saved items context/storage
-    // For now, just remove from cart and show feedback
+    HapticFeedback.light();
     dispatch({ type: 'REMOVE_FROM_CART', payload: productId });
     
-    // Show feedback
     setFeedback({
       visible: true,
       type: 'info',
@@ -268,14 +310,11 @@ export default function CartScreen() {
 
   // Handle add to favorites
   const handleAddToFavorites = (productId: string) => {
-    // Find the item to favorite
     const itemToFavorite = state.cart.find(item => item.product.id === productId);
     if (!itemToFavorite) return;
 
-    // TODO: Add to favorites context/storage
-    // For now, just show feedback without removing from cart
+    HapticFeedback.success();
     
-    // Show feedback
     setFeedback({
       visible: true,
       type: 'success',
@@ -283,17 +322,42 @@ export default function CartScreen() {
     });
   };
 
+  // Enhanced checkout handler
   const handleCheckout = () => {
+    HapticFeedback.success();
+    
     // Animation for checkout button press
-    Animations.pulseAnimation(new Animated.Value(1), false);
+    Animated.sequence([
+      Animated.timing(headerScaleAnim, {
+        toValue: 1.02,
+        duration: 100,
+        useNativeDriver: true
+      }),
+      Animated.timing(headerScaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true
+      })
+    ]).start();
     
     // Navigate to checkout
     navigation.navigate('Checkout');
   };
 
-  // Animate list item rendering with staggered animation
+  // Pull to refresh handler
+  const onRefresh = () => {
+    setRefreshing(true);
+    HapticFeedback.light();
+    
+    // Simulate refresh delay
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  };
+
+  // Enhanced render item with better animations
   const renderItem = ({ item, index }: { item: CartItemType, index: number }) => {
-    // Get the animation value for this item (or create it if needed)
+    // Get the animation value for this item
     if (!itemAnimations[index]) {
       itemAnimations[index] = new Animated.Value(0);
     }
@@ -306,7 +370,13 @@ export default function CartScreen() {
             { 
               translateY: itemAnimations[index].interpolate({
                 inputRange: [0, 1],
-                outputRange: [20, 0]
+                outputRange: [30, 0]
+              }) 
+            },
+            {
+              scale: itemAnimations[index].interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.95, 1]
               }) 
             }
           ]
@@ -334,21 +404,44 @@ export default function CartScreen() {
       {/* Status Bar Spacer */}
       <View style={[styles.statusBarSpacer, { height: insets.top }]} />
       
-      {/* Header with Cart title */}
+      {/* Enhanced Header */}
       <Animated.View 
         style={[
           styles.headerContainer,
-          { opacity: fadeAnim }
+          { 
+            opacity: fadeAnim,
+            transform: [{ scale: headerScaleAnim }]
+          }
         ]}
       >
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            HapticFeedback.light();
+            navigation.goBack();
+          }}
+          activeOpacity={0.7}
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
+        
+        <View style={styles.headerTitleContainer}>
         <Text style={styles.headerTitle}>Cart</Text>
-        <View style={styles.placeholder} />
+          <Text style={styles.headerSubtitle}>
+            {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
+          </Text>
+        </View>
+        
+        <TouchableOpacity 
+          style={styles.clearButton}
+          onPress={() => {
+            HapticFeedback.warning();
+            dispatch({ type: 'CLEAR_CART' });
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="trash-outline" size={20} color={COLORS.textSecondary} />
+        </TouchableOpacity>
       </Animated.View>
       
       <FlatList
@@ -364,9 +457,17 @@ export default function CartScreen() {
           />
         }
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
+          />
+        }
       />
       
-      {/* Sticky Summary Bar - Animated */}
+      {/* Enhanced Sticky Summary Bar */}
       <Animated.View 
         style={[
           styles.summaryBar,
@@ -387,12 +488,9 @@ export default function CartScreen() {
           </View>
           <View style={[styles.summaryRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Total</Text>
-            <Animated.Text 
-              style={styles.totalValue}
-              {...(Platform.OS === 'ios' && { shouldRasterizeIOS: true })}
-            >
+            <Text style={styles.totalValue}>
               {formatPrice(cartTotals.total)}
-            </Animated.Text>
+            </Text>
           </View>
         </View>
         
@@ -406,7 +504,7 @@ export default function CartScreen() {
         />
       </Animated.View>
       
-      {/* Feedback component with undo support */}
+      {/* Enhanced Feedback */}
       <AnimatedFeedback
         type={feedback.type}
         message={feedback.message}
@@ -442,17 +540,32 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOWS.light,
+  },
+  headerTitleContainer: {
+    flex: 1,
     alignItems: 'center',
   },
   headerTitle: {
     ...TYPOGRAPHY.h2,
-    flex: 1,
-    textAlign: 'center',
+    marginBottom: 2,
   },
-  placeholder: {
+  headerSubtitle: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  clearButton: {
     width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOWS.light,
   },
   listContainer: {
     flex: 1,
@@ -460,7 +573,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: SPACING.md,
-    paddingBottom: 120,
+    paddingBottom: 140,
     backgroundColor: COLORS.background,
   },
   summaryBar: {
@@ -469,8 +582,10 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: COLORS.card,
-    borderTopWidth: 0,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
     padding: SPACING.md,
+    paddingBottom: SPACING.md + 20,
     zIndex: 20,
     ...SHADOWS.medium,
   },
@@ -484,12 +599,12 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   summaryLabel: {
-    fontSize: 14,
+    ...TYPOGRAPHY.caption,
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
   summaryValue: {
-    fontSize: 14,
+    ...TYPOGRAPHY.caption,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -500,22 +615,20 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.border,
   },
   totalLabel: {
-    fontSize: 16,
+    ...TYPOGRAPHY.h5,
     fontWeight: '700',
-    color: COLORS.text,
   },
   totalValue: {
-    fontSize: 20,
+    ...TYPOGRAPHY.h3,
     fontWeight: '700',
-    color: COLORS.text,
   },
   checkoutButton: {
     backgroundColor: COLORS.primary,
     marginTop: 4,
   },
   checkoutText: {
+    ...TYPOGRAPHY.button,
     color: COLORS.accent,
-    fontSize: 16,
     fontWeight: '700',
   },
 }); 

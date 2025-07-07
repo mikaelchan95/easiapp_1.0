@@ -170,9 +170,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   title: {
-    fontSize: 18,
+    ...TYPOGRAPHY.h4,
     fontWeight: '700',
-    color: COLORS.text,
     flex: 1,
     textAlign: 'center',
   },
@@ -211,7 +210,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   deliverToLabel: {
-    fontSize: 12,
+    ...TYPOGRAPHY.label,
     fontWeight: '700',
     color: COLORS.textSecondary,
     textTransform: 'uppercase',
@@ -219,9 +218,8 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   addressName: {
-    fontSize: 16,
+    ...TYPOGRAPHY.h5,
     fontWeight: '700',
-    color: COLORS.text,
   },
   searchContainer: {
     paddingHorizontal: 16,
@@ -246,9 +244,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   searchInput: {
+    ...TYPOGRAPHY.body,
     flex: 1,
-    fontSize: 15,
-    color: COLORS.text,
   },
   cartBadge: {
     position: 'absolute',
@@ -264,8 +261,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.card,
   },
   cartBadgeText: {
+    ...TYPOGRAPHY.label,
     color: COLORS.card,
-    fontSize: 12,
     fontWeight: '700',
   },
 });
