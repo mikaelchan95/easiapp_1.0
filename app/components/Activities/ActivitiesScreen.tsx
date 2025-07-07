@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
+import MobileHeader from '../Layout/MobileHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -283,20 +284,28 @@ export default function ActivitiesScreen() {
   };
   
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+    <View style={styles.container}>
+      {/* Status Bar Background */}
+      <View style={[styles.statusBarBackground, { height: insets.top }]} />
       
       {/* Header */}
+      <MobileHeader 
+        title="Activities" 
+        showBackButton={false} 
+        showSearch={false}
+        showCartButton={false}
+      />
+      
+      {/* Header Description */}
       <Animated.View 
         style={[
-          styles.header,
+          styles.headerDescription,
           {
             opacity: fadeAnim,
             transform: [{ translateY: slideAnim }]
           }
         ]}
       >
-        <Text style={styles.headerTitle}>Activities</Text>
         <Text style={styles.headerSubtitle}>Manage your account & preferences</Text>
       </Animated.View>
       
@@ -336,16 +345,20 @@ export default function ActivitiesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.background, // Frame background (98% lightness)
   },
-  header: {
-    padding: SPACING.lg,
-    paddingBottom: SPACING.md,
+  statusBarBackground: {
+    backgroundColor: COLORS.card,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 999,
   },
-  headerTitle: {
-    ...TYPOGRAPHY.h1,
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
+  headerDescription: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.card,
   },
   headerSubtitle: {
     ...TYPOGRAPHY.body,
@@ -376,10 +389,14 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
     borderRadius: 12,
     minWidth: 80,
-    minHeight: 80,
+    minHeight: 88, // iOS touch optimization
+    backgroundColor: COLORS.card, // Canvas white
+    marginHorizontal: 4,
+    ...SHADOWS.light,
   },
   quickActionActive: {
-    backgroundColor: COLORS.border,
+    backgroundColor: COLORS.background,
+    transform: [{ scale: 0.95 }],
   },
   quickActionIcon: {
     width: 48,
@@ -405,14 +422,16 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   cardTouchable: {
-    backgroundColor: COLORS.card,
+    backgroundColor: COLORS.card, // Canvas white
     borderRadius: 16,
     ...SHADOWS.medium,
+    minHeight: 80, // iOS touch optimization
   },
   cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: SPACING.lg,
+    minHeight: 64, // iOS touch optimization
   },
   iconContainer: {
     width: 56,
