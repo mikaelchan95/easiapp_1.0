@@ -1,16 +1,17 @@
 import React from 'react';
 import { Search, Filter, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { Icon, getCategoryIcon } from '../../utils/icons';
 
 const ProductFilters: React.FC = () => {
   const { state, dispatch } = useApp();
 
   const categories = [
-    { value: 'all', label: 'All Products', emoji: '🍾' },
-    { value: 'wine', label: 'Wine', emoji: '🍷' },
-    { value: 'whisky', label: 'Whisky', emoji: '🥃' },
-    { value: 'spirits', label: 'Spirits', emoji: '🍸' },
-    { value: 'liqueurs', label: 'Liqueurs', emoji: '🍹' },
+    { value: 'all', label: 'All Products' },
+    { value: 'wine', label: 'Wine' },
+    { value: 'whisky', label: 'Whisky' },
+    { value: 'spirits', label: 'Spirits' },
+    { value: 'liqueurs', label: 'Liqueurs' },
   ];
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,21 +45,34 @@ const ProductFilters: React.FC = () => {
         </div>
 
         {/* Category Filter */}
-        <div className="flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <button
-              key={category.value}
-              onClick={() => handleCategoryChange(category.value)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                state.selectedCategory === category.value
-                  ? 'bg-amber-600 text-white shadow-md scale-105'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
-              }`}
-            >
-              <span>{category.emoji}</span>
-              <span>{category.label}</span>
-            </button>
-          ))}
+        <div className="flex flex-wrap gap-3">
+          {categories.map((category) => {
+            const isActive = state.selectedCategory === category.value;
+            const IconComponent = getCategoryIcon(category.value);
+            
+            return (
+              <button
+                key={category.value}
+                onClick={() => handleCategoryChange(category.value)}
+                className={`
+                  px-4 py-2.5 rounded-xl font-medium transition-all
+                  flex items-center space-x-2
+                  ${isActive 
+                    ? 'bg-black text-white' 
+                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                  }
+                `}
+                aria-label={`Filter by ${category.label}`}
+              >
+                <Icon 
+                  icon={IconComponent} 
+                  size="sm" 
+                  aria-label={category.label}
+                />
+                <span>{category.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Clear Filters */}
