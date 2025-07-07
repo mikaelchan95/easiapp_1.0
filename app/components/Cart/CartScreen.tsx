@@ -41,10 +41,18 @@ interface CartItemType {
   inStock: boolean;
 }
 
+interface DeletedItemType {
+  item: any | null;
+  timeout: NodeJS.Timeout | null;
+}
+
 export default function CartScreen() {
   const navigation = useNavigation();
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const insets = useSafeAreaInsets();
+  
+  // Use the AppContext instead of local state
+  const { state, dispatch } = React.useContext(AppContext);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -58,13 +66,13 @@ export default function CartScreen() {
   });
   
   // Undo state for deleted items
-  const [deletedItem, setDeletedItem] = useState<{ item: CartItem, timeout: NodeJS.Timeout | null }>({
-    item: null as any,
+  const [deletedItem, setDeletedItem] = useState<DeletedItemType>({
+    item: null,
     timeout: null
   });
   
-  // Use the AppContext instead of local state
-  const { state, dispatch } = React.useContext(AppContext);
+  // Track active swipeable item to prevent multiple swipes
+  const [activeSwipe, setActiveSwipe] = useState<string | null>(null);
   
   // Calculate totals using centralized pricing utility
   const cartTotals = calculateCartTotals(state.cart, state.user?.role || 'retail');
@@ -144,7 +152,7 @@ export default function CartScreen() {
       
       // Store the deleted item for undo
       const timeout = setTimeout(() => {
-        setDeletedItem({ item: null as any, timeout: null });
+        setDeletedItem({ item: null, timeout: null });
       }, 5000); // 5 second undo window
       
       setDeletedItem({ item: itemToDelete, timeout });
@@ -181,7 +189,7 @@ export default function CartScreen() {
       });
       
       // Clear deleted item state
-      setDeletedItem({ item: null as any, timeout: null });
+      setDeletedItem({ item: null, timeout: null });
       
       // Show success feedback
       setFeedback({
@@ -272,13 +280,6 @@ export default function CartScreen() {
     navigation.navigate('Checkout');
   };
 
-  if (cartItems.length === 0) {
-    return <EmptyCart />;
-  }
-
-  // Track active swipeable item to prevent multiple swipes
-  const [activeSwipe, setActiveSwipe] = useState<string | null>(null);
-  
   // Animate list item rendering with staggered animation
   const renderItem = ({ item, index }: { item: CartItemType, index: number }) => {
     // Get the animation value for this item (or create it if needed)
@@ -312,6 +313,10 @@ export default function CartScreen() {
       </Animated.View>
     );
   };
+
+  if (cartItems.length === 0) {
+    return <EmptyCart />;
+  }
 
   return (
     <View style={styles.container}>
