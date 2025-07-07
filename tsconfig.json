@@ -4,10 +4,13 @@
     "lib": ["ES2020", "DOM"],
     "allowSyntheticDefaultImports": true,
     "jsx": "react-native",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "noEmit": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true
   },
   "extends": "expo/tsconfig.base"
 }
