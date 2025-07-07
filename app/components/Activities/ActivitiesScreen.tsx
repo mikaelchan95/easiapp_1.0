@@ -286,7 +286,7 @@ export default function ActivitiesScreen() {
   return (
     <View style={styles.container}>
       {/* Status Bar Background */}
-      <View style={[styles.statusBarBackground, { height: insets.top }]} />
+      <View style={[styles.statusBarSpacer, { height: insets.top }]} />
       
       {/* Header */}
       <MobileHeader 
@@ -347,13 +347,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background, // Frame background (98% lightness)
   },
-  statusBarBackground: {
+  statusBarSpacer: {
     backgroundColor: COLORS.card,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 999,
   },
   headerDescription: {
     paddingHorizontal: SPACING.lg,

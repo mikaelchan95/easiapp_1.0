@@ -5,12 +5,28 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   Pressable,
-  SafeAreaView,
   TextInput
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from '../../utils/theme';
+import { useAppContext } from '../../context/AppContext';
+
+// Cart Badge Component
+const CartBadge: React.FC = () => {
+  const { state } = useAppContext();
+  const cartItemCount = state.cart.reduce((total, item) => total + item.quantity, 0);
+  
+  if (cartItemCount === 0) return null;
+  
+  return (
+    <View style={styles.cartBadge}>
+      <Text style={styles.cartBadgeText}>
+        {cartItemCount > 99 ? '99+' : cartItemCount.toString()}
+      </Text>
+    </View>
+  );
+};
 
 interface MobileHeaderProps {
   title?: string;
@@ -75,6 +91,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="cart-outline" size={24} color={COLORS.text} />
+            <CartBadge />
           </TouchableOpacity>
         )}
       </View>
@@ -82,7 +99,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
   }
   
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Delivery Address */}
       <View style={styles.addressContainer}>
         <TouchableOpacity 
@@ -118,7 +135,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
         </View>
       </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -228,6 +245,24 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: COLORS.text,
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: COLORS.error,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.card,
+  },
+  cartBadgeText: {
+    color: COLORS.card,
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
 
