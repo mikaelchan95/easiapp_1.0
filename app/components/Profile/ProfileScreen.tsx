@@ -7,7 +7,8 @@ import {
   ScrollView, 
   SafeAreaView,
   Pressable,
-  Alert
+  Alert,
+  StatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -67,13 +68,20 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
+      
+      {/* Safe Area Status Bar Spacer */}
+      <View style={[styles.statusBarSpacer, { height: insets.top }]} />
+      
       {/* Header */}
-      <MobileHeader 
-        title="Profile" 
-        showBackButton={false} 
-        showSearch={false}
-        showCartButton={false}
-      />
+      <View style={styles.headerContainer}>
+        <MobileHeader 
+          title="Profile" 
+          showBackButton={false} 
+          showSearch={false}
+          showCartButton={false}
+        />
+      </View>
 
       <ScrollView 
         style={styles.scrollContainer}
@@ -686,5 +694,16 @@ const styles = StyleSheet.create({
   // Bottom Padding
   bottomPadding: {
     height: 100,
+  },
+
+  // Status Bar Spacer
+  statusBarSpacer: {
+    backgroundColor: COLORS.card,
+  },
+
+  // Header Container
+  headerContainer: {
+    backgroundColor: COLORS.card,
+    zIndex: 10,
   },
 }); 
