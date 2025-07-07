@@ -3,14 +3,44 @@ export interface LocationCoordinate {
   longitude: number;
 }
 
+// Keep the Coordinate interface for backward compatibility
+export interface Coordinate {
+  latitude: number;
+  longitude: number;
+}
+
 export interface LocationSuggestion {
   id: string;
+  placeId?: string;
   title: string;
   subtitle?: string;
-  coordinate?: LocationCoordinate;
-  type: 'recent' | 'suggestion' | 'current';
+  coordinate?: Coordinate;
+  isPremiumLocation?: boolean;
+  type?: 'suggestion' | 'recent' | 'current' | 'postal';
   address?: string;
-  placeId?: string;
+  postalCode?: string;
+  unitNumber?: string;
+  buildingName?: string;
+}
+
+export interface DeliveryDetails {
+  location: LocationSuggestion;
+  unitNumber?: string;
+  buildingName?: string;
+  deliveryInstructions?: string;
+  preferredTime?: {
+    from: string;
+    to: string;
+  };
+  contactNumber?: string;
+  isDefault?: boolean;
+}
+
+export interface SavedAddress extends DeliveryDetails {
+  id: string;
+  label: string; // "Home", "Office", etc.
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface LocationPickerState {

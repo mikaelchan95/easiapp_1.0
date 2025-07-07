@@ -1,5 +1,6 @@
 import { GOOGLE_MAPS_CONFIG } from '../config/googleMaps';
-import { LocationCoordinate, LocationSuggestion } from '../types/location';
+import { LocationCoordinate, Coordinate, LocationSuggestion } from '../types/location';
+import * as Location from 'expo-location';
 
 export interface GooglePlaceDetails {
   place_id: string;
@@ -26,6 +27,90 @@ export interface AutocompleteResponse {
   }>;
 }
 
+// Singapore postal code database (sample)
+const POSTAL_CODE_DATABASE: Record<string, LocationSuggestion> = {
+  '018956': {
+    id: 'postal_018956',
+    title: 'Marina Bay Sands',
+    subtitle: '10 Bayfront Avenue, Singapore 018956',
+    coordinate: { latitude: 1.2839, longitude: 103.8607 },
+    postalCode: '018956',
+    type: 'postal',
+  },
+  '238859': {
+    id: 'postal_238859',
+    title: 'Orchard Road',
+    subtitle: '2 Orchard Turn, Singapore 238859',
+    coordinate: { latitude: 1.3036, longitude: 103.8318 },
+    postalCode: '238859',
+    type: 'postal',
+  },
+  '098632': {
+    id: 'postal_098632',
+    title: 'Sentosa',
+    subtitle: '8 Sentosa Gateway, Singapore 098632',
+    coordinate: { latitude: 1.2494, longitude: 103.8303 },
+    postalCode: '098632',
+    type: 'postal',
+  },
+  '819663': {
+    id: 'postal_819663',
+    title: 'Changi Airport',
+    subtitle: 'Airport Boulevard, Singapore 819663',
+    coordinate: { latitude: 1.3644, longitude: 103.9915 },
+    postalCode: '819663',
+    type: 'postal',
+  },
+};
+
+// Enhanced mock data for more realistic search results
+const POPULAR_LOCATIONS = [
+  {
+    id: "place_id_1",
+    placeId: "place_id_1",
+    title: "Marina Bay Sands",
+    subtitle: "10 Bayfront Avenue, Singapore 018956",
+    coordinate: { latitude: 1.2839, longitude: 103.8607 },
+    isPremiumLocation: true,
+    postalCode: "018956"
+  },
+  {
+    id: "place_id_2",
+    placeId: "place_id_2",
+    title: "Orchard Road",
+    subtitle: "Orchard Road, Singapore 238859",
+    coordinate: { latitude: 1.3036, longitude: 103.8318 },
+    isPremiumLocation: false,
+    postalCode: "238859"
+  },
+  {
+    id: "place_id_3",
+    placeId: "place_id_3", 
+    title: "Sentosa Island",
+    subtitle: "Sentosa Island, Singapore 098632",
+    coordinate: { latitude: 1.2494, longitude: 103.8303 },
+    isPremiumLocation: true,
+    postalCode: "098632"
+  },
+  {
+    id: "place_id_4",
+    placeId: "place_id_4",
+    title: "Changi Airport",
+    subtitle: "Airport Boulevard, Singapore 819663",
+    coordinate: { latitude: 1.3644, longitude: 103.9915 },
+    isPremiumLocation: false,
+    postalCode: "819663"
+  }
+];
+
+// More comprehensive mock neighborhoods for better address suggestions
+const NEIGHBORHOODS = [
+  "Orchard", "Bukit Timah", "Holland Village", "Bugis", "Marina Bay", 
+  "Chinatown", "Little India", "Tiong Bahru", "Joo Chiat", "Katong",
+  "Jurong", "Tampines", "Bishan", "Ang Mo Kio", "Toa Payoh", "Serangoon",
+  "Clementi", "Punggol", "Sembawang", "Woodlands", "Yishun"
+];
+
 export class GoogleMapsService {
   private static baseUrl = 'https://maps.googleapis.com/maps/api';
   private static apiKey = GOOGLE_MAPS_CONFIG.apiKey;
@@ -33,38 +118,60 @@ export class GoogleMapsService {
   /**
    * Get autocomplete suggestions for a search query
    */
-  static async getAutocompleteSuggestions(input: string): Promise<LocationSuggestion[]> {
-    if (!input.trim()) return [];
-
-    try {
-      const params = new URLSearchParams({
-        input: input.trim(),
-        key: this.apiKey,
-        types: GOOGLE_MAPS_CONFIG.autocomplete.types.join('|'),
-        components: `country:${GOOGLE_MAPS_CONFIG.autocomplete.componentRestrictions.country}`,
-        language: GOOGLE_MAPS_CONFIG.geocoding.language,
-      });
-
-      const response = await fetch(
-        `${this.baseUrl}/place/autocomplete/json?${params.toString()}`
-      );
-      
-      const data: AutocompleteResponse = await response.json();
-      
-      if (!data.predictions) return [];
-
-      return data.predictions.map((prediction, index) => ({
-        id: prediction.place_id,
-        title: prediction.structured_formatting.main_text,
-        subtitle: prediction.structured_formatting.secondary_text,
-        type: 'suggestion' as const,
-        address: prediction.description,
-        placeId: prediction.place_id,
-      }));
-    } catch (error) {
-      console.error('Error fetching autocomplete suggestions:', error);
-      return [];
+  static async getAutocompleteSuggestions(query: string): Promise<LocationSuggestion[]> {
+    if (!query || query.length < 2) return [];
+    
+    // Check if query is a postal code (6 digits for Singapore)
+    const postalCodeMatch = query.match(/^\d{6}$/);
+    if (postalCodeMatch) {
+      const postalResult = POSTAL_CODE_DATABASE[query];
+      if (postalResult) {
+        return [postalResult];
+      }
     }
+    
+    // Check for partial postal code match
+    const partialPostalMatch = query.match(/^\d{1,6}$/);
+    if (partialPostalMatch) {
+      const matchingPostalCodes = Object.entries(POSTAL_CODE_DATABASE)
+        .filter(([code]) => code.startsWith(query))
+        .map(([_, location]) => location);
+      
+      if (matchingPostalCodes.length > 0) {
+        return matchingPostalCodes;
+      }
+    }
+    
+    // For demo purposes, simulate network latency (250-500ms)
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 250 + 250));
+    
+    // First try exact matches in our popular locations
+    const exactMatches = POPULAR_LOCATIONS.filter(item => 
+      item.title.toLowerCase().includes(query.toLowerCase()) || 
+      item.subtitle.toLowerCase().includes(query.toLowerCase()) ||
+      (item.postalCode && item.postalCode.includes(query))
+    );
+    
+    // Then generate some dynamic suggestions based on neighborhoods
+    const dynamicSuggestions = NEIGHBORHOODS
+      .filter(neighborhood => 
+        neighborhood.toLowerCase().includes(query.toLowerCase())
+      )
+      .map((neighborhood, index) => ({
+        id: `dynamic_${Date.now()}_${index}`,
+        placeId: `dynamic_place_${Date.now()}_${index}`,
+        title: `${neighborhood} ${Math.random() > 0.5 ? 'Road' : 'Street'}`,
+        subtitle: `${neighborhood}, Singapore`,
+        coordinate: { 
+          latitude: 1.3 + (Math.random() * 0.1 - 0.05), 
+          longitude: 103.8 + (Math.random() * 0.1 - 0.05) 
+        },
+        isPremiumLocation: Math.random() > 0.7
+      }))
+      .slice(0, 5); // Limit to 5 dynamic suggestions
+    
+    // Combine and return (exact matches first, then dynamic suggestions)
+    return [...exactMatches, ...dynamicSuggestions];
   }
 
   /**
