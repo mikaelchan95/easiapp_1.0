@@ -19,6 +19,7 @@ import * as Animations from '../../utils/animations';
 import { AppContext } from '../../context/AppContext';
 import { CartNotificationContext } from '../../context/CartNotificationContext';
 import ProgressBar from '../UI/ProgressBar';
+import { HapticFeedback, HapticPatterns } from '../../utils/haptics';
 
 interface EnhancedProductCardProps {
   product: Product;
@@ -121,6 +122,7 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
   
   // Handle press animation
   const handlePressIn = () => {
+    HapticFeedback.light();
     Animated.timing(scaleAnim, {
       toValue: 0.97,
       duration: 150,
@@ -142,6 +144,9 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
   const handleAddButtonPress = () => {
     // Only proceed if the product is in stock
     if (!inStock) return;
+    
+    // Haptic feedback for add to cart
+    HapticPatterns.addToCart();
     
     // Show progress UI
     setShowAddProgress(true);

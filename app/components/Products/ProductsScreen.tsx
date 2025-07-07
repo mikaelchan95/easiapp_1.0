@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, StatusBar, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { products, Product } from '../../data/mockProducts';
 import ProductCard from './ProductCard';
@@ -8,6 +8,7 @@ import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import ExpandableSearch from './ExpandableSearch';
+import { HapticFeedback } from '../../utils/haptics';
 
 const categories = [
   { id: 'all', name: 'All', icon: 'grid-outline' },
@@ -20,6 +21,7 @@ const categories = [
 export default function ProductsScreen() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
@@ -32,6 +34,20 @@ export default function ProductsScreen() {
     navigation.navigate('ProductDetail', { id: product.id });
   };
 
+  const handleRefresh = useCallback(async () => {
+    HapticFeedback.medium();
+    setRefreshing(true);
+    
+    // Simulate data refresh - in a real app, you'd fetch new data here
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // You could reset filters, fetch new products, etc.
+    // setSelectedCategory('all');
+    
+    HapticFeedback.success();
+    setRefreshing(false);
+  }, []);
+
   const renderCategory = (cat: typeof categories[0]) => (
     <TouchableOpacity
       key={cat.id}
@@ -39,7 +55,10 @@ export default function ProductsScreen() {
         styles.categoryButton,
         selectedCategory === cat.id && styles.categoryButtonActive
       ]}
-      onPress={() => setSelectedCategory(cat.id)}
+      onPress={() => {
+        HapticFeedback.selection();
+        setSelectedCategory(cat.id);
+      }}
       activeOpacity={0.8}
     >
       <View style={styles.categoryIconContainer}>
@@ -95,13 +114,19 @@ export default function ProductsScreen() {
         <View style={styles.toggleButtons}>
           <TouchableOpacity
             style={[styles.toggleButton, viewMode === 'grid' && styles.toggleButtonActive]}
-            onPress={() => setViewMode('grid')}
+            onPress={() => {
+              HapticFeedback.selection();
+              setViewMode('grid');
+            }}
           >
             <Ionicons name="grid" size={18} color={viewMode === 'grid' ? COLORS.accent : COLORS.textSecondary} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.toggleButton, viewMode === 'list' && styles.toggleButtonActive]}
-            onPress={() => setViewMode('list')}
+            onPress={() => {
+              HapticFeedback.selection();
+              setViewMode('list');
+            }}
           >
             <Ionicons name="list" size={18} color={viewMode === 'list' ? COLORS.accent : COLORS.textSecondary} />
           </TouchableOpacity>
@@ -127,6 +152,14 @@ export default function ProductsScreen() {
               />
             </View>
           )}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={COLORS.primary}
+              colors={[COLORS.primary]}
+            />
+          }
         />
       ) : (
         <FlatList
@@ -146,6 +179,14 @@ export default function ProductsScreen() {
               />
             </View>
           )}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={COLORS.primary}
+              colors={[COLORS.primary]}
+            />
+          }
         />
       )}
     </View>
