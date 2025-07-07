@@ -21,6 +21,7 @@ import AnimatedButton from '../UI/AnimatedButton';
 import AnimatedFeedback from '../UI/AnimatedFeedback';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../../utils/theme';
 import { AppContext } from '../../context/AppContext';
+import { calculateOrderTotal, formatPrice } from '../../utils/pricing';
 
 // Mock cart items for checkout demo
 const mockCartItems = [
@@ -112,16 +113,18 @@ export default function CheckoutScreen() {
     quantity: item.quantity
   }));
   
-  // Calculate subtotal and total
-  const subtotal = cartItems.reduce(
-    (sum, item) => {
-      const price = state.user?.role === 'trade' ? item.product.tradePrice : item.product.retailPrice;
-      return sum + price * item.quantity;
-    }, 
-    0
+  // Calculate totals using centralized pricing utility
+  const orderTotals = calculateOrderTotal(
+    cartItems, 
+    state.user?.role || 'retail',
+    checkoutState.deliverySlot?.id === 'same_day' ? 'same_day' : 
+    checkoutState.deliverySlot?.id === 'express' ? 'express' : 'standard'
   );
-  const deliveryFee = checkoutState.deliverySlot?.price || 0;
-  const total = subtotal + deliveryFee;
+  
+  const subtotal = orderTotals.subtotal;
+  const gst = orderTotals.gst;
+  const deliveryFee = orderTotals.deliveryFee;
+  const total = orderTotals.finalTotal;
   
   const handleUpdateAddress = (address: DeliveryAddress) => {
     setCheckoutState({
@@ -376,7 +379,7 @@ export default function CheckoutScreen() {
       {currentStep === 'review' && (
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           <AnimatedButton
-            label={`Place Order • $${total.toFixed(0)}`}
+            label={`Place Order • ${formatPrice(total, false)}`}
             onPress={handlePlaceOrder}
             type="primary"
             icon="checkmark-circle"
