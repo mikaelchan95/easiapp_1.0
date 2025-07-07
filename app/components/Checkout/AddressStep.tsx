@@ -7,6 +7,7 @@ import { LocationSuggestion } from '../../types/location';
 import { GoogleMapsService } from '../../services/googleMapsService';
 import { HapticFeedback } from '../../utils/haptics';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
+import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 
 interface AddressStepProps {
   address: DeliveryAddress;
@@ -18,6 +19,7 @@ const AddressStep: React.FC<AddressStepProps> = ({
   onContinue
 }) => {
   const navigation = useNavigation();
+  const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
   
   // Use useEffect to set the initial address to avoid direct state initialization
   // that might cause infinite renders
@@ -31,24 +33,13 @@ const AddressStep: React.FC<AddressStepProps> = ({
     isDefault: false
   });
   
-  const [selectedLocation, setSelectedLocation] = useState<LocationSuggestion | null>(null);
+  // Remove local selectedLocation state - use global deliveryLocation instead
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   // Initialize address with initialAddress only once when the component mounts
   // or when initialAddress changes
   useEffect(() => {
     setAddress(initialAddress);
-    
-    // If we have an address, create a location suggestion for display
-    if (initialAddress.street) {
-      setSelectedLocation({
-        id: 'current_address',
-        title: initialAddress.street,
-        subtitle: `${initialAddress.city}, ${initialAddress.postalCode}`,
-        type: 'suggestion',
-        address: `${initialAddress.street}, ${initialAddress.city}, ${initialAddress.postalCode}`,
-      });
-    }
   }, [JSON.stringify(initialAddress)]);
   
   const updateField = (field: keyof DeliveryAddress, value: string) => {
@@ -80,7 +71,8 @@ const AddressStep: React.FC<AddressStepProps> = ({
         return;
       }
       
-      setSelectedLocation(location);
+      // Update global delivery location first
+      setDeliveryLocation(location);
       
       // Update address fields from location
       const updatedAddress = {
@@ -132,7 +124,7 @@ const AddressStep: React.FC<AddressStepProps> = ({
     // @ts-ignore - Navigation params will be handled by the screen
     navigation.navigate('DeliveryLocationScreen', {
       onLocationSelect: handleLocationSelect,
-      initialLocation: selectedLocation,
+      initialLocation: deliveryLocation,
     });
   };
   
@@ -182,21 +174,21 @@ const AddressStep: React.FC<AddressStepProps> = ({
             style={[styles.locationButton, errors.street && styles.locationButtonError]}
             onPress={openLocationPicker}
             accessible={true}
-            accessibilityLabel={selectedLocation ? `Current address: ${selectedLocation.title}` : "Select delivery address"}
+            accessibilityLabel={deliveryLocation ? `Current address: ${deliveryLocation.title}` : "Select delivery address"}
             accessibilityRole="button"
             accessibilityHint="Opens location picker to choose delivery address"
           >
             <View style={styles.locationButtonContent}>
               <Ionicons name="location" size={20} color={COLORS.primary} />
               <View style={styles.locationTextContainer}>
-                {selectedLocation ? (
+                {deliveryLocation ? (
                   <>
                     <Text style={styles.locationTitle} numberOfLines={1}>
-                      {selectedLocation.title}
+                      {deliveryLocation.title}
                     </Text>
-                    {selectedLocation.subtitle && (
+                    {deliveryLocation.subtitle && (
                       <Text style={styles.locationSubtitle} numberOfLines={1}>
-                        {selectedLocation.subtitle}
+                        {deliveryLocation.subtitle}
                       </Text>
                     )}
                   </>
