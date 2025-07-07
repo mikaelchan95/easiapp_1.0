@@ -6,8 +6,7 @@ export type MainTabParamList = {
   Products: undefined;
   Explore: undefined;
   Cart: { count?: number };
-  Rewards: undefined;
-  Activity: undefined;
+  Activities: undefined;
   Profile: undefined;
 };
 
@@ -20,6 +19,13 @@ export type RootStackParamList = {
   OrderSuccess: { orderId: string };
   OrderTracking: { orderId: string };
   MomentumShowcase: undefined;
+  OrderHistory: undefined;
+  Wishlist: undefined;
+  Reviews: undefined;
+  Support: undefined;
+  Rewards: undefined;
+  Referrals: undefined;
+  OrderDetails: { orderId: string };
 };
 
 declare global {
