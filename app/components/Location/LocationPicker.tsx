@@ -136,32 +136,85 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
   // Handle location selection
   const handleLocationSelect = useCallback(async (location: LocationSuggestion) => {
-    // Provide haptic feedback
     try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    } catch (error) {
-      // Haptics might not be available on all devices
-    }
-
-    // If location has placeId but no coordinates, fetch details
-    let fullLocation = location;
-    if (location.placeId && !location.coordinate) {
-      const placeDetails = await GoogleMapsService.getPlaceDetails(location.placeId);
-      if (placeDetails) {
-        fullLocation = placeDetails;
+      // Provide haptic feedback
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } catch (error) {
+        // Haptics might not be available on all devices
       }
-    }
 
-    setState(prev => ({ ...prev, selectedLocation: fullLocation }));
-    
-    // If it's a current location tap, close immediately
-    if (location.type === 'current') {
-      handleConfirmLocation(fullLocation);
+      // If location has placeId but no coordinates, fetch details
+      let fullLocation = location;
+      try {
+        if (location.placeId && !location.coordinate) {
+          const placeDetails = await GoogleMapsService.getPlaceDetails(location.placeId);
+          if (placeDetails) {
+            fullLocation = placeDetails;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching place details:', error);
+      }
+
+      setState(prev => ({ ...prev, selectedLocation: fullLocation }));
+      
+      // If it's a current location tap, close immediately
+      if (location.type === 'current') {
+        // Store the location to be confirmed
+        const locationToConfirm = fullLocation;
+        
+        // Use setTimeout to defer execution and prevent immediate crash
+        setTimeout(() => {
+          try {
+            // Call handleConfirmLocation directly without dependency
+            // This avoids circular dependency issues
+            if (locationToConfirm) {
+              // Clone to avoid reference issues
+              const locCopy = { ...locationToConfirm };
+              
+              // Check if the selected location has delivery available
+              if (locCopy.coordinate) {
+                const deliveryCheck = GoogleMapsService.isDeliveryAvailable(locCopy.coordinate);
+                
+                if (deliveryCheck.available) {
+                  // If delivery is available, proceed with the confirmation
+                  try {
+                    // Safety check for onLocationSelect
+                    if (typeof onLocationSelect === 'function') {
+                      onLocationSelect(locCopy);
+                      
+                      // Close picker
+                      setState(prev => ({ 
+                        ...prev, 
+                        isOpen: false, 
+                        isMapMode: false,
+                        searchText: '',
+                        selectedLocation: null
+                      }));
+                    }
+                  } catch (confirmError) {
+                    console.error('Error confirming location:', confirmError);
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error confirming current location:', error);
+          }
+        }, 100);
+      }
+      
+      // Announce to screen readers
+      try {
+        AccessibilityInfo.announceForAccessibility(`Selected ${fullLocation.title}`);
+      } catch (error) {
+        console.error('Error with accessibility announcement:', error);
+      }
+    } catch (error) {
+      console.error('Error in handleLocationSelect:', error);
     }
-    
-    // Announce to screen readers
-    AccessibilityInfo.announceForAccessibility(`Selected ${fullLocation.title}`);
-  }, []);
+  }, [onLocationSelect]);
 
   // Handle current location refresh
   const handleRefreshLocation = useCallback(async () => {
@@ -220,110 +273,109 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
   // Handle confirming location selection
   const handleConfirmLocation = useCallback(async (location?: LocationSuggestion) => {
-    const selectedLoc = location || state.selectedLocation;
-    
-    if (!selectedLoc) return;
-
     try {
-      // Check if the selected location has delivery available
-      if (selectedLoc.coordinate) {
-        const deliveryCheck = GoogleMapsService.isDeliveryAvailable(selectedLoc.coordinate);
-        
-        if (!deliveryCheck.available) {
-          // Provide error haptic feedback
-          try {
-            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          } catch (error) {
-            // Haptics might not be available on all devices
-          }
-          
-          // Show alert for unavailable delivery
-          Alert.alert(
-            "Delivery Unavailable",
-            `Sorry, delivery to ${selectedLoc.title} is not available at this time. We currently deliver within Singapore city areas.`,
-            [{ text: "OK" }]
-          );
-          
-          // Announce to screen readers
-          AccessibilityInfo.announceForAccessibility(`Delivery to ${selectedLoc.title} is not available`);
-          
-          return;
-        }
-      }
-
-      // Provide haptic feedback
-      try {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } catch (error) {
-        // Haptics might not be available on all devices
-      }
-
-      // Animate header update
-      Animations.springAnimation(headerAnimationValue, 1, 'gentle');
+      console.log('Starting handleConfirmLocation');
+      const selectedLoc = location || state.selectedLocation;
       
-      // Update the header location display
-      setTimeout(async () => {
+      if (!selectedLoc) {
+        console.error('No location selected');
+        return;
+      }
+
+      console.log('Confirming location:', selectedLoc.title);
+
+      try {
+        // Provide haptic feedback
         try {
-          // Safety check for onLocationSelect
-          if (onLocationSelect && typeof onLocationSelect === 'function') {
-            onLocationSelect(selectedLoc);
-          } else {
-            console.error('onLocationSelect is not a function');
-            Alert.alert(
-              "Error",
-              "Unable to update location. Please try again.",
-              [{ text: "OK" }]
-            );
-            return;
-          }
-          
-          // Add to recent locations if it's not already there and not current location
-          if (selectedLoc.type !== 'recent' && selectedLoc.type !== 'current') {
-            const newRecent: LocationSuggestion = {
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } catch (error) {
+          console.error('Haptics error:', error);
+        }
+        
+        // First close the picker to avoid UI getting stuck
+        setState(prev => ({ 
+          ...prev, 
+          isOpen: false, 
+          isMapMode: false,
+          searchText: '',
+        }));
+        
+        // Wait a bit to ensure UI updates before trying to update location
+        setTimeout(() => {
+          try {
+            console.log('Executing location update callback');
+            
+            // Clone the object to prevent reference issues
+            const locationToSend: LocationSuggestion = { 
               ...selectedLoc,
-              type: 'recent'
+              title: selectedLoc.title || 'Selected Location',
+              id: selectedLoc.id || `loc_${Date.now()}`,
+              type: (selectedLoc.type as "suggestion" | "recent" | "current" | "postal" | "saved") || 'suggestion'
             };
             
-            const updatedRecentLocations = [
-              newRecent, 
-              ...state.recentLocations.filter(loc => loc.id !== selectedLoc.id)
-            ].slice(0, MAX_RECENT_LOCATIONS);
+            // Call the callback with a try-catch
+            try {
+              if (typeof onLocationSelect === 'function') {
+                onLocationSelect(locationToSend);
+                console.log('Location callback executed successfully');
+              } else {
+                console.error('onLocationSelect is not a function');
+              }
+            } catch (callbackError) {
+              console.error('Error in onLocationSelect callback:', callbackError);
+            }
             
-            setState(prev => ({
-              ...prev,
-              recentLocations: updatedRecentLocations
-            }));
-            
-            // Save to storage
-            await saveRecentLocations(updatedRecentLocations);
+            // Update recent locations
+            try {
+              if (locationToSend.type !== 'recent' && locationToSend.type !== 'current') {
+                const newRecent: LocationSuggestion = {
+                  ...locationToSend,
+                  type: 'recent'
+                };
+                
+                const safeRecentLocations = Array.isArray(state.recentLocations) 
+                  ? state.recentLocations.filter(loc => loc?.id && loc.id !== locationToSend.id)
+                  : [];
+                
+                const updatedRecentLocations = [
+                  newRecent, 
+                  ...safeRecentLocations
+                ].slice(0, MAX_RECENT_LOCATIONS);
+                
+                setState(prev => ({
+                  ...prev,
+                  recentLocations: updatedRecentLocations
+                }));
+                
+                // Save to storage
+                try {
+                  saveRecentLocations(updatedRecentLocations);
+                } catch (storageError) {
+                  console.error('Storage error:', storageError);
+                }
+              }
+            } catch (recentError) {
+              console.error('Error updating recent locations:', recentError);
+            }
+          } catch (timeoutError) {
+            console.error('Error in location confirmation timeout:', timeoutError);
           }
-          
-          // Close the picker
-          handleClosePicker();
-          
-          // Reset header animation
-          headerAnimationValue.setValue(0);
-        } catch (error) {
-          console.error('Error in handleConfirmLocation:', error);
-          Alert.alert(
-            "Error",
-            "An error occurred while updating the location. Please try again.",
-            [{ text: "OK" }]
-          );
-        }
-      }, 150);
+        }, 300);
+      } catch (confirmError) {
+        console.error('Error in location confirmation process:', confirmError);
+      }
+    } catch (outerError) {
+      console.error('Outer error in handleConfirmLocation:', outerError);
       
-      // Announce to screen readers
-      AccessibilityInfo.announceForAccessibility(`Location confirmed: ${selectedLoc.title}`);
-    } catch (error) {
-      console.error('Error in handleConfirmLocation:', error);
-      Alert.alert(
-        "Error",
-        "An error occurred while confirming the location. Please try again.",
-        [{ text: "OK" }]
-      );
+      // Make sure to close the picker even if there's an error
+      setState(prev => ({ 
+        ...prev, 
+        isOpen: false, 
+        isMapMode: false,
+        searchText: '',
+      }));
     }
-  }, [state.selectedLocation, state.recentLocations, onLocationSelect, handleClosePicker, headerAnimationValue, saveRecentLocations]);
+  }, [state.selectedLocation, state.recentLocations, onLocationSelect, saveRecentLocations]);
 
   // Handle pin drop in map mode
   const handlePinDrop = useCallback(async (coordinate: LocationCoordinate) => {

@@ -12,22 +12,24 @@ export type MainTabParamList = {
 };
 
 export type RootStackParamList = {
-  Main: { screen?: string; params?: any };
+  Main: { screen?: keyof MainTabParamList };
   Auth: undefined;
   ProductDetail: { id: string };
-  SmartSearch: { category?: string; query?: string };
+  SmartSearch: { query?: string; category?: string };
   Checkout: undefined;
   OrderSuccess: { orderId: string };
   OrderTracking: { orderId: string };
   MomentumShowcase: undefined;
   OrderHistory: undefined;
+  OrderDetails: { orderId: string };
   Wishlist: undefined;
   Reviews: undefined;
   Support: undefined;
   Rewards: undefined;
   Referrals: undefined;
-  OrderDetails: { orderId: string };
   LocationPickerDemo: undefined;
+  LocationPickerScreen: undefined;
+  UberStyleLocationScreen: undefined;
 };
 
 declare global {

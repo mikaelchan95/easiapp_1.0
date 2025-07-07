@@ -75,6 +75,7 @@ export interface LocationHeaderProps {
   currentLocation: string;
   onPress: () => void;
   isLoading?: boolean;
+  inHeaderNav?: boolean;
 }
 
 export interface LocationBottomSheetProps {

@@ -89,8 +89,9 @@ export default function HomeScreen() {
   }, [navigation]);
   
   const handleAddressPress = useCallback(() => {
-    setLocationPickerVisible(true);
-  }, []);
+    // Navigate to the new Uber-style location picker
+    navigation.navigate('UberStyleLocationScreen');
+  }, [navigation]);
   
   const handleRewardsPress = useCallback(() => {
     navigation.dispatch(

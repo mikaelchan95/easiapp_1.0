@@ -31,18 +31,17 @@
         "googleMaps": {
           "apiKey": "AIzaSyCNpWjIoH986AQx2ea2AaiqzsqUcwaqX9I"
         }
-      }
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./app/assets/favicon.png"
     },
     "plugins": [
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "Allow EASI to use your location for accurate delivery services."
-        }
-      ]
+      "expo-location"
     ]
   }
 }
