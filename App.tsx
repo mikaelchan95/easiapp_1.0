@@ -41,6 +41,7 @@ import OrderHistoryScreen from './app/components/Activities/OrderHistoryScreen';
 import WishlistScreen from './app/components/Activities/WishlistScreen';
 import ReviewsScreen from './app/components/Activities/ReviewsScreen';
 import SupportScreen from './app/components/Activities/SupportScreen';
+import ActivitiesScreen from './app/components/Activities/ActivitiesScreen';
 
 // Import types and theme
 import { RootStackParamList, MainTabParamList } from './app/types/navigation';

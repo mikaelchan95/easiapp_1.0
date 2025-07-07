@@ -93,8 +93,24 @@ export default function CheckoutScreen() {
     paymentMethod: null
   });
   
-  // Use actual cart items from context
-  const cartItems = state.cart.length > 0 ? state.cart : mockCartItems;
+  // Use actual cart items from context - redirect if empty
+  const contextCartItems = state.cart;
+  
+  // Redirect to cart if empty
+  React.useEffect(() => {
+    if (contextCartItems.length === 0) {
+      navigation.navigate('Main', { screen: 'Cart' });
+    }
+  }, [contextCartItems.length, navigation]);
+  
+  // Transform context cart items to checkout format
+  const cartItems = contextCartItems.map(item => ({
+    product: {
+      ...item.product,
+      imageUrl: item.product.image, // Map image to imageUrl for compatibility
+    },
+    quantity: item.quantity
+  }));
   
   // Calculate subtotal and total
   const subtotal = cartItems.reduce(
