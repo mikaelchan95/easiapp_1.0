@@ -26,11 +26,19 @@ const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
   const navigation = useNavigation();
   
   const handleLocationSelect = useCallback((location: LocationSuggestion) => {
-    // Update global state
-    dispatch({ type: 'SET_SELECTED_LOCATION', payload: location });
-    
-    // Close the modal
-    onClose();
+    try {
+      // Update global state
+      if (dispatch) {
+        dispatch({ type: 'SET_SELECTED_LOCATION', payload: location });
+      }
+      
+      // Close the modal
+      onClose();
+    } catch (error) {
+      console.error('Error in handleLocationSelect:', error);
+      // Still close the modal even if context update fails
+      onClose();
+    }
   }, [dispatch, onClose]);
 
   const handleLocationUpdate = useCallback((location: LocationSuggestion) => {

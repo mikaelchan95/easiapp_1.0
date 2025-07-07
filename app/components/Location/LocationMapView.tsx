@@ -66,7 +66,6 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
         ref={mapRef}
         style={styles.map}
         initialRegion={region}
-        region={currentRegion}
         onRegionChange={handleRegionChange}
         onPress={handleMapPress}
         provider="google"
@@ -84,7 +83,6 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
         loadingIndicatorColor={COLORS.primary}
         moveOnMarkerPress={false}
         onMapReady={() => console.log('Map is ready')}
-        onError={(error) => console.error('Map error:', error)}
       >
         {/* Delivery zones as circles */}
         {GOOGLE_MAPS_CONFIG.deliveryZones.map((zone, index) => (
@@ -148,12 +146,12 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0', // Light gray background that won't interfere with map
+    backgroundColor: '#ffffff', // White background to prevent interference
   },
   map: {
     width: width,
     height: height * 0.6, // 60% of screen height
-    backgroundColor: 'transparent', // Ensure map background is transparent
+    backgroundColor: '#ffffff', // White background for the map
   },
   controlsOverlay: {
     position: 'absolute',

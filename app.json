@@ -16,17 +16,41 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.epico.easi"
+      "bundleIdentifier": "com.epico.easi",
+      "config": {
+        "googleMapsApiKey": "AIzaSyCNpWjIoH986AQx2ea2AaiqzsqUcwaqX9I"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app uses location to provide accurate delivery services and find your current location.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to provide accurate delivery services and find your current location."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./app/assets/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
-      "package": "com.epico.easi"
+      "package": "com.epico.easi",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCNpWjIoH986AQx2ea2AaiqzsqUcwaqX9I"
+        }
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./app/assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "This app uses location to provide accurate delivery services and find your current location."
+        }
+      ]
+    ]
   }
 }

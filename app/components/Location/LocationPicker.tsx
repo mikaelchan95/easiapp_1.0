@@ -136,32 +136,42 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
   // Handle location selection
   const handleLocationSelect = useCallback(async (location: LocationSuggestion) => {
-    // Provide haptic feedback
     try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    } catch (error) {
-      // Haptics might not be available on all devices
-    }
-
-    // If location has placeId but no coordinates, fetch details
-    let fullLocation = location;
-    if (location.placeId && !location.coordinate) {
-      const placeDetails = await GoogleMapsService.getPlaceDetails(location.placeId);
-      if (placeDetails) {
-        fullLocation = placeDetails;
+      // Provide haptic feedback
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } catch (error) {
+        // Haptics might not be available on all devices
       }
-    }
 
-    setState(prev => ({ ...prev, selectedLocation: fullLocation }));
-    
-    // If it's a current location tap, close immediately
-    if (location.type === 'current') {
-      handleConfirmLocation(fullLocation);
+      // If location has placeId but no coordinates, fetch details
+      let fullLocation = location;
+      if (location.placeId && !location.coordinate) {
+        try {
+          const placeDetails = await GoogleMapsService.getPlaceDetails(location.placeId);
+          if (placeDetails) {
+            fullLocation = placeDetails;
+          }
+        } catch (error) {
+          console.error('Error fetching place details:', error);
+          // Continue with original location if details fetch fails
+        }
+      }
+
+      setState(prev => ({ ...prev, selectedLocation: fullLocation }));
+      
+      // If it's a current location tap, close immediately
+      if (location.type === 'current') {
+        // For current location, we'll handle confirmation in the parent component
+        onLocationSelect(fullLocation);
+      }
+      
+      // Announce to screen readers
+      AccessibilityInfo.announceForAccessibility(`Selected ${fullLocation.title}`);
+    } catch (error) {
+      console.error('Error in handleLocationSelect:', error);
     }
-    
-    // Announce to screen readers
-    AccessibilityInfo.announceForAccessibility(`Selected ${fullLocation.title}`);
-  }, []);
+  }, [onLocationSelect]);
 
   // Handle current location refresh
   const handleRefreshLocation = useCallback(async () => {
