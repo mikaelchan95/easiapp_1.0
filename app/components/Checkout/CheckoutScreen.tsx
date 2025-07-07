@@ -20,6 +20,7 @@ import { products } from '../../data/mockProducts';
 import AnimatedButton from '../UI/AnimatedButton';
 import AnimatedFeedback from '../UI/AnimatedFeedback';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../../utils/theme';
+import { AppContext } from '../../context/AppContext';
 
 // Mock cart items for checkout demo
 const mockCartItems = [
@@ -75,6 +76,7 @@ interface CheckoutState {
 export default function CheckoutScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { state, dispatch } = React.useContext(AppContext);
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('address');
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutState, setCheckoutState] = useState<CheckoutState>({
@@ -91,9 +93,15 @@ export default function CheckoutScreen() {
     paymentMethod: null
   });
   
+  // Use actual cart items from context
+  const cartItems = state.cart.length > 0 ? state.cart : mockCartItems;
+  
   // Calculate subtotal and total
-  const subtotal = mockCartItems.reduce(
-    (sum, item) => sum + item.product.price * item.quantity, 
+  const subtotal = cartItems.reduce(
+    (sum, item) => {
+      const price = state.user?.role === 'trade' ? item.product.tradePrice : item.product.retailPrice;
+      return sum + price * item.quantity;
+    }, 
     0
   );
   const deliveryFee = checkoutState.deliverySlot?.price || 0;
@@ -131,13 +139,15 @@ export default function CheckoutScreen() {
     setTimeout(() => {
       setIsProcessing(false);
       
-      // Navigate to order confirmation
+      // Clear the cart after successful order
+      dispatch({ type: 'CLEAR_CART' });
+      
+      // Navigate to order confirmation with proper params
       navigation.navigate('OrderSuccess', {
         orderId: `ORD-${Math.floor(Math.random() * 10000)}`,
         total: total,
-        estimatedDelivery: checkoutState.deliverySlot ? 
-          `${checkoutState.deliverySlot.date}, ${checkoutState.deliverySlot.timeSlot}` : 
-          undefined
+        deliveryDate: checkoutState.deliverySlot?.date || 'Tomorrow',
+        deliveryTime: checkoutState.deliverySlot?.timeSlot || '2-4 PM'
       });
     }, 2500);
   };
@@ -306,7 +316,7 @@ export default function CheckoutScreen() {
         
         {currentStep === 'review' && (
           <ReviewStep
-            cart={mockCartItems}
+            cart={cartItems}
             address={checkoutState.address}
             deliverySlot={checkoutState.deliverySlot}
             paymentMethod={checkoutState.paymentMethod}

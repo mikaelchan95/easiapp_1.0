@@ -45,7 +45,24 @@ export default function ProfileScreen() {
 
   const handleFeaturePress = (feature: string) => {
     console.log(`Pressed: ${feature}`);
-    // Navigation logic would go here
+    
+    // Navigate to specific screens
+    switch (feature) {
+      case 'Order History':
+        navigation.navigate('OrderHistory');
+        break;
+      case 'Wishlist':
+        navigation.navigate('Wishlist');
+        break;
+      case 'Reviews':
+        navigation.navigate('Reviews');
+        break;
+      case 'Support':
+        navigation.navigate('Support');
+        break;
+      default:
+        console.log('Feature not implemented:', feature);
+    }
   };
 
   return (
@@ -158,6 +175,86 @@ export default function ProfileScreen() {
                 <Ionicons name="help-circle-outline" size={24} color="#000000" />
               </View>
               <Text style={styles.quickActionLabel}>Support</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Activities */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Your Activities</Text>
+          <View style={styles.menuContainer}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => handleFeaturePress('Order History')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.menuIcon, { backgroundColor: '#4CAF5015' }]}>
+                  <Ionicons name="receipt-outline" size={20} color="#4CAF50" />
+                </View>
+                <View style={styles.menuLabelContainer}>
+                  <Text style={styles.menuLabel}>Order History</Text>
+                  <Text style={styles.menuSubLabel}>Track past & current orders</Text>
+                </View>
+              </View>
+              <View style={styles.menuBadge}>
+                <Text style={styles.menuBadgeText}>2</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => handleFeaturePress('Wishlist')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.menuIcon, { backgroundColor: '#E91E6315' }]}>
+                  <Ionicons name="heart-outline" size={20} color="#E91E63" />
+                </View>
+                <View style={styles.menuLabelContainer}>
+                  <Text style={styles.menuLabel}>Wishlist</Text>
+                  <Text style={styles.menuSubLabel}>Saved items & favorites</Text>
+                </View>
+              </View>
+              <View style={styles.menuBadge}>
+                <Text style={styles.menuBadgeText}>5</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => handleFeaturePress('Reviews')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.menuIcon, { backgroundColor: '#FF980015' }]}>
+                  <Ionicons name="star-outline" size={20} color="#FF9800" />
+                </View>
+                <View style={styles.menuLabelContainer}>
+                  <Text style={styles.menuLabel}>Reviews & Ratings</Text>
+                  <Text style={styles.menuSubLabel}>Share your experience</Text>
+                </View>
+              </View>
+              <View style={styles.newBadge}>
+                <Text style={styles.newBadgeText}>NEW</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('Rewards')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.menuIcon, { backgroundColor: '#9C27B015' }]}>
+                  <Ionicons name="gift-outline" size={20} color="#9C27B0" />
+                </View>
+                <View style={styles.menuLabelContainer}>
+                  <Text style={styles.menuLabel}>Rewards & Points</Text>
+                  <Text style={styles.menuSubLabel}>Earn points, get rewards</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#666666" />
             </TouchableOpacity>
           </View>
         </View>
@@ -346,10 +443,10 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8', // Frame background (98% lightness)
+    backgroundColor: COLORS.background, // Frame background (98% lightness)
   },
   statusBarBackground: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.card,
     position: 'absolute',
     top: 0,
     left: 0,
@@ -366,7 +463,7 @@ const styles = StyleSheet.create({
 
   // Profile Card
   profileCard: {
-    backgroundColor: '#FFFFFF', // Canvas white
+    backgroundColor: COLORS.card, // Canvas white
     borderRadius: 16,
     padding: SPACING.lg,
     marginBottom: SPACING.md,
@@ -469,7 +566,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   quickActionItem: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: SPACING.md,
     alignItems: 'center',
@@ -495,7 +592,7 @@ const styles = StyleSheet.create({
 
   // Menu
   menuContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     overflow: 'hidden',
     ...SHADOWS.light,
@@ -527,6 +624,39 @@ const styles = StyleSheet.create({
   menuLabel: {
     ...TYPOGRAPHY.body,
     fontWeight: '500',
+  },
+  menuLabelContainer: {
+    flex: 1,
+  },
+  menuSubLabel: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  menuBadge: {
+    backgroundColor: '#4CAF50',
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  menuBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  newBadge: {
+    backgroundColor: '#FF4444',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  newBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 
   // Sign Out Button
