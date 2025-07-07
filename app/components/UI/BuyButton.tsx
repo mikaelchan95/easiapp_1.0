@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
+import QuantitySelector from './QuantitySelector';
 
 interface BuyButtonProps {
   price: number;
@@ -172,15 +173,9 @@ const BuyButton: React.FC<BuyButtonProps> = ({
   };
   
   // Handle quantity changes
-  const incrementQuantity = () => {
+  const handleQuantityChange = (newQuantity: number) => {
     if (onQuantityChange) {
-      onQuantityChange(quantity + 1);
-    }
-  };
-  
-  const decrementQuantity = () => {
-    if (onQuantityChange && quantity > 1) {
-      onQuantityChange(quantity - 1);
+      onQuantityChange(newQuantity);
     }
   };
   
@@ -254,33 +249,14 @@ const BuyButton: React.FC<BuyButtonProps> = ({
     <View style={[styles.container, style]}>
       {/* Quantity Selector - Shown when showQuantity is true */}
       {showQuantity && (
-        <View style={styles.quantityContainer}>
-          <Text style={styles.quantityLabel}>Quantity</Text>
-          <View style={styles.quantityControls}>
-            <TouchableWithoutFeedback onPress={decrementQuantity}>
-              <Animated.View 
-                style={[
-                  styles.quantityButton,
-                  quantity <= 1 && styles.quantityButtonDisabled
-                ]}
-              >
-                <Ionicons 
-                  name="remove" 
-                  size={18} 
-                  color={quantity <= 1 ? COLORS.inactive : COLORS.text} 
-                />
-              </Animated.View>
-            </TouchableWithoutFeedback>
-            
-            <Text style={styles.quantityValue}>{quantity}</Text>
-            
-            <TouchableWithoutFeedback onPress={incrementQuantity}>
-              <Animated.View style={styles.quantityButton}>
-                <Ionicons name="add" size={18} color={COLORS.text} />
-              </Animated.View>
-            </TouchableWithoutFeedback>
-          </View>
-        </View>
+        <QuantitySelector
+          value={quantity}
+          onChange={handleQuantityChange}
+          showLabel={true}
+          size="large"
+          style={styles.quantityContainer}
+          productName={productName || 'item'}
+        />
       )}
       
       {/* Main Buy Button */}
@@ -334,35 +310,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   quantityContainer: {
-    marginBottom: 16,
-  },
-  quantityLabel: {
-    ...TYPOGRAPHY.caption,
-    marginBottom: 8,
-  },
-  quantityControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    maxWidth: 120,
-  },
-  quantityButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...SHADOWS.light,
-  },
-  quantityButtonDisabled: {
-    opacity: 0.5,
-  },
-  quantityValue: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '600',
-    minWidth: 32,
-    textAlign: 'center',
+    marginBottom: SPACING.md,
   },
   button: {
     width: '100%',
