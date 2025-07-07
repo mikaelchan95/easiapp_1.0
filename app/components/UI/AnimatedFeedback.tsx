@@ -47,6 +47,8 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
   const scale = useRef(new Animated.Value(0.9)).current;
   const cartBounce = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
+  // Create a separate animated value for JS-driven animations
+  const jsProgressAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   
   // Track actual visibility state
@@ -94,8 +96,8 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
       
       // Animate progress bar if available
       if (progressValue > 0) {
-        progressAnim.setValue(0);
-        Animated.timing(progressAnim, {
+        jsProgressAnim.setValue(0);
+        Animated.timing(jsProgressAnim, {
           toValue: Math.min(progressValue, 1),
           duration: 800,
           easing: Animations.TIMING.easeOut,
@@ -227,12 +229,6 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
     }
   };
   
-  // Interpolate progress width
-  const progressWidth = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%']
-  });
-  
   // Animated loading spinner
   const AnimatedLoader = () => {
     const spinValue = useRef(new Animated.Value(0)).current;
@@ -300,7 +296,12 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
               <Animated.View 
                 style={[
                   styles.progressFill,
-                  { width: progressWidth },
+                  { 
+                    width: jsProgressAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0%', '100%']
+                    }) 
+                  },
                   isSpecialType && styles.specialProgressFill
                 ]} 
               />
