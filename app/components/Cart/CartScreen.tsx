@@ -23,6 +23,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Animations from '../../utils/animations';
 import AnimatedButton from '../UI/AnimatedButton';
 import AnimatedFeedback from '../UI/AnimatedFeedback';
+import { 
+  calculateCartTotals, 
+  formatPrice, 
+  getProductPrice,
+  getStockStatus,
+  isProductInStock 
+} from '../../utils/pricing';
 
 interface CartItemType {
   id: string;
@@ -53,19 +60,27 @@ export default function CartScreen() {
   // Use the AppContext instead of local state
   const { state, dispatch } = React.useContext(AppContext);
   
+  // Calculate totals using centralized pricing utility
+  const cartTotals = calculateCartTotals(state.cart, state.user?.role || 'retail');
+  
   // Map cart items from context to the format needed by the UI
-  const cartItems = state.cart.map(item => ({
-    id: item.product.id,
-    productId: item.product.id,
-    name: item.product.name,
-    price: state.user?.role === 'trade' ? item.product.tradePrice : item.product.retailPrice,
-    imageUrl: item.product.image, // Just use the image directly
-    quantity: item.quantity,
-    inStock: item.product.stock > 0
-  }));
+  const cartItems = state.cart.map(item => {
+    const stockStatus = getStockStatus(item.product);
+    const priceWithGST = getProductPrice(item.product, state.user?.role || 'retail');
+    
+    return {
+      id: item.product.id,
+      productId: item.product.id,
+      name: item.product.name,
+      price: priceWithGST,
+      imageUrl: item.product.image,
+      quantity: item.quantity,
+      inStock: isProductInStock(item.product, item.quantity),
+      stockStatus: stockStatus
+    };
+  });
   
   const cartProductIds = cartItems.map(item => item.productId);
-  const cartTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   
   // Animation values for list items (create one per item)
   const itemAnimations = useRef<Animated.Value[]>([]).current;
@@ -261,15 +276,24 @@ export default function CartScreen() {
           }
         ]}
       >
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Total</Text>
-          <Animated.Text 
-            style={styles.summaryValue}
-            // Animate the total when it changes
-            {...(Platform.OS === 'ios' && { shouldRasterizeIOS: true })}
-          >
-            ${cartTotal.toFixed(0)}
-          </Animated.Text>
+        <View style={styles.summaryContent}>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Subtotal</Text>
+            <Text style={styles.summaryValue}>{formatPrice(cartTotals.subtotal)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>GST (9%)</Text>
+            <Text style={styles.summaryValue}>{formatPrice(cartTotals.gst)}</Text>
+          </View>
+          <View style={[styles.summaryRow, styles.totalRow]}>
+            <Text style={styles.totalLabel}>Total</Text>
+            <Animated.Text 
+              style={styles.totalValue}
+              {...(Platform.OS === 'ios' && { shouldRasterizeIOS: true })}
+            >
+              {formatPrice(cartTotals.total)}
+            </Animated.Text>
+          </View>
         </View>
         
         <AnimatedButton
@@ -343,18 +367,37 @@ const styles = StyleSheet.create({
     zIndex: 20,
     ...SHADOWS.medium,
   },
+  summaryContent: {
+    marginBottom: SPACING.md,
+  },
   summaryRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.xs,
   },
   summaryLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  summaryValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  totalRow: {
+    marginTop: SPACING.xs,
+    paddingTop: SPACING.xs,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  totalLabel: {
     fontSize: 16,
     fontWeight: '700',
     color: COLORS.text,
   },
-  summaryValue: {
+  totalValue: {
     fontSize: 20,
     fontWeight: '700',
     color: COLORS.text,
