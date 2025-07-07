@@ -47,16 +47,16 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     return new Date(initialMonth);
   });
   
-  // Store today's date as a memoized string to prevent recreation
-  const todayString = useMemo(() => {
-    const today = new Date();
-    return formatDateString(today);
-  }, []);
-  
   // Format a date to YYYY-MM-DD string - memoized to prevent recreation
   const formatDateString = useCallback((date: Date): string => {
     return date.toISOString().split('T')[0];
   }, []);
+  
+  // Store today's date as a memoized string to prevent recreation
+  const todayString = useMemo(() => {
+    const today = new Date();
+    return formatDateString(today);
+  }, [formatDateString]);
   
   // Generate calendar days for the current month - memoized to prevent recreation
   const calendarDays = useMemo(() => {
