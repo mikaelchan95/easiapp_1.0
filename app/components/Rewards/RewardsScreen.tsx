@@ -246,8 +246,10 @@ export default function RewardsScreen() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Rewards</Text>
-          <Text style={styles.subtitle}>Earn → Build → Redeem</Text>
+          <View style={styles.headerContent}>
+            <Text style={styles.title}>Rewards</Text>
+            <Text style={styles.subtitle}>Earn → Build → Redeem</Text>
+          </View>
         </View>
         
         {/* Tier Status Card */}
@@ -374,13 +376,19 @@ const styles = StyleSheet.create({
   header: {
     padding: SPACING.lg,
     backgroundColor: COLORS.card,
+    alignItems: 'center',
+  },
+  headerContent: {
+    alignItems: 'center',
   },
   title: {
     ...TYPOGRAPHY.h1,
     marginBottom: SPACING.xs,
+    textAlign: 'center',
   },
   subtitle: {
     ...TYPOGRAPHY.caption,
+    textAlign: 'center',
   },
   
   // Status Card

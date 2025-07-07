@@ -321,7 +321,7 @@ export default function CartScreen() {
   return (
     <View style={styles.container}>
       {/* Status Bar Spacer */}
-      <View style={{ height: insets.top, backgroundColor: COLORS.card }} />
+      <View style={[styles.statusBarSpacer, { height: insets.top }]} />
       
       {/* Header with Cart title */}
       <Animated.View 
@@ -414,6 +414,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  statusBarSpacer: {
+    backgroundColor: COLORS.card,
   },
   headerContainer: {
     flexDirection: 'row',

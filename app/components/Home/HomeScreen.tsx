@@ -125,7 +125,7 @@ export default function HomeScreen() {
   
   return (
     <View style={styles.container}>
-      <View style={[styles.statusBarBackground, { height: insets.top }]} />
+      <View style={[styles.statusBarSpacer, { height: insets.top }]} />
       <StatusBar barStyle="dark-content" />
       
       <View style={styles.headerContainer}>
@@ -208,13 +208,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  statusBarBackground: {
-    backgroundColor: '#FFFFFF',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 999,
+  statusBarSpacer: {
+    backgroundColor: COLORS.card,
   },
   headerContainer: {
     backgroundColor: '#FFFFFF',
