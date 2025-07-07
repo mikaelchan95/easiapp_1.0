@@ -20,6 +20,7 @@ import { COLORS, SHADOWS, SPACING } from '../../utils/theme';
 import { GOOGLE_MAPS_CONFIG } from '../../config/googleMaps';
 import LocationHeader from './LocationHeader';
 import { GoogleMapsService } from '../../services/googleMapsService';
+import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 
 const { width, height } = Dimensions.get('window');
 
@@ -32,15 +33,29 @@ const LocationPickerScreen: React.FC<LocationPickerScreenProps> = ({
 }) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
   const [mapRegion, setMapRegion] = useState<Region>(GOOGLE_MAPS_CONFIG.marinaBayRegion);
-  const [selectedLocation, setSelectedLocation] = useState<LocationSuggestion | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [searchText, setSearchText] = useState('');
+
+  // Initialize map region based on current delivery location
+  useEffect(() => {
+    if (deliveryLocation?.coordinate) {
+      setMapRegion({
+        latitude: deliveryLocation.coordinate.latitude,
+        longitude: deliveryLocation.coordinate.longitude,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      });
+    }
+  }, [deliveryLocation]);
 
   // Handle location selection
   const handleLocationSelect = useCallback((location: LocationSuggestion) => {
     console.log('Location selected:', location);
-    setSelectedLocation(location);
+    
+    // Update global delivery location
+    setDeliveryLocation(location);
     
     // If coordinate available, center map on it
     if (location.coordinate) {
@@ -52,7 +67,7 @@ const LocationPickerScreen: React.FC<LocationPickerScreenProps> = ({
       });
     }
     
-    // Pass to parent if provided
+    // Pass to parent callback if provided
     if (onLocationSelect) {
       onLocationSelect(location);
     }
@@ -61,7 +76,7 @@ const LocationPickerScreen: React.FC<LocationPickerScreenProps> = ({
     if (navigation.canGoBack()) {
       navigation.goBack();
     }
-  }, [navigation, onLocationSelect]);
+  }, [navigation, onLocationSelect, setDeliveryLocation]);
 
   // Handle back button
   const handleBackPress = useCallback(() => {
@@ -153,12 +168,12 @@ const LocationPickerScreen: React.FC<LocationPickerScreenProps> = ({
           </React.Fragment>
         ))}
 
-        {/* Selected location marker */}
-        {selectedLocation?.coordinate && (
+        {/* Current delivery location marker */}
+        {deliveryLocation?.coordinate && (
           <Marker
-            coordinate={selectedLocation.coordinate}
-            title={selectedLocation.title}
-            description={selectedLocation.subtitle || ''}
+            coordinate={deliveryLocation.coordinate}
+            title={deliveryLocation.title}
+            description={deliveryLocation.subtitle || ''}
             pinColor="#000000"
           >
             <View style={styles.markerContainer}>
@@ -170,14 +185,17 @@ const LocationPickerScreen: React.FC<LocationPickerScreenProps> = ({
       
       {/* Bottom action bar */}
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom > 0 ? insets.bottom : 16 }]}>
-        <TouchableOpacity style={styles.useLocationButton} onPress={() => handleLocationSelect(selectedLocation || {
-          id: 'current_map_location',
-          title: 'Selected Location',
-          coordinate: { 
-            latitude: mapRegion.latitude,
-            longitude: mapRegion.longitude
-          }
-        })}>
+        <TouchableOpacity style={styles.useLocationButton} onPress={() => {
+          const selectedLocation = deliveryLocation || {
+            id: 'current_map_location',
+            title: 'Selected Location',
+            coordinate: { 
+              latitude: mapRegion.latitude,
+              longitude: mapRegion.longitude
+            }
+          };
+          handleLocationSelect(selectedLocation);
+        }}>
           <Text style={styles.useLocationButtonText}>Use This Location</Text>
         </TouchableOpacity>
         
@@ -190,7 +208,7 @@ const LocationPickerScreen: React.FC<LocationPickerScreenProps> = ({
               latitudeDelta: 0.02,
               longitudeDelta: 0.02,
             });
-            setSelectedLocation(currentLocation);
+            handleLocationSelect(currentLocation);
           }
         }}>
           <Ionicons name="locate" size={24} color={COLORS.primary} />
