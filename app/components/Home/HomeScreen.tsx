@@ -6,7 +6,8 @@ import {
   TouchableOpacity, 
   Text, 
   Image, 
-  StatusBar
+  StatusBar,
+  RefreshControl
 } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,6 +21,7 @@ import { products, Product } from '../../data/mockProducts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import ExpandableSearch from '../Products/ExpandableSearch';
+import { HapticFeedback } from '../../utils/haptics';
 
 type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -27,6 +29,7 @@ export default function HomeScreen() {
   const navigation = useNavigation<HomeNavigationProp>();
   const insets = useSafeAreaInsets();
   const [currentBanner, setCurrentBanner] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   
   // Auto-rotate banner every 6 seconds
   useEffect(() => {
@@ -34,6 +37,21 @@ export default function HomeScreen() {
       setCurrentBanner((prev) => (prev + 1) % 3);
     }, 6000);
     return () => clearInterval(timer);
+  }, []);
+  
+  // Handle pull to refresh
+  const handleRefresh = useCallback(async () => {
+    HapticFeedback.medium();
+    setRefreshing(true);
+    
+    // Simulate data refresh
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // You can add actual data refresh logic here
+    // For example: refetch products, update balances, etc.
+    
+    HapticFeedback.success();
+    setRefreshing(false);
   }, []);
   
   // Memoized product sections for better performance
@@ -118,6 +136,14 @@ export default function HomeScreen() {
         style={styles.content} 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
+          />
+        }
       >
         {/* Balance Cards */}
         <BalanceCards 
