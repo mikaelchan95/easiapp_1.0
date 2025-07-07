@@ -23,6 +23,13 @@ import BuyButton from '../UI/BuyButton';
 import AnimatedFeedback from '../UI/AnimatedFeedback';
 import { CartNotificationContext } from '../../context/CartNotificationContext';
 import { COLORS, SHADOWS } from '../../utils/theme';
+import { 
+  getProductPrice, 
+  formatPrice, 
+  getStockStatus, 
+  validateAddToCart,
+  isProductInStock 
+} from '../../utils/pricing';
 
 const { width } = Dimensions.get('window');
 
@@ -64,7 +71,7 @@ export default function ProductDetailScreen() {
   } : undefined;
   
   // Use AppContext
-  const { dispatch } = useContext(AppContext);
+  const { dispatch, state } = useContext(AppContext);
   const { showCartNotification, purchaseStreak, animationType } = useContext(CartNotificationContext);
   
   const [quantity, setQuantity] = useState(1);
@@ -72,24 +79,35 @@ export default function ProductDetailScreen() {
   const [justAdded, setJustAdded] = useState(false);
   const [addProgress, setAddProgress] = useState(0);
   const [showProgressAnimation, setShowProgressAnimation] = useState(false);
+  
+  // Feedback state for errors and messages
+  const [feedback, setFeedback] = useState({
+    visible: false,
+    type: 'success' as 'success' | 'error' | 'info' | 'loading',
+    message: ''
+  });
   const [selectedVolume, setSelectedVolume] = useState<VolumeOption | null>(
     product?.volumeOptions && product.volumeOptions.length > 0 
       ? product.volumeOptions[0] 
       : null
   );
-  const [currentPrice, setCurrentPrice] = useState(product?.price || 0);
-  const [currentInStock, setCurrentInStock] = useState(product?.inStock || false);
 
-  // Update price and stock status when volume selection changes
-  useEffect(() => {
-    if (selectedVolume) {
-      setCurrentPrice(selectedVolume.price);
-      setCurrentInStock(selectedVolume.inStock);
-    } else if (product) {
-      setCurrentPrice(product.price);
-      setCurrentInStock(product.inStock);
-    }
-  }, [selectedVolume, product]);
+  // Use centralized pricing for current product
+  const currentProductForPricing = product ? {
+    ...product,
+    retailPrice: selectedVolume ? selectedVolume.price : product.price,
+    tradePrice: selectedVolume ? selectedVolume.price * 0.85 : product.price * 0.85,
+    stock: selectedVolume ? (selectedVolume.inStock ? 10 : 0) : (product.inStock ? 10 : 0),
+    image: product.imageUrl,
+    sku: `SKU-${product.id}`,
+  } : null;
+
+  const userRole = state.user?.role || 'retail';
+  
+  // Get current price with GST using centralized utility
+  const currentPrice = currentProductForPricing ? getProductPrice(currentProductForPricing, userRole) : 0;
+  const stockStatus = currentProductForPricing ? getStockStatus(currentProductForPricing) : null;
+  const currentInStock = currentProductForPricing ? isProductInStock(currentProductForPricing, quantity) : false;
 
   if (!product) return null;
 
@@ -98,58 +116,48 @@ export default function ProductDetailScreen() {
   };
 
   const handleAddToCart = () => {
+    if (!currentProductForPricing) return;
+    
+    // Validate before adding to cart
+    const validation = validateAddToCart(currentProductForPricing, quantity);
+    if (!validation.valid) {
+      setFeedback({
+        visible: true,
+        type: 'error',
+        message: validation.error || 'Cannot add to cart'
+      });
+      return;
+    }
+    
     // Set loading state
     setIsAdding(true);
     setShowProgressAnimation(true);
     
-    // Animate progress to simulate processing
-    let progress = 0;
-    const animateProgress = () => {
-      progress += 0.05;
-      setAddProgress(progress);
+    // Simplified progress animation (removed race condition)
+    setTimeout(() => {
+      // Add to cart using context
+      dispatch({ 
+        type: 'ADD_TO_CART', 
+        payload: { 
+          product: currentProductForPricing, 
+          quantity: quantity 
+        } 
+      });
       
-      if (progress < 1) {
-        setTimeout(animateProgress, 50);
-      } else {
-        // Add to cart using context after progress completes
-        dispatch({ 
-          type: 'ADD_TO_CART', 
-          payload: { 
-            product: {
-              id: product.id,
-              name: product.name,
-              price: currentPrice,
-              image: product.imageUrl,
-              stock: currentInStock ? 10 : 0,
-              // Add other required product properties
-              category: product.category || '',
-              description: product.description || '',
-              sku: product.id, // Use id as sku
-              retailPrice: currentPrice,
-              tradePrice: currentPrice * 0.9,
-            }, 
-            quantity: quantity 
-          } 
-        });
-        
-        // After progress completes, show success
-        setIsAdding(false);
-        setJustAdded(true);
-        
-        // Show global cart notification
-        showCartNotification(product.name);
-        
-        // Hide success after delay
-        setTimeout(() => {
-          setJustAdded(false);
-          setShowProgressAnimation(false);
-          setAddProgress(0);
-        }, 2000);
-      }
-    };
-    
-    // Start progress animation
-    animateProgress();
+      // Show success
+      setIsAdding(false);
+      setJustAdded(true);
+      
+      // Show global cart notification
+      showCartNotification(product.name);
+      
+      // Hide success after delay
+      setTimeout(() => {
+        setJustAdded(false);
+        setShowProgressAnimation(false);
+        setAddProgress(0);
+      }, 2000);
+    }, 1000); // Simplified 1 second loading
   };
 
   const getStockStatusColor = () => {
@@ -212,11 +220,13 @@ export default function ProductDetailScreen() {
         {/* Category & Stock */}
         <View style={styles.row}>
           <Text style={styles.category}>{product.category}</Text>
-          <View style={[styles.stockBadge, { backgroundColor: stockColors.bg }]}>
-            <Text style={[styles.stockText, { color: stockColors.text }]}>
-              {product.stockStatus}
-            </Text>
-          </View>
+          {stockStatus && (
+            <View style={[styles.stockBadge, { backgroundColor: stockStatus.backgroundColor }]}>
+              <Text style={[styles.stockText, { color: stockStatus.color }]}>
+                {stockStatus.message}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Name */}
@@ -224,7 +234,13 @@ export default function ProductDetailScreen() {
 
         {/* Price */}
         <View style={styles.priceRow}>
-          <Text style={styles.price}>${currentPrice.toFixed(0)}</Text>
+          <Text style={styles.price}>{formatPrice(currentPrice, false)}</Text>
+          {userRole === 'trade' && (
+            <Text style={styles.priceType}>Trade Price (incl. GST)</Text>
+          )}
+          {userRole === 'retail' && (
+            <Text style={styles.priceType}>Retail Price (incl. GST)</Text>
+          )}
         </View>
 
         {/* Volume Options if available */}
@@ -374,6 +390,14 @@ export default function ProductDetailScreen() {
         streakCount={Math.floor(purchaseStreak / 3)}
         progressValue={showProgressAnimation ? addProgress : 0}
       />
+      
+      {/* Error feedback */}
+      <AnimatedFeedback
+        type={feedback.type}
+        message={feedback.message}
+        visible={feedback.visible}
+        onHide={() => setFeedback(prev => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 }
@@ -480,6 +504,11 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     color: COLORS.text,
+  },
+  priceType: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 4,
   },
   description: {
     fontSize: 15,

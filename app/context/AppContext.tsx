@@ -1,30 +1,19 @@
 import React, { createContext, useReducer, ReactNode, useEffect } from 'react';
 import { products } from '../data/mockProducts';
-
-// Types
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  image: any;
-  category: string;
-  description: string;
-  sku: string;
-  stock: number;
-  retailPrice: number;
-  tradePrice: number;
-}
-
-interface CartItem {
-  product: Product;
-  quantity: number;
-}
+import { 
+  Product, 
+  CartItem, 
+  UserRole, 
+  validateAddToCart, 
+  getMaxQuantity,
+  isProductInStock 
+} from '../utils/pricing';
 
 interface User {
   id: string;
   name: string;
   email: string;
-  role: 'retail' | 'trade';
+  role: UserRole;
 }
 
 interface AppState {
@@ -71,12 +60,23 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, products: action.payload };
     case 'ADD_TO_CART':
       const existingItem = state.cart.find(item => item.product.id === action.payload.product.id);
+      const currentCartQuantity = existingItem ? existingItem.quantity : 0;
+      const newTotalQuantity = currentCartQuantity + action.payload.quantity;
+      
+      // Validate stock before adding
+      const validation = validateAddToCart(action.payload.product, newTotalQuantity);
+      if (!validation.valid) {
+        // In a real app, you'd want to show this error to the user
+        console.warn('Cannot add to cart:', validation.error);
+        return state; // Don't add to cart if validation fails
+      }
+      
       if (existingItem) {
         return {
           ...state,
           cart: state.cart.map(item =>
             item.product.id === action.payload.product.id
-              ? { ...item, quantity: item.quantity + action.payload.quantity }
+              ? { ...item, quantity: newTotalQuantity }
               : item
           ),
         };
@@ -85,6 +85,16 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     case 'REMOVE_FROM_CART':
       return { ...state, cart: state.cart.filter(item => item.product.id !== action.payload) };
     case 'UPDATE_CART_QUANTITY':
+      // Validate stock before updating quantity
+      const itemToUpdate = state.cart.find(item => item.product.id === action.payload.productId);
+      if (itemToUpdate) {
+        const quantityValidation = validateAddToCart(itemToUpdate.product, action.payload.quantity);
+        if (!quantityValidation.valid && action.payload.quantity > 0) {
+          console.warn('Cannot update quantity:', quantityValidation.error);
+          return state; // Don't update if validation fails
+        }
+      }
+      
       return {
         ...state,
         cart: state.cart.map(item =>
@@ -125,14 +135,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const mappedProducts = products.map(product => ({
       id: product.id,
       name: product.name,
-      price: product.price,
       image: product.imageUrl,
       category: product.category || '',
       description: product.description || '',
-      sku: product.sku || '',
-      stock: product.inStock ? 10 : 0,
-      retailPrice: product.price,
-      tradePrice: product.price * 0.9,
+      sku: product.sku,
+      stock: product.stock,
+      retailPrice: product.retailPrice,
+      tradePrice: product.tradePrice,
     }));
 
     dispatch({ type: 'SET_PRODUCTS', payload: mappedProducts });

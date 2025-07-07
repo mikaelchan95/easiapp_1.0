@@ -4,17 +4,21 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  price: number;
+  price: number; // Base retail price (before GST)
   originalPrice?: number; // Optional for products with discounts
   category: string;
   imageUrl: ImageSourcePropType;
   inStock: boolean;
+  stock: number; // Actual stock quantity
+  retailPrice: number; // Retail price before GST
+  tradePrice: number; // Trade price before GST (typically 10-15% less)
   rating: number;
-  volume?: string; // Optional volume information (e.g. "700ml", "1L")
-  alcoholContent?: string; // Optional ABV information
+  volume?: string;
+  alcoholContent?: string;
   countryOfOrigin?: string;
   isLimited?: boolean;
   isFeatured?: boolean;
+  sku: string;
 }
 
 // Update to use local assets instead of remote URLs
@@ -28,11 +32,15 @@ export const products: Product[] = [
     category: 'Scotch',
     imageUrl: require('../assets/MAC-2023-Double-Cask-12YO-700ml-bottle-pack-shot-square-WEB-2xl.webp'),
     inStock: true,
+    stock: 25,
+    retailPrice: 110,
+    tradePrice: 95,
     rating: 4.9,
     volume: '700ml',
     alcoholContent: '40%',
     countryOfOrigin: 'Scotland',
-    isFeatured: true
+    isFeatured: true,
+    sku: 'MAC-12-DC-700'
   },
   {
     id: '2',
@@ -42,11 +50,15 @@ export const products: Product[] = [
     category: 'Scotch',
     imageUrl: require('../assets/MAC-2024-18YO-Sherry-Cask-BottleBox-Front-REFLECTION-5000x5000-PNG-300dpi-2xl.webp'),
     inStock: true,
+    stock: 8,
+    retailPrice: 450,
+    tradePrice: 385,
     rating: 4.9,
     volume: '700ml',
     alcoholContent: '43%',
     countryOfOrigin: 'Scotland',
-    isLimited: true
+    isLimited: true,
+    sku: 'MAC-18-SO-700'
   },
   {
     id: '3',
@@ -57,12 +69,16 @@ export const products: Product[] = [
     category: 'Scotch',
     imageUrl: require('../assets/MAC-2024-25YO-Sherry-Oak-BottleBox-Front-REFLECTION-5000x5000-PNG-300dpi-2xl.webp'),
     inStock: false,
+    stock: 0,
+    retailPrice: 2800,
+    tradePrice: 2400,
     rating: 5.0,
     volume: '700ml',
     alcoholContent: '43%',
     countryOfOrigin: 'Scotland',
     isLimited: true,
-    isFeatured: true
+    isFeatured: true,
+    sku: 'MAC-25-SO-700'
   },
   {
     id: '4',
@@ -72,11 +88,15 @@ export const products: Product[] = [
     category: 'Scotch',
     imageUrl: require('../assets/MAC-2024-30YO-Sherry-Cask-BottleBox-Front-REFLECTION-5000x5000-PNG-300dpi-2xl.webp'),
     inStock: true,
+    stock: 3,
+    retailPrice: 5500,
+    tradePrice: 4700,
     rating: 5.0,
     volume: '700ml',
     alcoholContent: '43%',
     countryOfOrigin: 'Scotland',
-    isLimited: true
+    isLimited: true,
+    sku: 'MAC-30-SO-700'
   },
   {
     id: '5',
@@ -87,9 +107,13 @@ export const products: Product[] = [
     category: 'Champagne',
     imageUrl: require('../assets/SHERRY OAK 12 YEARS OLD.webp'), // Temporary placeholder
     inStock: true,
+    stock: 15,
+    retailPrice: 269.99,
+    tradePrice: 230,
     rating: 4.8,
     volume: '750ml',
-    countryOfOrigin: 'France'
+    countryOfOrigin: 'France',
+    sku: 'DOM-P-2013-750'
   },
   {
     id: '6',
@@ -99,10 +123,14 @@ export const products: Product[] = [
     category: 'Cognac',
     imageUrl: require('../assets/SHERRY OAK 12 YEARS OLD.webp'), // Temporary placeholder
     inStock: true,
+    stock: 12,
+    retailPrice: 249.99,
+    tradePrice: 215,
     rating: 4.7,
     volume: '700ml',
     alcoholContent: '40%',
-    countryOfOrigin: 'France'
+    countryOfOrigin: 'France',
+    sku: 'HEN-XO-700'
   },
   {
     id: '7',
@@ -113,11 +141,15 @@ export const products: Product[] = [
     category: 'Japanese Whisky',
     imageUrl: require('../assets/SHERRY OAK 12 YEARS OLD.webp'), // Temporary placeholder
     inStock: true,
+    stock: 20,
+    retailPrice: 159.99,
+    tradePrice: 135,
     rating: 4.6,
     volume: '700ml',
     alcoholContent: '43%',
     countryOfOrigin: 'Japan',
-    isFeatured: true
+    isFeatured: true,
+    sku: 'HIB-JH-700'
   },
   {
     id: '8',
@@ -127,10 +159,14 @@ export const products: Product[] = [
     category: 'Cognac',
     imageUrl: require('../assets/SHERRY OAK 12 YEARS OLD.webp'), // Temporary placeholder
     inStock: true,
+    stock: 2,
+    retailPrice: 4500,
+    tradePrice: 3850,
     rating: 5.0,
     volume: '700ml',
     alcoholContent: '40%',
     countryOfOrigin: 'France',
-    isLimited: true
+    isLimited: true,
+    sku: 'LOU-XIII-700'
   }
 ]; 
