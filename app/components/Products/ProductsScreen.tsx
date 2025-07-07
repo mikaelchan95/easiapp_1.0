@@ -81,7 +81,7 @@ export default function ProductsScreen() {
       <StatusBar barStyle="dark-content" />
       
       {/* Safe Area Spacer for iOS Notch */}
-      <View style={{ height: insets.top, backgroundColor: COLORS.card }} />
+      <View style={[styles.statusBarSpacer, { height: insets.top }]} />
       
       {/* Header with Search Bar */}
       <View style={styles.headerContainer}>
@@ -197,6 +197,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  statusBarSpacer: {
+    backgroundColor: COLORS.card,
   },
   headerContainer: {
     flexDirection: 'row',

@@ -33,6 +33,22 @@ import {
 
 const { width } = Dimensions.get('window');
 
+// Cart Badge Component
+const CartBadge: React.FC = () => {
+  const { state } = useContext(AppContext);
+  const cartItemCount = state.cart.reduce((total, item) => total + item.quantity, 0);
+  
+  if (cartItemCount === 0) return null;
+  
+  return (
+    <View style={styles.cartBadge}>
+      <Text style={styles.cartBadgeText}>
+        {cartItemCount > 99 ? '99+' : cartItemCount.toString()}
+      </Text>
+    </View>
+  );
+};
+
 // Define the volume option type for the component
 interface VolumeOption {
   size: string;
@@ -201,6 +217,7 @@ export default function ProductDetailScreen() {
             accessibilityRole="button"
           >
             <Ionicons name="cart-outline" size={24} color={COLORS.text} />
+            <CartBadge />
           </TouchableOpacity>
         </View>
       </View>
@@ -725,5 +742,23 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1a1a1a',
     marginLeft: 8,
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: COLORS.error,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.card,
+  },
+  cartBadgeText: {
+    color: COLORS.card,
+    fontSize: 12,
+    fontWeight: '700',
   },
 }); 

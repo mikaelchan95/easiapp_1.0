@@ -117,12 +117,16 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
     }
   };
 
-  // Handle location selection from search
+  // Handle location selection from search - auto-confirm pickup location
   const handleLocationSelection = (location: LocationSuggestion, isPickup: boolean) => {
     if (isPickup) {
       setPickupLocation(location);
       // Update global delivery location when pickup changes
       setDeliveryLocation(location);
+      // Auto-confirm pickup location selection
+      setTimeout(() => {
+        onLocationSelect(location);
+      }, 300);
     } else {
       setDropoffLocation(location);
     }
@@ -140,14 +144,14 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
     animateSearchBar(false);
   };
 
-  // Handle confirmation
+  // Handle confirmation - now automatically confirms when location is selected
   const handleConfirmLocation = () => {
     // Use pickup location as the main delivery location for this context
     const locationToConfirm = pickupLocation || deliveryLocation;
     if (locationToConfirm) {
       // Update global delivery location
       setDeliveryLocation(locationToConfirm);
-      // Call parent callback
+      // Call parent callback immediately
       onLocationSelect(locationToConfirm);
     }
   };
@@ -301,21 +305,14 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
           </View>
         </View>
         
-        <TouchableOpacity 
-          style={[
-            styles.confirmButton,
-            (!pickupLocation && !deliveryLocation) && styles.confirmButtonDisabled
-          ]} 
-          onPress={handleConfirmLocation}
-          disabled={!pickupLocation && !deliveryLocation}
-        >
-          <Text style={[
-            styles.confirmButtonText,
-            (!pickupLocation && !deliveryLocation) && styles.confirmButtonTextDisabled
-          ]}>
-            Confirm
-          </Text>
-        </TouchableOpacity>
+        {/* Auto-confirm enabled - no manual confirm button needed */}
+        {(!pickupLocation && !deliveryLocation) && (
+          <View style={styles.instructionText}>
+            <Text style={styles.instructionTextContent}>
+              Search for your location above or use current location
+            </Text>
+          </View>
+        )}
       </Animated.View>
     </SafeAreaView>
   );
@@ -502,11 +499,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
   },
-  confirmButtonDisabled: {
-    backgroundColor: COLORS.border,
+  instructionText: {
+    padding: 16,
+    alignItems: 'center',
   },
-  confirmButtonTextDisabled: {
+  instructionTextContent: {
+    fontSize: 14,
     color: COLORS.textSecondary,
+    textAlign: 'center',
   },
 });
 
