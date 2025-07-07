@@ -22,6 +22,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import ExpandableSearch from '../Products/ExpandableSearch';
 import { HapticFeedback } from '../../utils/haptics';
+import LocationPickerModal from '../Location/LocationPickerModal';
+import { useAppContext } from '../../context/AppContext';
 
 type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -30,6 +32,8 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [currentBanner, setCurrentBanner] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [locationPickerVisible, setLocationPickerVisible] = useState(false);
+  const { state } = useAppContext();
   
   // Auto-rotate banner every 6 seconds
   useEffect(() => {
@@ -85,14 +89,8 @@ export default function HomeScreen() {
   }, [navigation]);
   
   const handleAddressPress = useCallback(() => {
-    // Navigate to address selection in profile
-    navigation.dispatch(
-      CommonActions.navigate({
-        name: 'Main',
-        params: { screen: 'Profile' }
-      })
-    );
-  }, [navigation]);
+    setLocationPickerVisible(true);
+  }, []);
   
   const handleRewardsPress = useCallback(() => {
     navigation.dispatch(
@@ -125,7 +123,11 @@ export default function HomeScreen() {
       
       <View style={styles.headerContainer}>
         {/* Sticky Header - Without Search */}
-        <MobileHeader onAddressPress={handleAddressPress} showSearch={false} />
+        <MobileHeader 
+          onAddressPress={handleAddressPress} 
+          showSearch={false}
+          currentAddress={{ name: state.selectedLocation?.title || 'Select Location' }}
+        />
         
         {/* Search Bar */}
         <ExpandableSearch onProductSelect={handleProductSelect} />
@@ -187,6 +189,12 @@ export default function HomeScreen() {
         {/* Bottom padding for better scrolling experience */}
         <View style={styles.bottomPadding} />
       </ScrollView>
+      
+      {/* Location Picker Modal */}
+      <LocationPickerModal
+        visible={locationPickerVisible}
+        onClose={() => setLocationPickerVisible(false)}
+      />
     </View>
   );
 }
