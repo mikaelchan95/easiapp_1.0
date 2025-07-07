@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { DeliveryAddress } from './CheckoutScreen';
 import { LocationSuggestion } from '../../types/location';
+import { GoogleMapsService } from '../../services/googleMapsService';
+import { HapticFeedback } from '../../utils/haptics';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
 
 interface AddressStepProps {
@@ -64,23 +66,42 @@ const AddressStep: React.FC<AddressStepProps> = ({
     }
   };
 
-  // Handle location selection from picker
-  const handleLocationSelect = (location: LocationSuggestion) => {
-    setSelectedLocation(location);
-    
-    // Update address fields from location
-    const updatedAddress = {
-      ...address,
-      street: location.title,
-      city: extractCityFromSubtitle(location.subtitle || ''),
-      postalCode: extractPostalCodeFromSubtitle(location.subtitle || ''),
-    };
-    
-    setAddress(updatedAddress);
-    
-    // Clear street error if it exists
-    if (errors.street) {
-      setErrors(prev => ({ ...prev, street: '' }));
+  // Handle location selection from picker with validation
+  const handleLocationSelect = async (location: LocationSuggestion) => {
+    try {
+      HapticFeedback.selection();
+      
+      // Validate the location
+      const validation = await GoogleMapsService.validateLocation(location);
+      
+      if (!validation.valid) {
+        HapticFeedback.error();
+        alert(validation.error || 'Unable to deliver to this location');
+        return;
+      }
+      
+      setSelectedLocation(location);
+      
+      // Update address fields from location
+      const updatedAddress = {
+        ...address,
+        street: location.title,
+        city: extractCityFromSubtitle(location.subtitle || ''),
+        postalCode: extractPostalCodeFromSubtitle(location.subtitle || ''),
+      };
+      
+      setAddress(updatedAddress);
+      
+      // Clear street error if it exists
+      if (errors.street) {
+        setErrors(prev => ({ ...prev, street: '' }));
+      }
+      
+      HapticFeedback.success();
+    } catch (error) {
+      console.error('Error validating location:', error);
+      HapticFeedback.error();
+      alert('Unable to validate location. Please try again.');
     }
   };
 
@@ -107,6 +128,7 @@ const AddressStep: React.FC<AddressStepProps> = ({
 
   // Navigate to location picker
   const openLocationPicker = () => {
+    HapticFeedback.selection();
     // @ts-ignore - Navigation params will be handled by the screen
     navigation.navigate('DeliveryLocationScreen', {
       onLocationSelect: handleLocationSelect,
@@ -140,7 +162,10 @@ const AddressStep: React.FC<AddressStepProps> = ({
   
   const handleContinue = () => {
     if (validateAddress()) {
+      HapticFeedback.success();
       onContinue(address);
+    } else {
+      HapticFeedback.error();
     }
   };
   
@@ -156,6 +181,10 @@ const AddressStep: React.FC<AddressStepProps> = ({
           <TouchableOpacity
             style={[styles.locationButton, errors.street && styles.locationButtonError]}
             onPress={openLocationPicker}
+            accessible={true}
+            accessibilityLabel={selectedLocation ? `Current address: ${selectedLocation.title}` : "Select delivery address"}
+            accessibilityRole="button"
+            accessibilityHint="Opens location picker to choose delivery address"
           >
             <View style={styles.locationButtonContent}>
               <Ionicons name="location" size={20} color={COLORS.primary} />
