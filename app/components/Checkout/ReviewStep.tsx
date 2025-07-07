@@ -214,22 +214,25 @@ const styles = StyleSheet.create({
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
+    padding: 4,
   },
   itemImage: {
-    width: 60,
-    height: 60,
+    width: 70,
+    height: 70,
     borderRadius: 8,
     marginRight: 12,
+    resizeMode: 'contain',
   },
   itemInfo: {
     flex: 1,
+    marginRight: 8,
   },
   itemName: {
     fontSize: 15,
     fontWeight: '600',
     color: '#1a1a1a',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   itemMeta: {
     fontSize: 13,
@@ -239,6 +242,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#1a1a1a',
+    minWidth: 60,
+    textAlign: 'right',
   },
   detailRow: {
     flexDirection: 'row',
