@@ -11,17 +11,18 @@ const OrderSuccessScreen: React.FC = () => {
   const route = useRoute<OrderSuccessRouteProp>();
   const { orderId, deliveryDate, deliveryTime } = route.params || {};
   const [countdown, setCountdown] = useState(5);
+  const [autoRedirect, setAutoRedirect] = useState(true);
   
-  // Auto-redirect countdown with actual navigation
+  // Auto-redirect countdown with actual navigation (only if enabled)
   useEffect(() => {
-    if (countdown > 0) {
+    if (autoRedirect && countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
-    } else {
+    } else if (autoRedirect && countdown === 0) {
       // Auto redirect to home when countdown reaches 0
       handleContinueShopping();
     }
-  }, [countdown]);
+  }, [countdown, autoRedirect]);
   
   const handleTrackOrder = () => {
     // Navigate to order tracking screen
@@ -135,7 +136,18 @@ const OrderSuccessScreen: React.FC = () => {
         
         <TouchableOpacity style={styles.shopButton} onPress={handleContinueShopping}>
           <Text style={styles.shopButtonText}>Continue Shopping</Text>
-          <Text style={styles.redirectText}>Auto-redirect in {countdown}s</Text>
+          {autoRedirect && (
+            <TouchableOpacity 
+              onPress={() => setAutoRedirect(false)} 
+              style={styles.cancelAutoRedirect}
+              accessibilityLabel="Cancel auto-redirect"
+              accessibilityHint="Tap to stay on this page"
+            >
+              <Text style={styles.redirectText}>
+                Auto-redirect in {countdown}s • <Text style={styles.cancelText}>Cancel</Text>
+              </Text>
+            </TouchableOpacity>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -321,6 +333,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginTop: 4,
+  },
+  cancelAutoRedirect: {
+    marginTop: 4,
+    paddingVertical: 4,
+  },
+  cancelText: {
+    color: '#007AFF',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
 

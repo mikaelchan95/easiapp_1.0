@@ -12,10 +12,10 @@ export const COLORS = {
   background: 'hsl(0, 0%, 98%)', // Frame background (98% lightness)
   card: 'hsl(0, 0%, 100%)', // Canvas white for cards
   text: 'hsl(0, 0%, 0%)', // Black for text
-  textSecondary: 'hsl(0, 0%, 30%)', // Dark gray for secondary text  
+  textSecondary: 'hsl(0, 0%, 35%)', // Updated for WCAG AA compliance (4.5:1 ratio)
   border: 'hsl(0, 0%, 90%)', // Subtle light gray for borders
-  placeholder: '#999999', // Medium gray for placeholders
-  inactive: '#666666', // Dark gray for inactive elements
+  placeholder: 'hsl(0, 0%, 40%)', // Updated for better contrast
+  inactive: 'hsl(0, 0%, 45%)', // Updated for WCAG compliance
   
   // Status colors
   success: '#4CAF50',
