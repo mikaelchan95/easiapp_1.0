@@ -1,7 +1,19 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Image } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  FlatList, 
+  Animated,
+  Modal,
+  ActivityIndicator
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRewards, TierLevel } from '../../context/RewardsContext';
+import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 
 // Mock rewards data
 const mockRewards = [
@@ -56,125 +68,297 @@ const mockLoyalty = {
   ]
 };
 
-export default function RewardsScreen() {
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const categories = ['All', 'discount', 'shipping', 'experience', 'merchandise'];
+// Tier Badge Component
+const TierBadge = ({ tier, size = 'large' }: { tier: TierLevel; size?: 'small' | 'large' }) => {
+  const colors = {
+    Bronze: '#CD7F32',
+    Silver: '#C0C0C0', 
+    Gold: '#FFD700'
+  };
   
-  const filteredRewards = selectedCategory === 'All' 
-    ? mockRewards 
-    : mockRewards.filter(reward => reward.category === selectedCategory);
+  const iconSize = size === 'large' ? 32 : 20;
+  const containerSize = size === 'large' ? 64 : 40;
   
-  // Use useCallback to ensure this function is stable across renders
-  const calculateProgress = useCallback(() => {
-    const total = mockLoyalty.points + mockLoyalty.pointsToNextTier;
-    return (mockLoyalty.points / total) * 100;
-  }, []);
+  return (
+    <View style={[
+      styles.tierBadge,
+      { 
+        backgroundColor: colors[tier], 
+        width: containerSize, 
+        height: containerSize 
+      }
+    ]}>
+      <Ionicons name="trophy" size={iconSize} color={COLORS.accent} />
+    </View>
+  );
+};
+
+// Points History Modal
+const PointsHistoryModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+  const { state } = useRewards();
   
-  // Use useCallback to ensure this function is stable across renders
-  const renderRewardItem = useCallback(({ item }) => (
-    <TouchableOpacity style={styles.rewardCard}>
-      <Image 
-        source={{ uri: item.imageUrl }} 
-        style={styles.rewardImage}
-      />
-      <View style={styles.rewardContent}>
-        <Text style={styles.rewardTitle}>{item.title}</Text>
-        <Text style={styles.rewardDescription} numberOfLines={2}>
-          {item.description}
-        </Text>
-        <View style={styles.rewardFooter}>
-          <Text style={styles.pointsText}>{item.points} points</Text>
-          <TouchableOpacity style={styles.redeemButton}>
-            <Text style={styles.redeemButtonText}>Redeem</Text>
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Points History</Text>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Ionicons name="close" size={24} color={COLORS.text} />
           </TouchableOpacity>
         </View>
-      </View>
-    </TouchableOpacity>
-  ), []);
+        
+        <FlatList
+          data={state.userRewards.pointsHistory}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.historyList}
+          renderItem={({ item }) => (
+            <View style={styles.historyItem}>
+              <View style={styles.historyContent}>
+                <Text style={styles.historyDescription}>{item.description}</Text>
+                <Text style={styles.historyDate}>{item.date}</Text>
+                {item.orderId && (
+                  <Text style={styles.historyOrderId}>Order: {item.orderId}</Text>
+                )}
+              </View>
+              <Text style={[
+                styles.historyPoints,
+                item.type === 'earned' ? styles.pointsEarned : styles.pointsRedeemed
+              ]}>
+                {item.type === 'earned' ? '+' : ''}{item.points.toLocaleString()}
+              </Text>
+            </View>
+          )}
+        />
+      </SafeAreaView>
+    </Modal>
+  );
+};
+
+export default function RewardsScreen() {
+  const { state, redeemReward, getTierBenefits, getPointsToNextTier } = useRewards();
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [showHistory, setShowHistory] = useState(false);
+  const [redeeming, setRedeeming] = useState<string | null>(null);
   
-  if (filteredRewards.length === 0) {
+  // Animation for tier progress
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  
+  React.useEffect(() => {
+    const progress = calculateProgress();
+    Animated.timing(progressAnim, {
+      toValue: progress,
+      duration: 1000,
+      useNativeDriver: false
+    }).start();
+  }, [state.userRewards.yearlySpend]);
+  
+  const calculateProgress = useCallback(() => {
+    const pointsToNext = getPointsToNextTier();
+    if (pointsToNext === 0) return 100; // Already Gold
+    
+    const currentTierMin = state.userRewards.tier === 'Bronze' ? 0 : 50001;
+    const nextTierMin = state.userRewards.tier === 'Bronze' ? 50001 : 200001;
+    const range = nextTierMin - currentTierMin;
+    const progress = ((state.userRewards.yearlySpend - currentTierMin) / range) * 100;
+    
+    return Math.min(Math.max(progress, 0), 100);
+  }, [state.userRewards.yearlySpend, state.userRewards.tier]);
+  
+  const handleRedeem = async (rewardId: string) => {
+    setRedeeming(rewardId);
+    const success = await redeemReward(rewardId);
+    setRedeeming(null);
+    
+    if (success) {
+      // Show success feedback
+      // In real app, would show a toast/notification
+    }
+  };
+  
+  const filteredRewards = selectedCategory === 'all' 
+    ? state.rewardsCatalog
+    : state.rewardsCatalog.filter(r => r.type === selectedCategory);
+  
+  const categories = [
+    { id: 'all', label: 'All Rewards' },
+    { id: 'voucher', label: 'Vouchers' },
+    { id: 'bundle', label: 'Bundles' },
+    { id: 'swag', label: 'Merchandise' }
+  ];
+  
+  const renderRewardItem = ({ item }: { item: typeof state.rewardsCatalog[0] }) => {
+    const canRedeem = state.userRewards.points >= item.points;
+    const isRedeeming = redeeming === item.id;
+    
     return (
-      <View style={styles.emptyContainer}>
-        <Ionicons name="gift-outline" size={48} color="#ccc" />
-        <Text style={styles.emptyText}>No rewards available yet</Text>
+      <View style={styles.rewardCard}>
+        <View style={styles.rewardHeader}>
+          <View style={styles.rewardIconContainer}>
+            <Ionicons 
+              name={
+                item.type === 'voucher' ? 'pricetag' : 
+                item.type === 'bundle' ? 'cube' : 
+                'gift'
+              } 
+              size={24} 
+              color={COLORS.text} 
+            />
+          </View>
+          <View style={styles.rewardInfo}>
+            <Text style={styles.rewardTitle}>{item.title}</Text>
+            <Text style={styles.rewardDescription}>{item.description}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.rewardFooter}>
+          <Text style={styles.rewardPoints}>{item.points.toLocaleString()} pts</Text>
+          <TouchableOpacity
+            style={[
+              styles.redeemButton,
+              !canRedeem && styles.redeemButtonDisabled
+            ]}
+            onPress={() => handleRedeem(item.id)}
+            disabled={!canRedeem || isRedeeming}
+          >
+            {isRedeeming ? (
+              <ActivityIndicator size="small" color={COLORS.accent} />
+            ) : (
+              <Text style={[
+                styles.redeemButtonText,
+                !canRedeem && styles.redeemButtonTextDisabled
+              ]}>
+                {canRedeem ? 'Redeem' : 'Insufficient Points'}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     );
-  }
-
+  };
+  
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>Activity</Text>
-      </View>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>EASI Rewards</Text>
+          <Text style={styles.title}>Rewards</Text>
+          <Text style={styles.subtitle}>Earn → Build → Redeem</Text>
         </View>
         
-        <View style={styles.pointsCard}>
-          <View style={styles.tierInfo}>
-            <Text style={styles.tierName}>{mockLoyalty.tier} Member</Text>
-            <Text style={styles.pointsBalance}>{mockLoyalty.points} points</Text>
+        {/* Tier Status Card */}
+        <View style={styles.statusCard}>
+          <View style={styles.statusHeader}>
+            <View>
+              <Text style={styles.tierLabel}>Current Status</Text>
+              <Text style={styles.tierName}>{state.userRewards.tier} Member</Text>
+            </View>
+            <TierBadge tier={state.userRewards.tier} />
           </View>
           
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View 
+          <View style={styles.pointsSection}>
+            <Text style={styles.pointsLabel}>Available Points</Text>
+            <Text style={styles.pointsValue}>{state.userRewards.points.toLocaleString()}</Text>
+          </View>
+          
+          <View style={styles.progressSection}>
+            <View style={styles.progressHeader}>
+              <Text style={styles.progressLabel}>12-Month Spend</Text>
+              <Text style={styles.progressValue}>S${state.userRewards.yearlySpend.toLocaleString()}</Text>
+            </View>
+            
+            <View style={styles.progressBarContainer}>
+              <Animated.View 
                 style={[
-                  styles.progressFill, 
-                  { width: `${calculateProgress()}%` }
-                ]} 
+                  styles.progressBar,
+                  {
+                    width: progressAnim.interpolate({
+                      inputRange: [0, 100],
+                      outputRange: ['0%', '100%']
+                    })
+                  }
+                ]}
               />
             </View>
-            <Text style={styles.progressText}>
-              {mockLoyalty.pointsToNextTier} points to {mockLoyalty.nextTier}
-            </Text>
+            
+            {getPointsToNextTier() > 0 && (
+              <Text style={styles.progressText}>
+                S${getPointsToNextTier().toLocaleString()} to {
+                  state.userRewards.tier === 'Bronze' ? 'Silver' : 'Gold'
+                }
+              </Text>
+            )}
           </View>
           
-          <TouchableOpacity style={styles.historyButton}>
+          <TouchableOpacity 
+            style={styles.historyButton}
+            onPress={() => setShowHistory(true)}
+          >
             <Text style={styles.historyButtonText}>View Points History</Text>
-            <Ionicons name="chevron-forward" size={16} color="#007AFF" />
+            <Ionicons name="chevron-forward" size={20} color={COLORS.text} />
           </TouchableOpacity>
         </View>
         
-        <View style={styles.categoriesContainer}>
+        {/* Tier Benefits */}
+        <View style={styles.benefitsCard}>
+          <Text style={styles.benefitsTitle}>Your {state.userRewards.tier} Benefits</Text>
+          {getTierBenefits(state.userRewards.tier).map((benefit, index) => (
+            <View key={index} style={styles.benefitItem}>
+              <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+              <Text style={styles.benefitText}>{benefit}</Text>
+            </View>
+          ))}
+        </View>
+        
+        {/* Rewards Catalog */}
+        <View style={styles.catalogSection}>
+          <Text style={styles.catalogTitle}>Redeem Rewards</Text>
+          
+          {/* Category Filter */}
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoriesScroll}
+            style={styles.categoryScroll}
           >
             {categories.map(category => (
-              <TouchableOpacity 
-                key={category}
+              <TouchableOpacity
+                key={category.id}
                 style={[
                   styles.categoryButton,
-                  selectedCategory === category && styles.categoryButtonActive
+                  selectedCategory === category.id && styles.categoryButtonActive
                 ]}
-                onPress={() => setSelectedCategory(category)}
+                onPress={() => setSelectedCategory(category.id)}
               >
-                <Text 
-                  style={[
-                    styles.categoryButtonText,
-                    selectedCategory === category && styles.categoryButtonTextActive
-                  ]}
-                >
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                <Text style={[
+                  styles.categoryButtonText,
+                  selectedCategory === category.id && styles.categoryButtonTextActive
+                ]}>
+                  {category.label}
                 </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
+          
+          {/* Rewards List */}
+          <FlatList
+            data={filteredRewards}
+            renderItem={renderRewardItem}
+            keyExtractor={item => item.id}
+            scrollEnabled={false}
+            contentContainerStyle={styles.rewardsList}
+          />
         </View>
-        
-        <Text style={styles.sectionTitle}>Available Rewards</Text>
-        
-        <FlatList
-          data={filteredRewards}
-          renderItem={renderRewardItem}
-          keyExtractor={item => item.id}
-          scrollEnabled={false} // We're already in a ScrollView
-          contentContainerStyle={styles.rewardsList}
-        />
       </ScrollView>
+      
+      {/* Points History Modal */}
+      <PointsHistoryModal 
+        visible={showHistory} 
+        onClose={() => setShowHistory(false)} 
+      />
     </SafeAreaView>
   );
 }
@@ -182,187 +366,289 @@ export default function RewardsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  headerContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1a1a1a',
+    backgroundColor: COLORS.background,
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   header: {
-    padding: 16,
-    backgroundColor: '#FFFFFF',
+    padding: SPACING.lg,
+    backgroundColor: COLORS.card,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    ...TYPOGRAPHY.h1,
+    marginBottom: SPACING.xs,
   },
-  pointsCard: {
-    margin: 16,
-    backgroundColor: '#fff',
+  subtitle: {
+    ...TYPOGRAPHY.caption,
+  },
+  
+  // Status Card
+  statusCard: {
+    margin: SPACING.md,
+    padding: SPACING.lg,
+    backgroundColor: COLORS.card,
     borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...SHADOWS.medium,
   },
-  tierInfo: {
+  statusHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: SPACING.lg,
+  },
+  tierLabel: {
+    ...TYPOGRAPHY.caption,
+    marginBottom: SPACING.xs,
   },
   tierName: {
-    fontSize: 18,
+    ...TYPOGRAPHY.h2,
+  },
+  tierBadge: {
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOWS.medium,
+  },
+  
+  // Points Section
+  pointsSection: {
+    paddingVertical: SPACING.md,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: SPACING.lg,
+  },
+  pointsLabel: {
+    ...TYPOGRAPHY.caption,
+    marginBottom: SPACING.xs,
+  },
+  pointsValue: {
+    ...TYPOGRAPHY.h1,
+    color: COLORS.primary,
+  },
+  
+  // Progress Section
+  progressSection: {
+    marginBottom: SPACING.lg,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.sm,
+  },
+  progressLabel: {
+    ...TYPOGRAPHY.caption,
+  },
+  progressValue: {
+    ...TYPOGRAPHY.body,
     fontWeight: '600',
-    color: '#1a1a1a',
   },
-  pointsBalance: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#007AFF',
-  },
-  progressContainer: {
-    marginBottom: 16,
-  },
-  progressBar: {
+  progressBarContainer: {
     height: 8,
-    backgroundColor: '#e1e1e1',
+    backgroundColor: COLORS.border,
     borderRadius: 4,
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: SPACING.sm,
   },
-  progressFill: {
+  progressBar: {
     height: '100%',
-    backgroundColor: '#007AFF',
-    borderRadius: 4,
+    backgroundColor: COLORS.primary,
   },
   progressText: {
-    fontSize: 14,
-    color: '#666',
+    ...TYPOGRAPHY.small,
+    textAlign: 'center',
   },
+  
+  // History Button
   historyButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    backgroundColor: '#f1f3f4',
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.primary,
     borderRadius: 8,
   },
   historyButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#007AFF',
-    marginRight: 4,
+    ...TYPOGRAPHY.body,
+    color: COLORS.accent,
+    fontWeight: '600',
+    marginRight: SPACING.xs,
   },
-  categoriesContainer: {
-    marginBottom: 16,
+  
+  // Benefits Card
+  benefitsCard: {
+    margin: SPACING.md,
+    padding: SPACING.lg,
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    ...SHADOWS.light,
   },
-  categoriesScroll: {
-    paddingHorizontal: 12,
+  benefitsTitle: {
+    ...TYPOGRAPHY.h3,
+    marginBottom: SPACING.md,
+  },
+  benefitItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  benefitText: {
+    ...TYPOGRAPHY.body,
+    marginLeft: SPACING.sm,
+    flex: 1,
+  },
+  
+  // Catalog Section
+  catalogSection: {
+    padding: SPACING.md,
+  },
+  catalogTitle: {
+    ...TYPOGRAPHY.h2,
+    marginBottom: SPACING.md,
+  },
+  categoryScroll: {
+    marginBottom: SPACING.lg,
   },
   categoryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginHorizontal: 4,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    marginRight: SPACING.sm,
+    backgroundColor: COLORS.card,
     borderRadius: 20,
-    backgroundColor: '#f1f3f4',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   categoryButtonActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   categoryButtonText: {
+    ...TYPOGRAPHY.body,
     fontSize: 14,
-    color: '#666',
   },
   categoryButtonTextActive: {
-    color: '#fff',
-    fontWeight: '500',
-  },
-  sectionTitle: {
-    fontSize: 18,
+    color: COLORS.accent,
     fontWeight: '600',
-    color: '#1a1a1a',
-    marginHorizontal: 16,
-    marginBottom: 12,
   },
+  
+  // Rewards List
   rewardsList: {
-    padding: 16,
-    backgroundColor: '#FFFFFF',
+    paddingBottom: SPACING.xl,
   },
   rewardCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.card,
     borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
+    ...SHADOWS.light,
   },
-  rewardImage: {
-    width: '100%',
-    height: 140,
+  rewardHeader: {
+    flexDirection: 'row',
+    marginBottom: SPACING.md,
   },
-  rewardContent: {
-    padding: 16,
+  rewardIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.md,
+  },
+  rewardInfo: {
+    flex: 1,
   },
   rewardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 8,
+    ...TYPOGRAPHY.h4,
+    marginBottom: SPACING.xs,
   },
   rewardDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
+    ...TYPOGRAPHY.caption,
   },
   rewardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  pointsText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#007AFF',
+  rewardPoints: {
+    ...TYPOGRAPHY.h4,
+    color: COLORS.primary,
   },
   redeemButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 4,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+  },
+  redeemButtonDisabled: {
+    backgroundColor: COLORS.border,
   },
   redeemButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#fff',
+    ...TYPOGRAPHY.body,
+    color: COLORS.accent,
+    fontWeight: '600',
   },
-  emptyContainer: {
+  redeemButtonTextDisabled: {
+    color: COLORS.textSecondary,
+  },
+  
+  // Modal Styles
+  modalContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.background,
   },
-  emptyText: {
-    fontSize: 16,
-    color: '#999',
-    marginTop: 16,
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: SPACING.lg,
+    backgroundColor: COLORS.card,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  modalTitle: {
+    ...TYPOGRAPHY.h2,
+  },
+  closeButton: {
+    padding: SPACING.sm,
+  },
+  historyList: {
+    padding: SPACING.md,
+  },
+  historyItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    padding: SPACING.md,
+    borderRadius: 8,
+    marginBottom: SPACING.sm,
+    ...SHADOWS.light,
+  },
+  historyContent: {
+    flex: 1,
+    marginRight: SPACING.md,
+  },
+  historyDescription: {
+    ...TYPOGRAPHY.body,
+    marginBottom: SPACING.xs,
+  },
+  historyDate: {
+    ...TYPOGRAPHY.small,
+  },
+  historyOrderId: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.primary,
+    marginTop: SPACING.xs,
+  },
+  historyPoints: {
+    ...TYPOGRAPHY.h4,
+  },
+  pointsEarned: {
+    color: COLORS.success,
+  },
+  pointsRedeemed: {
+    color: COLORS.error,
   },
 }); 

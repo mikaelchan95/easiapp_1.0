@@ -21,6 +21,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppProvider, AppContext } from './app/context/AppContext';
 import { TransitionProvider } from './app/context/TransitionContext';
 import CartNotificationProvider, { CartNotificationContext } from './app/context/CartNotificationContext';
+import { RewardsProvider } from './app/context/RewardsContext';
 
 // Import screens
 import HomeScreen from './app/components/Home/HomeScreen';
@@ -149,6 +150,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         if (route.name === 'Home') iconName = 'home';
         else if (route.name === 'Products') iconName = isFocused ? 'compass' : 'compass-outline';
         else if (route.name === 'Cart') iconName = isFocused ? 'cart' : 'cart-outline';
+        else if (route.name === 'Rewards') iconName = isFocused ? 'trophy' : 'trophy-outline';
         else if (route.name === 'Chat') iconName = isFocused ? 'chatbubble' : 'chatbubble-outline';
         else if (route.name === 'Profile') iconName = isFocused ? 'person' : 'person-outline';
 
@@ -220,6 +222,7 @@ function MainTabs() {
           if (route.name === 'Home') iconName = 'home';
           else if (route.name === 'Products') iconName = focused ? 'compass' : 'compass-outline';
           else if (route.name === 'Cart') iconName = focused ? 'cart' : 'cart-outline';
+          else if (route.name === 'Rewards') iconName = focused ? 'trophy' : 'trophy-outline';
           else if (route.name === 'Chat') iconName = focused ? 'chatbubble' : 'chatbubble-outline';
           else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
           return (
@@ -233,6 +236,7 @@ function MainTabs() {
           if (route.name === 'Home') label = 'Home';
           else if (route.name === 'Products') label = 'Explore';
           else if (route.name === 'Cart') label = 'Cart';
+          else if (route.name === 'Rewards') label = 'Rewards';
           else if (route.name === 'Chat') label = 'Chat';
           else if (route.name === 'Profile') label = 'Profile';
           return <Text style={{ fontSize: 12, color: focused ? COLORS.primary : COLORS.inactive }}>{label}</Text>;
@@ -255,8 +259,8 @@ function MainTabs() {
         component={HomeScreen}
       />
       <Tab.Screen 
-        name="Chat" 
-        component={ChatScreen}
+        name="Rewards" 
+        component={RewardsScreen}
       />
       <Tab.Screen 
         name="Profile" 
@@ -312,8 +316,9 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AppProvider>
-          <CartNotificationProvider>
-            <TransitionProvider>
+          <RewardsProvider>
+            <CartNotificationProvider>
+              <TransitionProvider>
               <StatusBar style="dark" />
               <NavigationContainer ref={navigationRef} theme={MyTheme}>
                 {/* @ts-ignore - Ignore ID requirement */}
@@ -383,8 +388,9 @@ export default function App() {
               
               {/* Global cart notification with navigation ref */}
               <CartNotificationConsumer navigateToCart={navigateToCart} />
-            </TransitionProvider>
-          </CartNotificationProvider>
+              </TransitionProvider>
+            </CartNotificationProvider>
+          </RewardsProvider>
         </AppProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
