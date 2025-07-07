@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 
 type BalanceCardsProps = {
   onCreditClick?: () => void;
@@ -32,7 +33,7 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
             <View style={styles.signInRight}>
               <View style={styles.signInButton}>
                 <Text style={styles.signInButtonText}>Sign In</Text>
-                <Ionicons name="arrow-forward" size={14} color="#000" />
+                <Ionicons name="arrow-forward" size={14} color={COLORS.text} />
               </View>
             </View>
           </View>
@@ -52,7 +53,7 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
           <View style={styles.cardContent}>
             <View style={styles.cardHeader}>
               <View style={styles.creditIcon}>
-                <Ionicons name="wallet-outline" size={16} color="#fff" />
+                <Ionicons name="wallet-outline" size={16} color={COLORS.card} />
               </View>
               <Text style={styles.cardTitle}>Credit</Text>
             </View>
@@ -69,7 +70,7 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
           <View style={styles.cardContent}>
             <View style={styles.cardHeader}>
               <View style={styles.rewardsIcon}>
-                <Ionicons name="gift-outline" size={16} color="#fff" />
+                <Ionicons name="gift-outline" size={16} color={COLORS.card} />
               </View>
               <Text style={styles.cardTitle}>Rewards</Text>
             </View>
@@ -83,47 +84,44 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
 };
 
 const { width } = Dimensions.get('window');
-const cardWidth = (width - 48) / 2; // Two cards per row with spacing
+const cardWidth = (width - (SPACING.md * 3)) / 2; // Two cards per row with proper spacing
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 16,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.element,
+    paddingBottom: SPACING.md,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: SPACING.md,
   },
   card: {
     width: cardWidth,
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...SHADOWS.medium,
   },
   creditCard: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: COLORS.text, // Black background
   },
   rewardsCard: {
     backgroundColor: '#007AFF',
   },
   signInCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.card,
     width: '100%',
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: COLORS.border,
   },
   cardContent: {
-    padding: 16,
+    padding: SPACING.md,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: SPACING.md,
   },
   creditIcon: {
     width: 24,
@@ -132,7 +130,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: SPACING.element,
   },
   rewardsIcon: {
     width: 24,
@@ -141,22 +139,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: SPACING.element,
   },
   cardTitle: {
-    color: '#fff',
+    color: COLORS.card,
     fontSize: 14,
     fontWeight: '600',
   },
   balanceAmount: {
-    color: '#fff',
+    color: COLORS.card,
     fontSize: 24,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: SPACING.xs,
+    lineHeight: 32,
   },
   balanceLabel: {
     color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 12,
+    lineHeight: 16,
   },
   signInLeft: {
     flex: 1,
@@ -165,28 +165,28 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   signInTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 4,
+    ...TYPOGRAPHY.h4,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
   },
   signInSubtitle: {
-    fontSize: 13,
-    color: '#666',
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
   },
   signInButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFD700',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: SPACING.element,
+    paddingHorizontal: SPACING.card,
     borderRadius: 8,
-    gap: 4,
+    gap: SPACING.xs,
   },
   signInButtonText: {
+    ...TYPOGRAPHY.caption,
     fontSize: 13,
     fontWeight: '600',
-    color: '#1A1A1A',
+    color: COLORS.text,
   },
 });
 
