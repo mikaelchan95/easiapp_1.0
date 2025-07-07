@@ -90,6 +90,7 @@ export default function HomeScreen() {
   }, [navigation]);
   
   const handleAddressPress = useCallback(() => {
+    HapticFeedback.selection();
     // Navigate to the new delivery location picker
     // @ts-ignore - Navigation params will be handled by the screen
     navigation.navigate('DeliveryLocationScreen', {
@@ -130,11 +131,12 @@ export default function HomeScreen() {
       <View style={styles.headerContainer}>
         {/* Delivery Location Header */}
         <View style={styles.locationHeaderContainer}>
-          <DeliveryLocationHeader
-            location={deliveryLocation}
-            onPress={handleAddressPress}
-            style={styles.locationHeader}
-          />
+                  <DeliveryLocationHeader
+          location={deliveryLocation}
+          onPress={handleAddressPress}
+          showDeliveryInfo={true}
+          style={styles.locationHeader}
+        />
         </View>
         
         {/* Search Bar */}

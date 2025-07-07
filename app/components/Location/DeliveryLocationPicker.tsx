@@ -12,6 +12,7 @@ import {
   SafeAreaView,
   ScrollView,
   KeyboardAvoidingView,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +21,7 @@ import { useNavigation } from '@react-navigation/native';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { LocationSuggestion } from '../../types/location';
 import { GoogleMapsService } from '../../services/googleMapsService';
+import { HapticFeedback } from '../../utils/haptics';
 
 const { width, height } = Dimensions.get('window');
 
@@ -52,6 +54,19 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   // Refs
   const searchInputRef = useRef<TextInput>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const mountedRef = useRef(true);
+  const successAnimation = useRef(new Animated.Value(0)).current;
+
+  // Cleanup on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   // Load initial data
   const loadInitialData = useCallback(async () => {
@@ -61,10 +76,16 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
         GoogleMapsService.getCurrentLocation(),
       ]);
       
-      setRecentLocations(recent.slice(0, 3)); // Show max 3 recent
-      setCurrentLocation(current);
+      if (mountedRef.current) {
+        setRecentLocations(recent.slice(0, 3)); // Show max 3 recent
+        setCurrentLocation(current);
+      }
     } catch (error) {
       console.error('Error loading initial data:', error);
+      if (mountedRef.current) {
+        // Show error feedback but don't break the flow
+        HapticFeedback.error();
+      }
     }
   }, []);
 
@@ -72,7 +93,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
     loadInitialData();
   }, [loadInitialData]);
 
-  // Handle search input changes
+  // Handle search input changes with proper cleanup
   const handleSearchChange = useCallback((text: string) => {
     setSearchText(text);
     
@@ -85,16 +106,28 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
     if (text.length > 2) {
       setIsLoading(true);
       
-      // Debounce search
+      // Debounce search with memory leak protection
       searchTimeoutRef.current = setTimeout(async () => {
         try {
+          // Check if component is still mounted
+          if (!mountedRef.current) return;
+          
           const results = await GoogleMapsService.getAutocompleteSuggestions(text);
+          
+          // Double-check mounting status after async operation
+          if (!mountedRef.current) return;
+          
           setSuggestions(results);
         } catch (error) {
           console.error('Search error:', error);
-          setSuggestions([]);
+          if (mountedRef.current) {
+            setSuggestions([]);
+            HapticFeedback.error();
+          }
         } finally {
-          setIsLoading(false);
+          if (mountedRef.current) {
+            setIsLoading(false);
+          }
         }
       }, 300);
     } else {
@@ -103,26 +136,79 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
     }
   }, []);
 
-  // Handle location selection
+  // Handle location selection with validation and feedback
   const handleLocationSelect = useCallback(async (location: LocationSuggestion) => {
-    setSearchText(location.title);
-    setShowSuggestions(false);
-    
-    // Save to recent locations
     try {
-      await GoogleMapsService.addToRecentLocations(location);
+      // Add haptic feedback for selection
+      HapticFeedback.selection();
+      
+      // Validate location before proceeding
+      const validation = await GoogleMapsService.validateLocation(location);
+      
+      if (!validation.valid) {
+        HapticFeedback.error();
+        Alert.alert(
+          'Location Not Available',
+          validation.error || 'Unable to deliver to this location',
+          [{ text: 'OK', style: 'default' }]
+        );
+        return;
+      }
+
+      // Show success animation
+      Animated.sequence([
+        Animated.timing(successAnimation, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(successAnimation, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      setSearchText(location.title);
+      setShowSuggestions(false);
+      
+      // Save to recent locations
+      try {
+        await GoogleMapsService.addToRecentLocations(location);
+      } catch (error) {
+        console.error('Error saving to recent:', error);
+        // Don't block the flow for this error
+      }
+      
+      // Add delivery info to location if available
+      const enrichedLocation = {
+        ...location,
+        deliveryInfo: validation.deliveryInfo,
+      };
+      
+      // Success haptic feedback
+      HapticFeedback.success();
+      
+      // Call parent callback
+      onLocationSelect(enrichedLocation);
+      
+      // Small delay for user feedback, then navigate back
+      setTimeout(() => {
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        }
+      }, 300);
+      
     } catch (error) {
-      console.error('Error saving to recent:', error);
+      console.error('Error selecting location:', error);
+      HapticFeedback.error();
+      Alert.alert(
+        'Error',
+        'Unable to select this location. Please try again.',
+        [{ text: 'OK', style: 'default' }]
+      );
     }
-    
-    // Call parent callback
-    onLocationSelect(location);
-    
-    // Navigate back if we can
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    }
-  }, [onLocationSelect, navigation]);
+  }, [onLocationSelect, navigation, successAnimation]);
 
   // Handle input focus
   const handleInputFocus = () => {
@@ -166,6 +252,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
 
   // Handle back button
   const handleBackPress = () => {
+    HapticFeedback.selection();
     if (showSuggestions) {
       handleInputBlur();
       searchInputRef.current?.blur();
@@ -177,17 +264,32 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   // Handle use current location
   const handleUseCurrentLocation = () => {
     if (currentLocation) {
+      HapticFeedback.selection();
       handleLocationSelect(currentLocation);
+    } else {
+      HapticFeedback.error();
+      Alert.alert(
+        'Location Unavailable',
+        'Unable to get your current location. Please search for an address instead.',
+        [{ text: 'OK', style: 'default' }]
+      );
     }
   };
 
-  // Render suggestion item
+  // Render suggestion item with accessibility
   const renderSuggestionItem = (item: LocationSuggestion, index: number) => (
     <TouchableOpacity
       key={`${item.id}-${index}`}
       style={styles.suggestionItem}
-      onPress={() => handleLocationSelect(item)}
+      onPress={() => {
+        HapticFeedback.selection();
+        handleLocationSelect(item);
+      }}
       activeOpacity={0.7}
+      accessible={true}
+      accessibilityLabel={`Select ${item.title}${item.subtitle ? `, ${item.subtitle}` : ''}`}
+      accessibilityRole="button"
+      accessibilityHint="Tap to select this location for delivery"
     >
       <View style={styles.suggestionIcon}>
         <Ionicons 
@@ -214,9 +316,39 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} translucent />
       
+      {/* Success Animation Overlay */}
+      <Animated.View
+        style={[
+          styles.successOverlay,
+          {
+            opacity: successAnimation,
+            transform: [
+              {
+                scale: successAnimation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.8, 1.1],
+                }),
+              },
+            ],
+          },
+        ]}
+        pointerEvents="none"
+      >
+        <View style={styles.successIndicator}>
+          <Ionicons name="checkmark-circle" size={48} color={COLORS.success} />
+          <Text style={styles.successText}>Location Selected!</Text>
+        </View>
+      </Animated.View>
+      
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={handleBackPress}
+          accessible={true}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
           <Ionicons name="chevron-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Delivery Address</Text>
@@ -361,6 +493,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  successOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    zIndex: 1000,
+  },
+  successIndicator: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: SPACING.lg,
+    alignItems: 'center',
+    ...SHADOWS.medium,
+  },
+  successText: {
+    ...TYPOGRAPHY.body,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: SPACING.sm,
   },
   header: {
     flexDirection: 'row',
