@@ -4,7 +4,8 @@ import {
   Text,
   StyleSheet,
   Animated,
-  Dimensions
+  Dimensions,
+  TouchableOpacity
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS } from '../../utils/theme';
@@ -20,6 +21,10 @@ interface AnimatedFeedbackProps {
   showCartAnimation?: boolean;
   streakCount?: number;
   progressValue?: number;
+  action?: {
+    label: string;
+    onPress: () => void;
+  };
 }
 
 const { width } = Dimensions.get('window');
@@ -33,7 +38,8 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
   onHide,
   showCartAnimation = false,
   streakCount = 0,
-  progressValue = 0
+  progressValue = 0,
+  action
 }) => {
   // Animation values
   const translateY = useRef(new Animated.Value(100)).current;
@@ -310,6 +316,22 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
           </View>
         )}
       </View>
+      
+      {/* Action button if provided */}
+      {action && (
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={action.onPress}
+          activeOpacity={0.7}
+        >
+          <Text style={[
+            styles.actionText,
+            isSpecialType && styles.specialActionText
+          ]}>
+            {action.label}
+          </Text>
+        </TouchableOpacity>
+      )}
     </Animated.View>
   );
 };
@@ -405,6 +427,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#673AB7',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  actionButton: {
+    marginLeft: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 8,
+  },
+  actionText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#007AFF',
+  },
+  specialActionText: {
+    color: '#FFFFFF',
   }
 });
 

@@ -116,7 +116,7 @@ export default function ProductDetailScreen() {
   };
 
   const handleAddToCart = () => {
-    if (!currentProductForPricing) return;
+    if (!currentProductForPricing || isAdding) return; // Prevent multiple clicks
     
     // Validate before adding to cart
     const validation = validateAddToCart(currentProductForPricing, quantity);
@@ -131,33 +131,25 @@ export default function ProductDetailScreen() {
     
     // Set loading state
     setIsAdding(true);
-    setShowProgressAnimation(true);
     
-    // Simplified progress animation (removed race condition)
+    // Add to cart immediately (optimistic update)
+    dispatch({ 
+      type: 'ADD_TO_CART', 
+      payload: { 
+        product: currentProductForPricing, 
+        quantity: quantity 
+      } 
+    });
+    
+    // Show success feedback
+    setJustAdded(true);
+    showCartNotification(product.name);
+    
+    // Reset states after animation
     setTimeout(() => {
-      // Add to cart using context
-      dispatch({ 
-        type: 'ADD_TO_CART', 
-        payload: { 
-          product: currentProductForPricing, 
-          quantity: quantity 
-        } 
-      });
-      
-      // Show success
       setIsAdding(false);
-      setJustAdded(true);
-      
-      // Show global cart notification
-      showCartNotification(product.name);
-      
-      // Hide success after delay
-      setTimeout(() => {
-        setJustAdded(false);
-        setShowProgressAnimation(false);
-        setAddProgress(0);
-      }, 2000);
-    }, 1000); // Simplified 1 second loading
+      setJustAdded(false);
+    }, 1500);
   };
 
   const getStockStatusColor = () => {
@@ -189,6 +181,9 @@ export default function ProductDetailScreen() {
             style={styles.backButton} 
             onPress={() => navigation.goBack()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityLabel="Go back"
+            accessibilityHint="Double tap to go back to previous screen"
+            accessibilityRole="button"
           >
             <Ionicons name="chevron-back" size={24} color={COLORS.text} />
           </TouchableOpacity>
@@ -201,6 +196,9 @@ export default function ProductDetailScreen() {
             style={styles.cartButton}
             onPress={() => navigation.navigate('Main', { screen: 'Cart' })}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityLabel="View cart"
+            accessibilityHint="Double tap to view your shopping cart"
+            accessibilityRole="button"
           >
             <Ionicons name="cart-outline" size={24} color={COLORS.text} />
           </TouchableOpacity>
@@ -424,9 +422,9 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
@@ -440,9 +438,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
   },
   cartButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',

@@ -57,6 +57,12 @@ export default function CartScreen() {
     message: ''
   });
   
+  // Undo state for deleted items
+  const [deletedItem, setDeletedItem] = useState<{ item: CartItem, timeout: NodeJS.Timeout | null }>({
+    item: null as any,
+    timeout: null
+  });
+  
   // Use the AppContext instead of local state
   const { state, dispatch } = React.useContext(AppContext);
   
@@ -127,11 +133,27 @@ export default function CartScreen() {
 
   const handleQuantityChange = (productId: string, newQuantity: number) => {
     if (newQuantity === 0) {
-      // Show feedback for removed item
+      // Find the item being deleted
+      const itemToDelete = state.cart.find(item => item.product.id === productId);
+      if (!itemToDelete) return;
+      
+      // Clear any existing undo timeout
+      if (deletedItem.timeout) {
+        clearTimeout(deletedItem.timeout);
+      }
+      
+      // Store the deleted item for undo
+      const timeout = setTimeout(() => {
+        setDeletedItem({ item: null as any, timeout: null });
+      }, 5000); // 5 second undo window
+      
+      setDeletedItem({ item: itemToDelete, timeout });
+      
+      // Show undo feedback
       setFeedback({
         visible: true,
         type: 'info',
-        message: 'Item removed from cart'
+        message: 'Item removed • Undo'
       });
       
       // Remove the item
@@ -141,6 +163,31 @@ export default function CartScreen() {
       dispatch({ 
         type: 'UPDATE_CART_QUANTITY', 
         payload: { productId, quantity: newQuantity } 
+      });
+    }
+  };
+  
+  const handleUndo = () => {
+    if (deletedItem.item) {
+      // Clear the timeout
+      if (deletedItem.timeout) {
+        clearTimeout(deletedItem.timeout);
+      }
+      
+      // Restore the item
+      dispatch({ 
+        type: 'ADD_TO_CART', 
+        payload: deletedItem.item 
+      });
+      
+      // Clear deleted item state
+      setDeletedItem({ item: null as any, timeout: null });
+      
+      // Show success feedback
+      setFeedback({
+        visible: true,
+        type: 'success',
+        message: 'Item restored'
       });
     }
   };
@@ -306,12 +353,16 @@ export default function CartScreen() {
         />
       </Animated.View>
       
-      {/* Feedback component */}
+      {/* Feedback component with undo support */}
       <AnimatedFeedback
         type={feedback.type}
         message={feedback.message}
         visible={feedback.visible}
         onHide={() => setFeedback(prev => ({ ...prev, visible: false }))}
+        action={feedback.message.includes('Undo') ? {
+          label: 'Undo',
+          onPress: handleUndo
+        } : undefined}
       />
     </View>
   );
@@ -332,9 +383,9 @@ const styles = StyleSheet.create({
     ...SHADOWS.light,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
@@ -345,7 +396,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   placeholder: {
-    width: 40,
+    width: 44,
   },
   listContainer: {
     flex: 1,
