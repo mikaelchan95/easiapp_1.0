@@ -50,7 +50,7 @@ import DeliveryLocationScreen from './app/components/Location/DeliveryLocationSc
 
 // Import types and theme
 import { RootStackParamList, MainTabParamList } from './app/types/navigation';
-import { COLORS, SHADOWS } from './app/utils/theme';
+import { COLORS, SHADOWS, TYPOGRAPHY } from './app/utils/theme';
 import * as Animations from './app/utils/animations';
 
 // Import reusable components
@@ -243,7 +243,7 @@ function MainTabs() {
           else if (route.name === 'Rewards') label = 'Rewards';
           else if (route.name === 'Chat') label = 'Chat';
           else if (route.name === 'Profile') label = 'Profile';
-          return <Text style={{ fontSize: 12, color: focused ? COLORS.primary : COLORS.inactive }}>{label}</Text>;
+          return <Text style={{ ...TYPOGRAPHY.label, color: focused ? COLORS.primary : COLORS.inactive }}>{label}</Text>;
         },
         headerShown: false,
         tabBarShowLabel: true,
@@ -423,7 +423,7 @@ export default function App() {
 
 // Separate component to consume the CartNotificationContext
 const CartNotificationConsumer = React.memo(({ navigateToCart }: { navigateToCart: () => void }) => {
-  const { visible, itemName, hideCartNotification } = React.useContext(CartNotificationContext);
+  const { visible, itemCount, lastItemName, hideCartNotification } = React.useContext(CartNotificationContext);
   
   // Memoize the onViewCart callback to prevent re-renders
   const handleViewCart = React.useCallback(() => {
@@ -433,7 +433,8 @@ const CartNotificationConsumer = React.memo(({ navigateToCart }: { navigateToCar
   return (
     <CartNotification
       visible={visible}
-      itemName={itemName}
+      itemCount={itemCount}
+      lastItemName={lastItemName}
       onHide={hideCartNotification}
       onViewCart={handleViewCart}
     />
@@ -522,8 +523,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.card,
   },
   tabBadgeText: {
+    ...TYPOGRAPHY.tiny,
     color: COLORS.accent,
-    fontSize: 10,
     fontWeight: 'bold',
   },
 }); 

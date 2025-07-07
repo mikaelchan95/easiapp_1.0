@@ -76,49 +76,170 @@ export const SPACING = {
 };
 
 /**
+<<<<<<< HEAD
  * Typography styles with improved hierarchy
+=======
+ * Font sizes following iOS Human Interface Guidelines and Material Design
+ * Based on 16px as the base font size for optimal readability
+ */
+export const FONT_SIZES = {
+  // Headings
+  h1: 28,      // Large titles, hero text
+  h2: 24,      // Section headers, page titles
+  h3: 20,      // Subsection headers
+  h4: 18,      // Card titles, important labels
+  h5: 16,      // Standard headings
+  h6: 14,      // Small headings
+  
+  // Body text
+  body: 16,    // Main body text, standard reading
+  bodySmall: 14, // Secondary body text
+  
+  // UI elements
+  button: 16,  // Button text
+  buttonSmall: 14, // Small button text
+  caption: 14, // Captions, help text
+  label: 12,   // Labels, metadata
+  tiny: 10,    // Badges, very small text
+};
+
+/**
+ * Font weights following system standards
+ */
+export const FONT_WEIGHTS = {
+  light: '300' as TextStyle['fontWeight'],
+  regular: '400' as TextStyle['fontWeight'],
+  medium: '500' as TextStyle['fontWeight'],
+  semibold: '600' as TextStyle['fontWeight'],
+  bold: '700' as TextStyle['fontWeight'],
+  heavy: '800' as TextStyle['fontWeight'],
+};
+
+/**
+ * Typography styles with consistent naming and usage
+ * Use these instead of hardcoded fontSize values
+>>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
  */
 export const TYPOGRAPHY = {
+  // Headings - for titles and section headers
   h1: {
-    fontSize: 24,
-    fontWeight: '700' as TextStyle['fontWeight'],
+    fontSize: FONT_SIZES.h1,
+    fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.text,
+<<<<<<< HEAD
     lineHeight: 32,
+=======
+    lineHeight: FONT_SIZES.h1 * 1.2,
+>>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
   },
   h2: {
-    fontSize: 20,
-    fontWeight: '700' as TextStyle['fontWeight'],
+    fontSize: FONT_SIZES.h2,
+    fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.text,
+<<<<<<< HEAD
     lineHeight: 28,
+=======
+    lineHeight: FONT_SIZES.h2 * 1.2,
+>>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
   },
   h3: {
-    fontSize: 18,
-    fontWeight: '600' as TextStyle['fontWeight'],
+    fontSize: FONT_SIZES.h3,
+    fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.text,
+<<<<<<< HEAD
     lineHeight: 24,
+=======
+    lineHeight: FONT_SIZES.h3 * 1.2,
+>>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
   },
   h4: {
-    fontSize: 16,
-    fontWeight: '600' as TextStyle['fontWeight'],
+    fontSize: FONT_SIZES.h4,
+    fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.text,
+<<<<<<< HEAD
     lineHeight: 22,
+=======
+    lineHeight: FONT_SIZES.h4 * 1.2,
+>>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
   },
+  h5: {
+    fontSize: FONT_SIZES.h5,
+    fontWeight: FONT_WEIGHTS.medium,
+    color: COLORS.text,
+    lineHeight: FONT_SIZES.h5 * 1.2,
+  },
+  h6: {
+    fontSize: FONT_SIZES.h6,
+    fontWeight: FONT_WEIGHTS.medium,
+    color: COLORS.text,
+    lineHeight: FONT_SIZES.h6 * 1.2,
+  },
+  
+  // Body text - for main content
   body: {
-    fontSize: 16,
-    fontWeight: '400' as TextStyle['fontWeight'],
+    fontSize: FONT_SIZES.body,
+    fontWeight: FONT_WEIGHTS.regular,
     color: COLORS.text,
+<<<<<<< HEAD
     lineHeight: 22,
+=======
+    lineHeight: FONT_SIZES.body * 1.4,
+>>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
   },
+  bodySmall: {
+    fontSize: FONT_SIZES.bodySmall,
+    fontWeight: FONT_WEIGHTS.regular,
+    color: COLORS.text,
+    lineHeight: FONT_SIZES.bodySmall * 1.4,
+  },
+  
+  // UI elements
+  button: {
+    fontSize: FONT_SIZES.button,
+    fontWeight: FONT_WEIGHTS.medium,
+    color: COLORS.text,
+    lineHeight: FONT_SIZES.button * 1.2,
+  },
+  buttonSmall: {
+    fontSize: FONT_SIZES.buttonSmall,
+    fontWeight: FONT_WEIGHTS.medium,
+    color: COLORS.text,
+    lineHeight: FONT_SIZES.buttonSmall * 1.2,
+  },
+  
+  // Secondary text
   caption: {
-    fontSize: 14,
-    fontWeight: '400' as TextStyle['fontWeight'],
+    fontSize: FONT_SIZES.caption,
+    fontWeight: FONT_WEIGHTS.regular,
     color: COLORS.textSecondary,
+<<<<<<< HEAD
     lineHeight: 20,
+=======
+    lineHeight: FONT_SIZES.caption * 1.3,
+>>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
   },
-  small: {
-    fontSize: 12,
-    fontWeight: '400' as TextStyle['fontWeight'],
+  label: {
+    fontSize: FONT_SIZES.label,
+    fontWeight: FONT_WEIGHTS.regular,
     color: COLORS.textSecondary,
+<<<<<<< HEAD
     lineHeight: 16,
+=======
+    lineHeight: FONT_SIZES.label * 1.3,
+  },
+  tiny: {
+    fontSize: FONT_SIZES.tiny,
+    fontWeight: FONT_WEIGHTS.regular,
+    color: COLORS.textSecondary,
+    lineHeight: FONT_SIZES.tiny * 1.3,
+  },
+  
+  // Deprecated - keeping for backward compatibility
+  small: {
+    fontSize: FONT_SIZES.label,
+    fontWeight: FONT_WEIGHTS.regular,
+    color: COLORS.textSecondary,
+    lineHeight: FONT_SIZES.label * 1.3,
+>>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
   },
 }; 

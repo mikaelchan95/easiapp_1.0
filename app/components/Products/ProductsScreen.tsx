@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, StatusBar, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { products, Product } from '../../data/mockProducts';
-import ProductCard from './ProductCard';
+import ProductCard from '../UI/ProductCard';
 import EnhancedProductCard from './EnhancedProductCard';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

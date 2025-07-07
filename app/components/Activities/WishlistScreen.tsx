@@ -177,7 +177,7 @@ export default function WishlistScreen() {
       }
     });
     
-    showCartNotification(item.name);
+          showCartNotification(item.name, 1);
   };
   
   const handleProductPress = (item: WishlistItem) => {
@@ -542,8 +542,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   discountText: {
+    ...TYPOGRAPHY.label,
     color: COLORS.accent,
-    fontSize: 12,
     fontWeight: 'bold',
   },
   outOfStockOverlay: {
@@ -557,9 +557,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   outOfStockText: {
+    ...TYPOGRAPHY.h5,
     color: COLORS.accent,
     fontWeight: 'bold',
-    fontSize: 16,
   },
   removeButton: {
     position: 'absolute',

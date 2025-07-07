@@ -3,230 +3,178 @@ import React, { createContext, useState, useEffect, useCallback, useMemo, useRef
 // Cart notification context type
 export type CartNotificationType = {
   visible: boolean;
-  itemName?: string;
-  showCartNotification: (itemName?: string) => void;
+  itemCount: number;
+  lastItemName?: string;
+  showCartNotification: (itemName?: string, quantity?: number) => void;
   hideCartNotification: () => void;
-  purchaseStreak: number;
-  increasePurchaseStreak: () => void;
-  resetPurchaseStreak: () => void;
-  showAnimation: boolean;
-  animationType: 'standard' | 'streak' | 'levelUp';
-  setAnimationType: (type: 'standard' | 'streak' | 'levelUp') => void;
+  clearNotificationQueue: () => void;
 };
 
 // Create the context with default values
 export const CartNotificationContext = createContext<CartNotificationType>({
   visible: false,
-  itemName: undefined,
+  itemCount: 0,
+  lastItemName: undefined,
   showCartNotification: () => {},
   hideCartNotification: () => {},
-  purchaseStreak: 0,
-  increasePurchaseStreak: () => {},
-  resetPurchaseStreak: () => {},
-  showAnimation: false,
-  animationType: 'standard',
-  setAnimationType: () => {},
+  clearNotificationQueue: () => {},
 });
 
 // Provider component
 export const CartNotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Notification state (single object to prevent partial updates)
-  const [cartNotification, setCartNotification] = useState({
+  // Notification state
+  const [notification, setNotification] = useState({
     visible: false,
-    itemName: undefined as string | undefined,
+    itemCount: 0,
+    lastItemName: undefined as string | undefined,
   });
 
-  // Animation state
-  const [purchaseStreak, setPurchaseStreak] = useState(0);
-  const [showAnimation, setShowAnimation] = useState(false);
-  const [animationType, setAnimationType] = useState<'standard' | 'streak' | 'levelUp'>('standard');
-  
-  // Refs for debouncing
-  const pendingNotificationTimer = useRef<NodeJS.Timeout | null>(null);
-  const pendingHideTimer = useRef<NodeJS.Timeout | null>(null);
-  const isNotificationBusy = useRef(false);
+  // Refs for batching and debouncing
+  const batchTimer = useRef<NodeJS.Timeout | null>(null);
+  const hideTimer = useRef<NodeJS.Timeout | null>(null);
+  const pendingItems = useRef<Array<{ name?: string; quantity: number }>>([]);
+  const isProcessing = useRef(false);
 
-  // Auto-hide notification after a delay
-  useEffect(() => {
-    if (cartNotification.visible) {
-      // Clear any pending hide timer
-      if (pendingHideTimer.current) {
-        clearTimeout(pendingHideTimer.current);
-        pendingHideTimer.current = null;
+  // Batch window duration (ms) - items added within this window are batched together
+  const BATCH_WINDOW = 500;
+  // How long to show the notification
+  const DISPLAY_DURATION = 3000;
+
+  // Process batched notifications
+  const processBatch = useCallback(() => {
+    if (pendingItems.current.length === 0) return;
+
+    const totalItems = pendingItems.current.reduce((sum, item) => sum + item.quantity, 0);
+    const lastItem = pendingItems.current[pendingItems.current.length - 1];
+
+    // Update notification state
+    setNotification({
+      visible: true,
+      itemCount: totalItems,
+      lastItemName: lastItem.name,
+    });
+
+    // Clear pending items
+    pendingItems.current = [];
+
+    // Set auto-hide timer
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current);
+    }
+
+    hideTimer.current = setTimeout(() => {
+      setNotification(prev => ({
+        ...prev,
+        visible: false,
+      }));
+    }, DISPLAY_DURATION);
+  }, []);
+
+  // Show notification with batching
+  const showCartNotification = useCallback((itemName?: string, quantity: number = 1) => {
+    // Add to pending items
+    pendingItems.current.push({ name: itemName, quantity });
+
+    // If we're already showing a notification, extend it
+    if (notification.visible) {
+      // Clear existing hide timer
+      if (hideTimer.current) {
+        clearTimeout(hideTimer.current);
       }
+
+      // Update current notification immediately
+      const totalItems = pendingItems.current.reduce((sum, item) => sum + item.quantity, 0);
+      const lastItem = pendingItems.current[pendingItems.current.length - 1];
+
+      setNotification({
+        visible: true,
+        itemCount: notification.itemCount + totalItems,
+        lastItemName: lastItem.name,
+      });
+
+      // Clear pending items since we've processed them
+      pendingItems.current = [];
       
       // Set new hide timer
-      pendingHideTimer.current = setTimeout(() => {
-        hideCartNotification();
-        pendingHideTimer.current = null;
-      }, 3000);
-    }
-    
-    return () => {
-      if (pendingHideTimer.current) {
-        clearTimeout(pendingHideTimer.current);
-        pendingHideTimer.current = null;
-      }
-    };
-  }, [cartNotification.visible]);
+      hideTimer.current = setTimeout(() => {
+        setNotification(prev => ({
+          ...prev,
+          visible: false,
+        }));
+      }, DISPLAY_DURATION);
 
-  // Auto-hide animation after a delay
-  useEffect(() => {
-    let timer: NodeJS.Timeout | null = null;
-    
-    if (showAnimation) {
-      timer = setTimeout(() => {
-        setShowAnimation(false);
-      }, 2000);
+      return;
     }
-    
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [showAnimation]);
 
-  // Update animation type based on streak value
-  useEffect(() => {
-    if (purchaseStreak > 0 && purchaseStreak % 3 === 0) {
-      setAnimationType('streak');
-    } else {
-      setAnimationType('standard');
+    // If not currently showing, start batch timer
+    if (batchTimer.current) {
+      clearTimeout(batchTimer.current);
     }
-  }, [purchaseStreak]);
 
-  // Memoized functions to prevent unnecessary rerenders
-  
-  // Hide notification with debounce
+    batchTimer.current = setTimeout(() => {
+      processBatch();
+      batchTimer.current = null;
+    }, BATCH_WINDOW);
+  }, [notification.visible, notification.itemCount, processBatch]);
+
+  // Hide notification immediately
   const hideCartNotification = useCallback(() => {
-    // If we're already processing a notification change, defer this
-    if (isNotificationBusy.current) {
-      if (pendingHideTimer.current) {
-        clearTimeout(pendingHideTimer.current);
-      }
-      
-      pendingHideTimer.current = setTimeout(() => {
-        hideCartNotification();
-      }, 50);
-      return;
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current);
+      hideTimer.current = null;
     }
-    
-    isNotificationBusy.current = true;
-    
-    // Clear any pending notification timer
-    if (pendingNotificationTimer.current) {
-      clearTimeout(pendingNotificationTimer.current);
-      pendingNotificationTimer.current = null;
-    }
-    
-    setCartNotification({
+
+    setNotification(prev => ({
+      ...prev,
       visible: false,
-      itemName: undefined,
+    }));
+  }, []);
+    
+  // Clear notification queue
+  const clearNotificationQueue = useCallback(() => {
+    if (batchTimer.current) {
+      clearTimeout(batchTimer.current);
+      batchTimer.current = null;
+    }
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current);
+      hideTimer.current = null;
+    }
+    pendingItems.current = [];
+    setNotification({
+      visible: false,
+      itemCount: 0,
+      lastItemName: undefined,
     });
-    
-    // Reset busy flag after a small delay
-    setTimeout(() => {
-      isNotificationBusy.current = false;
-    }, 50);
   }, []);
   
-  // Safely increment streak counter
-  const increasePurchaseStreak = useCallback(() => {
-    setPurchaseStreak(prev => prev + 1);
-  }, []);
-  
-  // Reset streak counter
-  const resetPurchaseStreak = useCallback(() => {
-    setPurchaseStreak(0);
-    setAnimationType('standard');
-  }, []);
-
-  // Show notification with debounce
-  const showCartNotification = useCallback((itemName?: string) => {
-    // If we're already showing a notification, queue this one
-    if (isNotificationBusy.current) {
-      if (pendingNotificationTimer.current) {
-        clearTimeout(pendingNotificationTimer.current);
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (batchTimer.current) {
+        clearTimeout(batchTimer.current);
       }
-      
-      pendingNotificationTimer.current = setTimeout(() => {
-        showCartNotification(itemName);
-      }, 50);
-      return;
+      if (hideTimer.current) {
+        clearTimeout(hideTimer.current);
     }
-    
-    isNotificationBusy.current = true;
-    
-    // Hide any existing notification first
-    if (cartNotification.visible) {
-      setCartNotification({
-        visible: false,
-        itemName: undefined,
-      });
-      
-      // Short delay before showing the new notification
-      setTimeout(() => {
-        setCartNotification({
-          visible: true,
-          itemName,
-        });
-        
-        // Show animation feedback
-        setShowAnimation(true);
-        
-        // Auto-increment purchase streak
-        setPurchaseStreak(prev => prev + 1);
-        
-        // Reset busy flag
-        setTimeout(() => {
-          isNotificationBusy.current = false;
-        }, 50);
-      }, 100);
-    } else {
-      // Show immediately if no notification is visible
-      setCartNotification({
-        visible: true,
-        itemName,
-      });
-      
-      // Show animation feedback
-      setShowAnimation(true);
-      
-      // Auto-increment purchase streak
-      setPurchaseStreak(prev => prev + 1);
-      
-      // Reset busy flag
-      setTimeout(() => {
-        isNotificationBusy.current = false;
-      }, 50);
-    }
-  }, [cartNotification.visible]);
-
-  // Memoize setAnimationType
-  const handleSetAnimationType = useCallback((type: 'standard' | 'streak' | 'levelUp') => {
-    setAnimationType(type);
+    };
   }, []);
 
-  // Memoize the entire context value
+  // Memoize the context value
   const contextValue = useMemo(() => ({
-    ...cartNotification,
+    visible: notification.visible,
+    itemCount: notification.itemCount,
+    lastItemName: notification.lastItemName,
     showCartNotification,
     hideCartNotification,
-    purchaseStreak,
-    increasePurchaseStreak,
-    resetPurchaseStreak,
-    showAnimation,
-    animationType,
-    setAnimationType: handleSetAnimationType,
+    clearNotificationQueue,
   }), [
-    cartNotification, 
+    notification.visible,
+    notification.itemCount,
+    notification.lastItemName,
     showCartNotification, 
     hideCartNotification, 
-    purchaseStreak, 
-    increasePurchaseStreak, 
-    resetPurchaseStreak, 
-    showAnimation, 
-    animationType, 
-    handleSetAnimationType
+    clearNotificationQueue,
   ]);
 
   return (

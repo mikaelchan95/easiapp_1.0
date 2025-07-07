@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
-import * as Animations from '../../utils/animations';
+import { CartNotificationContext } from '../../context/CartNotificationContext';
+import { HapticFeedback } from '../../utils/haptics';
 import QuantitySelector from './QuantitySelector';
 
 interface BuyButtonProps {
@@ -50,30 +51,32 @@ const BuyButton: React.FC<BuyButtonProps> = ({
   const [isSuccess, setIsSuccess] = useState(false);
   const [isPressing, setIsPressing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [shouldShowCartNotification, setShouldShowCartNotification] = useState(false);
   
   const navigation = useNavigation();
+  const { showCartNotification } = useContext(CartNotificationContext);
   
   // Animation values
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const expandAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const bgColorAnim = useRef(new Animated.Value(0)).current;
   const successOpacity = useRef(new Animated.Value(0)).current;
   
   // Handle press animation
   const handlePressIn = () => {
     setIsPressing(true);
+    HapticFeedback.light();
+    
     Animated.timing(scaleAnim, {
       toValue: 0.97,
       duration: 100,
       useNativeDriver: true,
-      easing: Animations.TIMING.easeOut
+      easing: Easing.out(Easing.quad)
     }).start();
   };
   
   const handlePressOut = () => {
     setIsPressing(false);
+    
     Animated.spring(scaleAnim, {
       toValue: 1,
       friction: 5,
@@ -82,24 +85,27 @@ const BuyButton: React.FC<BuyButtonProps> = ({
     }).start();
   };
   
-  // Handle add to cart
+  // Handle add to cart with smooth animation
   const handleAddToCart = () => {
     if (inStock && !isAdding && !isSuccess) {
       // Start loading animation
       setIsAdding(true);
+      
+      // Haptic feedback
+      HapticFeedback.success();
       
       // Trigger pulse animation
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1.05,
           duration: 150,
-          easing: Animations.TIMING.easeOut,
+          easing: Easing.out(Easing.quad),
           useNativeDriver: true
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
           duration: 150,
-          easing: Animations.TIMING.easeInOut,
+          easing: Easing.out(Easing.quad),
           useNativeDriver: true
         })
       ]).start();
@@ -107,20 +113,20 @@ const BuyButton: React.FC<BuyButtonProps> = ({
       // Call the provided onAddToCart callback
       onAddToCart();
       
-      // Simulate API call delay
+      // Simulate API call delay for smooth UX
       setTimeout(() => {
         // Show success state
         setIsAdding(false);
         setIsSuccess(true);
         
-        // Show cart notification
-        setShouldShowCartNotification(true);
+        // Show global cart notification with quantity
+        showCartNotification(productName, quantity);
         
         // Success opacity animation
         Animated.timing(successOpacity, {
           toValue: 1,
           duration: 300,
-          easing: Animations.TIMING.easeOut,
+          easing: Easing.out(Easing.quad),
           useNativeDriver: true
         }).start();
         
@@ -130,29 +136,36 @@ const BuyButton: React.FC<BuyButtonProps> = ({
           Animated.timing(successOpacity, {
             toValue: 0,
             duration: 300,
-            easing: Animations.TIMING.easeInOut,
+            easing: Easing.out(Easing.quad),
             useNativeDriver: true
           }).start();
+          
+          // Call completion callback
+          if (onCartAnimationComplete) {
+            onCartAnimationComplete();
+          }
         }, 1500);
-      }, 600);
+      }, 400);
     }
   };
   
   // Handle buy now
   const handleBuyNow = () => {
     if (inStock && !isAdding && onBuyNow) {
+      HapticFeedback.success();
+      
       // Trigger pulse animation
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1.05,
           duration: 150,
-          easing: Animations.TIMING.easeOut,
+          easing: Easing.out(Easing.quad),
           useNativeDriver: true
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
           duration: 150,
-          easing: Animations.TIMING.easeInOut,
+          easing: Easing.out(Easing.quad),
           useNativeDriver: true
         })
       ]).start();
@@ -164,10 +177,12 @@ const BuyButton: React.FC<BuyButtonProps> = ({
   // Toggle expanded state
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
+    HapticFeedback.light();
+    
     Animated.timing(expandAnim, {
       toValue: isExpanded ? 0 : 1,
       duration: 300,
-      easing: isExpanded ? Animations.TIMING.easeIn : Animations.TIMING.easeOut,
+      easing: isExpanded ? Easing.in(Easing.quad) : Easing.out(Easing.back(1.1)),
       useNativeDriver: false
     }).start();
   };
@@ -176,14 +191,6 @@ const BuyButton: React.FC<BuyButtonProps> = ({
   const handleQuantityChange = (newQuantity: number) => {
     if (onQuantityChange) {
       onQuantityChange(newQuantity);
-    }
-  };
-  
-  // Handle cart notification hide
-  const handleCartNotificationHide = () => {
-    setShouldShowCartNotification(false);
-    if (onCartAnimationComplete) {
-      onCartAnimationComplete();
     }
   };
   
@@ -286,21 +293,6 @@ const BuyButton: React.FC<BuyButtonProps> = ({
       
       {/* Expanded Actions (Buy Now) */}
       {renderExpandedButtons()}
-      
-      {/* Cart Notification */}
-      {productName && (
-        <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 9999 }}>
-          {shouldShowCartNotification && (
-            <View style={{ position: 'relative' }}>
-              <CartNotification
-                visible={shouldShowCartNotification}
-                itemName={productName}
-                onHide={handleCartNotificationHide}
-              />
-            </View>
-          )}
-        </Animated.View>
-      )}
     </View>
   );
 };
@@ -357,8 +349,5 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 });
-
-// Import at the bottom to avoid circular dependency
-import CartNotification from './CartNotification';
 
 export default BuyButton; 

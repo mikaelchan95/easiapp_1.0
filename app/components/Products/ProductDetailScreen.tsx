@@ -62,7 +62,7 @@ interface ExtendedProduct extends Product {
   tastingNotes?: string;
   sameDayEligible?: boolean;
   stockStatus?: string;
-  sku?: string;
+  sku: string;
 }
 
 export default function ProductDetailScreen() {
@@ -88,7 +88,7 @@ export default function ProductDetailScreen() {
   
   // Use AppContext
   const { dispatch, state } = useContext(AppContext);
-  const { showCartNotification, purchaseStreak, animationType } = useContext(CartNotificationContext);
+  const { showCartNotification } = useContext(CartNotificationContext);
   
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
@@ -159,7 +159,7 @@ export default function ProductDetailScreen() {
     
     // Show success feedback
     setJustAdded(true);
-    showCartNotification(product.name);
+    showCartNotification(product.name, quantity);
     
     // Reset states after animation
     setTimeout(() => {
@@ -389,12 +389,10 @@ export default function ProductDetailScreen() {
       
       {/* Feedback notification */}
       <AnimatedFeedback
-        type={justAdded ? (animationType === 'streak' ? 'streak' : 'success') : isAdding ? 'loading' : 'info'}
+        type={justAdded ? 'success' : isAdding ? 'loading' : 'info'}
         message={
           justAdded 
-            ? (animationType === 'streak' 
-                ? `🔥 Streak ${Math.floor(purchaseStreak / 3)}! Added ${product.name}` 
-                : `Added to cart!`)
+            ? `Added to cart!`
             : isAdding 
               ? 'Adding to cart...' 
               : ''
@@ -402,7 +400,7 @@ export default function ProductDetailScreen() {
         visible={isAdding || justAdded}
         position="bottom"
         showCartAnimation={justAdded}
-        streakCount={Math.floor(purchaseStreak / 3)}
+        streakCount={0}
         progressValue={showProgressAnimation ? addProgress : 0}
       />
       

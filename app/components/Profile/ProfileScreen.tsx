@@ -75,12 +75,12 @@ export default function ProfileScreen() {
       
       {/* Header */}
       <View style={styles.headerContainer}>
-        <MobileHeader 
-          title="Profile" 
-          showBackButton={false} 
-          showSearch={false}
-          showCartButton={false}
-        />
+      <MobileHeader 
+        title="Profile" 
+        showBackButton={false} 
+        showSearch={false}
+        showCartButton={false}
+      />
       </View>
 
       <ScrollView 
@@ -641,8 +641,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   menuBadgeText: {
+    ...TYPOGRAPHY.label,
     color: '#FFFFFF',
-    fontSize: 12,
     fontWeight: 'bold',
   },
   newBadge: {
@@ -652,8 +652,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   newBadgeText: {
+    ...TYPOGRAPHY.tiny,
     color: '#FFFFFF',
-    fontSize: 10,
     fontWeight: 'bold',
   },
 
@@ -671,8 +671,8 @@ const styles = StyleSheet.create({
     minHeight: 48, // Proper touch target
   },
   signOutText: {
+    ...TYPOGRAPHY.button,
     color: '#FFFFFF', // White text on black button
-    fontSize: 16,
     fontWeight: '600',
     marginLeft: SPACING.sm,
   },

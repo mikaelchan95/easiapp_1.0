@@ -1,7 +1,7 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import ProductCard from './ProductCard';
+import ProductCard from '../UI/ProductCard';
 import { Product } from '../../data/mockProducts';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
@@ -26,6 +26,8 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
   // Animation values
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(10)).current;
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [loading, setLoading] = useState(false);
   
   // Animate component on mount
   useEffect(() => {
@@ -42,6 +44,48 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
       })
     ]).start();
   }, []);
+
+  // Enhanced messaging based on section type
+  const getActionText = () => {
+    switch (title.toLowerCase()) {
+      case 'limited-time deals':
+      case 'hot deals':
+        return 'Shop Deals';
+      case 'just arrived':
+      case 'new arrivals':
+        return 'See New Items';
+      case 'picked for you':
+      case 'recommended for you':
+        return 'View Picks';
+      default:
+        return 'Shop All';
+    }
+  };
+
+  const getItemCount = () => {
+    const totalCount = products.length;
+    const displayCount = isExpanded ? totalCount : Math.min(3, totalCount);
+    return { displayCount, totalCount };
+  };
+
+  const handleViewAll = async () => {
+    if (loading) return;
+    setLoading(true);
+    
+    // Provide immediate feedback
+    setTimeout(() => {
+      setLoading(false);
+      onViewAll();
+    }, 200);
+  };
+
+  const handleToggleExpanded = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  const { displayCount, totalCount } = getItemCount();
+  const displayProducts = products.slice(0, displayCount);
+  const hasMore = totalCount > displayCount;
   
   if (products.length === 0) return null;
   
@@ -66,15 +110,29 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
             />
           )}
           <Text style={styles.title}>{title}</Text>
+          <View style={styles.countBadge}>
+            <Text style={styles.countText}>{totalCount}</Text>
+          </View>
         </View>
         
         <TouchableOpacity 
-          onPress={onViewAll} 
-          style={styles.viewAllButton}
+          onPress={handleViewAll} 
+          style={[styles.viewAllButton, loading && styles.buttonLoading]}
           activeOpacity={0.7}
+          disabled={loading}
         >
-          <Text style={styles.viewAllText}>View All</Text>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.inactive} />
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <View style={styles.loadingDot} />
+              <View style={[styles.loadingDot, styles.loadingDot2]} />
+              <View style={[styles.loadingDot, styles.loadingDot3]} />
+            </View>
+          ) : (
+            <>
+              <Text style={styles.viewAllText}>{getActionText()}</Text>
+              <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+            </>
+          )}
         </TouchableOpacity>
       </Animated.View>
       
@@ -86,16 +144,44 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
         snapToInterval={160 + SPACING.element} // Card width + margin
         snapToAlignment="start"
       >
-        {products.map((product, index) => (
+        {displayProducts.map((product, index) => (
           <ProductCard
             key={product.id} 
             product={product} 
             onPress={onProductPress}
             style={styles.productCard}
             animationDelay={100 + (index * 50)} // Staggered animation
+            variant={index === 0 ? 'featured' : 'default'}
           />
         ))}
+        
+        {/* Progressive disclosure: Show more button */}
+        {hasMore && !isExpanded && (
+          <TouchableOpacity 
+            style={styles.showMoreCard}
+            onPress={handleToggleExpanded}
+            activeOpacity={0.8}
+          >
+            <View style={styles.showMoreContent}>
+              <Ionicons name="add" size={24} color={COLORS.primary} />
+              <Text style={styles.showMoreText}>Show More</Text>
+              <Text style={styles.showMoreCount}>+{totalCount - displayCount}</Text>
+            </View>
+          </TouchableOpacity>
+        )}
       </ScrollView>
+
+      {/* Collapse button when expanded */}
+      {isExpanded && hasMore && (
+        <TouchableOpacity 
+          style={styles.collapseButton}
+          onPress={handleToggleExpanded}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-up" size={16} color={COLORS.secondary} />
+          <Text style={styles.collapseText}>Show Less</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -119,13 +205,30 @@ const styles = StyleSheet.create({
     marginRight: SPACING.element,
   },
   title: {
+<<<<<<< HEAD
     ...TYPOGRAPHY.h3,
+=======
+    ...TYPOGRAPHY.h4,
+>>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
     fontWeight: '700',
-    color: COLORS.text,
+    color: COLORS.primary,
+    marginRight: SPACING.sm,
+  },
+  countBadge: {
+    backgroundColor: COLORS.primary + '20',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  countText: {
+    ...TYPOGRAPHY.tiny,
+    color: COLORS.primary,
+    fontWeight: '600',
   },
   viewAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
+<<<<<<< HEAD
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.element,
     borderRadius: 16,
@@ -137,6 +240,40 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.inactive,
     marginRight: SPACING.xs,
+=======
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary + '10',
+    minWidth: 80,
+    justifyContent: 'center',
+  },
+  buttonLoading: {
+    opacity: 0.7,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  loadingDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.primary,
+    marginHorizontal: 1,
+  },
+  loadingDot2: {
+    opacity: 0.7,
+  },
+  loadingDot3: {
+    opacity: 0.5,
+  },
+  viewAllText: {
+    ...TYPOGRAPHY.button,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginRight: 4,
+>>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
   },
   scrollContent: {
     paddingLeft: SPACING.md,
@@ -145,6 +282,48 @@ const styles = StyleSheet.create({
   productCard: {
     marginRight: SPACING.element,
     width: 160,
+  },
+  showMoreCard: {
+    width: 120,
+    height: 200,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.sm,
+    backgroundColor: COLORS.background,
+  },
+  showMoreContent: {
+    alignItems: 'center',
+  },
+  showMoreText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.primary,
+    fontWeight: '600',
+    marginTop: SPACING.xs,
+  },
+  showMoreCount: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.secondary,
+    marginTop: 2,
+  },
+  collapseButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    marginTop: SPACING.sm,
+    marginHorizontal: SPACING.md,
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
+  },
+  collapseText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.secondary,
+    marginLeft: 4,
   },
 });
 

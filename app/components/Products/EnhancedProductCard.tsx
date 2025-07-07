@@ -184,8 +184,8 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
           } 
         });
         
-        // Show cart notification
-        showCartNotification(name);
+        // Show cart notification with quantity
+        showCartNotification(name, 1);
         
         // Reset UI state
         setTimeout(() => {
