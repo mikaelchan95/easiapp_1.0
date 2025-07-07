@@ -224,76 +224,105 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     
     if (!selectedLoc) return;
 
-    // Check if the selected location has delivery available
-    if (selectedLoc.coordinate) {
-      const deliveryCheck = GoogleMapsService.isDeliveryAvailable(selectedLoc.coordinate);
-      
-      if (!deliveryCheck.available) {
-        // Provide error haptic feedback
-        try {
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        } catch (error) {
-          // Haptics might not be available on all devices
-        }
-        
-        // Show alert for unavailable delivery
-        Alert.alert(
-          "Delivery Unavailable",
-          `Sorry, delivery to ${selectedLoc.title} is not available at this time. We currently deliver within Singapore city areas.`,
-          [{ text: "OK" }]
-        );
-        
-        // Announce to screen readers
-        AccessibilityInfo.announceForAccessibility(`Delivery to ${selectedLoc.title} is not available`);
-        
-        return;
-      }
-    }
-
-    // Provide haptic feedback
     try {
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (error) {
-      // Haptics might not be available on all devices
-    }
-
-    // Animate header update
-    Animations.springAnimation(headerAnimationValue, 1, 'gentle');
-    
-    // Update the header location display
-    setTimeout(async () => {
-      onLocationSelect(selectedLoc);
-      
-      // Add to recent locations if it's not already there and not current location
-      if (selectedLoc.type !== 'recent' && selectedLoc.type !== 'current') {
-        const newRecent: LocationSuggestion = {
-          ...selectedLoc,
-          type: 'recent'
-        };
+      // Check if the selected location has delivery available
+      if (selectedLoc.coordinate) {
+        const deliveryCheck = GoogleMapsService.isDeliveryAvailable(selectedLoc.coordinate);
         
-        const updatedRecentLocations = [
-          newRecent, 
-          ...state.recentLocations.filter(loc => loc.id !== selectedLoc.id)
-        ].slice(0, MAX_RECENT_LOCATIONS);
-        
-        setState(prev => ({
-          ...prev,
-          recentLocations: updatedRecentLocations
-        }));
-        
-        // Save to storage
-        await saveRecentLocations(updatedRecentLocations);
+        if (!deliveryCheck.available) {
+          // Provide error haptic feedback
+          try {
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          } catch (error) {
+            // Haptics might not be available on all devices
+          }
+          
+          // Show alert for unavailable delivery
+          Alert.alert(
+            "Delivery Unavailable",
+            `Sorry, delivery to ${selectedLoc.title} is not available at this time. We currently deliver within Singapore city areas.`,
+            [{ text: "OK" }]
+          );
+          
+          // Announce to screen readers
+          AccessibilityInfo.announceForAccessibility(`Delivery to ${selectedLoc.title} is not available`);
+          
+          return;
+        }
       }
+
+      // Provide haptic feedback
+      try {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch (error) {
+        // Haptics might not be available on all devices
+      }
+
+      // Animate header update
+      Animations.springAnimation(headerAnimationValue, 1, 'gentle');
       
-      // Close the picker
-      handleClosePicker();
+      // Update the header location display
+      setTimeout(async () => {
+        try {
+          // Safety check for onLocationSelect
+          if (onLocationSelect && typeof onLocationSelect === 'function') {
+            onLocationSelect(selectedLoc);
+          } else {
+            console.error('onLocationSelect is not a function');
+            Alert.alert(
+              "Error",
+              "Unable to update location. Please try again.",
+              [{ text: "OK" }]
+            );
+            return;
+          }
+          
+          // Add to recent locations if it's not already there and not current location
+          if (selectedLoc.type !== 'recent' && selectedLoc.type !== 'current') {
+            const newRecent: LocationSuggestion = {
+              ...selectedLoc,
+              type: 'recent'
+            };
+            
+            const updatedRecentLocations = [
+              newRecent, 
+              ...state.recentLocations.filter(loc => loc.id !== selectedLoc.id)
+            ].slice(0, MAX_RECENT_LOCATIONS);
+            
+            setState(prev => ({
+              ...prev,
+              recentLocations: updatedRecentLocations
+            }));
+            
+            // Save to storage
+            await saveRecentLocations(updatedRecentLocations);
+          }
+          
+          // Close the picker
+          handleClosePicker();
+          
+          // Reset header animation
+          headerAnimationValue.setValue(0);
+        } catch (error) {
+          console.error('Error in handleConfirmLocation:', error);
+          Alert.alert(
+            "Error",
+            "An error occurred while updating the location. Please try again.",
+            [{ text: "OK" }]
+          );
+        }
+      }, 150);
       
-      // Reset header animation
-      headerAnimationValue.setValue(0);
-    }, 150);
-    
-    // Announce to screen readers
-    AccessibilityInfo.announceForAccessibility(`Location confirmed: ${selectedLoc.title}`);
+      // Announce to screen readers
+      AccessibilityInfo.announceForAccessibility(`Location confirmed: ${selectedLoc.title}`);
+    } catch (error) {
+      console.error('Error in handleConfirmLocation:', error);
+      Alert.alert(
+        "Error",
+        "An error occurred while confirming the location. Please try again.",
+        [{ text: "OK" }]
+      );
+    }
   }, [state.selectedLocation, state.recentLocations, onLocationSelect, handleClosePicker, headerAnimationValue, saveRecentLocations]);
 
   // Handle pin drop in map mode
