@@ -10,6 +10,7 @@ export interface LocationSuggestion {
   coordinate?: LocationCoordinate;
   type: 'recent' | 'suggestion' | 'current';
   address?: string;
+  placeId?: string;
 }
 
 export interface LocationPickerState {
