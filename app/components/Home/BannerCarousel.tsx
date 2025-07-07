@@ -83,7 +83,7 @@ const bannerHeight = width * 0.45; // 16:9 aspect ratio
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   banner: {
     width: '100%',

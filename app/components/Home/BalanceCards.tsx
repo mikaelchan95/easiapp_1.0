@@ -87,7 +87,9 @@ const cardWidth = (width - 48) / 2; // Two cards per row with spacing
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   row: {
     flexDirection: 'row',
