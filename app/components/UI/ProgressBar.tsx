@@ -65,6 +65,8 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
       : new Animated.Value(initialRender ? 0 : typeof progress === 'number' ? progress : 0)
   ).current;
   
+  // Separate animation value for native driver animations
+  const nativeAnim = useRef(new Animated.Value(0)).current;
   const streakAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   
@@ -92,7 +94,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
         useNativeDriver: false
       }).start();
       
-      // Fade in
+      // Fade in with native driver
       Animated.timing(opacityAnim, {
         toValue: 1,
         duration: 300,

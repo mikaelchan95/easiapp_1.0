@@ -28,6 +28,8 @@ const { width } = Dimensions.get('window');
 const ProgressBar = React.memo(({ value, total }: { value: number; total: number }) => {
   // For layout animations only (not using native driver)
   const widthAnim = useRef(new Animated.Value(0)).current;
+  // For opacity/transform animations (using native driver)
+  const nativeOpacityAnim = useRef(new Animated.Value(1)).current;
   
   // Calculate percentage
   const percentage = Math.min(Math.max(value / total, 0), 1);

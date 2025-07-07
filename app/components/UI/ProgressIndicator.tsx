@@ -54,6 +54,9 @@ const ProgressIndicator: React.FC<LevelIndicatorProps> = ({
   const levelUpAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   
+  // Separate animated values for native driver animations
+  const nativeLevelUpAnim = useRef(new Animated.Value(0)).current;
+  
   // State for tracking level change animation
   const [isLevelingUp, setIsLevelingUp] = useState(false);
   const [prevPoints, setPrevPoints] = useState(currentPoints);
