@@ -27,6 +27,7 @@ export type RootStackParamList = {
   Rewards: undefined;
   Referrals: undefined;
   OrderDetails: { orderId: string };
+  LocationPickerDemo: undefined;
 };
 
 declare global {
