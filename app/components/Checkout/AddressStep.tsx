@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { DeliveryAddress } from './CheckoutScreen';
+import { LocationSuggestion } from '../../types/location';
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
 
 interface AddressStepProps {
   address: DeliveryAddress;
@@ -12,6 +15,8 @@ const AddressStep: React.FC<AddressStepProps> = ({
   address: initialAddress,
   onContinue
 }) => {
+  const navigation = useNavigation();
+  
   // Use useEffect to set the initial address to avoid direct state initialization
   // that might cause infinite renders
   const [address, setAddress] = useState<DeliveryAddress>({
@@ -24,12 +29,24 @@ const AddressStep: React.FC<AddressStepProps> = ({
     isDefault: false
   });
   
+  const [selectedLocation, setSelectedLocation] = useState<LocationSuggestion | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   // Initialize address with initialAddress only once when the component mounts
   // or when initialAddress changes
   useEffect(() => {
     setAddress(initialAddress);
+    
+    // If we have an address, create a location suggestion for display
+    if (initialAddress.street) {
+      setSelectedLocation({
+        id: 'current_address',
+        title: initialAddress.street,
+        subtitle: `${initialAddress.city}, ${initialAddress.postalCode}`,
+        type: 'suggestion',
+        address: `${initialAddress.street}, ${initialAddress.city}, ${initialAddress.postalCode}`,
+      });
+    }
   }, [JSON.stringify(initialAddress)]);
   
   const updateField = (field: keyof DeliveryAddress, value: string) => {
@@ -46,6 +63,56 @@ const AddressStep: React.FC<AddressStepProps> = ({
       }));
     }
   };
+
+  // Handle location selection from picker
+  const handleLocationSelect = (location: LocationSuggestion) => {
+    setSelectedLocation(location);
+    
+    // Update address fields from location
+    const updatedAddress = {
+      ...address,
+      street: location.title,
+      city: extractCityFromSubtitle(location.subtitle || ''),
+      postalCode: extractPostalCodeFromSubtitle(location.subtitle || ''),
+    };
+    
+    setAddress(updatedAddress);
+    
+    // Clear street error if it exists
+    if (errors.street) {
+      setErrors(prev => ({ ...prev, street: '' }));
+    }
+  };
+
+  // Extract city from location subtitle
+  const extractCityFromSubtitle = (subtitle: string): string => {
+    // For Singapore addresses, usually ends with "Singapore" or has it in the middle
+    if (subtitle.includes('Singapore')) {
+      return 'Singapore';
+    }
+    // Try to extract city from comma-separated parts
+    const parts = subtitle.split(',').map(part => part.trim());
+    if (parts.length > 1) {
+      return parts[parts.length - 2] || 'Singapore'; // Second to last part is usually city
+    }
+    return 'Singapore'; // Default for Singapore
+  };
+
+  // Extract postal code from location subtitle
+  const extractPostalCodeFromSubtitle = (subtitle: string): string => {
+    // Singapore postal codes are 6 digits
+    const postalMatch = subtitle.match(/\b\d{6}\b/);
+    return postalMatch ? postalMatch[0] : '';
+  };
+
+  // Navigate to location picker
+  const openLocationPicker = () => {
+    // @ts-ignore - Navigation params will be handled by the screen
+    navigation.navigate('DeliveryLocationScreen', {
+      onLocationSelect: handleLocationSelect,
+      initialLocation: selectedLocation,
+    });
+  };
   
   const validateAddress = () => {
     const newErrors: Record<string, string> = {};
@@ -55,15 +122,7 @@ const AddressStep: React.FC<AddressStepProps> = ({
     }
     
     if (!address.street.trim()) {
-      newErrors.street = 'Street address is required';
-    }
-    
-    if (!address.city.trim()) {
-      newErrors.city = 'City is required';
-    }
-    
-    if (!address.postalCode.trim()) {
-      newErrors.postalCode = 'Postal code is required';
+      newErrors.street = 'Please select a delivery address';
     }
     
     if (!address.phone.trim()) {
@@ -72,6 +131,11 @@ const AddressStep: React.FC<AddressStepProps> = ({
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  // Check if form is valid without setting errors
+  const isFormValid = () => {
+    return address.name.trim() && address.street.trim() && address.phone.trim();
   };
   
   const handleContinue = () => {
@@ -83,14 +147,49 @@ const AddressStep: React.FC<AddressStepProps> = ({
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <Text style={styles.title}>Delivery Address</Text>
-      <Text style={styles.subtitle}>Please enter your shipping details</Text>
+      <Text style={styles.subtitle}>Where should we deliver your order?</Text>
       
       <View style={styles.form}>
+        {/* Location Picker Button */}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Delivery Address</Text>
+          <TouchableOpacity
+            style={[styles.locationButton, errors.street && styles.locationButtonError]}
+            onPress={openLocationPicker}
+          >
+            <View style={styles.locationButtonContent}>
+              <Ionicons name="location" size={20} color={COLORS.primary} />
+              <View style={styles.locationTextContainer}>
+                {selectedLocation ? (
+                  <>
+                    <Text style={styles.locationTitle} numberOfLines={1}>
+                      {selectedLocation.title}
+                    </Text>
+                    {selectedLocation.subtitle && (
+                      <Text style={styles.locationSubtitle} numberOfLines={1}>
+                        {selectedLocation.subtitle}
+                      </Text>
+                    )}
+                  </>
+                ) : (
+                  <Text style={styles.locationPlaceholder}>
+                    Tap to select delivery address
+                  </Text>
+                )}
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            </View>
+          </TouchableOpacity>
+          {errors.street ? <Text style={styles.errorText}>{errors.street}</Text> : null}
+        </View>
+
+        {/* Contact Details */}
         <View style={styles.formGroup}>
           <Text style={styles.label}>Full Name</Text>
           <TextInput
             style={[styles.input, errors.name && styles.inputError]}
             placeholder="Enter your full name"
+            placeholderTextColor={COLORS.textSecondary}
             value={address.name}
             onChangeText={(value) => updateField('name', value)}
           />
@@ -98,47 +197,14 @@ const AddressStep: React.FC<AddressStepProps> = ({
         </View>
         
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Street Address</Text>
-          <TextInput
-            style={[styles.input, errors.street && styles.inputError]}
-            placeholder="Enter street address"
-            value={address.street}
-            onChangeText={(value) => updateField('street', value)}
-          />
-          {errors.street ? <Text style={styles.errorText}>{errors.street}</Text> : null}
-        </View>
-        
-        <View style={styles.formGroup}>
           <Text style={styles.label}>Unit/Apt/Suite (Optional)</Text>
           <TextInput
             style={styles.input}
             placeholder="E.g., Apt #1234, Unit 567"
+            placeholderTextColor={COLORS.textSecondary}
             value={address.unit}
             onChangeText={(value) => updateField('unit', value)}
           />
-        </View>
-        
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>City</Text>
-          <TextInput
-            style={[styles.input, errors.city && styles.inputError]}
-            placeholder="Enter city"
-            value={address.city}
-            onChangeText={(value) => updateField('city', value)}
-          />
-          {errors.city ? <Text style={styles.errorText}>{errors.city}</Text> : null}
-        </View>
-        
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Postal Code</Text>
-          <TextInput
-            style={[styles.input, errors.postalCode && styles.inputError]}
-            placeholder="Enter postal code"
-            value={address.postalCode}
-            onChangeText={(value) => updateField('postalCode', value)}
-            keyboardType="number-pad"
-          />
-          {errors.postalCode ? <Text style={styles.errorText}>{errors.postalCode}</Text> : null}
         </View>
         
         <View style={styles.formGroup}>
@@ -146,6 +212,7 @@ const AddressStep: React.FC<AddressStepProps> = ({
           <TextInput
             style={[styles.input, errors.phone && styles.inputError]}
             placeholder="Enter phone number"
+            placeholderTextColor={COLORS.textSecondary}
             value={address.phone}
             onChangeText={(value) => updateField('phone', value)}
             keyboardType="phone-pad"
@@ -159,7 +226,7 @@ const AddressStep: React.FC<AddressStepProps> = ({
             onPress={() => updateField('isDefault', address.isDefault ? 'false' : 'true')}
           >
             <View style={[styles.checkboxInner, address.isDefault && styles.checkboxChecked]}>
-              {address.isDefault && <Ionicons name="checkmark" size={16} color="#fff" />}
+              {address.isDefault && <Ionicons name="checkmark" size={16} color={COLORS.card} />}
             </View>
           </TouchableOpacity>
           <Text style={styles.checkboxLabel}>Save as my default address</Text>
@@ -168,12 +235,28 @@ const AddressStep: React.FC<AddressStepProps> = ({
       
       <View style={styles.deliveryInfo}>
         <View style={styles.infoIcon}>
-          <Ionicons name="information-circle" size={24} color="#4CAF50" />
+          <Ionicons name="information-circle" size={24} color={COLORS.success} />
         </View>
         <Text style={styles.infoText}>
-          We deliver to most areas. Your address will be verified in the next step.
+          We deliver to most areas in Singapore. Your address will be verified in the next step.
         </Text>
       </View>
+
+      {/* Continue Button */}
+      <TouchableOpacity
+        style={[styles.continueButton, !isFormValid() && styles.continueButtonDisabled]}
+        onPress={handleContinue}
+        disabled={!isFormValid()}
+      >
+        <Text style={[styles.continueButtonText, !isFormValid() && styles.continueButtonTextDisabled]}>
+          Continue to Delivery Time
+        </Text>
+        <Ionicons 
+          name="arrow-forward" 
+          size={20} 
+          color={!isFormValid() ? COLORS.textSecondary : COLORS.card} 
+        />
+      </TouchableOpacity>
     </ScrollView>
   );
 };
@@ -181,69 +264,101 @@ const AddressStep: React.FC<AddressStepProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: COLORS.background,
   },
   contentContainer: {
-    padding: 16,
+    padding: SPACING.md,
     paddingBottom: 100,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 8,
+    ...TYPOGRAPHY.h1,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 24,
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.lg,
   },
   form: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.card,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
+    padding: SPACING.md,
+    marginBottom: SPACING.lg,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: COLORS.border,
+    ...SHADOWS.light,
   },
   formGroup: {
-    marginBottom: 16,
+    marginBottom: SPACING.md,
   },
   label: {
-    fontSize: 14,
+    ...TYPOGRAPHY.caption,
     fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 8,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  locationButton: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    padding: SPACING.sm,
+  },
+  locationButtonError: {
+    borderColor: COLORS.error,
+  },
+  locationButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationTextContainer: {
+    flex: 1,
+    marginLeft: SPACING.sm,
+  },
+  locationTitle: {
+    ...TYPOGRAPHY.body,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  locationSubtitle: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  locationPlaceholder: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
   },
   input: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: COLORS.background,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: COLORS.border,
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: '#1a1a1a',
+    padding: SPACING.sm,
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
   },
   inputError: {
-    borderColor: '#F44336',
+    borderColor: COLORS.error,
   },
   errorText: {
-    color: '#F44336',
-    fontSize: 12,
-    marginTop: 4,
+    color: COLORS.error,
+    ...TYPOGRAPHY.small,
+    marginTop: SPACING.xs,
   },
   checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: SPACING.xs,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: '#1a1a1a',
-    marginRight: 12,
+    borderColor: COLORS.primary,
+    marginRight: SPACING.sm,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -256,27 +371,53 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.primary,
   },
   checkboxLabel: {
-    fontSize: 14,
-    color: '#1a1a1a',
+    ...TYPOGRAPHY.caption,
+    color: COLORS.text,
   },
   deliveryInfo: {
     flexDirection: 'row',
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.card,
     borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
+    padding: SPACING.md,
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: SPACING.lg,
   },
   infoIcon: {
-    marginRight: 12,
+    marginRight: SPACING.sm,
+    marginTop: 2,
   },
   infoText: {
     flex: 1,
-    fontSize: 14,
-    color: '#1a1a1a',
+    ...TYPOGRAPHY.caption,
+    color: COLORS.text,
     lineHeight: 20,
+  },
+  continueButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    ...SHADOWS.medium,
+  },
+  continueButtonDisabled: {
+    backgroundColor: COLORS.border,
+  },
+  continueButtonText: {
+    ...TYPOGRAPHY.body,
+    fontWeight: '600',
+    color: COLORS.card,
+    marginRight: SPACING.xs,
+  },
+  continueButtonTextDisabled: {
+    color: COLORS.textSecondary,
   },
 });
 
