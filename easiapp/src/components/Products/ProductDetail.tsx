@@ -1,10 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Heart, Minus, Plus, ShoppingCart, Share2, Shield, Check, Truck } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  X, 
+  Plus, 
+  Minus, 
+  ShoppingCart, 
+  Shield, 
+  Truck,
+  Clock,
+  Award,
+  Package,
+  Info,
+  Check
+} from 'lucide-react';
 import { Product } from '../../types';
-import { useProduct } from '../../hooks/useProduct';
-import { formatPrice, getSameDayEligibilityLabel } from '../../utils/product';
-import ProductQuantity from './ProductQuantity';
-import ProductRecommendations from './ProductRecommendations';
+import { useApp } from '../../context/AppContext';
+import { getCategoryIcon, Icon } from '../../utils/icons';
 
 interface ProductDetailProps {
   product: Product;
@@ -12,236 +22,235 @@ interface ProductDetailProps {
 }
 
 const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose }) => {
-  const {
-    quantity,
-    setQuantity,
-    isFavorite,
-    isAdding,
-    justAdded,
-    getPrice,
-    getSavings,
-    handleAddToCart,
-    toggleFavorite,
-    shareProduct,
-    openProductDetail
-  } = useProduct(product);
+  const { state, addToCart } = useApp();
+  const [quantity, setQuantity] = useState(1);
+  const [isAdding, setIsAdding] = useState(false);
+  const [showAddedConfirmation, setShowAddedConfirmation] = useState(false);
   
-  const price = getPrice(product);
-  const savings = getSavings(product);
-  const contentRef = useRef<HTMLDivElement>(null);
+  const price = state.user?.role === 'trade' ? product.tradePrice : product.retailPrice;
+  const savings = state.user?.role === 'trade' ? product.retailPrice - product.tradePrice : 0;
+  const CategoryIcon = getCategoryIcon(product.category);
 
-  // Close with escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
+  const handleAddToCart = () => {
+    if (!state.user || isAdding || product.stock === 0) return;
     
-    window.addEventListener('keydown', handleEscape);
-    document.body.style.overflow = 'hidden'; // Prevent body scrolling
+    setIsAdding(true);
     
-    return () => {
-      window.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = ''; // Restore body scrolling
-    };
-  }, [onClose]);
-
-  // Reset scroll position when product changes
-  useEffect(() => {
-    if (contentRef.current) {
-      contentRef.current.scrollTop = 0;
+    // Haptic feedback
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
     }
-  }, [product]);
-
-  const handleAddToCartClick = () => {
-    handleAddToCart(product, quantity);
-  };
-  
-  const handleRecommendationClick = (recommendedProduct: Product) => {
-    // Close the current modal and open the new one
+    
     setTimeout(() => {
-      openProductDetail(recommendedProduct);
-    }, 100);
-    onClose();
+      addToCart(product, quantity);
+      setIsAdding(false);
+      setShowAddedConfirmation(true);
+      
+      // Hide confirmation after 2 seconds
+      setTimeout(() => {
+        setShowAddedConfirmation(false);
+      }, 2000);
+    }, 600);
+  };
+
+  const incrementQuantity = () => {
+    if (quantity < product.stock) {
+      setQuantity(q => q + 1);
+      if (navigator.vibrate) navigator.vibrate(10);
+    }
+  };
+
+  const decrementQuantity = () => {
+    if (quantity > 1) {
+      setQuantity(q => q - 1);
+      if (navigator.vibrate) navigator.vibrate(10);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center">
-      <div className="relative bg-white rounded-3xl w-full max-h-[92vh] flex flex-col mx-4 animate-fade-in overflow-hidden">
-        {/* Header - Fixed position */}
-        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-xl border-b border-gray-100 rounded-t-3xl">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex space-x-2">
-              <button 
-                onClick={toggleFavorite}
-                className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center active:scale-95 transition-transform"
-              >
-                <Heart className={`w-5 h-5 ${isFavorite ? 'text-red-500 fill-current' : 'text-gray-500'}`} />
-              </button>
-              <button 
-                onClick={() => shareProduct(product)}
-                className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center active:scale-95 transition-transform"
-              >
-                <Share2 className="w-5 h-5 text-gray-500" />
-              </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-hidden animate-scale-up">
+        {/* Header */}
+        <div className="relative">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+            aria-label="Close product details"
+          >
+            <X className="w-5 h-5 text-gray-700" />
+          </button>
+          
+          {/* Product Image */}
+          <div className="aspect-square bg-gray-50 relative overflow-hidden">
+            <img
+              src={product.image}
+              alt={product.name}
+              className="w-full h-full object-contain"
+            />
+            
+            {/* Stock Status Badge */}
+            <div className={`absolute bottom-4 left-4 px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-md ${
+              product.stock > 10 
+                ? 'bg-green-500/90 text-white' 
+                : product.stock > 0 
+                  ? 'bg-amber-500/90 text-white'
+                  : 'bg-red-500/90 text-white'
+            }`}>
+              {product.stock > 10 
+                ? 'In Stock' 
+                : product.stock > 0 
+                  ? `Only ${product.stock} left`
+                  : 'Out of Stock'
+              }
             </div>
-            <button 
-              onClick={onClose}
-              className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center active:scale-95 transition-transform"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
           </div>
         </div>
-        
-        {/* Scrollable Content */}
-        <div ref={contentRef} className="flex-1 overflow-y-auto">
-          {/* Product Image */}
-          <div className="p-4">
-            <div className="relative aspect-square bg-gray-50 rounded-2xl overflow-hidden">
-              <img
-                src={product.image}
-                alt={product.name}
-                className="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
-                loading="lazy"
+
+        {/* Content */}
+        <div className="p-6 space-y-6 overflow-y-auto max-h-[50vh]">
+          {/* Category & SKU */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Icon 
+                icon={CategoryIcon} 
+                size="sm" 
+                className="text-gray-500"
+                aria-label={product.category}
               />
-              <span className="absolute bottom-3 right-3 w-3 h-3 rounded-full border-2 border-white bg-green-500"></span>
-            </div>
-          </div>
-          
-          {/* Product Info */}
-          <div className="px-6 pb-32">
-            {/* Category Badge */}
-            <div className="mb-4">
-              <span className="inline-block bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full capitalize">
+              <span className="text-sm font-medium text-gray-500 capitalize">
                 {product.category}
               </span>
             </div>
-            
-            {/* Title and Price */}
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">{product.name}</h1>
-            <p className="text-sm text-gray-500 mb-4">SKU: {product.sku}</p>
-            
-            <div className="flex items-center mb-6">
-              <div className="text-3xl font-bold text-gray-900 mr-3">
-                {formatPrice(price)}
-              </div>
+            <span className="text-sm text-gray-400">SKU: {product.sku}</span>
+          </div>
+
+          {/* Name & Price */}
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{product.name}</h2>
+            <div className="flex items-baseline space-x-3">
+              <span className="text-3xl font-bold text-gray-900">${price.toFixed(0)}</span>
               {savings > 0 && (
-                <div className="text-lg text-gray-400 line-through">
-                  {formatPrice(product.retailPrice)}
-                </div>
+                <>
+                  <span className="text-lg text-gray-400 line-through">
+                    ${product.retailPrice.toFixed(0)}
+                  </span>
+                  <span className="text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-lg">
+                    Save ${savings.toFixed(0)}
+                  </span>
+                </>
               )}
             </div>
-            
-            {/* Stock Information */}
-            <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
-              <div>
-                <div className="text-sm font-medium text-gray-500">Availability</div>
-                <div className={`font-bold ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm font-medium text-gray-500">Delivery</div>
-                <div className="font-bold text-gray-900">
-                  {product.sameDayEligible !== false ? 'Same-day' : 'Standard'}
-                </div>
-              </div>
-            </div>
-            
-            {/* Description */}
-            <div className="mb-8">
-              <h2 className="text-lg font-bold text-gray-900 mb-3">Description</h2>
-              <p className="text-gray-600 leading-relaxed">{product.description}</p>
-            </div>
-            
-            {/* Trust Signals */}
-            <div className="mb-8">
-              <h2 className="text-lg font-bold text-gray-900 mb-3">Why Choose This</h2>
-              <div className="space-y-4">
-                <div className="flex items-start space-x-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Check className="w-5 h-5 text-green-500" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900">Authentic</h3>
-                    <p className="text-sm text-gray-600">Verified source with certificate of authenticity</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start space-x-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Shield className="w-5 h-5 text-blue-500" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900">Premium Quality</h3>
-                    <p className="text-sm text-gray-600">Proper storage and temperature control</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start space-x-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Truck className="w-5 h-5 text-purple-500" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900">
-                      {product.sameDayEligible !== false ? 'Fast Delivery' : 'Standard Delivery'}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      {getSameDayEligibilityLabel(product)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Recommendations */}
-            <ProductRecommendations
-              product={product}
-              onProductClick={handleRecommendationClick}
-            />
           </div>
-        </div>
-        
-        {/* Fixed Bottom Action Bar */}
-        <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-gray-100 p-4 rounded-b-3xl">
-          <div className="flex items-center justify-between mb-4">
-            <span className="font-bold text-gray-900">Quantity</span>
-            <ProductQuantity 
-              quantity={quantity}
-              onChange={setQuantity}
-              max={product.stock}
-              disabled={product.stock <= 0}
-            />
-          </div>
-          
-          <button
-            onClick={handleAddToCartClick}
-            disabled={product.stock <= 0 || isAdding}
-            className={`w-full h-12 rounded-xl font-bold flex items-center justify-center space-x-2 transition-all ${
-              justAdded
-                ? 'bg-green-500 text-white'
-                : product.stock <= 0
-                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                : 'bg-black text-white active:scale-95'
-            }`}
-          >
-            {justAdded ? (
-              <>
-                <Check className="w-5 h-5" />
-                <span>Added to Cart</span>
-              </>
-            ) : isAdding ? (
-              <>
-                <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
-                <span>Adding...</span>
-              </>
-            ) : (
-              <>
-                <ShoppingCart className="w-5 h-5" />
-                <span>{product.stock <= 0 ? 'Out of Stock' : `Add to Cart • ${formatPrice(price * quantity)}`}</span>
-              </>
+
+          {/* Description */}
+          <p className="text-gray-600 leading-relaxed">{product.description}</p>
+
+          {/* Features */}
+          <div className="space-y-3">
+            {product.sameDayEligible && (
+              <div className="flex items-center space-x-3 text-sm">
+                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <Truck className="w-4 h-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Same Day Delivery</p>
+                  <p className="text-gray-500">Order before 2PM</p>
+                </div>
+              </div>
             )}
-          </button>
+            
+            <div className="flex items-center space-x-3 text-sm">
+              <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
+                <Shield className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <p className="font-medium text-gray-900">100% Authentic</p>
+                <p className="text-gray-500">Guaranteed genuine product</p>
+              </div>
+            </div>
+
+            {product.featured && (
+              <div className="flex items-center space-x-3 text-sm">
+                <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+                  <Award className="w-4 h-4 text-amber-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Featured Product</p>
+                  <p className="text-gray-500">Highly recommended</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Quantity Selector */}
+          {state.user && product.stock > 0 && (
+            <div className="flex items-center space-x-4">
+              <span className="text-sm font-medium text-gray-700">Quantity:</span>
+              <div className="flex items-center bg-gray-100 rounded-xl">
+                <button
+                  onClick={decrementQuantity}
+                  disabled={quantity <= 1}
+                  className="w-10 h-10 flex items-center justify-center active:bg-gray-200 rounded-l-xl transition-colors disabled:opacity-50"
+                  aria-label="Decrease quantity"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <span className="w-12 text-center font-bold">{quantity}</span>
+                <button
+                  onClick={incrementQuantity}
+                  disabled={quantity >= product.stock}
+                  className="w-10 h-10 flex items-center justify-center active:bg-gray-200 rounded-r-xl transition-colors disabled:opacity-50"
+                  aria-label="Increase quantity"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+              <span className="text-sm text-gray-500">
+                ${(price * quantity).toFixed(0)} total
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="p-6 border-t border-gray-100">
+          {state.user ? (
+            <button
+              onClick={handleAddToCart}
+              disabled={product.stock === 0 || isAdding}
+              className={`w-full h-14 rounded-2xl font-bold flex items-center justify-center space-x-2 transition-all active:scale-95 ${
+                product.stock === 0
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : showAddedConfirmation
+                    ? 'bg-green-500 text-white'
+                    : 'bg-black text-white hover:bg-gray-800'
+              }`}
+            >
+              {isAdding ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  <span>Adding...</span>
+                </>
+              ) : showAddedConfirmation ? (
+                <>
+                  <Check className="w-5 h-5" />
+                  <span>Added to Cart!</span>
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="w-5 h-5" />
+                  <span>Add to Cart</span>
+                </>
+              )}
+            </button>
+          ) : (
+            <div className="text-center">
+              <p className="text-gray-600 mb-3">Please sign in to purchase</p>
+              <button className="text-black font-bold underline">
+                Sign In
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

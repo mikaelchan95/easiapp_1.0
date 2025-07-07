@@ -1,156 +1,147 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Search, ShoppingBag, Star, Users } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ChevronRight, Search } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { CategoryIcons, CommerceIcons, Icon } from '../../utils/icons';
 
 const Hero: React.FC = () => {
-  const { state } = useApp();
+  const { dispatch } = useApp();
+
+  const categories = [
+    { name: 'Wine', icon: CategoryIcons.wine },
+    { name: 'Whisky', icon: CategoryIcons.whisky },
+    { name: 'Spirits', icon: CategoryIcons.spirits },
+  ];
+
+  const handleCategoryClick = (category: string) => {
+    dispatch({ 
+      type: 'SET_SELECTED_CATEGORY', 
+      payload: category.toLowerCase() 
+    });
+  };
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const query = formData.get('search') as string;
+    dispatch({ type: 'SET_SEARCH_QUERY', payload: query });
+  };
 
   return (
-    <div className="bg-gradient-to-br from-amber-50 to-orange-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Left Content */}
-          <div>
-            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-              Premium Alcohol
-              <span className="text-amber-600 block">Delivered Fresh</span>
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-              Discover our curated selection of fine wines, premium whisky, craft spirits, and artisanal liqueurs. 
-              From everyday favorites to rare collectibles - we deliver quality to your doorstep.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 mb-12">
-              <Link
-                to="/products"
-                className="bg-amber-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-amber-700 transition-colors flex items-center justify-center space-x-2 shadow-lg"
+    <section className="relative min-h-[600px] bg-gradient-to-br from-amber-600 to-amber-800 text-white overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,0.05) 35px, rgba(255,255,255,0.05) 70px)`
+        }} />
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-4 py-20">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center"
+        >
+          <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            Your Premium Alcohol
+            <span className="block text-amber-200">Delivered Fast</span>
+          </h1>
+          <p className="text-xl md:text-2xl mb-12 text-amber-100">
+            Singapore's finest selection of wines, spirits & more
+          </p>
+
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-12">
+            <div className="relative">
+              <input
+                type="text"
+                name="search"
+                placeholder="Search for Macallan, Dom Pérignon, Hennessy..."
+                className="w-full px-6 py-4 rounded-full text-gray-900 text-lg shadow-lg focus:outline-none focus:ring-4 focus:ring-amber-300"
+              />
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-amber-600 text-white px-6 py-2 rounded-full hover:bg-amber-700 transition-colors"
               >
-                <ShoppingBag className="w-5 h-5" />
-                <span>Shop Now</span>
-              </Link>
-              {!state.user && (
-                <Link
-                  to="/login"
-                  className="border-2 border-amber-600 text-amber-600 px-8 py-4 rounded-lg font-semibold hover:bg-amber-600 hover:text-white transition-colors flex items-center justify-center space-x-2"
-                >
-                  <Users className="w-5 h-5" />
-                  <span>Trade Account</span>
-                </Link>
-              )}
+                <Search className="w-6 h-6" />
+              </button>
             </div>
+          </form>
 
-            {/* Quick Search */}
-            <div className="mb-8">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search whisky, wine, spirits..."
-                  className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent text-lg"
-                  onClick={() => window.location.href = '/products'}
+          {/* Category Cards */}
+          <div className="grid grid-cols-3 gap-4 max-w-xl mx-auto mb-12">
+            {categories.map((category) => (
+              <motion.button
+                key={category.name}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleCategoryClick(category.name)}
+                className="bg-white/10 backdrop-blur-md p-6 rounded-xl hover:bg-white/20 transition-colors"
+              >
+                <Icon 
+                  icon={category.icon} 
+                  size="xl" 
+                  className="mx-auto mb-2 text-amber-200"
+                  aria-label={category.name}
                 />
-              </div>
-            </div>
-
-            {/* Categories */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {[
-                { name: 'Wine', icon: '🍷' },
-                { name: 'Whisky', icon: '🥃' },
-                { name: 'Spirits', icon: '🍸' },
-                { name: 'Liqueurs', icon: '🍹' },
-              ].map((category) => (
-                <Link
-                  key={category.name}
-                  to={`/products?category=${category.name.toLowerCase()}`}
-                  className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow text-center group"
-                >
-                  <div className="text-2xl mb-2">{category.icon}</div>
-                  <div className="font-medium text-gray-900 group-hover:text-amber-600 transition-colors">
-                    {category.name}
-                  </div>
-                </Link>
-              ))}
-            </div>
+                <span className="block font-medium">{category.name}</span>
+              </motion.button>
+            ))}
           </div>
 
-          {/* Right Content - Hero Image */}
-          <div className="relative">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-4">
-                <img
-                  src="https://images.pexels.com/photos/1283219/pexels-photo-1283219.jpeg?auto=compress&cs=tinysrgb&w=400"
-                  alt="Premium Whisky"
-                  className="w-full h-48 object-cover rounded-2xl shadow-lg"
-                />
-                <img
-                  src="https://images.pexels.com/photos/1120873/pexels-photo-1120873.jpeg?auto=compress&cs=tinysrgb&w=400"
-                  alt="Fine Wine"
-                  className="w-full h-32 object-cover rounded-2xl shadow-lg"
-                />
-              </div>
-              <div className="space-y-4 mt-8">
-                <img
-                  src="https://images.pexels.com/photos/5530273/pexels-photo-5530273.jpeg?auto=compress&cs=tinysrgb&w=400"
-                  alt="Premium Spirits"
-                  className="w-full h-32 object-cover rounded-2xl shadow-lg"
-                />
-                <img
-                  src="https://images.pexels.com/photos/774455/pexels-photo-774455.jpeg?auto=compress&cs=tinysrgb&w=400"
-                  alt="Luxury Collection"
-                  className="w-full h-48 object-cover rounded-2xl shadow-lg"
-                />
-              </div>
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto">
+            <div>
+              <p className="text-3xl font-bold text-amber-200">2,000+</p>
+              <p className="text-sm">Premium Products</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-amber-200">1-3hr</p>
+              <p className="text-sm">Express Delivery</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-amber-200">24/7</p>
+              <p className="text-sm">Customer Support</p>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      {/* Trust Badges */}
-      <div className="bg-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <ShoppingBag className="w-8 h-8 text-amber-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Premium Selection</h3>
-              <p className="text-gray-600 text-sm">
-                Curated collection of the world's finest alcoholic beverages
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-amber-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Trade Pricing</h3>
-              <p className="text-gray-600 text-sm">
-                Wholesale rates for restaurants, bars, and retailers
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🚚</span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Fast Delivery</h3>
-              <p className="text-gray-600 text-sm">
-                Same-day delivery across Singapore with temperature control
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Star className="w-8 h-8 text-amber-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Authenticity Guaranteed</h3>
-              <p className="text-gray-600 text-sm">
-                100% authentic products with certificates of authenticity
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      {/* Floating Elements */}
+      <motion.div
+        animate={{ 
+          y: [0, -10, 0],
+          rotate: [0, 5, 0]
+        }}
+        transition={{ 
+          duration: 4, 
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="absolute bottom-10 right-10 bg-amber-500 text-white px-6 py-3 rounded-full shadow-xl flex items-center space-x-2"
+      >
+        <Icon 
+          icon={CommerceIcons.delivery} 
+          size="md"
+          aria-label="Same day delivery"
+        />
+        <span className="font-bold">Same Day Delivery</span>
+      </motion.div>
+
+      {/* CTA Button */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.8 }}
+        className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
+      >
+        <button className="bg-white text-amber-600 px-8 py-3 rounded-full font-bold shadow-lg hover:shadow-xl transition-shadow flex items-center space-x-2">
+          <span>Shop Now</span>
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </motion.div>
+    </section>
   );
 };
 
