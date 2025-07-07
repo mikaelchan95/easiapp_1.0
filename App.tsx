@@ -35,6 +35,13 @@ import OrderSuccessScreen from './app/components/Checkout/OrderSuccessScreen';
 import OrderTrackingScreen from './app/components/Checkout/OrderTrackingScreen';
 import MomentumShowcase from './app/components/UI/MomentumShowcase';
 
+// Import Activities screens
+import ActivitiesScreen from './app/components/Activities/ActivitiesScreen';
+import OrderHistoryScreen from './app/components/Activities/OrderHistoryScreen';
+import WishlistScreen from './app/components/Activities/WishlistScreen';
+import ReviewsScreen from './app/components/Activities/ReviewsScreen';
+import SupportScreen from './app/components/Activities/SupportScreen';
+
 // Import types and theme
 import { RootStackParamList, MainTabParamList } from './app/types/navigation';
 import { COLORS, SHADOWS } from './app/utils/theme';
@@ -141,7 +148,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         if (route.name === 'Home') iconName = 'home';
         else if (route.name === 'Products') iconName = isFocused ? 'compass' : 'compass-outline';
         else if (route.name === 'Cart') iconName = isFocused ? 'cart' : 'cart-outline';
-        else if (route.name === 'Rewards') iconName = isFocused ? 'ribbon' : 'ribbon-outline';
+        else if (route.name === 'Activities') iconName = isFocused ? 'grid' : 'grid-outline';
         else if (route.name === 'Profile') iconName = isFocused ? 'person' : 'person-outline';
 
         const onPress = () => {
@@ -212,7 +219,7 @@ function MainTabs() {
           if (route.name === 'Home') iconName = 'home';
           else if (route.name === 'Products') iconName = focused ? 'compass' : 'compass-outline';
           else if (route.name === 'Cart') iconName = focused ? 'cart' : 'cart-outline';
-          else if (route.name === 'Rewards') iconName = focused ? 'ribbon' : 'ribbon-outline';
+          else if (route.name === 'Activities') iconName = focused ? 'grid' : 'grid-outline';
           else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
           return (
             <View style={styles.tabIconContainer}>
@@ -225,7 +232,7 @@ function MainTabs() {
           if (route.name === 'Home') label = 'Home';
           else if (route.name === 'Products') label = 'Explore';
           else if (route.name === 'Cart') label = 'Cart';
-          else if (route.name === 'Rewards') label = 'Activity';
+          else if (route.name === 'Activities') label = 'Activities';
           else if (route.name === 'Profile') label = 'Profile';
           return <Text style={{ fontSize: 12, color: focused ? COLORS.primary : COLORS.inactive }}>{label}</Text>;
         },
@@ -247,8 +254,8 @@ function MainTabs() {
         component={HomeScreen}
       />
       <Tab.Screen 
-        name="Rewards" 
-        component={RewardsScreen}
+        name="Activities" 
+        component={ActivitiesScreen}
       />
       <Tab.Screen 
         name="Profile" 
@@ -337,6 +344,30 @@ export default function App() {
                   <Stack.Screen 
                     name="MomentumShowcase" 
                     component={MomentumShowcase}
+                  />
+                  <Stack.Screen 
+                    name="OrderHistory" 
+                    component={OrderHistoryScreen}
+                  />
+                  <Stack.Screen 
+                    name="Wishlist" 
+                    component={WishlistScreen}
+                  />
+                  <Stack.Screen 
+                    name="Reviews" 
+                    component={ReviewsScreen}
+                  />
+                  <Stack.Screen 
+                    name="Support" 
+                    component={SupportScreen}
+                  />
+                  <Stack.Screen 
+                    name="Rewards" 
+                    component={RewardsScreen}
+                  />
+                  <Stack.Screen 
+                    name="Referrals" 
+                    component={ActivitiesScreen}
                   />
                 </Stack.Navigator>
               </NavigationContainer>
