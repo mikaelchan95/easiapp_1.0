@@ -262,46 +262,51 @@ export class GoogleMapsService {
    * Get current location using device GPS
    */
   static async getCurrentLocation(): Promise<LocationSuggestion | null> {
-    return new Promise((resolve) => {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const coordinate: LocationCoordinate = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          };
+    try {
+      // Request location permissions
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      
+      if (status !== 'granted') {
+        console.log('Location permission not granted');
+        return null;
+      }
 
-          // Reverse geocode to get address
-          const locationData = await this.reverseGeocode(coordinate);
-          
-          if (locationData) {
-            resolve({
-              ...locationData,
-              id: 'current_location',
-              title: 'Current Location',
-              type: 'current',
-            });
-          } else {
-            resolve({
-              id: 'current_location',
-              title: 'Current Location',
-              subtitle: `${coordinate.latitude.toFixed(4)}, ${coordinate.longitude.toFixed(4)}`,
-              type: 'current',
-              coordinate,
-              address: `${coordinate.latitude.toFixed(4)}, ${coordinate.longitude.toFixed(4)}`,
-            });
-          }
-        },
-        (error) => {
-          console.error('Error getting current location:', error);
-          resolve(null);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000, // 5 minutes
-        }
-      );
-    });
+      // Get current position
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+        timeInterval: 10000,
+        distanceInterval: 0
+      });
+
+      const coordinate: LocationCoordinate = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      };
+
+      // Reverse geocode to get address
+      const locationData = await this.reverseGeocode(coordinate);
+      
+      if (locationData) {
+        return {
+          ...locationData,
+          id: 'current_location',
+          title: 'Current Location',
+          type: 'current',
+        };
+      } else {
+        return {
+          id: 'current_location',
+          title: 'Current Location',
+          subtitle: `${coordinate.latitude.toFixed(4)}, ${coordinate.longitude.toFixed(4)}`,
+          type: 'current',
+          coordinate,
+          address: `${coordinate.latitude.toFixed(4)}, ${coordinate.longitude.toFixed(4)}`,
+        };
+      }
+    } catch (error) {
+      console.error('Error getting current location:', error);
+      return null;
+    }
   }
 
   /**
