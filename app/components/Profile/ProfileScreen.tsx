@@ -67,9 +67,6 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Status Bar Background */}
-      <View style={[styles.statusBarBackground, { height: insets.top }]} />
-      
       {/* Header */}
       <MobileHeader 
         title="Profile" 
@@ -445,20 +442,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background, // Frame background (98% lightness)
   },
-  statusBarBackground: {
-    backgroundColor: COLORS.card,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 999,
-  },
   scrollContainer: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.md,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.xl,
   },
 
   // Profile Card
