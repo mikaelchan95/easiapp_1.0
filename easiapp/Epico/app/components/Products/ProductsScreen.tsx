@@ -1,0 +1,265 @@
+import React, { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { products, Product } from '../../data/mockProducts';
+import ProductCard from './ProductCard';
+import EnhancedProductCard from './EnhancedProductCard';
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import ExpandableSearch from './ExpandableSearch';
+
+const categories = [
+  { id: 'all', name: 'All', icon: 'grid-outline' },
+  { id: 'whisky', name: 'Whisky', icon: 'wine-outline' },
+  { id: 'wine', name: 'Wine', icon: 'wine-outline' },
+  { id: 'spirits', name: 'Spirits', icon: 'flask-outline' },
+  { id: 'liqueurs', name: 'Liqueurs', icon: 'beer-outline' },
+];
+
+export default function ProductsScreen() {
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+
+  const filteredProducts = useMemo(() => {
+    if (selectedCategory === 'all') return products;
+    return products.filter(p => p.category.toLowerCase().includes(selectedCategory));
+  }, [selectedCategory]);
+
+  const handleProductSelect = (product: Product) => {
+    navigation.navigate('ProductDetail', { id: product.id });
+  };
+
+  const renderCategory = (cat: typeof categories[0]) => (
+    <TouchableOpacity
+      key={cat.id}
+      style={[
+        styles.categoryButton,
+        selectedCategory === cat.id && styles.categoryButtonActive
+      ]}
+      onPress={() => setSelectedCategory(cat.id)}
+      activeOpacity={0.8}
+    >
+      <View style={styles.categoryIconContainer}>
+        <Ionicons 
+          name={cat.icon as any} 
+          size={20} 
+          color={selectedCategory === cat.id ? COLORS.accent : COLORS.textSecondary} 
+        />
+      </View>
+      <Text style={[
+        styles.categoryText,
+        selectedCategory === cat.id && styles.categoryTextActive
+      ]}>{cat.name}</Text>
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={styles.container}>
+      {/* Status Bar */}
+      <StatusBar barStyle="dark-content" />
+      
+      {/* Safe Area Spacer for iOS Notch */}
+      <View style={{ height: insets.top, backgroundColor: COLORS.card }} />
+      
+      {/* Header with Search Bar */}
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerTitle}>Explore</Text>
+      </View>
+      
+      {/* Expandable Search */}
+      <View style={styles.searchContainer}>
+        <ExpandableSearch 
+          placeholder="Search wines, spirits, brands..."
+          onProductSelect={handleProductSelect}
+        />
+      </View>
+      
+      {/* Category Filter Bar */}
+      <View style={styles.categoryBarContainer}>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryBar}
+          data={categories}
+          renderItem={({ item }) => renderCategory(item)}
+          keyExtractor={(item) => item.id}
+        />
+      </View>
+
+      {/* Grid/List Toggle */}
+      <View style={styles.toggleBar}>
+        <Text style={styles.sectionTitle}>Products</Text>
+        <View style={styles.toggleButtons}>
+          <TouchableOpacity
+            style={[styles.toggleButton, viewMode === 'grid' && styles.toggleButtonActive]}
+            onPress={() => setViewMode('grid')}
+          >
+            <Ionicons name="grid" size={18} color={viewMode === 'grid' ? COLORS.accent : COLORS.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleButton, viewMode === 'list' && styles.toggleButtonActive]}
+            onPress={() => setViewMode('list')}
+          >
+            <Ionicons name="list" size={18} color={viewMode === 'list' ? COLORS.accent : COLORS.textSecondary} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Product List */}
+      {viewMode === 'grid' ? (
+        <FlatList
+          data={filteredProducts}
+          key={'grid'}
+          numColumns={2}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.gridList}
+          style={styles.listContainer}
+          renderItem={({ item, index }) => (
+            <View style={styles.gridItem}>
+              <EnhancedProductCard
+                product={item}
+                onPress={handleProductSelect}
+                isCompact={false}
+                animationDelay={index * 50}
+              />
+            </View>
+          )}
+        />
+      ) : (
+        <FlatList
+          data={filteredProducts}
+          key={'list'}
+          numColumns={1}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listList}
+          style={styles.listContainer}
+          renderItem={({ item, index }) => (
+            <View style={styles.listItem}>
+              <EnhancedProductCard
+                product={item}
+                onPress={handleProductSelect}
+                isCompact={true}
+                animationDelay={index * 50}
+              />
+            </View>
+          )}
+        />
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.card,
+  },
+  headerTitle: {
+    ...TYPOGRAPHY.h2,
+    color: COLORS.text,
+  },
+  searchContainer: {
+    backgroundColor: COLORS.card,
+    paddingBottom: SPACING.sm,
+    ...SHADOWS.light,
+  },
+  categoryBarContainer: {
+    backgroundColor: COLORS.card,
+    paddingVertical: SPACING.sm,
+    ...SHADOWS.light,
+  },
+  categoryBar: {
+    paddingHorizontal: SPACING.md,
+  },
+  listContainer: {
+    backgroundColor: COLORS.background,
+  },
+  categoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginRight: SPACING.sm,
+    height: 44,
+    minWidth: 100,
+    justifyContent: 'center',
+  },
+  categoryButtonActive: {
+    backgroundColor: COLORS.primary,
+  },
+  categoryIconContainer: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryText: {
+    marginLeft: 8,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  categoryTextActive: {
+    color: COLORS.accent,
+  },
+  toggleBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.card,
+    marginBottom: SPACING.sm,
+    ...SHADOWS.light,
+  },
+  sectionTitle: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.text,
+  },
+  toggleButtons: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  toggleButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  toggleButtonActive: {
+    backgroundColor: COLORS.primary,
+  },
+  gridList: {
+    padding: SPACING.sm,
+    gap: SPACING.sm,
+    backgroundColor: COLORS.background,
+  },
+  gridItem: {
+    flex: 1,
+    margin: 4,
+  },
+  listList: {
+    padding: SPACING.sm,
+    gap: SPACING.sm,
+    backgroundColor: COLORS.background,
+  },
+  listItem: {
+    marginBottom: SPACING.sm,
+  },
+}); 

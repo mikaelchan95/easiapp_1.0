@@ -1,0 +1,12 @@
+{
+  "name": "easi-app-root",
+  "version": "1.0.0",
+  "description": "Root package for EASI App",
+  "private": true,
+  "scripts": {
+    "start": "cd easiapp/Epico && npm start",
+    "web": "cd easiapp/Epico && npm run web",
+    "ios": "cd easiapp/Epico && npm run ios",
+    "android": "cd easiapp/Epico && npm run android"
+  }
+} 

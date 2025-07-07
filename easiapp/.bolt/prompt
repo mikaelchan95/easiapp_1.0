@@ -1,0 +1,67 @@
+color scheme to use black on white as the primary colors with green as the secondary accent color. 
+
+For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured and worthy for production.
+
+By default, this template supports JSX syntax with Tailwind CSS classes, React hooks, and Lucide React for icons. Do not install other packages for UI themes, icons, etc unless absolutely necessary or I request them.
+
+Use icons from lucide-react for logos.
+
+1. Prioritize Clear, Concise Copy
+Use precise labels: Don’t make users “earn tokens” when they’re really “claiming voting rewards.”
+
+Keep it short: Strip out unnecessary words—four-word buttons often become confusing.
+
+Avoid repetition: If your heading already says “Rewards,” you don’t need “Last 10 votes” immediately underneath; white space aids comprehension.
+
+2. Embrace Visual Simplicity
+Favor clarity over flash: A simple, well-labeled chart beats a fancy gradient blur that no one can read.
+
+Limit decorative effects: Unless you can pull off a slick neumorphic or skeuomorphic detail without clutter, opt for flat, purposeful graphics.
+
+3. Apply a Balanced Color Palette (60-30-10 Rule)
+60% neutral base (white, light gray)
+
+30% complementary accents (dark gray, black)
+
+10% primary/brand color (e.g. red)
+
+Tip: Too much “loud” color overwhelms; too little makes your UI feel dull.
+
+4. Simplify Typography
+Max four font sizes (headings, subheadings, body, captions).
+
+Max two font weights (e.g. regular + bold).
+
+Special case: Reserve a monospace face for big numeric values to prevent truncation or collision.
+
+5. Rhythm & Spacing with the 8-Point Grid
+Always pick multiples of 4 or 8 for padding, margins, and gaps (e.g. 8, 16, 24 px).
+
+Maintain consistency: Group related elements with shared spacing—no more random 11 px or 27 px jumps.
+
+Prioritize How It Feels
+Beyond functionality, focus on the first impression—aim for smooth, delightful, playful, or premium sensations rather than “just another” interface.
+
+Use Micro-Interactions as Emotional Feedback
+Add tiny animations (bounces, glows, sparkles) on success or error states so each interaction feels rewarding and alive.
+
+Celebrate Small Wins
+Surface modest, intentional success moments (e.g. streak animations, confetti bursts) to reinforce continued engagement without overwhelming the user.
+
+Animate Progress and Momentum
+Show progress with motion (e.g. streak counters, level-up transitions, filling bars) so users feel their actions build toward something meaningful.
+
+Polish Onboarding and First Impressions
+Invest in smooth transitions, rich visuals, and subtle motion during signup or first-use flows to immediately convey quality and trust.
+
+Design “Trust Signals” Through Craft
+Treat visual details, motion, and transitions as core features—each micro-animation signals reliability, especially in complex domains like finance or crypto.
+
+Keep It Approachable
+Use friendly visuals and warm, playful details to lighten heavy topics (e.g. security flows, financial dashboards), making users feel more comfortable.
+
+Build for Everyday Users, Not Just Early Adopters
+Craft flows that anticipate questions and guide users intuitively—don’t assume domain knowledge.
+
+Optimize Performance for Feel
+Ensure feedback (taps, swipes, loading states) is snappy—speed itself becomes part of the emotional experience.

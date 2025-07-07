@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "EASI by Epico",
+    "slug": "easi-by-epico",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./app/assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./app/assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.epico.easi"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./app/assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      },
+      "package": "com.epico.easi"
+    },
+    "web": {
+      "favicon": "./app/assets/favicon.png"
+    }
+  }
+}

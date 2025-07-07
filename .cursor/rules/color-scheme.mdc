@@ -1,0 +1,30 @@
+---
+alwaysApply: true
+---
+## Color Scheme Rule
+
+- **Canvas & Cards:**  
+  - `--color-bg-base: hsl(0, 0%, 100%)` (pure white)  
+  - Use for all primary surfaces (cards, panels, containers).
+
+- **Frame & Backdrop:**  
+  - `--color-bg-frame: hsl(0, 0%, 98%)` (very light gray)  
+  - Use as the app’s outer background behind white surfaces.
+
+- **Text:**  
+  - `--color-text-primary: hsl(0, 0%, 0%)` (black)  
+  - `--color-text-secondary: hsl(0, 0%, 30%)` (dark gray)
+
+- **Interactive Elements:**  
+  - `--color-button-bg: hsl(0, 0%, 0%)` (black)  
+  - `--color-button-text: hsl(0, 0%, 100%)` (white)  
+  - Hover / active states: 10% & 20% lightness grays, respectively.
+
+- **Borders & Dividers:**  
+  - `--color-border: hsl(0, 0%, 90%)` (subtle light gray)
+
+- **Shadows:**  
+  - Light: `0 1px 3px rgba(0,0,0,0.04)`  
+  - Medium: `0 4px 6px rgba(0,0,0,0.08)`
+
+> **Rule:** Always place white surfaces (`--color-bg-base`) on the very light gray frame (`--color-bg-frame`), with black text and buttons for maximum clarity and contrast. ```
