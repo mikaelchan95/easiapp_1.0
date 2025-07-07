@@ -58,6 +58,7 @@ const BuyButton: React.FC<BuyButtonProps> = ({
   const expandAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const bgColorAnim = useRef(new Animated.Value(0)).current;
+  const successOpacity = useRef(new Animated.Value(0)).current;
   
   // Handle press animation
   const handlePressIn = () => {
@@ -114,22 +115,22 @@ const BuyButton: React.FC<BuyButtonProps> = ({
         // Show cart notification
         setShouldShowCartNotification(true);
         
-        // Color transition animation
-        Animated.timing(bgColorAnim, {
+        // Success opacity animation
+        Animated.timing(successOpacity, {
           toValue: 1,
           duration: 300,
           easing: Animations.TIMING.easeOut,
-          useNativeDriver: false
+          useNativeDriver: true
         }).start();
         
         // Reset after delay
         setTimeout(() => {
           setIsSuccess(false);
-          Animated.timing(bgColorAnim, {
+          Animated.timing(successOpacity, {
             toValue: 0,
             duration: 300,
             easing: Animations.TIMING.easeInOut,
-            useNativeDriver: false
+            useNativeDriver: true
           }).start();
         }, 1500);
       }, 600);
@@ -191,11 +192,8 @@ const BuyButton: React.FC<BuyButtonProps> = ({
     }
   };
   
-  // Interpolate background color for animation
-  const backgroundColor = bgColorAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [COLORS.primary, COLORS.success]
-  });
+  // Get background color based on state
+  const backgroundColor = isSuccess ? COLORS.success : COLORS.primary;
   
   // Render button content based on state
   const renderButtonContent = () => {
@@ -299,7 +297,8 @@ const BuyButton: React.FC<BuyButtonProps> = ({
               backgroundColor,
               transform: [
                 { scale: Animated.multiply(scaleAnim, pulseAnim) }
-              ]
+              ],
+              opacity: isSuccess ? successOpacity : 1
             },
             !inStock && styles.buttonDisabled,
             buttonStyle
