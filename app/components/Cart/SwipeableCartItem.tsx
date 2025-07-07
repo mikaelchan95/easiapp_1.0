@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, SPACING } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
+import { HapticFeedback, HapticPatterns } from '../../utils/haptics';
 
 interface CartItemProps {
   item: {
@@ -55,6 +56,7 @@ const SwipeableCartItem: React.FC<CartItemProps> = ({
   // Handle quantity changes
   const incrementQuantity = () => {
     if (item.inStock) {
+      HapticFeedback.light();
       // Add haptic feedback animation
       Animated.sequence([
         Animated.timing(itemScale, {
@@ -77,6 +79,7 @@ const SwipeableCartItem: React.FC<CartItemProps> = ({
   
   const decrementQuantity = () => {
     if (item.quantity > 1) {
+      HapticFeedback.light();
       // Add haptic feedback animation
       Animated.sequence([
         Animated.timing(itemScale, {
@@ -96,6 +99,7 @@ const SwipeableCartItem: React.FC<CartItemProps> = ({
       onQuantityChange(item.quantity - 1);
     } else {
       // Prompt to remove item
+      HapticFeedback.warning();
       confirmDelete();
     }
   };
@@ -123,6 +127,7 @@ const SwipeableCartItem: React.FC<CartItemProps> = ({
   // Delete animation and callback
   const handleDelete = () => {
     setIsDeleting(true);
+    HapticPatterns.delete();
     
     // Animate item removal
     Animated.parallel([
@@ -193,6 +198,7 @@ const SwipeableCartItem: React.FC<CartItemProps> = ({
       },
       onPanResponderGrant: () => {
         setIsSwiping(true);
+        HapticFeedback.light();
         if (onSwipeStart) {
           onSwipeStart();
         }
@@ -208,10 +214,16 @@ const SwipeableCartItem: React.FC<CartItemProps> = ({
         // Only allow leftward swipe (negative dx)
         if (gestureState.dx < 0) {
           translateX.setValue(gestureState.dx);
+          
+          // Haptic feedback when crossing threshold
+          if (Math.abs(gestureState.dx) > SWIPE_THRESHOLD && Math.abs(gestureState.dx) < SWIPE_THRESHOLD + 5) {
+            HapticFeedback.medium();
+          }
         }
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dx < -SWIPE_THRESHOLD) {
+          HapticFeedback.heavy();
           completeSwipe();
         } else {
           resetPosition();
