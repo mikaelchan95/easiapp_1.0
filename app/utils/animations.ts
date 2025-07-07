@@ -464,4 +464,33 @@ export const shakeAnimation = (value: Animated.Value): Animated.CompositeAnimati
       useNativeDriver: true
     })
   ]);
+};
+
+/**
+ * Creates a bounce animation for tactile feedback
+ * @param value Animated.Value to animate
+ * @param callback Optional callback function
+ * @returns The animation object
+ */
+export const bounceAnimation = (value: Animated.Value, callback?: () => void): Animated.CompositeAnimation => {
+  const animation = Animated.sequence([
+    Animated.timing(value, {
+      toValue: 1.1,
+      duration: 100,
+      easing: TIMING.easeOut,
+      useNativeDriver: true
+    }),
+    Animated.spring(value, {
+      toValue: 1,
+      friction: 4,
+      tension: 300,
+      useNativeDriver: true
+    })
+  ]);
+  
+  if (callback) {
+    animation.start(callback);
+  }
+  
+  return animation;
 }; 

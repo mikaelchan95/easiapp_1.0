@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
-  PanResponder,
   Dimensions,
-  Alert
+  Alert,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { RectButton } from 'react-native-gesture-handler';
 import { COLORS, SHADOWS, SPACING } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
 import { HapticFeedback, HapticPatterns } from '../../utils/haptics';
@@ -27,85 +29,67 @@ interface CartItemProps {
   };
   onQuantityChange: (quantity: number) => void;
   onDelete?: () => void;
+  onSaveForLater?: () => void;
+  onAddToFavorites?: () => void;
   onSwipeStart?: () => void;
   onSwipeEnd?: () => void;
 }
 
 const { width } = Dimensions.get('window');
-const SWIPE_THRESHOLD = width * 0.3;
+const ACTION_WIDTH = 80;
 
 const SwipeableCartItem: React.FC<CartItemProps> = ({
   item,
   onQuantityChange,
   onDelete,
+  onSaveForLater,
+  onAddToFavorites,
   onSwipeStart,
   onSwipeEnd
 }) => {
   // Animation values
-  const translateX = useRef(new Animated.Value(0)).current;
-  const itemHeight = useRef(new Animated.Value(90)).current;
-  const itemOpacity = useRef(new Animated.Value(1)).current;
   const itemScale = useRef(new Animated.Value(1)).current;
-  const itemMargin = useRef(new Animated.Value(8)).current;
-  const deleteButtonOpacity = useRef(new Animated.Value(0)).current;
+  const itemOpacity = useRef(new Animated.Value(1)).current;
+  const deleteAnimation = useRef(new Animated.Value(0)).current;
+  const quantityBounce = useRef(new Animated.Value(1)).current;
   
-  // Track swipe state
-  const [isSwiping, setIsSwiping] = useState(false);
+  // State
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSwipeOpen, setIsSwipeOpen] = useState(false);
   
-  // Handle quantity changes
+  // Refs
+  const swipeableRef = useRef<Swipeable>(null);
+  
+  // Handle quantity changes with animation
   const incrementQuantity = () => {
-    if (item.inStock) {
+    if (item.inStock && !isDeleting) {
       HapticFeedback.light();
-      // Add haptic feedback animation
-      Animated.sequence([
-        Animated.timing(itemScale, {
-          toValue: 1.02,
-          duration: 50,
-          useNativeDriver: true,
-          easing: Animations.TIMING.easeOut
-        }),
-        Animated.timing(itemScale, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-          easing: Animations.TIMING.easeInOut
-        })
-      ]).start();
+      
+      // Bounce animation for feedback
+      Animations.bounceAnimation(quantityBounce);
       
       onQuantityChange(item.quantity + 1);
     }
   };
   
   const decrementQuantity = () => {
-    if (item.quantity > 1) {
+    if (item.quantity > 1 && !isDeleting) {
       HapticFeedback.light();
-      // Add haptic feedback animation
-      Animated.sequence([
-        Animated.timing(itemScale, {
-          toValue: 0.98,
-          duration: 50,
-          useNativeDriver: true,
-          easing: Animations.TIMING.easeOut
-        }),
-        Animated.timing(itemScale, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-          easing: Animations.TIMING.easeInOut
-        })
-      ]).start();
+      
+      // Bounce animation for feedback
+      Animations.bounceAnimation(quantityBounce);
       
       onQuantityChange(item.quantity - 1);
-    } else {
-      // Prompt to remove item
-      HapticFeedback.warning();
-      confirmDelete();
+    } else if (item.quantity === 1) {
+      // Show quick delete confirmation
+      confirmQuickDelete();
     }
   };
   
-  // Confirm delete with animation
-  const confirmDelete = () => {
+  // Quick delete confirmation with haptic
+  const confirmQuickDelete = () => {
+    HapticFeedback.warning();
+    
     Alert.alert(
       'Remove Item',
       `Remove ${item.name} from your cart?`,
@@ -113,7 +97,7 @@ const SwipeableCartItem: React.FC<CartItemProps> = ({
         {
           text: 'Cancel',
           style: 'cancel',
-          onPress: () => resetPosition()
+          onPress: () => HapticFeedback.light()
         },
         {
           text: 'Remove',
@@ -124,29 +108,31 @@ const SwipeableCartItem: React.FC<CartItemProps> = ({
     );
   };
   
-  // Delete animation and callback
+  // Handle delete with smooth animation
   const handleDelete = () => {
+    if (isDeleting) return;
+    
     setIsDeleting(true);
     HapticPatterns.delete();
     
-    // Animate item removal
+    // Close swipeable first
+    swipeableRef.current?.close();
+    
+    // Animate deletion
     Animated.parallel([
-      Animated.timing(itemHeight, {
-        toValue: 0,
-        duration: 200,
-        easing: Animations.TIMING.easeInOut,
-        useNativeDriver: false
-      }),
       Animated.timing(itemOpacity, {
         toValue: 0,
-        duration: 200,
-        easing: Animations.TIMING.easeInOut,
+        duration: 300,
         useNativeDriver: true
       }),
-      Animated.timing(itemMargin, {
-        toValue: 0,
-        duration: 200,
-        easing: Animations.TIMING.easeInOut,
+      Animated.timing(itemScale, {
+        toValue: 0.8,
+        duration: 300,
+        useNativeDriver: true
+      }),
+      Animated.timing(deleteAnimation, {
+        toValue: 1,
+        duration: 300,
         useNativeDriver: false
       })
     ]).start(() => {
@@ -156,179 +142,246 @@ const SwipeableCartItem: React.FC<CartItemProps> = ({
     });
   };
   
-  // Reset card position
-  const resetPosition = () => {
-    Animated.spring(translateX, {
-      toValue: 0,
-      friction: 5,
-      tension: 100,
-      useNativeDriver: true
-    }).start(() => {
-      setIsSwiping(false);
-      if (onSwipeEnd) {
-        onSwipeEnd();
-      }
-    });
+  // Handle save for later
+  const handleSaveForLater = () => {
+    HapticFeedback.medium();
+    swipeableRef.current?.close();
     
-    // Hide delete button
-    Animated.timing(deleteButtonOpacity, {
-      toValue: 0,
-      duration: 150,
-      useNativeDriver: true
-    }).start();
+    if (onSaveForLater) {
+      onSaveForLater();
+    }
   };
   
-  // Handle swipe to delete threshold
-  const completeSwipe = () => {
-    Animated.timing(translateX, {
-      toValue: -width,
-      duration: 200,
-      easing: Animations.TIMING.easeOut,
-      useNativeDriver: true
-    }).start(handleDelete);
+  // Handle add to favorites
+  const handleAddToFavorites = () => {
+    HapticFeedback.medium();
+    swipeableRef.current?.close();
+    
+    if (onAddToFavorites) {
+      onAddToFavorites();
+    }
   };
   
-  // Configure pan responder for swipe gesture
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        // Only capture horizontal movements greater than 10
-        return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < Math.abs(gestureState.dx);
-      },
-      onPanResponderGrant: () => {
-        setIsSwiping(true);
-        HapticFeedback.light();
-        if (onSwipeStart) {
-          onSwipeStart();
-        }
+  // Render right actions (swipe left to reveal)
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>
+  ) => {
+    return (
+      <View style={styles.rightActionsContainer}>
+        {/* Save for Later Action */}
+        {onSaveForLater && (
+          <Animated.View
+            style={[
+              styles.actionContainer,
+              {
+                transform: [
+                  {
+                    translateX: progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [ACTION_WIDTH, 0],
+                      extrapolate: 'clamp',
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <RectButton
+              style={[styles.action, styles.saveAction]}
+              onPress={handleSaveForLater}
+            >
+              <Ionicons name="bookmark-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.actionText}>Save</Text>
+            </RectButton>
+          </Animated.View>
+        )}
         
-        // Show delete button with animation
-        Animated.timing(deleteButtonOpacity, {
-          toValue: 1,
-          duration: 150,
-          useNativeDriver: true
-        }).start();
-      },
-      onPanResponderMove: (_, gestureState) => {
-        // Only allow leftward swipe (negative dx)
-        if (gestureState.dx < 0) {
-          translateX.setValue(gestureState.dx);
-          
-          // Haptic feedback when crossing threshold
-          if (Math.abs(gestureState.dx) > SWIPE_THRESHOLD && Math.abs(gestureState.dx) < SWIPE_THRESHOLD + 5) {
-            HapticFeedback.medium();
-          }
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dx < -SWIPE_THRESHOLD) {
-          HapticFeedback.heavy();
-          completeSwipe();
-        } else {
-          resetPosition();
-        }
-      },
-      onPanResponderTerminate: () => {
-        resetPosition();
-      }
-    })
-  ).current;
+        {/* Favorite Action */}
+        {onAddToFavorites && (
+          <Animated.View
+            style={[
+              styles.actionContainer,
+              {
+                transform: [
+                  {
+                    translateX: progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [ACTION_WIDTH, 0],
+                      extrapolate: 'clamp',
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <RectButton
+              style={[styles.action, styles.favoriteAction]}
+              onPress={handleAddToFavorites}
+            >
+              <Ionicons name="heart-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.actionText}>Like</Text>
+            </RectButton>
+          </Animated.View>
+        )}
+        
+        {/* Delete Action */}
+        <Animated.View
+          style={[
+            styles.actionContainer,
+            {
+              transform: [
+                {
+                  translateX: progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [ACTION_WIDTH, 0],
+                    extrapolate: 'clamp',
+                  }),
+                },
+                {
+                  scale: dragX.interpolate({
+                    inputRange: [-200, -100, 0],
+                    outputRange: [1.1, 1, 0.9],
+                    extrapolate: 'clamp',
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <RectButton
+            style={[styles.action, styles.deleteAction]}
+            onPress={handleDelete}
+          >
+            <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.actionText}>Remove</Text>
+          </RectButton>
+        </Animated.View>
+      </View>
+    );
+  };
   
-  // Background delete button position is synchronized with the card movement
-  const deleteButtonPosition = translateX.interpolate({
-    inputRange: [-width, 0],
-    outputRange: [0, width],
-    extrapolate: 'clamp'
-  });
+  // Handle swipe events
+  const onSwipeableWillOpen = (direction: 'left' | 'right') => {
+    HapticFeedback.light();
+    setIsSwipeOpen(true);
+    if (onSwipeStart) {
+      onSwipeStart();
+    }
+  };
+  
+  const onSwipeableWillClose = () => {
+    setIsSwipeOpen(false);
+    if (onSwipeEnd) {
+      onSwipeEnd();
+    }
+  };
   
   return (
     <Animated.View 
       style={[
         styles.container,
         {
-          height: itemHeight,
           opacity: itemOpacity,
-          marginVertical: itemMargin,
-          transform: [{ scale: itemScale }]
+          transform: [{ scale: itemScale }],
+          height: deleteAnimation.interpolate({
+            inputRange: [0, 1],
+            outputRange: [90, 0]
+          }),
+          marginVertical: deleteAnimation.interpolate({
+            inputRange: [0, 1],
+            outputRange: [8, 0]
+          })
         }
       ]}
     >
-      {/* Background delete button */}
-      <Animated.View
-        style={[
-          styles.deleteButtonContainer,
-          {
-            transform: [{ translateX: deleteButtonPosition }],
-            opacity: deleteButtonOpacity
-          }
-        ]}
+      <Swipeable
+        ref={swipeableRef}
+        renderRightActions={renderRightActions}
+        onSwipeableWillOpen={onSwipeableWillOpen}
+        onSwipeableWillClose={onSwipeableWillClose}
+        rightThreshold={40}
+        friction={2}
+        overshootRight={false}
+        enabled={!isDeleting}
       >
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={confirmDelete}
-          activeOpacity={0.8}
+        <Animated.View 
+          style={[
+            styles.card,
+            isSwipeOpen && styles.cardSwiped
+          ]}
         >
-          <Ionicons name="trash-outline" size={22} color="#FFFFFF" />
-          <Text style={styles.deleteText}>Remove</Text>
-        </TouchableOpacity>
-      </Animated.View>
-      
-      {/* Swipeable Card */}
-      <Animated.View
-        {...panResponder.panHandlers}
-        style={[
-          styles.card,
-          {
-            transform: [{ translateX }]
-          }
-        ]}
-      >
-        <View style={styles.contentContainer}>
-          {/* Product Image */}
-          <Image source={item.imageUrl} style={styles.image} resizeMode="cover" />
-          
-          {/* Product Details */}
-          <View style={styles.detailsContainer}>
-            <Text numberOfLines={1} style={styles.name}>{item.name}</Text>
-            <Text style={styles.price}>${item.price.toFixed(0)}</Text>
+          <View style={styles.contentContainer}>
+            {/* Product Image */}
+            <TouchableOpacity style={styles.imageContainer} activeOpacity={0.8}>
+              <Image source={item.imageUrl} style={styles.image} resizeMode="cover" />
+              {!item.inStock && (
+                <View style={styles.outOfStockOverlay}>
+                  <Text style={styles.outOfStockText}>Out of Stock</Text>
+                </View>
+              )}
+            </TouchableOpacity>
             
-            {/* Quantity Selector */}
-            <View style={styles.quantityContainer}>
-              <TouchableOpacity
-                onPress={decrementQuantity}
-                style={styles.quantityButton}
-                disabled={isDeleting}
-              >
-                <Ionicons name="remove" size={16} color={COLORS.text} />
-              </TouchableOpacity>
+            {/* Product Details */}
+            <View style={styles.detailsContainer}>
+              <Text numberOfLines={1} style={styles.name}>{item.name}</Text>
+              <Text style={styles.price}>${item.price.toFixed(0)}</Text>
               
-              <Text style={styles.quantityText}>{item.quantity}</Text>
-              
-              <TouchableOpacity
-                onPress={incrementQuantity}
-                style={styles.quantityButton}
-                disabled={!item.inStock || isDeleting}
+              {/* Quantity Selector */}
+              <Animated.View 
+                style={[
+                  styles.quantityContainer,
+                  { transform: [{ scale: quantityBounce }] }
+                ]}
               >
-                <Ionicons name="add" size={16} color={item.inStock ? COLORS.text : COLORS.inactive} />
-              </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={decrementQuantity}
+                  style={[styles.quantityButton, styles.decrementButton]}
+                  disabled={isDeleting}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="remove" size={16} color={COLORS.text} />
+                </TouchableOpacity>
+                
+                <View style={styles.quantityDisplay}>
+                  <Text style={styles.quantityText}>{item.quantity}</Text>
+                </View>
+                
+                <TouchableOpacity
+                  onPress={incrementQuantity}
+                  style={[
+                    styles.quantityButton, 
+                    styles.incrementButton,
+                    !item.inStock && styles.disabledButton
+                  ]}
+                  disabled={!item.inStock || isDeleting}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons 
+                    name="add" 
+                    size={16} 
+                    color={item.inStock ? COLORS.text : COLORS.inactive} 
+                  />
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
+            
+            {/* Total Price */}
+            <View style={styles.totalContainer}>
+              <Text style={styles.totalText}>${(item.price * item.quantity).toFixed(0)}</Text>
+              {!item.inStock && (
+                <Text style={styles.unavailableText}>Unavailable</Text>
+              )}
             </View>
           </View>
-          
-          {/* Total Price */}
-          <View style={styles.totalContainer}>
-            <Text style={styles.totalText}>${(item.price * item.quantity).toFixed(0)}</Text>
-          </View>
-        </View>
-      </Animated.View>
+        </Animated.View>
+      </Swipeable>
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    position: 'relative',
-    marginVertical: 8,
     overflow: 'hidden',
   },
   card: {
@@ -337,85 +390,136 @@ const styles = StyleSheet.create({
     ...SHADOWS.light,
     overflow: 'hidden',
   },
+  cardSwiped: {
+    shadowOpacity: 0.15,
+    shadowOffset: { width: -2, height: 2 },
+  },
   contentContainer: {
     flexDirection: 'row',
-    padding: 12,
+    padding: 16,
     alignItems: 'center',
+  },
+  imageContainer: {
+    position: 'relative',
   },
   image: {
     width: 65,
     height: 65,
-    borderRadius: 8,
+    borderRadius: 12,
+  },
+  outOfStockOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  outOfStockText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   detailsContainer: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 16,
   },
   name: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
     color: COLORS.text,
     marginBottom: 4,
   },
   price: {
     fontSize: 14,
     color: COLORS.textSecondary,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'hsl(0, 0%, 96%)',
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   quantityButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#f5f5f5',
+    width: 36,
+    height: 36,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  decrementButton: {
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+  },
+  incrementButton: {
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  disabledButton: {
+    opacity: 0.4,
+  },
+  quantityDisplay: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: COLORS.card,
+    marginHorizontal: 1,
   },
   quantityText: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
     color: COLORS.text,
-    marginHorizontal: 8,
-    minWidth: 20,
     textAlign: 'center',
+    minWidth: 20,
   },
   totalContainer: {
     alignItems: 'flex-end',
     justifyContent: 'center',
-    marginLeft: 8,
+    marginLeft: 16,
   },
   totalText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: COLORS.text,
   },
-  deleteButtonContainer: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    width: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
+  unavailableText: {
+    fontSize: 12,
+    color: COLORS.error,
+    marginTop: 2,
+    fontWeight: '500',
   },
-  deleteButton: {
-    backgroundColor: '#FF3B30',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+  rightActionsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  deleteText: {
+  actionContainer: {
+    width: ACTION_WIDTH,
+  },
+  action: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  saveAction: {
+    backgroundColor: '#2196F3',
+  },
+  favoriteAction: {
+    backgroundColor: '#FF6B6B',
+  },
+  deleteAction: {
+    backgroundColor: '#FF3B30',
+  },
+  actionText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    marginLeft: 4,
-  }
+    marginTop: 4,
+  },
 });
 
 export default SwipeableCartItem; 
