@@ -1,8 +1,9 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { View, StyleSheet, Dimensions, Text } from 'react-native';
-import MapView, { Marker, Region, Circle } from 'react-native-maps';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { View, StyleSheet, Dimensions, Text, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import MapView, { Marker, Region, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as Location from 'expo-location';
 
 import { LocationMapViewProps, LocationCoordinate } from '../../types/location';
 import { COLORS, SHADOWS } from '../../utils/theme';
@@ -18,6 +19,26 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
 }) => {
   const mapRef = useRef<MapView>(null);
   const [currentRegion, setCurrentRegion] = useState<Region>(region);
+  const [mapError, setMapError] = useState(false);
+  const [isMapReady, setIsMapReady] = useState(false);
+  const [userLocation, setUserLocation] = useState<LocationCoordinate | null>(null);
+
+  // Request location permissions and get user location
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Please enable location permissions to use the map.');
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      setUserLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+    })();
+  }, []);
 
   // Handle region change
   const handleRegionChange = useCallback((newRegion: Region) => {
@@ -47,21 +68,52 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
   }, [onPinDrop]);
 
   // Handle zoom to current location
-  const handleZoomToLocation = useCallback((coordinate: LocationCoordinate) => {
-    const newRegion: Region = {
-      latitude: coordinate.latitude,
-      longitude: coordinate.longitude,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    };
-
-    if (mapRef.current) {
+  const handleZoomToLocation = useCallback(() => {
+    if (userLocation && mapRef.current) {
+      const newRegion: Region = {
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
       mapRef.current.animateToRegion(newRegion, 1000);
     }
+  }, [userLocation]);
+
+  // Handle map error
+  const handleMapError = useCallback((error: any) => {
+    console.error('Map error:', error);
+    setMapError(true);
   }, []);
+
+  // Fallback UI when map fails to load
+  if (mapError) {
+    return (
+      <View style={styles.fallbackContainer}>
+        <Ionicons name="map-outline" size={48} color={COLORS.textSecondary} />
+        <Text style={styles.fallbackTitle}>Map Unavailable</Text>
+        <Text style={styles.fallbackText}>
+          Unable to load the map. Please check your internet connection and try again.
+        </Text>
+        <TouchableOpacity 
+          style={styles.fallbackButton}
+          onPress={() => setMapError(false)}
+        >
+          <Text style={styles.fallbackButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
+      {!isMapReady && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading map...</Text>
+        </View>
+      )}
+      
       <MapView
         ref={mapRef}
         style={styles.map}
@@ -69,7 +121,7 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
         region={currentRegion}
         onRegionChange={handleRegionChange}
         onPress={handleMapPress}
-        provider="google"
+        provider={PROVIDER_GOOGLE}
         customMapStyle={GOOGLE_MAPS_CONFIG.mapStyle}
         showsUserLocation={true}
         showsMyLocationButton={false}
@@ -83,11 +135,14 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
         loadingEnabled={true}
         loadingIndicatorColor={COLORS.primary}
         moveOnMarkerPress={false}
-        onMapReady={() => console.log('Map is ready')}
-        onError={(error) => console.error('Map error:', error)}
+        onMapReady={() => {
+          console.log('Map is ready');
+          setIsMapReady(true);
+        }}
+        onError={handleMapError}
       >
         {/* Delivery zones as circles */}
-        {GOOGLE_MAPS_CONFIG.deliveryZones.map((zone, index) => (
+        {isMapReady && GOOGLE_MAPS_CONFIG.deliveryZones.map((zone, index) => (
           <React.Fragment key={`zone_${index}`}>
             {/* Zone circle overlay */}
             <Circle
@@ -126,9 +181,17 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
       {/* Map controls overlay */}
       <View style={styles.controlsOverlay}>
         {/* My Location Button */}
-        <View style={styles.myLocationButton}>
-          <Ionicons name="locate" size={24} color={COLORS.primary} />
-        </View>
+        <TouchableOpacity 
+          style={styles.myLocationButton}
+          onPress={handleZoomToLocation}
+          disabled={!userLocation}
+        >
+          <Ionicons 
+            name="locate" 
+            size={24} 
+            color={userLocation ? COLORS.primary : COLORS.textSecondary} 
+          />
+        </TouchableOpacity>
       </View>
 
       {/* Instructions overlay */}
@@ -154,6 +217,53 @@ const styles = StyleSheet.create({
     width: width,
     height: height * 0.6, // 60% of screen height
     backgroundColor: 'transparent', // Ensure map background is transparent
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLORS.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  loadingText: {
+    marginTop: 8,
+    color: COLORS.textSecondary,
+    fontSize: 14,
+  },
+  fallbackContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  fallbackTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  fallbackText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  fallbackButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  fallbackButtonText: {
+    color: COLORS.card,
+    fontWeight: '600',
+    fontSize: 16,
   },
   controlsOverlay: {
     position: 'absolute',

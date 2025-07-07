@@ -16,17 +16,33 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.epico.easi"
+      "bundleIdentifier": "com.epico.easi",
+      "config": {
+        "googleMapsApiKey": "AIzaSyCNpWjIoH986AQx2ea2AaiqzsqUcwaqX9I"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./app/assets/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
-      "package": "com.epico.easi"
+      "package": "com.epico.easi",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCNpWjIoH986AQx2ea2AaiqzsqUcwaqX9I"
+        }
+      }
     },
     "web": {
       "favicon": "./app/assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow EASI to use your location for accurate delivery services."
+        }
+      ]
+    ]
   }
 }
