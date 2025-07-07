@@ -124,7 +124,7 @@ export default function HomeScreen() {
   
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
       
       <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
         {/* Use MobileHeader with location */}
@@ -152,43 +152,53 @@ export default function HomeScreen() {
         }
       >
         {/* Balance Cards */}
-        <BalanceCards 
-          onCreditClick={handleCreditPress}
-          onRewardsClick={handleRewardsPress}
-        />
+        <View style={styles.section}>
+          <BalanceCards 
+            onCreditClick={handleCreditPress}
+            onRewardsClick={handleRewardsPress}
+          />
+        </View>
         
         {/* Banner Carousel */}
-        <BannerCarousel currentBanner={currentBanner} />
+        <View style={styles.section}>
+          <BannerCarousel currentBanner={currentBanner} />
+        </View>
         
         {/* Hot Deals */}
-        <ProductSectionCard
-          title="Hot Deals"
-          icon="flame"
-          iconColor="#F44336"
-          products={productSections.hotDeals}
-          onViewAll={() => handleViewAllPress()}
-          onProductPress={handleProductPress}
-        />
+        <View style={styles.section}>
+          <ProductSectionCard
+            title="Hot Deals"
+            icon="flame"
+            iconColor="#F44336"
+            products={productSections.hotDeals}
+            onViewAll={() => handleViewAllPress()}
+            onProductPress={handleProductPress}
+          />
+        </View>
         
         {/* New Arrivals */}
-        <ProductSectionCard
-          title="New"
-          icon="sparkles"
-          iconColor="#2196F3"
-          products={productSections.newArrivals}
-          onViewAll={() => handleViewAllPress()}
-          onProductPress={handleProductPress}
-        />
+        <View style={styles.section}>
+          <ProductSectionCard
+            title="New"
+            icon="sparkles"
+            iconColor="#2196F3"
+            products={productSections.newArrivals}
+            onViewAll={() => handleViewAllPress()}
+            onProductPress={handleProductPress}
+          />
+        </View>
         
         {/* Recommended For You */}
-        <ProductSectionCard
-          title="For You"
-          icon="heart"
-          iconColor="#9C27B0"
-          products={productSections.recommended}
-          onViewAll={() => handleViewAllPress()}
-          onProductPress={handleProductPress}
-        />
+        <View style={styles.section}>
+          <ProductSectionCard
+            title="For You"
+            icon="heart"
+            iconColor="#9C27B0"
+            products={productSections.recommended}
+            onViewAll={() => handleViewAllPress()}
+            onProductPress={handleProductPress}
+          />
+        </View>
         
         {/* Bottom padding for better scrolling experience */}
         <View style={styles.bottomPadding} />
@@ -203,16 +213,20 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   headerContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.card,
     zIndex: 10,
+    ...SHADOWS.light,
   },
   content: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: SPACING.xl,
+    paddingBottom: SPACING.xxl,
+  },
+  section: {
+    marginBottom: SPACING.section,
   },
   bottomPadding: {
-    height: 100,
+    height: SPACING.xxl,
   },
 }); 

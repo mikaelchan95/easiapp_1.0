@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from '
 import { Ionicons } from '@expo/vector-icons';
 import ProductCard from './ProductCard';
 import { Product } from '../../data/mockProducts';
-import { COLORS, SPACING, TYPOGRAPHY } from '../../utils/theme';
+import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
 
 export interface ProductSectionCardProps {
@@ -18,7 +18,7 @@ export interface ProductSectionCardProps {
 const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
   title,
   icon,
-  iconColor = '#000',
+  iconColor = COLORS.text,
   products,
   onViewAll,
   onProductPress
@@ -83,7 +83,7 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         decelerationRate="fast"
-        snapToInterval={160 + SPACING.sm} // Card width + margin
+        snapToInterval={160 + SPACING.element} // Card width + margin
         snapToAlignment="start"
       >
         {products.map((product, index) => (
@@ -102,46 +102,48 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: SPACING.lg,
+    // Removed marginBottom - spacing handled by parent
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: SPACING.md,
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.md,
   },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   icon: {
-    marginRight: 6,
+    marginRight: SPACING.element,
   },
   title: {
-    fontSize: 18,
+    ...TYPOGRAPHY.h3,
     fontWeight: '700',
     color: COLORS.text,
   },
   viewAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.element,
     borderRadius: 16,
+    backgroundColor: 'transparent',
   },
   viewAllText: {
+    ...TYPOGRAPHY.caption,
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.inactive,
-    marginRight: 4,
+    marginRight: SPACING.xs,
   },
   scrollContent: {
     paddingLeft: SPACING.md,
-    paddingRight: SPACING.sm,
+    paddingRight: SPACING.element,
   },
   productCard: {
-    marginRight: SPACING.sm,
+    marginRight: SPACING.element,
     width: 160,
   },
 });
