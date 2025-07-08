@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from '../../utils/theme';
 import { useAppContext } from '../../context/AppContext';
+import SmartSearchDropdown from '../UI/SmartSearchDropdown';
 
 // Cart Badge Component
 const CartBadge: React.FC = () => {
@@ -124,20 +125,15 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
         </View>
       )}
 
-      {/* Search Bar - Using a non-functional placeholder */}
+      {/* Smart Search Dropdown */}
       {showSearch && (
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color={COLORS.inactive} style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
+        <View style={styles.searchContainer}>
+          <SmartSearchDropdown
             placeholder="Search wines, spirits & more..."
-            placeholderTextColor={COLORS.placeholder}
-              editable={false}
-              onPressIn={() => navigation.navigate('SmartSearch', { query: '' })}
+            showDropdownOnFocus={true}
+            maxSuggestions={5}
           />
         </View>
-      </View>
       )}
     </View>
   );
@@ -225,25 +221,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingTop: SPACING.xs,
     paddingBottom: SPACING.sm,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-    borderRadius: 12,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    ...SHADOWS.light,
-    minHeight: 48,
-  },
-  searchIcon: {
-    marginRight: SPACING.sm,
-  },
-  searchInput: {
-    ...TYPOGRAPHY.body,
-    flex: 1,
   },
   cartBadge: {
     position: 'absolute',

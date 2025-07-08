@@ -7,7 +7,7 @@ import EnhancedProductCard from './EnhancedProductCard';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import ExpandableSearch from './ExpandableSearch';
+import SmartSearchDropdown from '../UI/SmartSearchDropdown';
 import { HapticFeedback } from '../../utils/haptics';
 
 const categories = [
@@ -88,11 +88,13 @@ export default function ProductsScreen() {
         <Text style={styles.headerTitle}>Explore</Text>
       </View>
       
-      {/* Expandable Search */}
+      {/* Smart Search Dropdown */}
       <View style={styles.searchContainer}>
-        <ExpandableSearch 
+        <SmartSearchDropdown 
           placeholder="Search wines, spirits, brands..."
           onProductSelect={handleProductSelect}
+          showDropdownOnFocus={true}
+          maxSuggestions={5}
         />
       </View>
       
