@@ -76,9 +76,6 @@ export const SPACING = {
 };
 
 /**
-<<<<<<< HEAD
- * Typography styles with improved hierarchy
-=======
  * Font sizes following iOS Human Interface Guidelines and Material Design
  * Based on 16px as the base font size for optimal readability
  */
@@ -118,7 +115,6 @@ export const FONT_WEIGHTS = {
 /**
  * Typography styles with consistent naming and usage
  * Use these instead of hardcoded fontSize values
->>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
  */
 export const TYPOGRAPHY = {
   // Headings - for titles and section headers
@@ -126,41 +122,25 @@ export const TYPOGRAPHY = {
     fontSize: FONT_SIZES.h1,
     fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.text,
-<<<<<<< HEAD
-    lineHeight: 32,
-=======
     lineHeight: FONT_SIZES.h1 * 1.2,
->>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
   },
   h2: {
     fontSize: FONT_SIZES.h2,
     fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.text,
-<<<<<<< HEAD
-    lineHeight: 28,
-=======
     lineHeight: FONT_SIZES.h2 * 1.2,
->>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
   },
   h3: {
     fontSize: FONT_SIZES.h3,
     fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.text,
-<<<<<<< HEAD
-    lineHeight: 24,
-=======
     lineHeight: FONT_SIZES.h3 * 1.2,
->>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
   },
   h4: {
     fontSize: FONT_SIZES.h4,
     fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.text,
-<<<<<<< HEAD
-    lineHeight: 22,
-=======
     lineHeight: FONT_SIZES.h4 * 1.2,
->>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
   },
   h5: {
     fontSize: FONT_SIZES.h5,
@@ -180,11 +160,7 @@ export const TYPOGRAPHY = {
     fontSize: FONT_SIZES.body,
     fontWeight: FONT_WEIGHTS.regular,
     color: COLORS.text,
-<<<<<<< HEAD
-    lineHeight: 22,
-=======
     lineHeight: FONT_SIZES.body * 1.4,
->>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
   },
   bodySmall: {
     fontSize: FONT_SIZES.bodySmall,
@@ -212,19 +188,12 @@ export const TYPOGRAPHY = {
     fontSize: FONT_SIZES.caption,
     fontWeight: FONT_WEIGHTS.regular,
     color: COLORS.textSecondary,
-<<<<<<< HEAD
-    lineHeight: 20,
-=======
     lineHeight: FONT_SIZES.caption * 1.3,
->>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
   },
   label: {
     fontSize: FONT_SIZES.label,
     fontWeight: FONT_WEIGHTS.regular,
     color: COLORS.textSecondary,
-<<<<<<< HEAD
-    lineHeight: 16,
-=======
     lineHeight: FONT_SIZES.label * 1.3,
   },
   tiny: {
@@ -240,6 +209,5 @@ export const TYPOGRAPHY = {
     fontWeight: FONT_WEIGHTS.regular,
     color: COLORS.textSecondary,
     lineHeight: FONT_SIZES.label * 1.3,
->>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
   },
 }; 
