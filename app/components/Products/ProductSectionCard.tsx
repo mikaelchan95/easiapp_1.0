@@ -141,7 +141,7 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         decelerationRate="fast"
-        snapToInterval={160 + SPACING.element} // Card width + margin
+        snapToInterval={140 + SPACING.element} // Updated for minimal card width
         snapToAlignment="start"
       >
         {displayProducts.map((product, index) => (
@@ -151,7 +151,7 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
             onPress={onProductPress}
             style={styles.productCard}
             animationDelay={100 + (index * 50)} // Staggered animation
-            variant={index === 0 ? 'featured' : 'default'}
+            variant="minimal" // Always use the minimal (skinnier) variant
           />
         ))}
         
@@ -205,11 +205,7 @@ const styles = StyleSheet.create({
     marginRight: SPACING.element,
   },
   title: {
-<<<<<<< HEAD
     ...TYPOGRAPHY.h3,
-=======
-    ...TYPOGRAPHY.h4,
->>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
     fontWeight: '700',
     color: COLORS.primary,
     marginRight: SPACING.sm,
@@ -221,26 +217,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   countText: {
-    ...TYPOGRAPHY.tiny,
+    ...TYPOGRAPHY.caption,
     color: COLORS.primary,
     fontWeight: '600',
   },
   viewAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-<<<<<<< HEAD
-    paddingVertical: SPACING.xs,
-    paddingHorizontal: SPACING.element,
-    borderRadius: 16,
-    backgroundColor: 'transparent',
-  },
-  viewAllText: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.inactive,
-    marginRight: SPACING.xs,
-=======
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 16,
@@ -273,7 +256,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.primary,
     marginRight: 4,
->>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance)
   },
   scrollContent: {
     paddingLeft: SPACING.md,
@@ -324,6 +306,11 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.button,
     color: COLORS.secondary,
     marginLeft: 4,
+  },
+  discountText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.accent,
+    fontWeight: 'bold',
   },
 });
 

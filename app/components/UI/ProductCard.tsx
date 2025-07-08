@@ -182,6 +182,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   const variantStyles = getVariantStyles();
 
+  // For minimal variant, we may want a different layout for some elements
+  const isMinimal = variant === 'minimal';
+
   return (
     <Animated.View
       style={[
@@ -231,45 +234,40 @@ const ProductCard: React.FC<ProductCardProps> = ({
         
         {/* Product Info */}
         <View style={[styles.infoContainer, variantStyles.info]}>
-          <Text style={styles.category} numberOfLines={1}>{category}</Text>
+          {/* Only show category in default and featured variants */}
+          {!isMinimal && (
+            <Text style={styles.category} numberOfLines={1}>{category}</Text>
+          )}
+          
           <Text 
-            style={[styles.name, isCompact && styles.compactName]} 
-            numberOfLines={isCompact ? 1 : 2}
+            style={[
+              styles.name, 
+              isCompact && styles.compactName,
+              isMinimal && styles.minimalName
+            ]} 
+            numberOfLines={isMinimal ? 1 : 2}
           >
             {name}
           </Text>
           
-          {/* Rating */}
-          {rating && (
+          {/* Rating - only show in default and featured variants */}
+          {rating && !isMinimal && (
             <View style={styles.ratingContainer}>
               <Ionicons name="star" size={12} color="#FFD700" />
               <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
             </View>
           )}
           
-          <View style={styles.footer}>
+          <View style={[styles.footer, isMinimal && styles.minimalFooter]}>
             <View style={styles.priceContainer}>
-              <Text style={styles.price}>{formattedPrice}</Text>
-              {hasDiscount && (
+              <Text style={[styles.price, isMinimal && styles.minimalPrice]}>
+                {formattedPrice}
+              </Text>
+              {hasDiscount && !isMinimal && (
                 <Text style={styles.originalPrice}>{formattedOriginalPrice}</Text>
               )}
             </View>
             
-<<<<<<< HEAD:app/components/Products/ProductCard.tsx
-            <TouchableOpacity 
-              style={[
-                styles.addButton,
-                isAdding && styles.addButtonActive
-              ]}
-              onPress={handleAddButtonPress}
-            >
-              <Ionicons 
-                name={isAdding ? "checkmark" : "add"} 
-                size={18} 
-                color={COLORS.buttonText} 
-              />
-            </TouchableOpacity>
-=======
             <Animated.View style={{ transform: [{ scale: addButtonScaleAnim }] }}>
               <TouchableOpacity 
                 style={[
@@ -287,7 +285,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 />
               </TouchableOpacity>
             </Animated.View>
->>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance):app/components/UI/ProductCard.tsx
           </View>
         </View>
       </TouchableOpacity>
@@ -305,11 +302,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 0,
-<<<<<<< HEAD:app/components/Products/ProductCard.tsx
     ...SHADOWS.medium,
-=======
-    ...SHADOWS.light,
->>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance):app/components/UI/ProductCard.tsx
     marginBottom: SPACING.md,
     // Dynamic height based on content instead of fixed
     minHeight: 320,
@@ -382,7 +375,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   discountText: {
-    ...TYPOGRAPHY.tiny,
+    ...TYPOGRAPHY.caption,
     color: COLORS.accent,
     fontWeight: 'bold',
   },
@@ -394,19 +387,13 @@ const styles = StyleSheet.create({
     minHeight: 100, // Ensure consistent spacing
   },
   category: {
-<<<<<<< HEAD:app/components/Products/ProductCard.tsx
-    ...TYPOGRAPHY.small,
+    ...TYPOGRAPHY.caption,
     color: COLORS.inactive,
     marginBottom: SPACING.xs,
-=======
-    ...TYPOGRAPHY.label,
-    marginBottom: 4,
->>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance):app/components/UI/ProductCard.tsx
     textTransform: 'capitalize',
     fontWeight: '500',
   },
   name: {
-<<<<<<< HEAD:app/components/Products/ProductCard.tsx
     ...TYPOGRAPHY.h4,
     fontSize: 15,
     fontWeight: '700',
@@ -417,17 +404,13 @@ const styles = StyleSheet.create({
   compactName: {
     fontSize: 13,
     marginBottom: SPACING.xs,
-=======
-    ...TYPOGRAPHY.h5,
-    fontWeight: '700',
-    marginBottom: 8,
-    // Truncate to 2 lines
-    flexShrink: 1,
   },
-  compactName: {
-    ...TYPOGRAPHY.bodySmall,
+  minimalName: {
+    ...TYPOGRAPHY.caption,
+    fontSize: 12,
+    marginBottom: 2,
     fontWeight: '600',
-    marginBottom: 4,
+    minHeight: 32, // Smaller height for 1 line
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -438,7 +421,6 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.label,
     marginLeft: 2,
     fontWeight: '600',
->>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance):app/components/UI/ProductCard.tsx
   },
   footer: {
     flexDirection: 'row',
@@ -446,6 +428,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     marginTop: SPACING.element,
     paddingTop: SPACING.xs,
+  },
+  minimalFooter: {
+    marginTop: 4,
   },
   priceContainer: {
     flexDirection: 'column',
@@ -456,12 +441,13 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.h4,
     fontWeight: '700',
   },
-  originalPrice: {
-<<<<<<< HEAD:app/components/Products/ProductCard.tsx
-    ...TYPOGRAPHY.small,
-=======
+  minimalPrice: {
     ...TYPOGRAPHY.bodySmall,
->>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance):app/components/UI/ProductCard.tsx
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  originalPrice: {
+    ...TYPOGRAPHY.caption,
     color: COLORS.inactive,
     textDecorationLine: 'line-through',
     marginTop: 2,
@@ -473,10 +459,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.buttonBg,
     justifyContent: 'center',
     alignItems: 'center',
-<<<<<<< HEAD:app/components/Products/ProductCard.tsx
     marginLeft: SPACING.element,
-=======
->>>>>>> 4938d2d (✨ refactor(home): simplify HomeScreen UI and optimize performance):app/components/UI/ProductCard.tsx
     ...SHADOWS.light,
   },
   addButtonActive: {
