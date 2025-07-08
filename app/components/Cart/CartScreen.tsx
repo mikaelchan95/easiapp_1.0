@@ -84,8 +84,8 @@ export default function CartScreen() {
   // Calculate totals using centralized pricing utility
   const cartTotals = calculateCartTotals(state.cart, state.user?.role || 'retail');
   
-  // Estimate summary bar height: padding (SPACING.md) + paddingBottom (SPACING.md + 20) + content height (~80)
-  const SUMMARY_BAR_HEIGHT = 200; // Increased to ensure cart items are never cut off by summary bar
+  // Calculate summary bar height dynamically: padding + content + bottom safe area + tab bar
+  const SUMMARY_BAR_HEIGHT = SPACING.md * 2 + 80 + insets.bottom + 80; // padding + content height + safe area + tab bar
   
   // Improved product image lookup with fallback
   const getProductImageById = (productId: string) => {
@@ -478,7 +478,8 @@ export default function CartScreen() {
           styles.summaryBar,
           { 
             transform: [{ translateY: summarySlideAnim }],
-            opacity: fadeAnim 
+            opacity: fadeAnim,
+            paddingBottom: SPACING.md + insets.bottom + 80 // Dynamic bottom padding based on safe area + tab bar height
           }
         ]}
       >
@@ -591,7 +592,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     padding: SPACING.md,
-    paddingBottom: SPACING.md + 20,
     zIndex: 20,
     ...SHADOWS.medium,
   },
