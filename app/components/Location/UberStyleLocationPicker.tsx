@@ -349,11 +349,14 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }
             
+            // Use the enriched location with coordinates if available
+            const finalLocation = validation.enrichedLocation || location;
+            
             setTimeout(() => {
-              GoogleMapsService.addToRecentLocations(location).catch(err => 
+              GoogleMapsService.addToRecentLocations(finalLocation).catch(err => 
                 console.error('Error saving to recent locations:', err)
               );
-              onLocationSelect(location);
+              onLocationSelect(finalLocation);
             }, 300);
           })
           .catch(error => {

@@ -13,6 +13,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Alert,
+  Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,6 +47,8 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [recentLocations, setRecentLocations] = useState<LocationSuggestion[]>([]);
   const [currentLocation, setCurrentLocation] = useState<LocationSuggestion | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   
   // Animation values
   const searchBarFocused = useRef(new Animated.Value(0)).current;
@@ -56,6 +59,48 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
   const successAnimation = useRef(new Animated.Value(0)).current;
+
+  // Enhanced keyboard handling with proper iOS support
+  useEffect(() => {
+    const keyboardWillShow = (event: any) => {
+      setIsKeyboardVisible(true);
+      setKeyboardHeight(event.endCoordinates.height);
+    };
+
+    const keyboardWillHide = () => {
+      setIsKeyboardVisible(false);
+      setKeyboardHeight(0);
+    };
+
+    const keyboardDidShow = (event: any) => {
+      if (Platform.OS === 'android') {
+        setIsKeyboardVisible(true);
+        setKeyboardHeight(event.endCoordinates.height);
+      }
+    };
+
+    const keyboardDidHide = () => {
+      if (Platform.OS === 'android') {
+        setIsKeyboardVisible(false);
+        setKeyboardHeight(0);
+      }
+    };
+
+    let showSubscription, hideSubscription;
+
+    if (Platform.OS === 'ios') {
+      showSubscription = Keyboard.addListener('keyboardWillShow', keyboardWillShow);
+      hideSubscription = Keyboard.addListener('keyboardWillHide', keyboardWillHide);
+    } else {
+      showSubscription = Keyboard.addListener('keyboardDidShow', keyboardDidShow);
+      hideSubscription = Keyboard.addListener('keyboardDidHide', keyboardDidHide);
+    }
+
+    return () => {
+      showSubscription?.remove();
+      hideSubscription?.remove();
+    };
+  }, []);
 
   // Cleanup on unmount to prevent memory leaks
   useEffect(() => {
@@ -172,6 +217,9 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
       setSearchText(location.title);
       setShowSuggestions(false);
       
+      // Dismiss keyboard
+      Keyboard.dismiss();
+      
       // Save to recent locations
       try {
         await GoogleMapsService.addToRecentLocations(location);
@@ -180,10 +228,19 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
         // Don't block the flow for this error
       }
       
-      // Add delivery info to location if available
-      const enrichedLocation = {
-        ...location,
-        deliveryInfo: validation.deliveryInfo,
+      // Use the enriched location from validation (with coordinates) and add delivery info
+      const baseLocation = validation.enrichedLocation || location;
+      const enrichedLocation: LocationSuggestion = {
+        ...baseLocation,
+        ...(validation.deliveryInfo && {
+          deliveryInfo: {
+            estimatedTime: validation.deliveryInfo.estimatedTime || '30-45 mins',
+            deliveryFee: validation.deliveryInfo.deliveryFee || 0,
+            available: validation.deliveryInfo.available,
+            zone: validation.deliveryInfo.zone?.name,
+            distance: validation.deliveryInfo.distance,
+          }
+        })
       };
       
       // Success haptic feedback
@@ -210,7 +267,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
     }
   }, [onLocationSelect, navigation, successAnimation]);
 
-  // Handle input focus
+  // Handle input focus with improved keyboard handling
   const handleInputFocus = () => {
     setShowSuggestions(true);
     
@@ -221,7 +278,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
         useNativeDriver: false,
       }),
       Animated.timing(suggestionListHeight, {
-        toValue: height * 0.6,
+        toValue: isKeyboardVisible ? height * 0.4 : height * 0.6,
         duration: 300,
         useNativeDriver: false,
       }),
@@ -274,6 +331,30 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
         [{ text: 'OK', style: 'default' }]
       );
     }
+  };
+
+  // Calculate keyboard offset for iOS modals
+  const getKeyboardOffset = () => {
+    if (!isKeyboardVisible || keyboardHeight === 0) return 0;
+    
+    if (Platform.OS === 'ios') {
+      // For iOS modals, calculate proper offset by subtracting modal's top offset from bottom inset
+      const modalTopOffset = insets.top;
+      const baseOffset = keyboardHeight - insets.bottom;
+      return Math.max(baseOffset - modalTopOffset, 0);
+    } else {
+      // For Android, use simpler calculation
+      return keyboardHeight;
+    }
+  };
+
+  // Calculate the keyboardVerticalOffset for KeyboardAvoidingView
+  const getKeyboardVerticalOffset = () => {
+    if (Platform.OS === 'ios') {
+      // Account for the header height and safe area
+      return insets.top + 60; // Header height approximation
+    }
+    return 0;
   };
 
   // Render suggestion item with accessibility
@@ -356,14 +437,16 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
       </View>
       
       <KeyboardAvoidingView 
-        style={styles.content}
+        style={[styles.content, { marginBottom: getKeyboardOffset() }]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={getKeyboardVerticalOffset()}
       >
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <View style={[
             styles.searchBar,
-            showSuggestions && styles.searchBarFocused
+            showSuggestions && styles.searchBarFocused,
+            isKeyboardVisible && styles.searchBarKeyboard
           ]}>
             <Ionicons name="search" size={20} color={COLORS.textSecondary} />
             <TextInput
@@ -378,6 +461,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="search"
+              onSubmitEditing={() => Keyboard.dismiss()}
             />
             {searchText.length > 0 && (
               <TouchableOpacity
@@ -385,6 +469,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
                 onPress={() => {
                   setSearchText('');
                   setSuggestions([]);
+                  HapticFeedback.selection();
                 }}
               >
                 <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
@@ -426,6 +511,10 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
             style={styles.suggestionsList}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            contentContainerStyle={[
+              styles.suggestionsScrollContent,
+              isKeyboardVisible && styles.suggestionsScrollContentKeyboard
+            ]}
           >
             {/* Loading indicator */}
             {isLoading && (
@@ -565,6 +654,9 @@ const styles = StyleSheet.create({
   searchBarFocused: {
     borderColor: COLORS.primary,
   },
+  searchBarKeyboard: {
+    borderColor: COLORS.primary,
+  },
   searchInput: {
     flex: 1,
     marginLeft: SPACING.sm,
@@ -695,6 +787,12 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginLeft: SPACING.sm,
     flex: 1,
+  },
+  suggestionsScrollContent: {
+    paddingBottom: SPACING.xl,
+  },
+  suggestionsScrollContentKeyboard: {
+    paddingBottom: SPACING.xl + SPACING.xl,
   },
 });
 

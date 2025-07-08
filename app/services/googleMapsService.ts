@@ -66,6 +66,15 @@ const POSTAL_CODE_DATABASE: Record<string, LocationSuggestion> = {
     type: 'postal',
     formattedAddress: 'Airport Boulevard, Singapore 819663',
   },
+  '670228': {
+    id: 'postal_670228',
+    title: 'Jurong Point',
+    subtitle: '1 Jurong West Central 2, Singapore 670228',
+    coordinate: { latitude: 1.3397, longitude: 103.7066 },
+    postalCode: '670228',
+    type: 'postal',
+    formattedAddress: '1 Jurong West Central 2, Singapore 670228',
+  },
 };
 
 // Enhanced mock data for more realistic search results
@@ -105,6 +114,78 @@ const POPULAR_LOCATIONS = [
     coordinate: { latitude: 1.3644, longitude: 103.9915 },
     isPremiumLocation: false,
     postalCode: "819663"
+  },
+  {
+    id: "place_id_5",
+    placeId: "place_id_5",
+    title: "CHIJMES",
+    subtitle: "30 Victoria Street, Singapore 187996",
+    coordinate: { latitude: 1.2950, longitude: 103.8520 },
+    isPremiumLocation: true,
+    postalCode: "187996"
+  },
+  {
+    id: "place_id_6",
+    placeId: "place_id_6",
+    title: "Bugis Junction",
+    subtitle: "200 Victoria Street, Singapore 188021",
+    coordinate: { latitude: 1.2999, longitude: 103.8556 },
+    isPremiumLocation: false,
+    postalCode: "188021"
+  },
+  {
+    id: "place_id_7",
+    placeId: "place_id_7",
+    title: "Bugis Street",
+    subtitle: "3 New Bugis Street, Singapore 188867",
+    coordinate: { latitude: 1.3006, longitude: 103.8548 },
+    isPremiumLocation: false,
+    postalCode: "188867"
+  },
+  {
+    id: "place_id_8",
+    placeId: "place_id_8",
+    title: "Bugis+",
+    subtitle: "201 Victoria Street, Singapore 188067",
+    coordinate: { latitude: 1.3005, longitude: 103.8563 },
+    isPremiumLocation: false,
+    postalCode: "188067"
+  },
+  {
+    id: "place_id_9",
+    placeId: "place_id_9",
+    title: "Clarke Quay",
+    subtitle: "3 River Valley Road, Singapore 179024",
+    coordinate: { latitude: 1.2888, longitude: 103.8467 },
+    isPremiumLocation: true,
+    postalCode: "179024"
+  },
+  {
+    id: "place_id_10",
+    placeId: "place_id_10",
+    title: "Raffles Place",
+    subtitle: "Raffles Place, Singapore 048616",
+    coordinate: { latitude: 1.2844, longitude: 103.8514 },
+    isPremiumLocation: false,
+    postalCode: "048616"
+  },
+  {
+    id: "place_id_11",
+    placeId: "place_id_11",
+    title: "Chinatown",
+    subtitle: "Chinatown, Singapore 058357",
+    coordinate: { latitude: 1.2814, longitude: 103.8447 },
+    isPremiumLocation: false,
+    postalCode: "058357"
+  },
+  {
+    id: "place_id_12",
+    placeId: "place_id_12",
+    title: "Little India",
+    subtitle: "Little India, Singapore 209557",
+    coordinate: { latitude: 1.3067, longitude: 103.8520 },
+    isPremiumLocation: false,
+    postalCode: "209557"
   }
 ];
 
@@ -113,7 +194,12 @@ const NEIGHBORHOODS = [
   "Orchard", "Bukit Timah", "Holland Village", "Bugis", "Marina Bay", 
   "Chinatown", "Little India", "Tiong Bahru", "Joo Chiat", "Katong",
   "Jurong", "Tampines", "Bishan", "Ang Mo Kio", "Toa Payoh", "Serangoon",
-  "Clementi", "Punggol", "Sembawang", "Woodlands", "Yishun"
+  "Clementi", "Punggol", "Sembawang", "Woodlands", "Yishun", "CHIJMES",
+  "Clarke Quay", "Boat Quay", "Robertson Quay", "Dhoby Ghaut", "City Hall",
+  "Raffles Place", "Tanjong Pagar", "Outram Park", "Somerset", "Newton",
+  "Novena", "Thomson", "Farrer Park", "Lavender", "Kallang", "Geylang",
+  "Paya Lebar", "Bedok", "Changi", "Pasir Ris", "Hougang", "Sengkang",
+  "Buangkok", "Kovan", "Potong Pasir", "Boon Lay", "Pioneer", "Joo Koon"
 ];
 
 export class GoogleMapsService {
@@ -135,23 +221,29 @@ export class GoogleMapsService {
         const postalResult = POSTAL_CODE_DATABASE[query];
         if (postalResult) {
           return [postalResult];
+        } else {
+          // Try to get from Google Maps API
+          const apiResult = await this.getAddressByPostalCode(query);
+          if (apiResult) {
+            return [apiResult];
+          }
         }
       }
       
-             // Check for partial postal code match
-       const partialPostalMatch = query.match(/^\d{1,6}$/);
-       if (partialPostalMatch) {
-         const matchingPostalCodes: LocationSuggestion[] = [];
-         for (const code in POSTAL_CODE_DATABASE) {
-           if (code.startsWith(query)) {
-             matchingPostalCodes.push(POSTAL_CODE_DATABASE[code]);
-           }
-         }
-         
-         if (matchingPostalCodes.length > 0) {
-           return matchingPostalCodes;
-         }
-       }
+      // Check for partial postal code match
+      const partialPostalMatch = query.match(/^\d{1,6}$/);
+      if (partialPostalMatch) {
+        const matchingPostalCodes: LocationSuggestion[] = [];
+        for (const code in POSTAL_CODE_DATABASE) {
+          if (code.startsWith(query)) {
+            matchingPostalCodes.push(POSTAL_CODE_DATABASE[code]);
+          }
+        }
+        
+        if (matchingPostalCodes.length > 0) {
+          return matchingPostalCodes;
+        }
+      }
 
        // If no API key available, fallback to mock data
        if (!this.apiKey || this.apiKey === 'your_google_maps_api_key_here') {
@@ -186,14 +278,51 @@ export class GoogleMapsService {
       const data: AutocompleteResponse = await response.json();
       
       if (data.predictions && data.predictions.length > 0) {
-        return data.predictions.map((prediction, index) => ({
-          id: prediction.place_id,
-          title: prediction.structured_formatting.main_text,
-          subtitle: prediction.structured_formatting.secondary_text || prediction.description,
-          type: 'suggestion' as const,
-          placeId: prediction.place_id,
-          address: prediction.description,
-        }));
+        // Map predictions and fetch place details for each to get coordinates
+        const suggestions = await Promise.all(
+          data.predictions.map(async (prediction) => {
+            try {
+              // Get place details to obtain coordinates
+              const placeDetails = await this.getPlaceDetails(prediction.place_id);
+              
+              if (placeDetails && placeDetails.coordinate) {
+                return {
+                  id: prediction.place_id,
+                  title: prediction.structured_formatting.main_text,
+                  subtitle: prediction.structured_formatting.secondary_text || prediction.description,
+                  type: 'suggestion' as const,
+                  placeId: prediction.place_id,
+                  address: prediction.description,
+                  coordinate: placeDetails.coordinate,
+                  formattedAddress: placeDetails.subtitle,
+                };
+              } else {
+                // Fallback without coordinates if place details fail
+                return {
+                  id: prediction.place_id,
+                  title: prediction.structured_formatting.main_text,
+                  subtitle: prediction.structured_formatting.secondary_text || prediction.description,
+                  type: 'suggestion' as const,
+                  placeId: prediction.place_id,
+                  address: prediction.description,
+                };
+              }
+            } catch (error) {
+              console.error('Error fetching place details for:', prediction.place_id, error);
+              // Return suggestion without coordinates if place details fail
+              return {
+                id: prediction.place_id,
+                title: prediction.structured_formatting.main_text,
+                subtitle: prediction.structured_formatting.secondary_text || prediction.description,
+                type: 'suggestion' as const,
+                placeId: prediction.place_id,
+                address: prediction.description,
+              };
+            }
+          })
+        );
+        
+        return suggestions;
       }
 
       // Fallback to mock data if no results
@@ -240,6 +369,8 @@ export class GoogleMapsService {
         },
         isPremiumLocation: Math.random() > 0.7,
         type: 'suggestion' as const,
+        address: `${neighborhood}, Singapore`,
+        formattedAddress: `${neighborhood}, Singapore`,
       }))
       .slice(0, 5); // Limit to 5 dynamic suggestions
     
@@ -252,6 +383,12 @@ export class GoogleMapsService {
    */
   static async getPlaceDetails(placeId: string): Promise<LocationSuggestion | null> {
     try {
+      // If no API key available, return null
+      if (!this.apiKey || this.apiKey === 'your_google_maps_api_key_here') {
+        console.warn('No valid API key for place details');
+        return null;
+      }
+
       const params = new URLSearchParams({
         place_id: placeId,
         key: this.apiKey,
@@ -260,29 +397,122 @@ export class GoogleMapsService {
       });
 
       const response = await fetch(
-        `${this.baseUrl}/place/details/json?${params.toString()}`
+        `${this.baseUrl}/place/details/json?${params.toString()}`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }
       );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       
       const data = await response.json();
       
-      if (!data.result) return null;
+      // Check for API errors
+      if (data.status !== 'OK') {
+        console.warn(`Place Details API returned status: ${data.status}`, data.error_message);
+        return null;
+      }
+      
+      if (!data.result) {
+        console.warn('No result found for place ID:', placeId);
+        return null;
+      }
 
       const place: GooglePlaceDetails = data.result;
       
+      // Validate that we have the required geometry data
+      if (!place.geometry || !place.geometry.location) {
+        console.warn('Place details missing geometry data for:', placeId);
+        return null;
+      }
+      
       return {
         id: place.place_id,
-        title: place.name,
-        subtitle: place.formatted_address,
+        title: place.name || 'Unknown Location',
+        subtitle: place.formatted_address || 'Address not available',
         type: 'suggestion',
         coordinate: {
           latitude: place.geometry.location.lat,
           longitude: place.geometry.location.lng,
         },
-        address: place.formatted_address,
+        address: place.formatted_address || '',
+        formattedAddress: place.formatted_address || '',
         placeId: place.place_id,
       };
     } catch (error) {
-      console.error('Error fetching place details:', error);
+      console.error('Error fetching place details for place ID:', placeId, error);
+      return null;
+    }
+  }
+
+  /**
+   * Geocode an address to get coordinates
+   */
+  static async geocodeAddress(address: string): Promise<LocationSuggestion | null> {
+    try {
+      if (!this.apiKey || this.apiKey === 'your_google_maps_api_key_here') {
+        console.warn('No valid API key for geocoding');
+        return null;
+      }
+
+      const params = new URLSearchParams({
+        address: address,
+        key: this.apiKey,
+        language: GOOGLE_MAPS_CONFIG.geocoding.language,
+        region: GOOGLE_MAPS_CONFIG.geocoding.region,
+        components: GOOGLE_MAPS_CONFIG.geocoding.components,
+      });
+
+      const response = await fetch(
+        `${this.baseUrl}/geocode/json?${params.toString()}`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.status !== 'OK') {
+        console.warn(`Geocoding API returned status: ${data.status}`, data.error_message);
+        return null;
+      }
+      
+      if (!data.results || data.results.length === 0) {
+        console.warn('No geocoding results found for:', address);
+        return null;
+      }
+
+      const result = data.results[0];
+      
+      return {
+        id: `geocoded_${Date.now()}`,
+        title: this.extractLocationName(result.formatted_address),
+        subtitle: result.formatted_address,
+        type: 'suggestion',
+        coordinate: {
+          latitude: result.geometry.location.lat,
+          longitude: result.geometry.location.lng,
+        },
+        address: result.formatted_address,
+        formattedAddress: result.formatted_address,
+        placeId: result.place_id,
+      };
+    } catch (error) {
+      console.error('Error geocoding address:', address, error);
       return null;
     }
   }
@@ -340,7 +570,6 @@ export class GoogleMapsService {
       // Get current location with timeout
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
-        maximumAge: 60000, // 1 minute cache
       });
 
       // Reverse geocode to get address
@@ -435,29 +664,71 @@ export class GoogleMapsService {
     valid: boolean;
     error?: string;
     deliveryInfo?: ReturnType<typeof GoogleMapsService.isDeliveryAvailable>;
+    enrichedLocation?: LocationSuggestion;
   }> {
     try {
-      // Check if location has coordinates
+      let enrichedLocation = { ...location };
+      
+      // Check if location has coordinates, if not try to get them
       if (!location.coordinate) {
-        return {
-          valid: false,
-          error: 'Location coordinates are missing',
-        };
+        console.log('Location missing coordinates, attempting to fetch...');
+        
+        // Try to get coordinates using place ID
+        if (location.placeId) {
+          const placeDetails = await this.getPlaceDetails(location.placeId);
+          if (placeDetails && placeDetails.coordinate) {
+            enrichedLocation = {
+              ...location,
+              coordinate: placeDetails.coordinate,
+              formattedAddress: placeDetails.formattedAddress || location.address,
+            };
+            console.log('Successfully fetched coordinates from place details');
+          }
+        }
+        
+        // If still no coordinates, try geocoding the address
+        if (!enrichedLocation.coordinate && (location.address || location.subtitle)) {
+          const addressToGeocode = location.address || location.subtitle || location.title;
+          console.log('Attempting to geocode address:', addressToGeocode);
+          
+          try {
+            const geocoded = await this.geocodeAddress(addressToGeocode);
+            if (geocoded && geocoded.coordinate) {
+              enrichedLocation = {
+                ...location,
+                coordinate: geocoded.coordinate,
+                formattedAddress: geocoded.formattedAddress || location.address,
+              };
+              console.log('Successfully geocoded address');
+            }
+          } catch (geocodeError) {
+            console.error('Geocoding failed:', geocodeError);
+          }
+        }
+        
+        // If we still don't have coordinates, return invalid
+        if (!enrichedLocation.coordinate) {
+          return {
+            valid: false,
+            error: 'Unable to determine location coordinates. Please try a different address.',
+          };
+        }
       }
 
-      // Check delivery availability
-      const deliveryInfo = this.isDeliveryAvailable(location.coordinate);
+      // Check delivery availability using the enriched location
+      const deliveryInfo = this.isDeliveryAvailable(enrichedLocation.coordinate!);
       
       if (!deliveryInfo.available) {
         return {
           valid: false,
           error: 'Sorry, we don\'t deliver to this area yet. Please try a different location.',
           deliveryInfo,
+          enrichedLocation,
         };
       }
 
       // Additional validation for Singapore bounds
-      const { latitude, longitude } = location.coordinate;
+      const { latitude, longitude } = enrichedLocation.coordinate!;
       const singaporeBounds = {
         north: 1.4784,
         south: 1.1496,
@@ -480,6 +751,7 @@ export class GoogleMapsService {
       return {
         valid: true,
         deliveryInfo,
+        enrichedLocation,
       };
     } catch (error) {
       console.error('Error validating location:', error);
@@ -588,6 +860,7 @@ export class GoogleMapsService {
       { code: '098632', label: 'Sentosa' },
       { code: '819663', label: 'Changi Airport' },
       { code: '189702', label: 'Bugis Junction' },
+      { code: '670228', label: 'Jurong Point' },
     ];
   }
 
@@ -607,6 +880,12 @@ export class GoogleMapsService {
       return POSTAL_CODE_DATABASE[postalCode];
     }
 
+    // If no API key or using mock key, return null for unknown postal codes
+    if (!this.apiKey || this.apiKey === 'your_google_maps_api_key_here') {
+      console.warn(`Postal code ${postalCode} not found in local database and no valid API key`);
+      return null;
+    }
+
     // Otherwise call the Google Maps Geocoding API
     try {
       const params = new URLSearchParams({
@@ -620,9 +899,21 @@ export class GoogleMapsService {
         `${this.baseUrl}/geocode/json?${params.toString()}`
       );
       
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
-      if (!data.results || data.results.length === 0) return null;
+      if (data.status !== 'OK') {
+        console.warn(`Geocoding API returned status: ${data.status}`);
+        return null;
+      }
+      
+      if (!data.results || data.results.length === 0) {
+        console.warn(`No results found for postal code: ${postalCode}`);
+        return null;
+      }
 
       const result = data.results[0];
       
@@ -631,9 +922,22 @@ export class GoogleMapsService {
         (component: any) => component.types.includes('postal_code')
       );
 
+      // Extract street number and route for better title
+      const streetNumber = result.address_components.find(
+        (component: any) => component.types.includes('street_number')
+      );
+      const route = result.address_components.find(
+        (component: any) => component.types.includes('route')
+      );
+      
+      let title = this.extractLocationName(result.formatted_address);
+      if (streetNumber && route) {
+        title = `${streetNumber.long_name} ${route.long_name}`;
+      }
+
       return {
         id: `postal_${postalCode}`,
-        title: this.extractLocationName(result.formatted_address),
+        title,
         subtitle: result.formatted_address,
         type: 'postal',
         coordinate: {
