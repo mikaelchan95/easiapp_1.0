@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import ProductCard from '../UI/ProductCard';
+import EnhancedProductCard from './EnhancedProductCard';
 import { Product } from '../../data/mockProducts';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
@@ -141,17 +141,17 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         decelerationRate="fast"
-        snapToInterval={140 + SPACING.element} // Updated for minimal card width
+        snapToInterval={160 + SPACING.element} // Updated for enhanced card width
         snapToAlignment="start"
       >
         {displayProducts.map((product, index) => (
-          <ProductCard
+          <EnhancedProductCard
             key={product.id} 
             product={product} 
             onPress={onProductPress}
             style={styles.productCard}
             animationDelay={100 + (index * 50)} // Staggered animation
-            variant="minimal" // Always use the minimal (skinnier) variant
+            isCompact={true} // Use compact variant for horizontal scrolling
           />
         ))}
         
@@ -264,6 +264,7 @@ const styles = StyleSheet.create({
   productCard: {
     marginRight: SPACING.element,
     width: 160,
+    height: 250, // Fixed height for consistent appearance
   },
   showMoreCard: {
     width: 120,
