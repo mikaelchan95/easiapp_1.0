@@ -1,5 +1,6 @@
 import { NavigatorScreenParams, RouteProp } from '@react-navigation/native';
 import { Product } from '../data/mockProducts';
+import { LocationSuggestion } from './location';
 
 export type MainTabParamList = {
   Home: undefined;
@@ -12,28 +13,32 @@ export type MainTabParamList = {
 };
 
 export type RootStackParamList = {
-  Main: { screen?: keyof MainTabParamList };
-  Auth: undefined;
-  ProductDetail: { id: string };
-  SmartSearch: { query?: string; category?: string };
+  Home: undefined;
+  Products: undefined;
+  Cart: undefined;
   Checkout: undefined;
-  OrderSuccess: { orderId: string };
-  OrderTracking: { orderId: string };
+  Profile: undefined;
+  Rewards: undefined;
+  Activities: undefined;
+  LocationPickerDemo: undefined;
+  UberStyleLocationScreen: undefined;
+  DeliveryLocationScreen: {
+    returnToScreen?: string;
+  };
+  SavedLocations: undefined;
+  ProductDetail: { id: string };
+  SmartSearch: { category?: string };
+  Main: { screen: string };
+  OrderSuccess: undefined;
+  OrderTracking: undefined;
   MomentumShowcase: undefined;
   OrderHistory: undefined;
-  OrderDetails: { orderId: string };
+  OrderDetails: undefined;
   Wishlist: undefined;
   Reviews: undefined;
   Support: undefined;
-  Rewards: undefined;
   Referrals: undefined;
-  LocationPickerDemo: undefined;
   LocationPickerScreen: undefined;
-  UberStyleLocationScreen: undefined;
-  DeliveryLocationScreen: {
-    onLocationSelect?: (location: any) => void;
-    initialLocation?: any;
-  };
 };
 
 declare global {

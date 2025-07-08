@@ -112,11 +112,7 @@ const AddressStep: React.FC<AddressStepProps> = ({ address: initialAddress, onCo
   // Navigate to location picker
   const openLocationPicker = () => {
     HapticFeedback.selection();
-    // @ts-ignore - Navigation params will be handled by the screen
-    navigation.navigate('DeliveryLocationScreen', {
-      onLocationSelect: handleLocationSelect,
-      initialLocation: deliveryLocation,
-    });
+    navigation.navigate('DeliveryLocationScreen');
   };
   
   const validateAddress = () => {

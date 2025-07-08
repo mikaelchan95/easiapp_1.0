@@ -1,0 +1,4 @@
+---
+alwaysApply: true
+---
+refactor code if the file approaches or is over 500 lines long. 

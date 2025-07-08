@@ -26,6 +26,7 @@ interface AppState {
   searchQuery: string;
   selectedCategory: string;
   selectedLocation: LocationSuggestion | null;
+  tabBarVisible: boolean;
 }
 
 type AppAction =
@@ -38,7 +39,8 @@ type AppAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_SEARCH_QUERY'; payload: string }
   | { type: 'SET_SELECTED_CATEGORY'; payload: string }
-  | { type: 'SET_SELECTED_LOCATION'; payload: LocationSuggestion | null };
+  | { type: 'SET_SELECTED_LOCATION'; payload: LocationSuggestion | null }
+  | { type: 'SET_TAB_BAR_VISIBLE'; payload: boolean };
 
 // Initial state
 const initialState: AppState = {
@@ -63,6 +65,7 @@ const initialState: AppState = {
       longitude: 103.8607
     }
   }, // Default location
+  tabBarVisible: true,
 };
 
 // Reducer
@@ -127,6 +130,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, selectedCategory: action.payload };
     case 'SET_SELECTED_LOCATION':
       return { ...state, selectedLocation: action.payload };
+    case 'SET_TAB_BAR_VISIBLE':
+      return { ...state, tabBarVisible: action.payload };
     default:
       return state;
   }

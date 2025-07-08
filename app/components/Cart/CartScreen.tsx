@@ -12,7 +12,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import CartItem from './CartItem';
-import SwipeableCartItem from './SwipeableCartItem';
 import EmptyCart from './EmptyCart';
 import SuggestedAddons from './SuggestedAddons';
 import { products, Product as MockProduct } from '../../data/mockProducts';
@@ -84,6 +83,9 @@ export default function CartScreen() {
   
   // Calculate totals using centralized pricing utility
   const cartTotals = calculateCartTotals(state.cart, state.user?.role || 'retail');
+  
+  // Estimate summary bar height: padding (SPACING.md) + paddingBottom (SPACING.md + 20) + content height (~80)
+  const SUMMARY_BAR_HEIGHT = 200; // Increased to ensure cart items are never cut off by summary bar
   
   // Improved product image lookup with fallback
   const getProductImageById = (productId: string) => {
@@ -382,7 +384,7 @@ export default function CartScreen() {
           ]
         }}
       >
-        <SwipeableCartItem 
+        <CartItem 
           item={item} 
           onQuantityChange={(quantity) => handleQuantityChange(item.productId, quantity)}
           onDelete={() => handleQuantityChange(item.productId, 0)}
@@ -448,7 +450,10 @@ export default function CartScreen() {
         data={cartItems}
         keyExtractor={item => item.id}
         renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={{
+          ...styles.listContent,
+          paddingBottom: SUMMARY_BAR_HEIGHT + insets.bottom + 24, // 24 for extra breathing room
+        }}
         style={styles.listContainer}
         ListFooterComponent={
           <SuggestedAddons 
@@ -572,8 +577,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   listContent: {
-    padding: SPACING.md,
-    paddingBottom: 140,
+    paddingTop: SPACING.lg,
+    paddingBottom: 180,
+    paddingHorizontal: SPACING.lg,
     backgroundColor: COLORS.background,
   },
   summaryBar: {

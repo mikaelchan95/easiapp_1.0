@@ -14,15 +14,19 @@ import {
   KeyboardAvoidingView,
   Alert,
   Keyboard,
+  FlatList,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { LocationSuggestion } from '../../types/location';
 import { GoogleMapsService } from '../../services/googleMapsService';
 import { HapticFeedback } from '../../utils/haptics';
+import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 
 const { width, height } = Dimensions.get('window');
 
@@ -40,6 +44,14 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   
+  // Use delivery location hook
+  const { 
+    savedAddresses, 
+    loadSavedAddresses,
+    saveCurrentLocation,
+    locationPreferences 
+  } = useDeliveryLocation();
+  
   // State
   const [searchText, setSearchText] = useState(initialLocation?.title || '');
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
@@ -49,6 +61,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   const [currentLocation, setCurrentLocation] = useState<LocationSuggestion | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
   
   // Animation values
   const searchBarFocused = useRef(new Animated.Value(0)).current;
@@ -116,14 +129,28 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   // Load initial data
   const loadInitialData = useCallback(async () => {
     try {
-      const [recent, current] = await Promise.all([
-        GoogleMapsService.getRecentLocations(),
-        GoogleMapsService.getCurrentLocation(),
-      ]);
+      const recent = await GoogleMapsService.getRecentLocations();
       
       if (mountedRef.current) {
         setRecentLocations(recent.slice(0, 3)); // Show max 3 recent
-        setCurrentLocation(current);
+      }
+      
+      // Only load current location if preferences allow it
+      const storedPreferences = await AsyncStorage.getItem('@easiapp:location_preferences');
+      let shouldLoadCurrent = false;
+      
+      if (storedPreferences) {
+        const preferences = JSON.parse(storedPreferences);
+        shouldLoadCurrent = preferences.autoSuggestCurrent !== false; // Default to true if not set
+      } else {
+        shouldLoadCurrent = false; // Default to false for new users
+      }
+      
+      if (shouldLoadCurrent) {
+        const current = await GoogleMapsService.getCurrentLocation();
+        if (mountedRef.current) {
+          setCurrentLocation(current);
+        }
       }
     } catch (error) {
       console.error('Error loading initial data:', error);
@@ -181,25 +208,18 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
     }
   }, []);
 
-  // Handle location selection with validation and feedback
-  const handleLocationSelect = useCallback(async (location: LocationSuggestion) => {
+  // Handle location selection
+  const handleLocationSelect = async (location: LocationSuggestion) => {
     try {
-      // Add haptic feedback for selection
-      HapticFeedback.selection();
-      
-      // Validate location before proceeding
-      const validation = await GoogleMapsService.validateLocation(location);
-      
-      if (!validation.valid) {
-        HapticFeedback.error();
-        Alert.alert(
-          'Location Not Available',
-          validation.error || 'Unable to deliver to this location',
-          [{ text: 'OK', style: 'default' }]
-        );
-        return;
+      if (Platform.OS === 'ios') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-
+      
+      setCurrentLocation(location);
+      
+      // Add to recent locations
+      await GoogleMapsService.addToRecentLocations(location);
+      
       // Show success animation
       Animated.sequence([
         Animated.timing(successAnimation, {
@@ -220,42 +240,10 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
       // Dismiss keyboard
       Keyboard.dismiss();
       
-      // Save to recent locations
-      try {
-        await GoogleMapsService.addToRecentLocations(location);
-      } catch (error) {
-        console.error('Error saving to recent:', error);
-        // Don't block the flow for this error
-      }
-      
-      // Use the enriched location from validation (with coordinates) and add delivery info
-      const baseLocation = validation.enrichedLocation || location;
-      const enrichedLocation: LocationSuggestion = {
-        ...baseLocation,
-        ...(validation.deliveryInfo && {
-          deliveryInfo: {
-            estimatedTime: validation.deliveryInfo.estimatedTime || '30-45 mins',
-            deliveryFee: validation.deliveryInfo.deliveryFee || 0,
-            available: validation.deliveryInfo.available,
-            zone: validation.deliveryInfo.zone?.name,
-            distance: validation.deliveryInfo.distance,
-          }
-        })
-      };
-      
-      // Success haptic feedback
-      HapticFeedback.success();
-      
       // Call parent callback
-      onLocationSelect(enrichedLocation);
-      
-      // Small delay for user feedback, then navigate back
-      setTimeout(() => {
-        if (navigation.canGoBack()) {
-          navigation.goBack();
-        }
-      }, 300);
-      
+      if (onLocationSelect) {
+        onLocationSelect(location);
+      }
     } catch (error) {
       console.error('Error selecting location:', error);
       HapticFeedback.error();
@@ -265,7 +253,37 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
         [{ text: 'OK', style: 'default' }]
       );
     }
-  }, [onLocationSelect, navigation, successAnimation]);
+  };
+
+  // Handle quick save of current location
+  const handleQuickSave = async (location: LocationSuggestion) => {
+    try {
+      if (Platform.OS === 'ios') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+      
+      // Quick save with default label
+      const success = await saveCurrentLocation(
+        `Saved Location ${new Date().toLocaleDateString()}`,
+        'location',
+        COLORS.primary
+      );
+      
+      if (success) {
+        if (Platform.OS === 'ios') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+        // Show success feedback
+        setShowSavePrompt(true);
+        setTimeout(() => setShowSavePrompt(false), 2000);
+      }
+    } catch (error) {
+      console.error('Error quick saving location:', error);
+      if (Platform.OS === 'ios') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+    }
+  };
 
   // Handle input focus with improved keyboard handling
   const handleInputFocus = () => {
@@ -496,6 +514,66 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
           </TouchableOpacity>
         )}
 
+        {/* Saved Locations Section */}
+        {savedAddresses.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Saved Locations</Text>
+                              <TouchableOpacity 
+                  style={styles.manageButton}
+                  onPress={() => {
+                    // Navigate to saved locations management
+                    navigation.navigate('SavedLocations');
+                  }}
+                >
+                <Text style={styles.manageButtonText}>Manage</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={savedAddresses}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.savedLocationItem}
+                  onPress={() => handleLocationSelect(item.location)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.savedLocationIcon, { backgroundColor: item.color || COLORS.primary }]}>
+                    <Ionicons 
+                      name={item.icon as any || 'location'} 
+                      size={16} 
+                      color={COLORS.card} 
+                    />
+                  </View>
+                  <View style={styles.savedLocationInfo}>
+                    <Text style={styles.savedLocationLabel} numberOfLines={1}>
+                      {item.label}
+                    </Text>
+                    <Text style={styles.savedLocationAddress} numberOfLines={1}>
+                      {item.location.title}
+                    </Text>
+                    {item.isDefault && (
+                      <View style={styles.defaultBadge}>
+                        <Text style={styles.defaultBadgeText}>Default</Text>
+                      </View>
+                    )}
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.quickSaveButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleQuickSave(item.location);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="bookmark-outline" size={16} color={COLORS.primary} />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        )}
+
         {/* Suggestions List */}
         <Animated.View
           style={[
@@ -507,7 +585,53 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
           ]}
           pointerEvents={showSuggestions ? 'auto' : 'none'}
         >
-          <ScrollView
+          <FlatList
+            data={[
+              ...(isLoading ? [{ id: 'loading', type: 'loading' }] : []),
+              ...(suggestions.length > 0 ? [
+                { id: 'search-header', type: 'header', title: 'Search Results' },
+                ...suggestions.map(sug => ({ ...sug, type: 'suggestion' as const }))
+              ] : []),
+              ...(searchText.length <= 2 && recentLocations.length > 0 ? [
+                { id: 'recent-header', type: 'header', title: 'Recent' },
+                ...recentLocations.map(loc => ({ ...loc, type: 'recent' as const }))
+              ] : []),
+              ...(searchText.length <= 2 && currentLocation ? [
+                { id: 'current-header', type: 'header', title: 'Current Location' },
+                { ...currentLocation, type: 'current' as const }
+              ] : []),
+              ...(searchText.length > 2 && suggestions.length === 0 && !isLoading ? [
+                { id: 'no-results', type: 'no-results' }
+              ] : [])
+            ]}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => {
+              if (item.type === 'loading') {
+                return (
+                  <View style={styles.loadingContainer}>
+                    <Text style={styles.loadingText}>Searching...</Text>
+                  </View>
+                );
+              }
+              
+              if (item.type === 'header') {
+                return <Text style={styles.sectionTitle}>{(item as any).title}</Text>;
+              }
+              
+              if (item.type === 'no-results') {
+                return (
+                  <View style={styles.noResultsContainer}>
+                    <Ionicons name="location-outline" size={48} color={COLORS.textSecondary} />
+                    <Text style={styles.noResultsTitle}>No locations found</Text>
+                    <Text style={styles.noResultsText}>
+                      Try searching with a different address or postal code
+                    </Text>
+                  </View>
+                );
+              }
+              
+              return renderSuggestionItem(item as LocationSuggestion, 0);
+            }}
             style={styles.suggestionsList}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -515,49 +639,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
               styles.suggestionsScrollContent,
               isKeyboardVisible && styles.suggestionsScrollContentKeyboard
             ]}
-          >
-            {/* Loading indicator */}
-            {isLoading && (
-              <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>Searching...</Text>
-              </View>
-            )}
-
-            {/* Search results */}
-            {!isLoading && suggestions.length > 0 && (
-              <View style={styles.suggestionsSection}>
-                <Text style={styles.sectionTitle}>Search Results</Text>
-                {suggestions.map((item, index) => renderSuggestionItem(item, index))}
-              </View>
-            )}
-
-            {/* Recent locations */}
-            {!isLoading && searchText.length <= 2 && recentLocations.length > 0 && (
-              <View style={styles.suggestionsSection}>
-                <Text style={styles.sectionTitle}>Recent</Text>
-                {recentLocations.map((item, index) => renderSuggestionItem(item, index))}
-              </View>
-            )}
-
-            {/* Current location in suggestions */}
-            {!isLoading && searchText.length <= 2 && currentLocation && (
-              <View style={styles.suggestionsSection}>
-                <Text style={styles.sectionTitle}>Current Location</Text>
-                {renderSuggestionItem(currentLocation, 0)}
-              </View>
-            )}
-
-            {/* No results */}
-            {!isLoading && searchText.length > 2 && suggestions.length === 0 && (
-              <View style={styles.noResultsContainer}>
-                <Ionicons name="location-outline" size={48} color={COLORS.textSecondary} />
-                <Text style={styles.noResultsTitle}>No locations found</Text>
-                <Text style={styles.noResultsText}>
-                  Try searching with a different address or postal code
-                </Text>
-              </View>
-            )}
-          </ScrollView>
+          />
         </Animated.View>
 
         {/* Instructions (when not showing suggestions) */}
@@ -574,6 +656,16 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
           </View>
         )}
       </KeyboardAvoidingView>
+
+      {/* Save Prompt Overlay */}
+      {showSavePrompt && (
+        <View style={styles.savePromptOverlay}>
+          <View style={styles.savePromptContent}>
+            <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
+            <Text style={styles.savePromptText}>Location saved!</Text>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -793,6 +885,94 @@ const styles = StyleSheet.create({
   },
   suggestionsScrollContentKeyboard: {
     paddingBottom: SPACING.xl + SPACING.xl,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  manageButton: {
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+  },
+  manageButtonText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  quickSaveButton: {
+    padding: SPACING.xs,
+    marginLeft: SPACING.xs,
+  },
+  savePromptOverlay: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -50 }, { translateY: -50 }],
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: SPACING.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  savePromptContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  savePromptText: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  section: {
+    padding: SPACING.md,
+  },
+  savedLocationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  savedLocationIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.sm,
+  },
+  savedLocationInfo: {
+    flex: 1,
+  },
+  savedLocationLabel: {
+    ...TYPOGRAPHY.body,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  savedLocationAddress: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  defaultBadge: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    marginTop: SPACING.xs,
+  },
+  defaultBadgeText: {
+    ...TYPOGRAPHY.caption,
+    fontWeight: '500',
+    color: COLORS.card,
   },
 });
 

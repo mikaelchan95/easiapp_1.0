@@ -26,181 +26,9 @@ export interface AutocompleteResponse {
     };
     types: string[];
   }>;
+  status: string;
+  error_message?: string;
 }
-
-// Singapore postal code database (sample)
-const POSTAL_CODE_DATABASE: Record<string, LocationSuggestion> = {
-  '018956': {
-    id: 'postal_018956',
-    title: 'Marina Bay Sands',
-    subtitle: '10 Bayfront Avenue, Singapore 018956',
-    coordinate: { latitude: 1.2839, longitude: 103.8607 },
-    postalCode: '018956',
-    type: 'postal',
-    formattedAddress: '10 Bayfront Avenue, Singapore 018956',
-  },
-  '238859': {
-    id: 'postal_238859',
-    title: 'Orchard Road',
-    subtitle: '2 Orchard Turn, Singapore 238859',
-    coordinate: { latitude: 1.3036, longitude: 103.8318 },
-    postalCode: '238859',
-    type: 'postal',
-    formattedAddress: '2 Orchard Turn, Singapore 238859',
-  },
-  '098632': {
-    id: 'postal_098632',
-    title: 'Sentosa',
-    subtitle: '8 Sentosa Gateway, Singapore 098632',
-    coordinate: { latitude: 1.2494, longitude: 103.8303 },
-    postalCode: '098632',
-    type: 'postal',
-    formattedAddress: '8 Sentosa Gateway, Singapore 098632',
-  },
-  '819663': {
-    id: 'postal_819663',
-    title: 'Changi Airport',
-    subtitle: 'Airport Boulevard, Singapore 819663',
-    coordinate: { latitude: 1.3644, longitude: 103.9915 },
-    postalCode: '819663',
-    type: 'postal',
-    formattedAddress: 'Airport Boulevard, Singapore 819663',
-  },
-  '670228': {
-    id: 'postal_670228',
-    title: 'Jurong Point',
-    subtitle: '1 Jurong West Central 2, Singapore 670228',
-    coordinate: { latitude: 1.3397, longitude: 103.7066 },
-    postalCode: '670228',
-    type: 'postal',
-    formattedAddress: '1 Jurong West Central 2, Singapore 670228',
-  },
-};
-
-// Enhanced mock data for more realistic search results
-const POPULAR_LOCATIONS = [
-  {
-    id: "place_id_1",
-    placeId: "place_id_1",
-    title: "Marina Bay Sands",
-    subtitle: "10 Bayfront Avenue, Singapore 018956",
-    coordinate: { latitude: 1.2839, longitude: 103.8607 },
-    isPremiumLocation: true,
-    postalCode: "018956"
-  },
-  {
-    id: "place_id_2",
-    placeId: "place_id_2",
-    title: "Orchard Road",
-    subtitle: "Orchard Road, Singapore 238859",
-    coordinate: { latitude: 1.3036, longitude: 103.8318 },
-    isPremiumLocation: false,
-    postalCode: "238859"
-  },
-  {
-    id: "place_id_3",
-    placeId: "place_id_3", 
-    title: "Sentosa Island",
-    subtitle: "Sentosa Island, Singapore 098632",
-    coordinate: { latitude: 1.2494, longitude: 103.8303 },
-    isPremiumLocation: true,
-    postalCode: "098632"
-  },
-  {
-    id: "place_id_4",
-    placeId: "place_id_4",
-    title: "Changi Airport",
-    subtitle: "Airport Boulevard, Singapore 819663",
-    coordinate: { latitude: 1.3644, longitude: 103.9915 },
-    isPremiumLocation: false,
-    postalCode: "819663"
-  },
-  {
-    id: "place_id_5",
-    placeId: "place_id_5",
-    title: "CHIJMES",
-    subtitle: "30 Victoria Street, Singapore 187996",
-    coordinate: { latitude: 1.2950, longitude: 103.8520 },
-    isPremiumLocation: true,
-    postalCode: "187996"
-  },
-  {
-    id: "place_id_6",
-    placeId: "place_id_6",
-    title: "Bugis Junction",
-    subtitle: "200 Victoria Street, Singapore 188021",
-    coordinate: { latitude: 1.2999, longitude: 103.8556 },
-    isPremiumLocation: false,
-    postalCode: "188021"
-  },
-  {
-    id: "place_id_7",
-    placeId: "place_id_7",
-    title: "Bugis Street",
-    subtitle: "3 New Bugis Street, Singapore 188867",
-    coordinate: { latitude: 1.3006, longitude: 103.8548 },
-    isPremiumLocation: false,
-    postalCode: "188867"
-  },
-  {
-    id: "place_id_8",
-    placeId: "place_id_8",
-    title: "Bugis+",
-    subtitle: "201 Victoria Street, Singapore 188067",
-    coordinate: { latitude: 1.3005, longitude: 103.8563 },
-    isPremiumLocation: false,
-    postalCode: "188067"
-  },
-  {
-    id: "place_id_9",
-    placeId: "place_id_9",
-    title: "Clarke Quay",
-    subtitle: "3 River Valley Road, Singapore 179024",
-    coordinate: { latitude: 1.2888, longitude: 103.8467 },
-    isPremiumLocation: true,
-    postalCode: "179024"
-  },
-  {
-    id: "place_id_10",
-    placeId: "place_id_10",
-    title: "Raffles Place",
-    subtitle: "Raffles Place, Singapore 048616",
-    coordinate: { latitude: 1.2844, longitude: 103.8514 },
-    isPremiumLocation: false,
-    postalCode: "048616"
-  },
-  {
-    id: "place_id_11",
-    placeId: "place_id_11",
-    title: "Chinatown",
-    subtitle: "Chinatown, Singapore 058357",
-    coordinate: { latitude: 1.2814, longitude: 103.8447 },
-    isPremiumLocation: false,
-    postalCode: "058357"
-  },
-  {
-    id: "place_id_12",
-    placeId: "place_id_12",
-    title: "Little India",
-    subtitle: "Little India, Singapore 209557",
-    coordinate: { latitude: 1.3067, longitude: 103.8520 },
-    isPremiumLocation: false,
-    postalCode: "209557"
-  }
-];
-
-// More comprehensive mock neighborhoods for better address suggestions
-const NEIGHBORHOODS = [
-  "Orchard", "Bukit Timah", "Holland Village", "Bugis", "Marina Bay", 
-  "Chinatown", "Little India", "Tiong Bahru", "Joo Chiat", "Katong",
-  "Jurong", "Tampines", "Bishan", "Ang Mo Kio", "Toa Payoh", "Serangoon",
-  "Clementi", "Punggol", "Sembawang", "Woodlands", "Yishun", "CHIJMES",
-  "Clarke Quay", "Boat Quay", "Robertson Quay", "Dhoby Ghaut", "City Hall",
-  "Raffles Place", "Tanjong Pagar", "Outram Park", "Somerset", "Newton",
-  "Novena", "Thomson", "Farrer Park", "Lavender", "Kallang", "Geylang",
-  "Paya Lebar", "Bedok", "Changi", "Pasir Ris", "Hougang", "Sengkang",
-  "Buangkok", "Kovan", "Potong Pasir", "Boon Lay", "Pioneer", "Joo Koon"
-];
 
 export class GoogleMapsService {
   private static baseUrl = 'https://maps.googleapis.com/maps/api';
@@ -209,63 +37,206 @@ export class GoogleMapsService {
   private static readonly RECENT_LOCATIONS_KEY = '@easiapp:recent_locations';
 
   /**
-   * Get autocomplete suggestions for a search query
+   * Get autocomplete suggestions using Google Places Autocomplete API
+   * Based on: https://developers.google.com/maps/documentation/places/web-service/autocomplete
    */
   static async getAutocompleteSuggestions(query: string): Promise<LocationSuggestion[]> {
-    if (!query || query.length < 2) return [];
-    
     try {
-      // Check if query is a postal code (6 digits for Singapore)
-      const postalCodeMatch = query.match(/^\d{6}$/);
-      if (postalCodeMatch) {
-        const postalResult = POSTAL_CODE_DATABASE[query];
-        if (postalResult) {
-          return [postalResult];
-        } else {
-          // Try to get from Google Maps API
-          const apiResult = await this.getAddressByPostalCode(query);
-          if (apiResult) {
-            return [apiResult];
-          }
-        }
-      }
+      console.log('🔍 Starting autocomplete search for:', query);
       
-      // Check for partial postal code match
-      const partialPostalMatch = query.match(/^\d{1,6}$/);
-      if (partialPostalMatch) {
-        const matchingPostalCodes: LocationSuggestion[] = [];
-        for (const code in POSTAL_CODE_DATABASE) {
-          if (code.startsWith(query)) {
-            matchingPostalCodes.push(POSTAL_CODE_DATABASE[code]);
-          }
-        }
-        
-        if (matchingPostalCodes.length > 0) {
-          return matchingPostalCodes;
-        }
+      // Check if API key is valid
+      if (!this.apiKey || this.apiKey === 'your_google_maps_api_key_here') {
+        console.error('❌ Invalid or missing Google Maps API key');
+        return [];
       }
 
-       // If no API key available, fallback to mock data
-       if (!this.apiKey || this.apiKey === 'your_google_maps_api_key_here') {
-         return this.getMockSuggestions(query);
-       }
+      // Use the real Google Places Autocomplete API
+      const sessionToken = this.generateSessionToken();
+      const params = new URLSearchParams({
+        input: query,
+        key: this.apiKey,
+        sessiontoken: sessionToken,
+        components: 'country:sg',
+        language: 'en',
+        location: '1.3521,103.8198', // Singapore center
+        radius: '50000', // 50km radius to cover all of Singapore
+      });
 
-       // Real Google Places Autocomplete API call
-       const params = new URLSearchParams({
-         input: query,
-         key: this.apiKey,
-         components: GOOGLE_MAPS_CONFIG.geocoding.components,
-         types: GOOGLE_MAPS_CONFIG.autocomplete.types.join('|'),
-         language: GOOGLE_MAPS_CONFIG.geocoding.language,
-         sessiontoken: this.generateSessionToken(),
-       });
+      const url = `${this.baseUrl}/place/autocomplete/json?${params.toString()}`;
+      console.log('📡 Making API request to:', url);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('📥 API Response status:', response.status);
+      
+      if (!response.ok) {
+        console.error('❌ HTTP error! status:', response.status);
+        const errorText = await response.text();
+        console.error('❌ Error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: AutocompleteResponse = await response.json();
+      console.log('📊 API Response data:', JSON.stringify(data, null, 2));
+
+      // Check for API errors
+      if (data.status && data.status !== 'OK') {
+        console.error('❌ Google API error:', data.status, data.error_message);
+        return [];
+      }
+
+      if (data.predictions && data.predictions.length > 0) {
+        console.log('✅ Found', data.predictions.length, 'predictions');
+        
+        // Convert predictions to LocationSuggestion format
+        const suggestions: LocationSuggestion[] = await Promise.all(
+          data.predictions.slice(0, 5).map(async (prediction) => {
+            console.log('🔄 Processing prediction:', prediction.description);
+            
+            // Get place details for coordinates
+            const placeDetails = await this.getPlaceDetails(prediction.place_id);
+            if (placeDetails) {
+              return placeDetails;
+            }
+
+            // Fallback if place details fail
+            return {
+              id: prediction.place_id,
+              placeId: prediction.place_id,
+              title: prediction.structured_formatting.main_text,
+              subtitle: prediction.structured_formatting.secondary_text || prediction.description,
+              type: 'suggestion' as const,
+              address: prediction.description,
+              formattedAddress: prediction.description,
+            };
+          })
+        );
+
+        const validSuggestions = suggestions.filter(Boolean);
+        console.log('✅ Returning', validSuggestions.length, 'valid suggestions');
+        return validSuggestions;
+      }
+
+      console.log('⚠️ No predictions found in API response');
+      return [];
+
+    } catch (error) {
+      console.error('❌ Error fetching autocomplete suggestions:', error);
+      // Return empty array on error instead of fallback data
+      return [];
+    }
+  }
+
+  /**
+   * Get place details using Google Places Details API
+   * Based on: https://developers.google.com/maps/documentation/places/web-service/details
+   */
+  static async getPlaceDetails(placeId: string): Promise<LocationSuggestion | null> {
+    try {
+      console.log('🔍 Getting place details for:', placeId);
+      
+      const params = new URLSearchParams({
+        place_id: placeId,
+        key: this.apiKey,
+        fields: 'formatted_address,geometry,name,place_id,types,address_components',
+        language: 'en',
+      });
+
+      const url = `${this.baseUrl}/place/details/json?${params.toString()}`;
+      console.log('📡 Making place details request to:', url);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('📥 Place details response status:', response.status);
+
+      if (!response.ok) {
+        console.error('❌ Place details HTTP error! status:', response.status);
+        const errorText = await response.text();
+        console.error('❌ Place details error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('📊 Place details response data:', JSON.stringify(data, null, 2));
+
+      // Check for API errors
+      if (data.status && data.status !== 'OK') {
+        console.error('❌ Google Place Details API error:', data.status, data.error_message);
+        return null;
+      }
+
+      if (data.result) {
+        const result = data.result;
+        const location = result.geometry?.location;
+        
+        // Extract postal code from address components
+        let postalCode = '';
+        if (result.address_components) {
+          const postalComponent = result.address_components.find(
+            (component: any) => component.types.includes('postal_code')
+          );
+          if (postalComponent) {
+            postalCode = postalComponent.long_name;
+          }
+        }
+
+        const locationSuggestion = {
+          id: result.place_id,
+          placeId: result.place_id,
+          title: result.name || this.extractLocationName(result.formatted_address),
+          subtitle: result.formatted_address,
+          coordinate: location ? {
+            latitude: location.lat,
+            longitude: location.lng,
+          } : undefined,
+          type: 'suggestion' as const,
+          address: result.formatted_address,
+          formattedAddress: result.formatted_address,
+          postalCode: postalCode,
+        };
+
+        console.log('✅ Place details processed successfully:', locationSuggestion.title);
+        return locationSuggestion;
+      }
+
+      console.log('⚠️ No result found in place details response');
+      return null;
+    } catch (error) {
+      console.error('❌ Error fetching place details:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Geocode an address using Google Geocoding API
+   * Based on: https://developers.google.com/maps/documentation/geocoding/overview
+   */
+  static async geocodeAddress(address: string): Promise<LocationSuggestion | null> {
+    try {
+      const params = new URLSearchParams({
+        address: address,
+        key: this.apiKey,
+        region: 'sg',
+        language: 'en',
+        components: 'country:sg',
+        bounds: '1.1496,103.5983|1.4784,104.0120', // Singapore bounds
+      });
 
       const response = await fetch(
-        `${this.baseUrl}/place/autocomplete/json?${params.toString()}`,
+        `${this.baseUrl}/geocode/json?${params.toString()}`,
         {
           method: 'GET',
           headers: {
-            'Accept': 'application/json',
             'Content-Type': 'application/json',
           },
         }
@@ -275,63 +246,105 @@ export class GoogleMapsService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data: AutocompleteResponse = await response.json();
-      
-      if (data.predictions && data.predictions.length > 0) {
-        // Map predictions and fetch place details for each to get coordinates
-        const suggestions = await Promise.all(
-          data.predictions.map(async (prediction) => {
-            try {
-              // Get place details to obtain coordinates
-              const placeDetails = await this.getPlaceDetails(prediction.place_id);
-              
-              if (placeDetails && placeDetails.coordinate) {
-                return {
-                  id: prediction.place_id,
-                  title: prediction.structured_formatting.main_text,
-                  subtitle: prediction.structured_formatting.secondary_text || prediction.description,
-                  type: 'suggestion' as const,
-                  placeId: prediction.place_id,
-                  address: prediction.description,
-                  coordinate: placeDetails.coordinate,
-                  formattedAddress: placeDetails.subtitle,
-                };
-              } else {
-                // Fallback without coordinates if place details fail
-                return {
-                  id: prediction.place_id,
-                  title: prediction.structured_formatting.main_text,
-                  subtitle: prediction.structured_formatting.secondary_text || prediction.description,
-                  type: 'suggestion' as const,
-                  placeId: prediction.place_id,
-                  address: prediction.description,
-                };
-              }
-            } catch (error) {
-              console.error('Error fetching place details for:', prediction.place_id, error);
-              // Return suggestion without coordinates if place details fail
-              return {
-                id: prediction.place_id,
-                title: prediction.structured_formatting.main_text,
-                subtitle: prediction.structured_formatting.secondary_text || prediction.description,
-                type: 'suggestion' as const,
-                placeId: prediction.place_id,
-                address: prediction.description,
-              };
-            }
-          })
-        );
+      const data = await response.json();
+
+      if (data.results && data.results.length > 0) {
+        const result = data.results[0];
+        const location = result.geometry?.location;
         
-        return suggestions;
+        // Extract postal code from address components
+        let postalCode = '';
+        if (result.address_components) {
+          const postalComponent = result.address_components.find(
+            (component: any) => component.types.includes('postal_code')
+          );
+          if (postalComponent) {
+            postalCode = postalComponent.long_name;
+          }
+        }
+
+        return {
+          id: `geocode_${Date.now()}`,
+          title: this.extractLocationName(result.formatted_address),
+          subtitle: result.formatted_address,
+          coordinate: location ? {
+            latitude: location.lat,
+            longitude: location.lng,
+          } : undefined,
+          type: 'suggestion' as const,
+          address: result.formatted_address,
+          formattedAddress: result.formatted_address,
+          postalCode: postalCode,
+        };
       }
 
-      // Fallback to mock data if no results
-      return this.getMockSuggestions(query);
-
+      return null;
     } catch (error) {
-      console.error('Error fetching autocomplete suggestions:', error);
-      // Fallback to mock data on error
-      return this.getMockSuggestions(query);
+      console.error('Error geocoding address:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Reverse geocode coordinates using Google Geocoding API
+   * Based on: https://developers.google.com/maps/documentation/geocoding/overview#ReverseGeocoding
+   */
+  static async reverseGeocode(coordinate: LocationCoordinate): Promise<LocationSuggestion | null> {
+    try {
+      const params = new URLSearchParams({
+        latlng: `${coordinate.latitude},${coordinate.longitude}`,
+        key: this.apiKey,
+        region: 'sg',
+        language: 'en',
+        result_type: 'street_address|premise|establishment',
+      });
+
+      const response = await fetch(
+        `${this.baseUrl}/geocode/json?${params.toString()}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.results && data.results.length > 0) {
+        const result = data.results[0];
+        
+        // Extract postal code from address components
+        let postalCode = '';
+        if (result.address_components) {
+          const postalComponent = result.address_components.find(
+            (component: any) => component.types.includes('postal_code')
+          );
+          if (postalComponent) {
+            postalCode = postalComponent.long_name;
+          }
+        }
+
+        return {
+          id: `reverse_geocode_${Date.now()}`,
+          title: this.extractLocationName(result.formatted_address),
+          subtitle: result.formatted_address,
+          coordinate: coordinate,
+          type: 'suggestion' as const,
+          address: result.formatted_address,
+          formattedAddress: result.formatted_address,
+          postalCode: postalCode,
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error reverse geocoding:', error);
+      return null;
     }
   }
 
@@ -340,218 +353,6 @@ export class GoogleMapsService {
    */
   private static generateSessionToken(): string {
     return 'session_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
-  }
-
-  /**
-   * Fallback mock suggestions when API is unavailable
-   */
-  private static getMockSuggestions(query: string): LocationSuggestion[] {
-    // First try exact matches in our popular locations
-    const exactMatches = POPULAR_LOCATIONS.filter(item => 
-      item.title.toLowerCase().includes(query.toLowerCase()) || 
-      item.subtitle.toLowerCase().includes(query.toLowerCase()) ||
-      (item.postalCode && item.postalCode.includes(query))
-    );
-    
-    // Then generate some dynamic suggestions based on neighborhoods
-    const dynamicSuggestions = NEIGHBORHOODS
-      .filter(neighborhood => 
-        neighborhood.toLowerCase().includes(query.toLowerCase())
-      )
-      .map((neighborhood, index) => ({
-        id: `dynamic_${Date.now()}_${index}`,
-        placeId: `dynamic_place_${Date.now()}_${index}`,
-        title: `${neighborhood} ${Math.random() > 0.5 ? 'Road' : 'Street'}`,
-        subtitle: `${neighborhood}, Singapore`,
-        coordinate: { 
-          latitude: 1.3 + (Math.random() * 0.1 - 0.05), 
-          longitude: 103.8 + (Math.random() * 0.1 - 0.05) 
-        },
-        isPremiumLocation: Math.random() > 0.7,
-        type: 'suggestion' as const,
-        address: `${neighborhood}, Singapore`,
-        formattedAddress: `${neighborhood}, Singapore`,
-      }))
-      .slice(0, 5); // Limit to 5 dynamic suggestions
-    
-    // Combine and return (exact matches first, then dynamic suggestions)
-    return [...exactMatches, ...dynamicSuggestions];
-  }
-
-  /**
-   * Get detailed information about a place using Place ID
-   */
-  static async getPlaceDetails(placeId: string): Promise<LocationSuggestion | null> {
-    try {
-      // If no API key available, return null
-      if (!this.apiKey || this.apiKey === 'your_google_maps_api_key_here') {
-        console.warn('No valid API key for place details');
-        return null;
-      }
-
-      const params = new URLSearchParams({
-        place_id: placeId,
-        key: this.apiKey,
-        fields: GOOGLE_MAPS_CONFIG.autocomplete.fields.join(','),
-        language: GOOGLE_MAPS_CONFIG.geocoding.language,
-      });
-
-      const response = await fetch(
-        `${this.baseUrl}/place/details/json?${params.toString()}`,
-        {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      // Check for API errors
-      if (data.status !== 'OK') {
-        console.warn(`Place Details API returned status: ${data.status}`, data.error_message);
-        return null;
-      }
-      
-      if (!data.result) {
-        console.warn('No result found for place ID:', placeId);
-        return null;
-      }
-
-      const place: GooglePlaceDetails = data.result;
-      
-      // Validate that we have the required geometry data
-      if (!place.geometry || !place.geometry.location) {
-        console.warn('Place details missing geometry data for:', placeId);
-        return null;
-      }
-      
-      return {
-        id: place.place_id,
-        title: place.name || 'Unknown Location',
-        subtitle: place.formatted_address || 'Address not available',
-        type: 'suggestion',
-        coordinate: {
-          latitude: place.geometry.location.lat,
-          longitude: place.geometry.location.lng,
-        },
-        address: place.formatted_address || '',
-        formattedAddress: place.formatted_address || '',
-        placeId: place.place_id,
-      };
-    } catch (error) {
-      console.error('Error fetching place details for place ID:', placeId, error);
-      return null;
-    }
-  }
-
-  /**
-   * Geocode an address to get coordinates
-   */
-  static async geocodeAddress(address: string): Promise<LocationSuggestion | null> {
-    try {
-      if (!this.apiKey || this.apiKey === 'your_google_maps_api_key_here') {
-        console.warn('No valid API key for geocoding');
-        return null;
-      }
-
-      const params = new URLSearchParams({
-        address: address,
-        key: this.apiKey,
-        language: GOOGLE_MAPS_CONFIG.geocoding.language,
-        region: GOOGLE_MAPS_CONFIG.geocoding.region,
-        components: GOOGLE_MAPS_CONFIG.geocoding.components,
-      });
-
-      const response = await fetch(
-        `${this.baseUrl}/geocode/json?${params.toString()}`,
-        {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.status !== 'OK') {
-        console.warn(`Geocoding API returned status: ${data.status}`, data.error_message);
-        return null;
-      }
-      
-      if (!data.results || data.results.length === 0) {
-        console.warn('No geocoding results found for:', address);
-        return null;
-      }
-
-      const result = data.results[0];
-      
-      return {
-        id: `geocoded_${Date.now()}`,
-        title: this.extractLocationName(result.formatted_address),
-        subtitle: result.formatted_address,
-        type: 'suggestion',
-        coordinate: {
-          latitude: result.geometry.location.lat,
-          longitude: result.geometry.location.lng,
-        },
-        address: result.formatted_address,
-        formattedAddress: result.formatted_address,
-        placeId: result.place_id,
-      };
-    } catch (error) {
-      console.error('Error geocoding address:', address, error);
-      return null;
-    }
-  }
-
-  /**
-   * Reverse geocode coordinates to get address information
-   */
-  static async reverseGeocode(coordinate: LocationCoordinate): Promise<LocationSuggestion | null> {
-    try {
-      const params = new URLSearchParams({
-        latlng: `${coordinate.latitude},${coordinate.longitude}`,
-        key: this.apiKey,
-        language: GOOGLE_MAPS_CONFIG.geocoding.language,
-        region: GOOGLE_MAPS_CONFIG.geocoding.region,
-      });
-
-      const response = await fetch(
-        `${this.baseUrl}/geocode/json?${params.toString()}`
-      );
-      
-      const data = await response.json();
-      
-      if (!data.results || data.results.length === 0) return null;
-
-      const result = data.results[0];
-      
-      return {
-        id: `reverse_${Date.now()}`,
-        title: this.extractLocationName(result.formatted_address),
-        subtitle: result.formatted_address,
-        type: 'suggestion',
-        coordinate,
-        address: result.formatted_address,
-        placeId: result.place_id,
-      };
-    } catch (error) {
-      console.error('Error reverse geocoding:', error);
-      return null;
-    }
   }
 
   /**
@@ -612,6 +413,7 @@ export class GoogleMapsService {
 
   /**
    * Check if delivery is available to a specific coordinate
+   * We deliver anywhere in Singapore!
    */
   static isDeliveryAvailable(coordinate: LocationCoordinate): {
     available: boolean;
@@ -626,31 +428,70 @@ export class GoogleMapsService {
         return { available: false };
       }
 
-      for (const zone of GOOGLE_MAPS_CONFIG.deliveryZones) {
-        const distance = this.calculateDistance(coordinate, zone.center);
-        
-        if (distance <= zone.radius && zone.isAvailable) {
-          // Calculate estimated delivery time based on distance
-          const baseTime = 25; // base delivery time in minutes
-          const additionalTime = Math.round(distance * 3); // 3 minutes per km
-          const estimatedTime = `${baseTime + additionalTime}-${baseTime + additionalTime + 10} min`;
-          
-          // Calculate delivery fee based on distance and zone
-          const baseFee = zone.specialPricing ? 5.99 : 3.99;
-          const distanceFee = distance > 2 ? (distance - 2) * 1.50 : 0;
-          const deliveryFee = parseFloat((baseFee + distanceFee).toFixed(2));
-          
-          return {
-            available: true,
-            zone,
-            distance,
-            estimatedTime,
-            deliveryFee,
-          };
-        }
+      // Check if location is within Singapore bounds
+      const singaporeBounds = {
+        north: 1.4784,
+        south: 1.1496,
+        east: 104.0120,
+        west: 103.5983,
+      };
+
+      const { latitude, longitude } = coordinate;
+      const isInSingapore = (
+        latitude >= singaporeBounds.south &&
+        latitude <= singaporeBounds.north &&
+        longitude >= singaporeBounds.west &&
+        longitude <= singaporeBounds.east
+      );
+
+      if (!isInSingapore) {
+        return { available: false };
+      }
+
+      // Calculate distance from city center (Marina Bay) for delivery time and fee estimation
+      const cityCenter = { latitude: 1.2834, longitude: 103.8607 };
+      const distanceFromCenter = this.calculateDistance(coordinate, cityCenter);
+      
+      // Calculate estimated delivery time based on distance from center
+      const baseTime = 30; // base delivery time in minutes
+      const additionalTime = Math.round(distanceFromCenter * 2); // 2 minutes per km from center
+      const estimatedTime = `${baseTime + additionalTime}-${baseTime + additionalTime + 15} min`;
+      
+      // Calculate delivery fee based on distance from center
+      let deliveryFee = 3.99; // base delivery fee
+      
+      // Add distance-based fee for locations far from center
+      if (distanceFromCenter > 15) {
+        // Locations more than 15km from center (e.g., Jurong, Changi)
+        deliveryFee = 6.99;
+      } else if (distanceFromCenter > 8) {
+        // Locations 8-15km from center
+        deliveryFee = 4.99;
       }
       
-      return { available: false };
+      // Check if location is in a premium zone for special pricing
+      const premiumZone = GOOGLE_MAPS_CONFIG.deliveryZones.find(zone => {
+        const distanceToZone = this.calculateDistance(coordinate, zone.center);
+        return distanceToZone <= zone.radius && zone.specialPricing;
+      });
+      
+      if (premiumZone) {
+        deliveryFee = Math.max(deliveryFee, 5.99); // Premium areas have minimum $5.99 fee
+      }
+      
+      return {
+        available: true,
+        zone: premiumZone || {
+          name: 'Singapore',
+          center: cityCenter,
+          radius: 50, // All of Singapore
+          isAvailable: true,
+          specialPricing: false,
+        },
+        distance: distanceFromCenter,
+        estimatedTime,
+        deliveryFee: parseFloat(deliveryFee.toFixed(2)),
+      };
     } catch (error) {
       console.error('Error checking delivery availability:', error);
       return { available: false };
@@ -721,30 +562,9 @@ export class GoogleMapsService {
       if (!deliveryInfo.available) {
         return {
           valid: false,
-          error: 'Sorry, we don\'t deliver to this area yet. Please try a different location.',
+          error: 'Sorry, we only deliver within Singapore. Please select a location in Singapore.',
           deliveryInfo,
           enrichedLocation,
-        };
-      }
-
-      // Additional validation for Singapore bounds
-      const { latitude, longitude } = enrichedLocation.coordinate!;
-      const singaporeBounds = {
-        north: 1.4784,
-        south: 1.1496,
-        east: 104.0120,
-        west: 103.5983,
-      };
-
-      if (
-        latitude < singaporeBounds.south ||
-        latitude > singaporeBounds.north ||
-        longitude < singaporeBounds.west ||
-        longitude > singaporeBounds.east
-      ) {
-        return {
-          valid: false,
-          error: 'Location must be within Singapore',
         };
       }
 
@@ -806,93 +626,177 @@ export class GoogleMapsService {
    * Get popular delivery locations in Singapore
    */
   static getPopularLocations(): LocationSuggestion[] {
-    return [
-      {
-        id: 'marina_bay_sands',
-        title: 'Marina Bay Sands',
-        subtitle: '10 Bayfront Ave, Singapore 018956',
-        type: 'suggestion',
-        coordinate: { latitude: 1.2834, longitude: 103.8607 },
-        address: '10 Bayfront Ave, Singapore 018956',
-      },
-      {
-        id: 'gardens_by_bay',
-        title: 'Gardens by the Bay',
-        subtitle: '18 Marina Gardens Dr, Singapore 018953',
-        type: 'suggestion',
-        coordinate: { latitude: 1.2816, longitude: 103.8636 },
-        address: '18 Marina Gardens Dr, Singapore 018953',
-      },
-      {
-        id: 'raffles_hotel',
-        title: 'Raffles Hotel Singapore',
-        subtitle: '1 Beach Rd, Singapore 189673',
-        type: 'suggestion',
-        coordinate: { latitude: 1.2947, longitude: 103.8547 },
-        address: '1 Beach Rd, Singapore 189673',
-      },
-      {
-        id: 'orchard_road',
-        title: 'Orchard Road',
-        subtitle: 'Orchard, Singapore',
-        type: 'suggestion',
-        coordinate: { latitude: 1.3048, longitude: 103.8318 },
-        address: 'Orchard, Singapore',
-      },
-      {
-        id: 'clarke_quay',
-        title: 'Clarke Quay',
-        subtitle: '3 River Valley Rd, Singapore 179024',
-        type: 'suggestion',
-        coordinate: { latitude: 1.2888, longitude: 103.8467 },
-        address: '3 River Valley Rd, Singapore 179024',
-      },
-    ];
+    // Return empty array - let the API handle popular locations
+    return [];
   }
 
   /**
    * Get popular postal codes in Singapore
    */
   static getPopularPostalCodes(): Array<{code: string, label: string}> {
-    return [
-      { code: '018956', label: 'Marina Bay Sands' },
-      { code: '238859', label: 'ION Orchard' },
-      { code: '098632', label: 'Sentosa' },
-      { code: '819663', label: 'Changi Airport' },
-      { code: '189702', label: 'Bugis Junction' },
-      { code: '670228', label: 'Jurong Point' },
-    ];
+    // Return empty array - let the API handle postal codes
+    return [];
   }
 
   /**
    * Validate Singapore postal code format (6 digits)
    */
   static isValidPostalCode(postalCode: string): boolean {
-    return /^\d{6}$/.test(postalCode);
+    // Singapore postal codes are exactly 6 digits
+    if (!/^\d{6}$/.test(postalCode)) {
+      return false;
+    }
+    
+    // Additional validation: Singapore postal codes start with certain prefixes
+    // First digit indicates the postal district (01-80, 96-98)
+    const firstTwoDigits = parseInt(postalCode.substring(0, 2), 10);
+    
+    return (
+      (firstTwoDigits >= 1 && firstTwoDigits <= 80) ||
+      (firstTwoDigits >= 96 && firstTwoDigits <= 98)
+    );
   }
 
   /**
    * Get address by postal code
    */
   static async getAddressByPostalCode(postalCode: string): Promise<LocationSuggestion | null> {
-    // First check our local database
-    if (POSTAL_CODE_DATABASE[postalCode]) {
-      return POSTAL_CODE_DATABASE[postalCode];
-    }
-
-    // If no API key or using mock key, return null for unknown postal codes
+    // If no API key or using mock key, return null
     if (!this.apiKey || this.apiKey === 'your_google_maps_api_key_here') {
-      console.warn(`Postal code ${postalCode} not found in local database and no valid API key`);
+      console.warn(`No valid API key for postal code lookup: ${postalCode}`);
       return null;
     }
 
-    // Otherwise call the Google Maps Geocoding API
+    // Call the Google Maps Geocoding API with improved formatting
     try {
+      // Format the query specifically for Singapore postal codes
+      const formattedQuery = `${postalCode}, Singapore`;
+      
       const params = new URLSearchParams({
-        address: `${postalCode} Singapore`,
+        address: formattedQuery,
+        key: this.apiKey,
+        components: 'country:SG|postal_code:' + postalCode, // More specific component filtering
+        language: GOOGLE_MAPS_CONFIG.geocoding.language,
+        region: GOOGLE_MAPS_CONFIG.geocoding.region,
+      });
+
+      const response = await fetch(
+        `${this.baseUrl}/geocode/json?${params.toString()}`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.status !== 'OK') {
+        console.warn(`Geocoding API returned status: ${data.status}`, data.error_message);
+        
+        // Try alternative query format if first attempt fails
+        if (data.status === 'ZERO_RESULTS') {
+          return await this.tryAlternativePostalCodeQuery(postalCode);
+        }
+        
+        return null;
+      }
+      
+      if (!data.results || data.results.length === 0) {
+        console.warn(`No results found for postal code: ${postalCode}`);
+        return await this.tryAlternativePostalCodeQuery(postalCode);
+      }
+
+      const result = data.results[0];
+      
+      // Validate that this is actually a Singapore result
+      const country = result.address_components.find(
+        (component: any) => component.types.includes('country')
+      );
+      
+      if (country?.short_name !== 'SG') {
+        console.warn(`Postal code result not in Singapore: ${postalCode}`);
+        return null;
+      }
+      
+      // Extract postal code from address components for verification
+      const postalCodeComponent = result.address_components.find(
+        (component: any) => component.types.includes('postal_code')
+      );
+
+      // Extract street number and route for better title
+      const streetNumber = result.address_components.find(
+        (component: any) => component.types.includes('street_number')
+      );
+      const route = result.address_components.find(
+        (component: any) => component.types.includes('route')
+      );
+      const subpremise = result.address_components.find(
+        (component: any) => component.types.includes('subpremise')
+      );
+      const premise = result.address_components.find(
+        (component: any) => component.types.includes('premise')
+      );
+      
+      // Build a meaningful title from address components
+      let title = this.extractLocationName(result.formatted_address);
+      if (premise?.long_name) {
+        title = premise.long_name;
+      } else if (streetNumber && route) {
+        title = `${streetNumber.long_name} ${route.long_name}`;
+        if (subpremise?.long_name) {
+          title = `${subpremise.long_name}, ${title}`;
+        }
+      } else if (route?.long_name) {
+        title = route.long_name;
+      }
+
+      const locationSuggestion: LocationSuggestion = {
+        id: `postal_${postalCode}`,
+        title,
+        subtitle: result.formatted_address,
+        type: 'postal' as const,
+        coordinate: {
+          latitude: result.geometry.location.lat,
+          longitude: result.geometry.location.lng,
+        },
+        address: result.formatted_address,
+        formattedAddress: result.formatted_address,
+        placeId: result.place_id,
+        postalCode: postalCodeComponent?.long_name || postalCode,
+      };
+      
+      return locationSuggestion;
+    } catch (error) {
+      console.error('Error fetching address by postal code:', error);
+      return await this.tryAlternativePostalCodeQuery(postalCode);
+    }
+  }
+
+  /**
+   * Try alternative postal code query formats
+   */
+  private static async tryAlternativePostalCodeQuery(postalCode: string): Promise<LocationSuggestion | null> {
+    if (!this.apiKey || this.apiKey === 'your_google_maps_api_key_here') {
+      return null;
+    }
+
+    try {
+      // Try with "Singapore" prefix
+      const alternativeQuery = `Singapore ${postalCode}`;
+      
+      const params = new URLSearchParams({
+        address: alternativeQuery,
         key: this.apiKey,
         components: 'country:SG',
         language: GOOGLE_MAPS_CONFIG.geocoding.language,
+        region: GOOGLE_MAPS_CONFIG.geocoding.region,
       });
 
       const response = await fetch(
@@ -905,54 +809,70 @@ export class GoogleMapsService {
       
       const data = await response.json();
       
-      if (data.status !== 'OK') {
-        console.warn(`Geocoding API returned status: ${data.status}`);
-        return null;
+      if (data.status === 'OK' && data.results && data.results.length > 0) {
+        const result = data.results[0];
+        
+        // Verify the postal code matches
+        const postalCodeComponent = result.address_components.find(
+          (component: any) => component.types.includes('postal_code')
+        );
+        
+        if (postalCodeComponent?.long_name === postalCode) {
+          const locationSuggestion: LocationSuggestion = {
+            id: `postal_${postalCode}`,
+            title: this.extractLocationName(result.formatted_address),
+            subtitle: result.formatted_address,
+            type: 'postal' as const,
+            coordinate: {
+              latitude: result.geometry.location.lat,
+              longitude: result.geometry.location.lng,
+            },
+            address: result.formatted_address,
+            formattedAddress: result.formatted_address,
+            placeId: result.place_id,
+            postalCode: postalCode,
+          };
+          
+          return locationSuggestion;
+        }
       }
       
-      if (!data.results || data.results.length === 0) {
-        console.warn(`No results found for postal code: ${postalCode}`);
-        return null;
-      }
-
-      const result = data.results[0];
-      
-      // Extract postal code from address components
-      const postalCodeComponent = result.address_components.find(
-        (component: any) => component.types.includes('postal_code')
-      );
-
-      // Extract street number and route for better title
-      const streetNumber = result.address_components.find(
-        (component: any) => component.types.includes('street_number')
-      );
-      const route = result.address_components.find(
-        (component: any) => component.types.includes('route')
-      );
-      
-      let title = this.extractLocationName(result.formatted_address);
-      if (streetNumber && route) {
-        title = `${streetNumber.long_name} ${route.long_name}`;
-      }
-
-      return {
-        id: `postal_${postalCode}`,
-        title,
-        subtitle: result.formatted_address,
-        type: 'postal',
-        coordinate: {
-          latitude: result.geometry.location.lat,
-          longitude: result.geometry.location.lng,
-        },
-        address: result.formatted_address,
-        formattedAddress: result.formatted_address,
-        placeId: result.place_id,
-        postalCode: postalCodeComponent?.long_name || postalCode,
-      };
+      return null;
     } catch (error) {
-      console.error('Error fetching address by postal code:', error);
+      console.error('Error in alternative postal code query:', error);
       return null;
     }
+  }
+
+  /**
+   * Generate postal code suggestions for partial matches
+   */
+  private static async generatePostalCodeSuggestions(partialCode: string): Promise<LocationSuggestion[]> {
+    const suggestions: LocationSuggestion[] = [];
+    
+    // Generate some common postal code patterns for Singapore
+    const commonPrefixes = ['01', '02', '03', '04', '05', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '23', '24', '25', '26', '27', '28', '29', '30'];
+    
+    for (const prefix of commonPrefixes) {
+      if (prefix.startsWith(partialCode) && prefix.length > partialCode.length) {
+        // Generate a sample postal code
+        const samplePostalCode = prefix + '0000'.substring(0, 6 - prefix.length);
+        
+        // Try to get location for this postal code
+        try {
+          const location = await this.getAddressByPostalCode(samplePostalCode);
+          if (location) {
+            suggestions.push(location);
+            if (suggestions.length >= 3) break; // Limit suggestions
+          }
+        } catch (error) {
+          // Skip this one
+          continue;
+        }
+      }
+    }
+    
+    return suggestions;
   }
 
   /**
@@ -1016,16 +936,20 @@ export class GoogleMapsService {
   }
 
   /**
-   * Delete a saved address
+   * Delete an address from persistent storage
    */
   static async deleteAddress(id: string): Promise<void> {
     try {
+      // Get existing saved addresses
       const savedAddresses = await this.getSavedAddresses();
-      const filteredAddresses = savedAddresses.filter(address => address.id !== id);
       
+      // Filter out the address to delete
+      const updatedAddresses = savedAddresses.filter(address => address.id !== id);
+      
+      // Save updated list
       await AsyncStorage.setItem(
         this.SAVED_ADDRESSES_KEY,
-        JSON.stringify(filteredAddresses)
+        JSON.stringify(updatedAddresses)
       );
     } catch (error) {
       console.error('Error deleting address:', error);
@@ -1091,6 +1015,24 @@ export class GoogleMapsService {
       );
     } catch (error) {
       console.error('Error deleting recent location:', error);
+    }
+  }
+
+  /**
+   * Clear all cached location data
+   */
+  static async clearAllCachedData(): Promise<void> {
+    try {
+      await AsyncStorage.multiRemove([
+        this.SAVED_ADDRESSES_KEY,
+        this.RECENT_LOCATIONS_KEY,
+        '@easiapp:location_preferences',
+        '@easiapp:delivery_location',
+        '@easiapp:pickup_location',
+      ]);
+      console.log('All cached location data cleared');
+    } catch (error) {
+      console.error('Error clearing cached data:', error);
     }
   }
 }

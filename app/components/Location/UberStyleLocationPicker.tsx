@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,16 +15,18 @@ import {
   Keyboard,
   ScrollView,
   KeyboardAvoidingView,
+  FlatList,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { COLORS, SHADOWS, SPACING } from '../../utils/theme';
+import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { GOOGLE_MAPS_CONFIG } from '../../config/googleMaps';
-import { LocationSuggestion, LocationCoordinate } from '../../types/location';
+import { LocationSuggestion, LocationCoordinate, SavedAddress } from '../../types/location';
 import { GoogleMapsService } from '../../services/googleMapsService';
 import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 
@@ -56,6 +58,53 @@ const SheetHeader: React.FC = () => (
       <Text style={styles.sheetSubtitle}>Choose where you'd like your order delivered</Text>
     </View>
   </View>
+);
+
+// Saved Location Item Component
+const SavedLocationItem: React.FC<{
+  item: SavedAddress;
+  onPress: (address: SavedAddress) => void;
+  onQuickSave?: (address: SavedAddress) => void;
+}> = ({ item, onPress, onQuickSave }) => (
+  <TouchableOpacity 
+    style={styles.savedLocationCard}
+    onPress={() => onPress(item)}
+    activeOpacity={0.7}
+  >
+    <View style={[styles.savedLocationIcon, { backgroundColor: item.color || COLORS.primary }]}>
+      <Ionicons 
+        name={item.icon as any || 'location'} 
+        size={20} 
+        color={COLORS.card} 
+      />
+    </View>
+    <View style={styles.savedLocationInfo}>
+      <Text style={styles.savedLocationLabel} numberOfLines={1}>
+        {item.label}
+      </Text>
+      <Text style={styles.savedLocationAddress} numberOfLines={1}>
+        {item.location.title}
+      </Text>
+      {item.isDefault && (
+        <View style={styles.defaultBadge}>
+          <Text style={styles.defaultBadgeText}>Default</Text>
+        </View>
+      )}
+    </View>
+    {onQuickSave && (
+      <TouchableOpacity 
+        style={styles.quickSaveButton}
+        onPress={(e) => {
+          e.stopPropagation();
+          onQuickSave(item);
+        }}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="bookmark-outline" size={16} color={COLORS.primary} />
+      </TouchableOpacity>
+    )}
+    <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+  </TouchableOpacity>
 );
 
 // Current Location Button Component
@@ -157,7 +206,7 @@ const SearchResults: React.FC<{
             accessibilityLabel={`Select location ${suggestion.title}`}
             accessibilityRole="button"
           >
-            <View style={styles.suggestionIconContainer}>
+                          <View style={styles.suggestionIcon}>
               <Ionicons name={suggestion.isPremiumLocation ? "star" : "location"} size={20} color={COLORS.textSecondary} />
             </View>
             <View style={styles.suggestionTextContainer}>
@@ -183,7 +232,14 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapView>(null);
   const inputRef = useRef<TextInput>(null);
-  const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
+  const { 
+    deliveryLocation, 
+    setDeliveryLocation, 
+    savedAddresses, 
+    loadSavedAddresses,
+    saveCurrentLocation,
+    locationPreferences 
+  } = useDeliveryLocation();
   
   // State management
   const [mapReady, setMapReady] = useState(false);
@@ -195,23 +251,28 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
   const [mapRegion, setMapRegion] = useState(GOOGLE_MAPS_CONFIG.marinaBayRegion);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [showSavedLocations, setShowSavedLocations] = useState(true);
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
 
   // Enhanced keyboard handling with proper iOS support
   useEffect(() => {
     const keyboardWillShow = (event: any) => {
       setIsKeyboardVisible(true);
       setKeyboardHeight(event.endCoordinates.height);
+      setShowSavedLocations(false); // Hide saved locations when keyboard appears
     };
 
     const keyboardWillHide = () => {
       setIsKeyboardVisible(false);
       setKeyboardHeight(0);
+      setShowSavedLocations(true); // Show saved locations when keyboard disappears
     };
 
     const keyboardDidShow = (event: any) => {
       if (Platform.OS === 'android') {
         setIsKeyboardVisible(true);
         setKeyboardHeight(event.endCoordinates.height);
+        setShowSavedLocations(false);
       }
     };
 
@@ -219,6 +280,7 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
       if (Platform.OS === 'android') {
         setIsKeyboardVisible(false);
         setKeyboardHeight(0);
+        setShowSavedLocations(true);
       }
     };
 
@@ -253,24 +315,30 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
     }
   }, [deliveryLocation]);
 
-  // Load initial data
+  // Load initial data with preference checking
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const location = await GoogleMapsService.getCurrentLocation();
-        if (location) {
-          setCurrentLocation(location);
-          if (!pickupLocation) {
-            setPickupLocation(location);
-            setDeliveryLocation(location);
-          }
-          if (location.coordinate && !deliveryLocation) {
-            setMapRegion({
-              latitude: location.coordinate.latitude,
-              longitude: location.coordinate.longitude,
-              latitudeDelta: 0.02,
-              longitudeDelta: 0.02,
-            });
+        // Load saved addresses
+        await loadSavedAddresses();
+        
+        // Only load current location if preferences allow it
+        if (locationPreferences.autoSuggestCurrent) {
+          const location = await GoogleMapsService.getCurrentLocation();
+          if (location) {
+            setCurrentLocation(location);
+            if (!pickupLocation && !deliveryLocation) {
+              setPickupLocation(location);
+              await setDeliveryLocation(location);
+            }
+            if (location.coordinate && !deliveryLocation) {
+              setMapRegion({
+                latitude: location.coordinate.latitude,
+                longitude: location.coordinate.longitude,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+              });
+            }
           }
         }
       } catch (error) {
@@ -282,7 +350,7 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
     };
 
     loadInitialData();
-  }, []);
+  }, [locationPreferences.autoSuggestCurrent, pickupLocation, deliveryLocation, loadSavedAddresses, setDeliveryLocation]);
 
   // Handlers
   const handleBackPress = () => {
@@ -322,59 +390,37 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
     }
   };
 
-  const handleLocationSelection = (location: LocationSuggestion) => {
+  const handleLocationSelection = async (location: LocationSuggestion) => {
     try {
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
-      
-        setPickupLocation(location);
-        setDeliveryLocation(location);
-        
-        GoogleMapsService.validateLocation(location)
-          .then(validation => {
-            if (!validation.valid) {
-              if (Platform.OS === 'ios') {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              }
-              Alert.alert(
-                'Location Not Available',
-                validation.error || 'Unable to deliver to this location',
-                [{ text: 'OK', style: 'default' }]
-              );
-              return;
-            }
-            
-            if (Platform.OS === 'ios') {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
-            
-            // Use the enriched location with coordinates if available
-            const finalLocation = validation.enrichedLocation || location;
-            
-            setTimeout(() => {
-              GoogleMapsService.addToRecentLocations(finalLocation).catch(err => 
-                console.error('Error saving to recent locations:', err)
-              );
-              onLocationSelect(finalLocation);
-            }, 300);
-          })
-          .catch(error => {
-            console.error('Error validating location:', error);
-            if (Platform.OS === 'ios') {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            }
-            Alert.alert(
-              'Error',
-              'Unable to validate this location. Please try again.',
-              [{ text: 'OK', style: 'default' }]
-            );
-          });
 
-      if (location.coordinate) {
+      // Validate location
+      const validation = await GoogleMapsService.validateLocation(location);
+      
+      if (!validation.valid) {
+        if (Platform.OS === 'ios') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        }
+        Alert.alert(
+          'Location Not Available',
+          validation.error || 'Unable to deliver to this location',
+          [{ text: 'OK', style: 'default' }]
+        );
+        return;
+      }
+
+      // Use enriched location with delivery info
+      const enrichedLocation = validation.enrichedLocation || location;
+      
+      setPickupLocation(enrichedLocation);
+      await setDeliveryLocation(enrichedLocation);
+
+      if (enrichedLocation.coordinate) {
         setMapRegion({
-          latitude: location.coordinate.latitude,
-          longitude: location.coordinate.longitude,
+          latitude: enrichedLocation.coordinate.latitude,
+          longitude: enrichedLocation.coordinate.longitude,
           latitudeDelta: 0.02,
           longitudeDelta: 0.02,
         });
@@ -382,6 +428,12 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
 
       setSearchText('');
       Keyboard.dismiss();
+      
+      // Auto-confirm after a short delay
+      setTimeout(() => {
+        handleConfirmLocation(enrichedLocation);
+      }, 300);
+      
     } catch (error) {
       console.error('Error selecting location:', error);
       if (Platform.OS === 'ios') {
@@ -393,6 +445,15 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
         [{ text: 'OK', style: 'default' }]
       );
     }
+  };
+
+  const handleSavedLocationSelect = async (savedAddress: SavedAddress) => {
+    const locationWithSavedType = {
+      ...savedAddress.location,
+      type: 'saved' as const
+    };
+    
+    await handleLocationSelection(locationWithSavedType);
   };
 
   const handleCurrentLocationPress = async () => {
@@ -413,9 +474,9 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
       
       const location = await GoogleMapsService.getCurrentLocation();
       
-        if (location) {
-            setPickupLocation(location);
-            setDeliveryLocation(location);
+      if (location) {
+        setPickupLocation(location);
+        await setDeliveryLocation(location);
         handleLocationSelection(location);
       } else {
         setPickupLocation(null);
@@ -434,13 +495,48 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
     }
   };
 
-  const handleClearSearch = () => {
-    setSearchText('');
-    setPickupLocation(null);
-    if (Platform.OS === 'ios') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const handleConfirmLocation = (location?: LocationSuggestion) => {
+    const locationToConfirm = location || pickupLocation || deliveryLocation;
+    
+    if (locationToConfirm) {
+      if (Platform.OS === 'ios') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      
+      onLocationSelect(locationToConfirm);
+      
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      }
     }
   };
+
+  const renderSuggestionItem = ({ item }: { item: LocationSuggestion }) => (
+    <TouchableOpacity
+      style={styles.suggestionItem}
+      onPress={() => handleLocationSelection(item)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.suggestionIcon}>
+        <Ionicons 
+          name={item.type === 'current' ? 'location' : 'location-outline'} 
+          size={20} 
+          color={COLORS.text} 
+        />
+      </View>
+      <View style={styles.suggestionTextContainer}>
+        <Text style={styles.suggestionTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
+        {item.subtitle && (
+          <Text style={styles.suggestionSubtitle} numberOfLines={1}>
+            {item.subtitle}
+          </Text>
+        )}
+      </View>
+      <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+    </TouchableOpacity>
+  );
 
   // Enhanced keyboard offset calculation for iOS
   const getKeyboardOffset = () => {
@@ -462,6 +558,36 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
       return insets.top + 60; // Header height approximation
     }
     return 0;
+  };
+
+  // Handle quick save of current location
+  const handleQuickSave = async (address: SavedAddress) => {
+    try {
+      if (Platform.OS === 'ios') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+      
+      // Quick save with default label
+      const success = await saveCurrentLocation(
+        `${address.label} (${new Date().toLocaleDateString()})`,
+        address.icon,
+        address.color
+      );
+      
+      if (success) {
+        if (Platform.OS === 'ios') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+        // Show success feedback
+        setShowSavePrompt(true);
+        setTimeout(() => setShowSavePrompt(false), 2000);
+      }
+    } catch (error) {
+      console.error('Error quick saving location:', error);
+      if (Platform.OS === 'ios') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+    }
   };
 
   return (
@@ -511,12 +637,7 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
         ]}>
           <SheetHeader />
           
-          <ScrollView 
-            style={styles.sheetContent}
-            contentContainerStyle={styles.sheetContentContainer}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
+          <View style={styles.sheetContent}>
             <CurrentLocationButton 
               onPress={handleCurrentLocationPress}
               visible={searchText.length === 0}
@@ -528,10 +649,46 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
               value={pickupLocation?.title || searchText}
               onChangeText={handleSearchInput}
               onFocus={handleInputFocus}
-              onClear={handleClearSearch}
+              onClear={() => {
+                setSearchText('');
+                setPickupLocation(null);
+                if (Platform.OS === 'ios') {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
+              }}
               showLabel={searchText.length === 0}
               inputRef={inputRef}
             />
+            
+            {showSavedLocations && (
+              <View style={styles.savedLocationsContainer}>
+                <View style={styles.savedLocationsHeader}>
+                  <Text style={styles.savedLocationsTitle}>Saved Locations</Text>
+                  <TouchableOpacity 
+                    style={styles.manageButton}
+                    onPress={() => {
+                      // Navigate to saved locations management
+                      navigation.navigate('SavedLocations');
+                    }}
+                  >
+                    <Text style={styles.manageButtonText}>Manage</Text>
+                  </TouchableOpacity>
+                </View>
+                <FlatList
+                  data={savedAddresses}
+                  keyExtractor={(item) => item.id}
+                  renderItem={({ item }) => (
+                    <SavedLocationItem
+                      item={item}
+                      onPress={handleSavedLocationSelect}
+                      onQuickSave={handleQuickSave}
+                    />
+                  )}
+                  scrollEnabled={false}
+                  nestedScrollEnabled={false}
+                />
+              </View>
+            )}
             
             <SearchResults
               searchText={searchText}
@@ -539,9 +696,19 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
               isLoading={isLoading}
               onSelectLocation={handleLocationSelection}
             />
-          </ScrollView>
+          </View>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Save Prompt Overlay */}
+      {showSavePrompt && (
+        <View style={styles.savePromptOverlay}>
+          <View style={styles.savePromptContent}>
+            <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
+            <Text style={styles.savePromptText}>Location saved!</Text>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -776,7 +943,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  suggestionIconContainer: {
+  suggestionIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -826,6 +993,100 @@ const styles = StyleSheet.create({
   sheetContentContainer: {
     flexGrow: 1,
     paddingBottom: 20,
+  },
+  savedLocationsContainer: {
+    padding: 20,
+  },
+  savedLocationsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  savedLocationCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  savedLocationIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  savedLocationInfo: {
+    flex: 1,
+  },
+  savedLocationLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  savedLocationAddress: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  defaultBadge: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    marginTop: 4,
+  },
+  defaultBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.card,
+  },
+  savedLocationsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  manageButton: {
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+  },
+  manageButtonText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  quickSaveButton: {
+    padding: SPACING.xs,
+    marginRight: SPACING.xs,
+  },
+  savePromptOverlay: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -50 }, { translateY: -50 }],
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: SPACING.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  savePromptContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  savePromptText: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 

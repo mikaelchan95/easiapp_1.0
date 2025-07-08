@@ -1,294 +1,316 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   FlatList,
-  Alert
+  Alert,
+  Platform
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import { SavedLocationsProps, SavedAddress } from '../../types/location';
-import { HapticFeedback } from '../../utils/haptics';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 
-/**
- * Component for displaying and managing saved delivery locations
- */
-export default function SavedLocations({
+import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
+import { SavedAddress } from '../../types/location';
+import SwipeableListItem from '../UI/SwipeableListItem';
+
+interface SavedLocationsProps {
+  savedAddresses: SavedAddress[];
+  onSelect: (address: SavedAddress) => void;
+  onEdit: (address: SavedAddress) => void;
+  onDelete: (id: string) => void;
+  onAdd: () => void;
+}
+
+const SavedLocations: React.FC<SavedLocationsProps> = ({
   savedAddresses,
   onSelect,
   onEdit,
   onDelete,
   onAdd
-}: SavedLocationsProps) {
-  // Icons mapped to common location types
-  const getIconForLabel = (label: string): string => {
-    const iconMap: Record<string, string> = {
-      'Home': 'home',
-      'Work': 'work',
-      'Office': 'business',
-      'Gym': 'fitness-center',
-      'School': 'school',
-      'Partner': 'favorite',
-      'Family': 'family-restroom',
-      'Friend': 'people',
-      'Other': 'place'
-    };
-    
-    return iconMap[label] || 'place';
-  };
+}) => {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   
-  // Get color for label
-  const getColorForLabel = (label: string, customColor?: string): string => {
-    if (customColor) return customColor;
+  // Handle swipe actions
+  const handleDelete = (id: string) => {
+    if (Platform.OS === 'ios') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    }
     
-    const colorMap: Record<string, string> = {
-      'Home': '#4CAF50', // Green
-      'Work': '#2196F3', // Blue
-      'Office': '#607D8B', // Blue Grey
-      'Gym': '#FF5722', // Deep Orange
-      'School': '#9C27B0', // Purple
-      'Partner': '#E91E63', // Pink
-      'Family': '#3F51B5', // Indigo
-      'Friend': '#00BCD4', // Cyan
-      'Other': '#757575'  // Grey
-    };
-    
-    return colorMap[label] || '#757575';
-  };
-
-  // Confirm deletion
-  const confirmDelete = (address: SavedAddress) => {
     Alert.alert(
-      'Delete Saved Location',
-      `Are you sure you want to delete "${address.label}"?`,
+      'Delete Address',
+      'Are you sure you want to delete this saved location?',
       [
         {
           text: 'Cancel',
-          style: 'cancel'
+          style: 'cancel',
         },
         {
           text: 'Delete',
+          style: 'destructive',
           onPress: () => {
-            HapticFeedback.warning();
-            onDelete(address.id);
+            if (Platform.OS === 'ios') {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+            onDelete(id);
           },
-          style: 'destructive'
-        }
+        },
       ]
     );
   };
-
-  // Handle selection with haptic feedback
-  const handleSelect = (address: SavedAddress) => {
-    HapticFeedback.light();
-    onSelect(address);
-  };
-
-  // Handle edit with haptic feedback
+  
   const handleEdit = (address: SavedAddress) => {
-    HapticFeedback.medium();
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
     onEdit(address);
   };
   
-  // Render a saved address card
-  const renderAddressCard = ({ item }: { item: SavedAddress }) => (
-    <View style={styles.addressCard}>
-    <TouchableOpacity
-        style={styles.addressCardContent}
-        onPress={() => handleSelect(item)}
-    >
-        <View 
-          style={[
-            styles.iconContainer, 
-            { backgroundColor: getColorForLabel(item.label, item.color) }
-          ]}
+  const handleSelect = (address: SavedAddress) => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    onSelect(address);
+  };
+  
+  const handleAddNew = () => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    onAdd();
+  };
+  
+  const renderItem = ({ item }: { item: SavedAddress }) => {
+    const isExpanded = expandedId === item.id;
+    
+    return (
+      <SwipeableListItem
+        key={item.id}
+        onSwipeLeft={() => handleDelete(item.id)}
+        onSwipeRight={() => handleEdit(item)}
+        leftAction={{
+          icon: 'trash-outline',
+          color: COLORS.error,
+          text: 'Delete'
+        }}
+        rightAction={{
+          icon: 'create-outline',
+          color: COLORS.primary,
+          text: 'Edit'
+        }}
+      >
+        <TouchableOpacity 
+          style={styles.addressItem}
+          onPress={() => handleSelect(item)}
+          activeOpacity={0.7}
+          accessibilityLabel={`Select ${item.label}: ${item.location.title}`}
+          accessibilityRole="button"
         >
-          <MaterialIcons 
-            name={(item.icon || getIconForLabel(item.label)) as any} 
-          size={24}
-            color="white" 
-        />
-      </View>
-      
-        <View style={styles.addressInfo}>
-          <Text style={styles.addressLabel}>{item.label}</Text>
-          <Text style={styles.addressText} numberOfLines={1}>
-            {item.location.formattedAddress || item.location.subtitle || item.location.address}
-          </Text>
-        {item.unitNumber && (
-            <Text style={styles.detailText}>
-            Unit: {item.unitNumber}
-              {item.buildingName ? `, ${item.buildingName}` : ''}
-          </Text>
-        )}
-      </View>
-      </TouchableOpacity>
-
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleEdit(item)}
-        >
-          <MaterialIcons name="edit" size={20} color="#555" />
+          <View style={[styles.iconContainer, { backgroundColor: item.color || COLORS.primary }]}>
+            <Ionicons 
+              name={item.icon || 'location'} 
+              size={20} 
+              color={COLORS.card} 
+            />
+          </View>
+          
+          <View style={styles.addressDetails}>
+            <View style={styles.addressHeader}>
+              <Text style={styles.addressLabel}>{item.label}</Text>
+              {item.isDefault && (
+                <View style={styles.defaultBadge}>
+                  <Text style={styles.defaultText}>Default</Text>
+                </View>
+              )}
+            </View>
+            
+            <Text style={styles.addressLine} numberOfLines={1}>
+              {item.location.title}
+            </Text>
+            
+            {item.location.subtitle && (
+              <Text style={styles.addressSubtitle} numberOfLines={1}>
+                {item.location.subtitle}
+              </Text>
+            )}
+            
+            {item.unitNumber && (
+              <Text style={styles.unitNumber}>
+                Unit: {item.unitNumber}
+              </Text>
+            )}
+          </View>
+          
+          <Ionicons 
+            name="chevron-forward" 
+            size={20} 
+            color={COLORS.textSecondary} 
+          />
         </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => confirmDelete(item)}
-        >
-          <MaterialIcons name="delete" size={20} color="#d32f2f" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
+      </SwipeableListItem>
+    );
+  };
+  
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Saved Locations</Text>
-        <TouchableOpacity
+      <View style={styles.headerContainer}>
+        <Text style={styles.title}>Saved Addresses</Text>
+        <TouchableOpacity 
           style={styles.addButton}
-          onPress={onAdd}
+          onPress={handleAddNew}
+          accessibilityLabel="Add new address"
+          accessibilityRole="button"
         >
-          <MaterialIcons name="add" size={20} color="white" />
+          <Ionicons name="add" size={20} color={COLORS.primary} />
           <Text style={styles.addButtonText}>Add New</Text>
         </TouchableOpacity>
       </View>
-
-      {savedAddresses.length === 0 ? (
-        <View style={styles.emptyState}>
-          <MaterialIcons name="bookmark-border" size={48} color="#bdbdbd" />
-          <Text style={styles.emptyStateText}>
-            No saved locations yet
-          </Text>
-          <Text style={styles.emptyStateSubtext}>
-            Add frequently used addresses for quick selection
-          </Text>
-        </View>
-      ) : (
+      
+      {savedAddresses.length > 0 ? (
         <FlatList
           data={savedAddresses}
-          renderItem={renderAddressCard}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.addressList}
+          renderItem={renderItem}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
+      ) : (
+        <View style={styles.emptyState}>
+          <Ionicons name="location-outline" size={48} color={COLORS.textSecondary} />
+          <Text style={styles.emptyTitle}>No saved addresses</Text>
+          <Text style={styles.emptySubtitle}>Save addresses for faster checkout</Text>
+          <TouchableOpacity 
+            style={styles.emptyAddButton}
+            onPress={handleAddNew}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.emptyAddButtonText}>Add Your First Address</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'hsl(0, 0%, 98%)',
+    backgroundColor: COLORS.background,
   },
-  header: {
+  headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
-    borderBottomColor: 'hsl(0, 0%, 90%)',
-    backgroundColor: 'hsl(0, 0%, 100%)',
+    borderBottomColor: COLORS.border,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: 'hsl(0, 0%, 0%)',
+    ...TYPOGRAPHY.h3,
+    color: COLORS.text,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'hsl(0, 0%, 0%)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
   },
   addButtonText: {
-    color: 'hsl(0, 0%, 100%)',
-    fontWeight: '600',
+    color: COLORS.primary,
     marginLeft: 4,
+    fontWeight: '500',
   },
-  addressList: {
-    padding: 16,
+  listContent: {
+    paddingBottom: SPACING.lg,
   },
-  addressCard: {
-    backgroundColor: 'hsl(0, 0%, 100%)',
-    borderRadius: 8,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'hsl(0, 0%, 90%)',
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-  },
-    shadowOpacity: 0.08,
-    shadowRadius: 2.22,
-    elevation: 3,
-  },
-  addressCardContent: {
+  addressItem: {
     flexDirection: 'row',
-    padding: 16,
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'hsl(0, 0%, 50%)',
-    alignItems: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
-    marginRight: 12,
+    alignItems: 'center',
+    marginRight: SPACING.md,
   },
-  addressInfo: {
+  addressDetails: {
     flex: 1,
+  },
+  addressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
   },
   addressLabel: {
-    fontSize: 16,
+    ...TYPOGRAPHY.subtitle,
     fontWeight: '600',
-    color: 'hsl(0, 0%, 0%)',
-    marginBottom: 4,
+    color: COLORS.text,
   },
-  addressText: {
-    fontSize: 14,
-    color: 'hsl(0, 0%, 30%)',
-    marginBottom: 4,
+  defaultBadge: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: SPACING.xs,
   },
-  detailText: {
-    fontSize: 12,
-    color: 'hsl(0, 0%, 45%)',
+  defaultText: {
+    color: COLORS.card,
+    fontSize: 10,
+    fontWeight: '500',
   },
-  actionButtons: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: 'hsl(0, 0%, 90%)',
+  addressLine: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    marginBottom: 2,
   },
-  actionButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
+  addressSubtitle: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+  },
+  unitNumber: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+    marginTop: 4,
   },
   emptyState: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    alignItems: 'center',
+    padding: SPACING.lg,
   },
-  emptyStateText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: 'hsl(0, 0%, 30%)',
-    marginTop: 16,
-    marginBottom: 8,
+  emptyTitle: {
+    ...TYPOGRAPHY.h4,
+    marginTop: SPACING.md,
+    color: COLORS.text,
   },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: 'hsl(0, 0%, 45%)',
+  emptySubtitle: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
     textAlign: 'center',
+    marginTop: SPACING.xs,
+    marginBottom: SPACING.md,
+  },
+  emptyAddButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: 8,
+    marginTop: SPACING.md,
+    ...SHADOWS.light,
+  },
+  emptyAddButtonText: {
+    color: COLORS.card,
+    fontWeight: '600',
   },
 });
+
+export default SavedLocations;

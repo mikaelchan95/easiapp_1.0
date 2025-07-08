@@ -8,9 +8,10 @@ import {
   FlatList, 
   Animated,
   Modal,
-  ActivityIndicator
+  ActivityIndicator,
+  StatusBar
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRewards, TierLevel } from '../../context/RewardsContext';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
@@ -76,8 +77,8 @@ const TierBadge = ({ tier, size = 'large' }: { tier: TierLevel; size?: 'small' |
     Gold: '#FFD700'
   };
   
-  const iconSize = size === 'large' ? 32 : 20;
-  const containerSize = size === 'large' ? 64 : 40;
+  const iconSize = size === 'large' ? 28 : 18;
+  const containerSize = size === 'large' ? 56 : 36;
   
   return (
     <View style={[
@@ -144,6 +145,7 @@ export default function RewardsScreen() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showHistory, setShowHistory] = useState(false);
   const [redeeming, setRedeeming] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
   
   // Animation for tier progress
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -185,10 +187,10 @@ export default function RewardsScreen() {
     : state.rewardsCatalog.filter(r => r.type === selectedCategory);
   
   const categories = [
-    { id: 'all', label: 'All Rewards' },
+    { id: 'all', label: 'All' },
     { id: 'voucher', label: 'Vouchers' },
     { id: 'bundle', label: 'Bundles' },
-    { id: 'swag', label: 'Merchandise' }
+    { id: 'swag', label: 'Merch' }
   ];
   
   const renderRewardItem = ({ item }: { item: typeof state.rewardsCatalog[0] }) => {
@@ -205,7 +207,7 @@ export default function RewardsScreen() {
                 item.type === 'bundle' ? 'cube' : 
                 'gift'
               } 
-              size={24} 
+              size={20} 
               color={COLORS.text} 
             />
           </View>
@@ -232,7 +234,7 @@ export default function RewardsScreen() {
                 styles.redeemButtonText,
                 !canRedeem && styles.redeemButtonTextDisabled
               ]}>
-                {canRedeem ? 'Redeem' : 'Insufficient Points'}
+                {canRedeem ? 'Redeem' : 'Insufficient'}
               </Text>
             )}
           </TouchableOpacity>
@@ -242,75 +244,84 @@ export default function RewardsScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
+      
+      {/* Status Bar Background */}
+      <View style={[styles.statusBarBackground, { height: insets.top }]} />
+      
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Text style={styles.title}>Rewards</Text>
-            <Text style={styles.subtitle}>Earn → Build → Redeem</Text>
-          </View>
-        </View>
-        
-        {/* Tier Status Card */}
-        <View style={styles.statusCard}>
-          <View style={styles.statusHeader}>
-            <View>
-              <Text style={styles.tierLabel}>Current Status</Text>
-              <Text style={styles.tierName}>{state.userRewards.tier} Member</Text>
-            </View>
-            <TierBadge tier={state.userRewards.tier} />
-          </View>
-          
-          <View style={styles.pointsSection}>
-            <Text style={styles.pointsLabel}>Available Points</Text>
-            <Text style={styles.pointsValue}>{state.userRewards.points.toLocaleString()}</Text>
-          </View>
-          
-          <View style={styles.progressSection}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressLabel}>12-Month Spend</Text>
-              <Text style={styles.progressValue}>S${state.userRewards.yearlySpend.toLocaleString()}</Text>
+        {/* Compact Header Widget */}
+        <View style={styles.headerWidget}>
+          <View style={styles.widgetBackground}>
+            {/* Top Row: Title and History Button */}
+            <View style={styles.widgetTopRow}>
+              <View>
+                <Text style={styles.widgetTitle}>Rewards</Text>
+                <Text style={styles.widgetSubtitle}>Earn with every purchase</Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.historyIconButton}
+                onPress={() => setShowHistory(true)}
+              >
+                <Ionicons name="time-outline" size={20} color={COLORS.accent} />
+              </TouchableOpacity>
             </View>
             
-            <View style={styles.progressBarContainer}>
-              <Animated.View 
-                style={[
-                  styles.progressBar,
-                  {
-                    width: progressAnim.interpolate({
-                      inputRange: [0, 100],
-                      outputRange: ['0%', '100%']
-                    })
-                  }
-                ]}
-              />
+            {/* Main Content Row */}
+            <View style={styles.widgetMainRow}>
+              {/* Points Section */}
+              <View style={styles.pointsSection}>
+                <Text style={styles.pointsValue}>{state.userRewards.points.toLocaleString()}</Text>
+                <Text style={styles.pointsLabel}>Points Available</Text>
+              </View>
+              
+              {/* Tier Section */}
+              <View style={styles.tierSection}>
+                <View style={styles.tierBadgeContainer}>
+                  <TierBadge tier={state.userRewards.tier} size="small" />
+                  <View style={styles.tierTextContainer}>
+                    <Text style={styles.tierName}>{state.userRewards.tier}</Text>
+                    <Text style={styles.tierStatus}>Member</Text>
+                  </View>
+                </View>
+              </View>
             </View>
             
+            {/* Progress Row (if applicable) */}
             {getPointsToNextTier() > 0 && (
-              <Text style={styles.progressText}>
-                S${getPointsToNextTier().toLocaleString()} to {
-                  state.userRewards.tier === 'Bronze' ? 'Silver' : 'Gold'
-                }
-              </Text>
+              <View style={styles.progressRow}>
+                <View style={styles.progressInfo}>
+                  <Text style={styles.progressLabel}>
+                    S${getPointsToNextTier().toLocaleString()} to {
+                      state.userRewards.tier === 'Bronze' ? 'Silver' : 'Gold'
+                    }
+                  </Text>
+                </View>
+                <View style={styles.progressBarContainer}>
+                  <Animated.View 
+                    style={[
+                      styles.progressBar,
+                      {
+                        width: progressAnim.interpolate({
+                          inputRange: [0, 100],
+                          outputRange: ['0%', '100%']
+                        })
+                      }
+                    ]}
+                  />
+                </View>
+              </View>
             )}
           </View>
-          
-          <TouchableOpacity 
-            style={styles.historyButton}
-            onPress={() => setShowHistory(true)}
-          >
-            <Text style={styles.historyButtonText}>View Points History</Text>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.text} />
-          </TouchableOpacity>
         </View>
         
         {/* Tier Benefits */}
         <View style={styles.benefitsCard}>
-          <Text style={styles.benefitsTitle}>Your {state.userRewards.tier} Benefits</Text>
+          <Text style={styles.benefitsTitle}>Your Benefits</Text>
           {getTierBenefits(state.userRewards.tier).map((benefit, index) => (
             <View key={index} style={styles.benefitItem}>
-              <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+              <View style={styles.benefitDot} />
               <Text style={styles.benefitText}>{benefit}</Text>
             </View>
           ))}
@@ -354,14 +365,17 @@ export default function RewardsScreen() {
             contentContainerStyle={styles.rewardsList}
           />
         </View>
+        
+        {/* Bottom Padding */}
+        <View style={styles.bottomPadding} />
       </ScrollView>
-      
+        
       {/* Points History Modal */}
       <PointsHistoryModal 
         visible={showHistory} 
         onClose={() => setShowHistory(false)} 
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -370,130 +384,137 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  statusBarBackground: {
+    backgroundColor: COLORS.card,
+  },
   scrollView: {
     flex: 1,
   },
-  header: {
+  // Header Widget
+  headerWidget: {
+    marginHorizontal: SPACING.md,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.lg,
+  },
+  widgetBackground: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
     padding: SPACING.lg,
-    backgroundColor: COLORS.card,
-    alignItems: 'center',
-  },
-  headerContent: {
-    alignItems: 'center',
-  },
-  title: {
-    ...TYPOGRAPHY.h1,
-    marginBottom: SPACING.xs,
-    textAlign: 'center',
-  },
-  subtitle: {
-    ...TYPOGRAPHY.caption,
-    textAlign: 'center',
-  },
-  
-  // Status Card
-  statusCard: {
-    margin: SPACING.md,
-    padding: SPACING.lg,
-    backgroundColor: COLORS.card,
-    borderRadius: 12,
     ...SHADOWS.medium,
   },
-  statusHeader: {
+  widgetTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: SPACING.lg,
+  },
+  widgetTitle: {
+    ...TYPOGRAPHY.h2,
+    color: COLORS.accent,
+    fontWeight: '700',
+  },
+  widgetSubtitle: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.accent,
+    opacity: 0.8,
+    marginTop: SPACING.xs,
+  },
+  historyIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  widgetMainRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
-  tierLabel: {
+  pointsSection: {
+    flex: 1,
+  },
+  pointsValue: {
+    ...TYPOGRAPHY.h1,
+    color: COLORS.accent,
+    fontWeight: '800',
+    fontSize: 32,
+    lineHeight: 36,
+  },
+  pointsLabel: {
     ...TYPOGRAPHY.caption,
-    marginBottom: SPACING.xs,
+    color: COLORS.accent,
+    opacity: 0.8,
+    marginTop: SPACING.xs,
+  },
+  tierSection: {
+    alignItems: 'flex-end',
+  },
+  tierBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tierTextContainer: {
+    marginLeft: SPACING.sm,
+    alignItems: 'flex-end',
   },
   tierName: {
-    ...TYPOGRAPHY.h2,
+    ...TYPOGRAPHY.h4,
+    color: COLORS.accent,
+    fontWeight: '600',
+  },
+  tierStatus: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.accent,
+    opacity: 0.8,
   },
   tierBadge: {
     borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    ...SHADOWS.medium,
+    ...SHADOWS.light,
   },
   
-  // Points Section
-  pointsSection: {
-    paddingVertical: SPACING.md,
+  // Progress Row
+  progressRow: {
     borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: SPACING.lg,
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    paddingTop: SPACING.md,
   },
-  pointsLabel: {
-    ...TYPOGRAPHY.caption,
-    marginBottom: SPACING.xs,
-  },
-  pointsValue: {
-    ...TYPOGRAPHY.h1,
-    color: COLORS.primary,
-  },
-  
-  // Progress Section
-  progressSection: {
-    marginBottom: SPACING.lg,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  progressInfo: {
     marginBottom: SPACING.sm,
   },
   progressLabel: {
     ...TYPOGRAPHY.caption,
-  },
-  progressValue: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '600',
+    color: COLORS.accent,
+    opacity: 0.9,
+    fontWeight: '500',
   },
   progressBarContainer: {
-    height: 8,
-    backgroundColor: COLORS.border,
-    borderRadius: 4,
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 2,
     overflow: 'hidden',
-    marginBottom: SPACING.sm,
   },
   progressBar: {
     height: '100%',
-    backgroundColor: COLORS.primary,
-  },
-  progressText: {
-    ...TYPOGRAPHY.small,
-    textAlign: 'center',
-  },
-  
-  // History Button
-  historyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING.md,
-    backgroundColor: COLORS.primary,
-    borderRadius: 8,
-  },
-  historyButtonText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.accent,
-    fontWeight: '600',
-    marginRight: SPACING.xs,
+    backgroundColor: COLORS.accent,
+    borderRadius: 2,
   },
   
   // Benefits Card
   benefitsCard: {
-    margin: SPACING.md,
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.md,
     padding: SPACING.lg,
     backgroundColor: COLORS.card,
     borderRadius: 12,
     ...SHADOWS.light,
   },
   benefitsTitle: {
-    ...TYPOGRAPHY.h3,
+    ...TYPOGRAPHY.h4,
     marginBottom: SPACING.md,
   },
   benefitItem: {
@@ -501,25 +522,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.sm,
   },
+  benefitDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.primary,
+    marginRight: SPACING.sm,
+  },
   benefitText: {
-    ...TYPOGRAPHY.body,
-    marginLeft: SPACING.sm,
+    ...TYPOGRAPHY.bodySmall,
     flex: 1,
   },
   
   // Catalog Section
   catalogSection: {
-    padding: SPACING.md,
+    paddingHorizontal: SPACING.md,
   },
   catalogTitle: {
-    ...TYPOGRAPHY.h2,
+    ...TYPOGRAPHY.h3,
     marginBottom: SPACING.md,
   },
   categoryScroll: {
     marginBottom: SPACING.lg,
   },
   categoryButton: {
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     marginRight: SPACING.sm,
     backgroundColor: COLORS.card,
@@ -532,8 +559,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   categoryButtonText: {
-    ...TYPOGRAPHY.body,
-    fontSize: 14,
+    ...TYPOGRAPHY.bodySmall,
+    fontWeight: '500',
   },
   categoryButtonTextActive: {
     color: COLORS.accent,
@@ -556,9 +583,9 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   rewardIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
@@ -568,7 +595,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rewardTitle: {
-    ...TYPOGRAPHY.h4,
+    ...TYPOGRAPHY.h5,
     marginBottom: SPACING.xs,
   },
   rewardDescription: {
@@ -580,20 +607,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rewardPoints: {
-    ...TYPOGRAPHY.h4,
+    ...TYPOGRAPHY.h5,
     color: COLORS.primary,
+    fontWeight: '600',
   },
   redeemButton: {
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     backgroundColor: COLORS.primary,
     borderRadius: 8,
+    minWidth: 80,
+    alignItems: 'center',
   },
   redeemButtonDisabled: {
     backgroundColor: COLORS.border,
   },
   redeemButtonText: {
-    ...TYPOGRAPHY.body,
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.accent,
     fontWeight: '600',
   },
@@ -616,7 +646,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   modalTitle: {
-    ...TYPOGRAPHY.h2,
+    ...TYPOGRAPHY.h3,
   },
   closeButton: {
     padding: SPACING.sm,
@@ -639,24 +669,30 @@ const styles = StyleSheet.create({
     marginRight: SPACING.md,
   },
   historyDescription: {
-    ...TYPOGRAPHY.body,
+    ...TYPOGRAPHY.bodySmall,
     marginBottom: SPACING.xs,
   },
   historyDate: {
-    ...TYPOGRAPHY.small,
+    ...TYPOGRAPHY.caption,
   },
   historyOrderId: {
-    ...TYPOGRAPHY.small,
+    ...TYPOGRAPHY.caption,
     color: COLORS.primary,
     marginTop: SPACING.xs,
   },
   historyPoints: {
-    ...TYPOGRAPHY.h4,
+    ...TYPOGRAPHY.h5,
+    fontWeight: '600',
   },
   pointsEarned: {
     color: COLORS.success,
   },
   pointsRedeemed: {
     color: COLORS.error,
+  },
+  
+  // Bottom Padding
+  bottomPadding: {
+    height: SPACING.xxl,
   },
 }); 
