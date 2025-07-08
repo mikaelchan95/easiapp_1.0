@@ -141,7 +141,7 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         decelerationRate="fast"
-        snapToInterval={160 + SPACING.element} // Updated for enhanced card width
+        snapToInterval={180 + SPACING.element} // Updated for enhanced card width
         snapToAlignment="start"
       >
         {displayProducts.map((product, index) => (
@@ -151,7 +151,7 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
             onPress={onProductPress}
             style={styles.productCard}
             animationDelay={100 + (index * 50)} // Staggered animation
-            isCompact={true} // Use compact variant for horizontal scrolling
+            isCompact={false} // Use same configuration as Explore page
           />
         ))}
         
@@ -263,8 +263,8 @@ const styles = StyleSheet.create({
   },
   productCard: {
     marginRight: SPACING.element,
-    width: 160,
-    height: 250, // Fixed height for consistent appearance
+    width: 180, // Increased width to match Explore page cards better
+    // Remove fixed height - let EnhancedProductCard use its default height
   },
   showMoreCard: {
     width: 120,
