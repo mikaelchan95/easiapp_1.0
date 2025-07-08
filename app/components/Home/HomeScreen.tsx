@@ -24,6 +24,7 @@ import ExpandableSearch from '../Products/ExpandableSearch';
 import { HapticFeedback } from '../../utils/haptics';
 import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 import { useAppContext } from '../../context/AppContext';
+import DeliveryLocationHeader from '../Location/DeliveryLocationHeader';
 
 type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -91,12 +92,8 @@ export default function HomeScreen() {
   const handleAddressPress = useCallback(() => {
     HapticFeedback.selection();
     // Navigate to the new delivery location picker
-    // @ts-ignore - Navigation params will be handled by the screen
-    navigation.navigate('DeliveryLocationScreen', {
-      onLocationSelect: setDeliveryLocation,
-      initialLocation: deliveryLocation,
-    });
-  }, [navigation, setDeliveryLocation, deliveryLocation]);
+    navigation.navigate('DeliveryLocationScreen');
+  }, [navigation]);
   
   const handleRewardsPress = useCallback(() => {
     navigation.dispatch(
@@ -127,13 +124,21 @@ export default function HomeScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
       
       <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
-        {/* Use MobileHeader with location */}
+        {/* Delivery Location Header - Moved to Top */}
+        <View style={styles.topLocationContainer}>
+          <DeliveryLocationHeader 
+            location={deliveryLocation}
+            onPress={handleAddressPress}
+            showDeliveryInfo={true}
+            style={styles.topLocationHeader}
+          />
+        </View>
+        
+        {/* Mobile Header */}
         <MobileHeader
           showBackButton={false}
-          showLocationHeader={true}
+          showLocationHeader={false}
           showSearch={true}
-          onAddressPress={handleAddressPress}
-          currentAddress={deliveryLocation ? { name: deliveryLocation.title } : undefined}
         />
       </View>
       
@@ -216,6 +221,16 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     zIndex: 10,
     ...SHADOWS.light,
+    paddingBottom: SPACING.sm,
+  },
+  topLocationContainer: {
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.md,
+  },
+  topLocationHeader: {
+    backgroundColor: '#000', // Black background
+    borderColor: '#333', // Dark border
   },
   content: {
     flex: 1,

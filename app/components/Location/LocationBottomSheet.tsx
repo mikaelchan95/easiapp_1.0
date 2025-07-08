@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LocationBottomSheetProps } from '../../types/location';
 import { COLORS, SHADOWS, SPACING } from '../../utils/theme';
@@ -49,10 +50,56 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
   onPinDrop,
   mapRegion
 }) => {
+  const insets = useSafeAreaInsets();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
   // Animation values
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const dragY = useRef(new Animated.Value(0)).current;
+
+  // Enhanced keyboard handling with proper iOS support
+  useEffect(() => {
+    const keyboardWillShow = (event: any) => {
+      setIsKeyboardVisible(true);
+      setKeyboardHeight(event.endCoordinates.height);
+    };
+
+    const keyboardWillHide = () => {
+      setIsKeyboardVisible(false);
+      setKeyboardHeight(0);
+    };
+
+    const keyboardDidShow = (event: any) => {
+      if (Platform.OS === 'android') {
+        setIsKeyboardVisible(true);
+        setKeyboardHeight(event.endCoordinates.height);
+      }
+    };
+
+    const keyboardDidHide = () => {
+      if (Platform.OS === 'android') {
+        setIsKeyboardVisible(false);
+        setKeyboardHeight(0);
+      }
+    };
+
+    let showSubscription, hideSubscription;
+
+    if (Platform.OS === 'ios') {
+      showSubscription = Keyboard.addListener('keyboardWillShow', keyboardWillShow);
+      hideSubscription = Keyboard.addListener('keyboardWillHide', keyboardWillHide);
+    } else {
+      showSubscription = Keyboard.addListener('keyboardDidShow', keyboardDidShow);
+      hideSubscription = Keyboard.addListener('keyboardDidHide', keyboardDidHide);
+    }
+
+    return () => {
+      showSubscription?.remove();
+      hideSubscription?.remove();
+    };
+  }, []);
 
   // Gesture handlers
   const onGestureEvent = Animated.event(
@@ -68,6 +115,9 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
       const shouldDismiss = translationY > DISMISS_THRESHOLD || velocityY > 500;
       
       if (shouldDismiss) {
+        // Dismiss keyboard before closing
+        Keyboard.dismiss();
+        
         // Animate out with matching velocity
         Animated.timing(translateY, {
           toValue: SHEET_HEIGHT,
@@ -120,6 +170,9 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
 
   // Hide animation
   const hideSheet = useCallback(() => {
+    // Dismiss keyboard when hiding
+    Keyboard.dismiss();
+    
     Animated.parallel([
       Animated.timing(translateY, {
         toValue: SHEET_HEIGHT,
@@ -147,11 +200,38 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
 
   // Backdrop press handler
   const handleBackdropPress = () => {
+    Keyboard.dismiss();
     onClose();
   };
 
-  // Combined translateY for both gesture and animation
-  const combinedTranslateY = Animated.add(translateY, dragY);
+  // Calculate keyboard offset for the bottom sheet
+  const getKeyboardOffset = () => {
+    if (!isKeyboardVisible || keyboardHeight === 0) return 0;
+    
+    if (Platform.OS === 'ios') {
+      // For iOS, calculate offset considering safe areas and modal positioning
+      const baseOffset = keyboardHeight - insets.bottom;
+      return Math.max(baseOffset, 0);
+    } else {
+      // For Android, use a simpler calculation
+      return keyboardHeight;
+    }
+  };
+
+  // Calculate the keyboardVerticalOffset for KeyboardAvoidingView
+  const getKeyboardVerticalOffset = () => {
+    if (Platform.OS === 'ios') {
+      // For iOS, account for the modal positioning
+      return 0; // Let KeyboardAvoidingView handle it automatically
+    }
+    return 0;
+  };
+
+  // Combined translateY for both gesture and animation, with keyboard offset
+  const combinedTranslateY = Animated.add(
+    translateY, 
+    Animated.add(dragY, new Animated.Value(-getKeyboardOffset()))
+  );
 
   return (
     <Modal
@@ -159,7 +239,10 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
       transparent
       statusBarTranslucent
       animationType="none"
-      onRequestClose={onClose}
+      onRequestClose={() => {
+        Keyboard.dismiss();
+        onClose();
+      }}
     >
       <View style={styles.modalContainer}>
         {/* Backdrop */}
@@ -194,8 +277,9 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
           >
             <SafeAreaView style={styles.sheet}>
               <KeyboardAvoidingView
-                style={styles.keyboardAvoid}
+                style={[styles.keyboardAvoid, isKeyboardVisible && styles.keyboardAvoidKeyboard]}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={getKeyboardVerticalOffset()}
               >
                 {/* Handle bar */}
                 <View style={styles.handleContainer}>
@@ -213,7 +297,10 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
                     </Text>
                   </View>
                   <Pressable
-                    onPress={onToggleMapMode}
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      onToggleMapMode();
+                    }}
                     style={styles.mapToggle}
                     accessibilityLabel={isMapMode ? 'Switch to list view' : 'Switch to map view'}
                     accessibilityRole="button"
@@ -227,8 +314,8 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
                 </View>
 
                 {/* Search Bar */}
-                <View style={styles.searchBarContainer}>
-                  <View style={styles.searchBar}>
+                <View style={[styles.searchBarContainer, isKeyboardVisible && styles.searchBarContainerKeyboard]}>
+                  <View style={[styles.searchBar, isKeyboardVisible && styles.searchBarKeyboard]}>
                     <View style={styles.searchIconContainer}>
                       <Ionicons 
                         name="search" 
@@ -250,10 +337,25 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
                       editable={!isMapMode}
                     />
                     
+                    {/* Clear button */}
+                    {searchText.length > 0 && (
+                      <TouchableOpacity
+                        style={styles.clearButton}
+                        onPress={() => {
+                          onSearchTextChange('');
+                        }}
+                      >
+                        <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+                      </TouchableOpacity>
+                    )}
+                    
                     {/* Toggle View Button */}
                     <TouchableOpacity 
                       style={styles.toggleButton}
-                      onPress={onToggleMapMode}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        onToggleMapMode();
+                      }}
                       accessibilityLabel={isMapMode ? "Switch to list view" : "Switch to map view"}
                       accessibilityHint="Toggle between map and list view"
                     >
@@ -272,7 +374,7 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
                 </View>
 
                 {/* Content */}
-                <View style={styles.content}>
+                <View style={[styles.content, isKeyboardVisible && styles.contentKeyboard]}>
                   {isMapMode ? (
                     <View style={styles.staticMapContainer}>
                       <View style={styles.staticMap}>
@@ -355,11 +457,13 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
                 </View>
 
                 {/* Confirm Button */}
-                <LocationConfirmButton
-                  onConfirm={onConfirm}
-                  selectedLocation={selectedLocation}
-                  disabled={!selectedLocation}
-                />
+                <View style={[styles.confirmButtonContainer, isKeyboardVisible && styles.confirmButtonContainerKeyboard]}>
+                  <LocationConfirmButton
+                    onConfirm={onConfirm}
+                    selectedLocation={selectedLocation}
+                    disabled={!selectedLocation}
+                  />
+                </View>
               </KeyboardAvoidingView>
             </SafeAreaView>
           </Animated.View>
@@ -569,6 +673,27 @@ const styles = StyleSheet.create({
   mapTapArea: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent'
+  },
+  keyboardAvoidKeyboard: {
+    paddingBottom: SPACING.md
+  },
+  searchBarContainerKeyboard: {
+    paddingBottom: SPACING.md
+  },
+  searchBarKeyboard: {
+    paddingBottom: SPACING.md
+  },
+  clearButton: {
+    padding: SPACING.sm
+  },
+  confirmButtonContainer: {
+    padding: SPACING.md
+  },
+  confirmButtonContainerKeyboard: {
+    paddingBottom: SPACING.md
+  },
+  contentKeyboard: {
+    paddingBottom: SPACING.md
   }
 });
 

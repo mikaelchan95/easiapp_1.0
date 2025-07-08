@@ -22,6 +22,14 @@ export interface LocationSuggestion {
   unitNumber?: string;
   buildingName?: string;
   formattedAddress?: string;
+  deliveryInfo?: {
+    estimatedTime: string;
+    deliveryFee: number;
+    available: boolean;
+    zone?: string;
+    distance?: number;
+    specialInstructions?: string;
+  };
 }
 
 export interface DeliveryDetails {

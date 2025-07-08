@@ -1,11 +1,23 @@
-import React, { useRef, useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native';
+import React, { useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  Dimensions,
+  Alert,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { RectButton } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
-import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
+import { COLORS, SHADOWS, SPACING } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
+import { HapticFeedback, HapticPatterns } from '../../utils/haptics';
 import QuantitySelector from '../UI/QuantitySelector';
 
 type CartItemProps = {
@@ -15,24 +27,45 @@ type CartItemProps = {
     name: string;
     price: number;
     quantity: number;
-    imageUrl: any; // Changed to accept require() format
+    imageUrl: any;
     inStock?: boolean;
   };
   onQuantityChange: (quantity: number) => void;
+  onDelete?: () => void;
+  onSaveForLater?: () => void;
+  onAddToFavorites?: () => void;
+  onSwipeStart?: () => void;
+  onSwipeEnd?: () => void;
 };
 
 type ProductNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ProductDetail'>;
 
-const CartItem: React.FC<CartItemProps> = ({ item, onQuantityChange }) => {
+const { width } = Dimensions.get('window');
+const ACTION_WIDTH = 80;
+
+const CartItem: React.FC<CartItemProps> = ({ 
+  item, 
+  onQuantityChange,
+  onDelete,
+  onSaveForLater,
+  onAddToFavorites,
+  onSwipeStart,
+  onSwipeEnd
+}) => {
   const navigation = useNavigation<ProductNavigationProp>();
   
-  // Animation values for item removal
-  const scaleValue = useRef(new Animated.Value(1)).current;
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  const opacityValue = useRef(new Animated.Value(1)).current;
+  // Animation values
+  const itemScale = useRef(new Animated.Value(1)).current;
+  const itemOpacity = useRef(new Animated.Value(1)).current;
+  const deleteAnimation = useRef(new Animated.Value(0)).current;
+  const quantityBounce = useRef(new Animated.Value(1)).current;
   
-  // State to track removing animation
-  const [isRemoving, setIsRemoving] = useState(false);
+  // State
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSwipeOpen, setIsSwipeOpen] = useState(false);
+  
+  // Refs
+  const swipeableRef = useRef<Swipeable>(null);
   
   const handleItemPress = () => {
     navigation.navigate('ProductDetail', { id: item.productId });
@@ -42,123 +75,395 @@ const CartItem: React.FC<CartItemProps> = ({ item, onQuantityChange }) => {
   const formattedPrice = `$${(item.price * item.quantity).toFixed(2)}`;
   const formattedUnitPrice = `$${item.price.toFixed(2)}`;
   
-  // Handle quantity change with the new standardized component
+  // Quick delete confirmation with haptic
+  const confirmQuickDelete = () => {
+    HapticFeedback.warning();
+    
+    Alert.alert(
+      'Remove Item',
+      `Remove ${item.name} from your cart?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => HapticFeedback.light()
+        },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: handleDelete
+        }
+      ]
+    );
+  };
+  
+  // Handle delete with smooth animation
+  const handleDelete = () => {
+    if (isDeleting) return;
+    
+    setIsDeleting(true);
+    HapticPatterns.delete();
+    
+    // Close swipeable first
+    swipeableRef.current?.close();
+    
+    // Animate deletion
+    Animated.parallel([
+      Animated.timing(itemOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true
+      }),
+      Animated.timing(itemScale, {
+        toValue: 0.8,
+        duration: 300,
+        useNativeDriver: true
+      }),
+      Animated.timing(deleteAnimation, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: false
+      })
+    ]).start(() => {
+      if (onDelete) {
+        onDelete();
+      } else {
+        onQuantityChange(0);
+      }
+    });
+  };
+  
+  // Handle save for later
+  const handleSaveForLater = () => {
+    HapticFeedback.medium();
+    swipeableRef.current?.close();
+    
+    if (onSaveForLater) {
+      onSaveForLater();
+    }
+  };
+  
+  // Handle add to favorites
+  const handleAddToFavorites = () => {
+    HapticFeedback.medium();
+    swipeableRef.current?.close();
+    
+    if (onAddToFavorites) {
+      onAddToFavorites();
+    }
+  };
+  
+  // Handle quantity change
   const handleQuantityChange = (newQuantity: number) => {
     if (newQuantity === 0) {
-      // Item will be removed, animate the removal
-      setIsRemoving(true);
-      
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: -50,
-          duration: 300,
-          useNativeDriver: true,
-          easing: Animations.TIMING.easeIn
-        }),
-        Animated.timing(opacityValue, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-          easing: Animations.TIMING.easeIn
-        })
-      ]).start(() => {
-        onQuantityChange(0); // Remove the item
-      });
-         } else {
-       // Update quantity
-       onQuantityChange(newQuantity);
-     }
+      confirmQuickDelete();
+    } else {
+      HapticFeedback.light();
+      Animations.bounceAnimation(quantityBounce);
+      onQuantityChange(newQuantity);
+    }
+  };
+  
+  // Render right actions (swipe left to reveal)
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>
+  ) => {
+    return (
+      <View style={styles.rightActionsContainer}>
+        {/* Save for Later Action */}
+        {onSaveForLater && (
+          <Animated.View
+            style={[
+              styles.actionContainer,
+              {
+                transform: [
+                  {
+                    translateX: progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [ACTION_WIDTH, 0],
+                      extrapolate: 'clamp',
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <RectButton
+              style={[styles.action, styles.saveAction]}
+              onPress={handleSaveForLater}
+            >
+              <Ionicons name="bookmark-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.actionText}>Save</Text>
+            </RectButton>
+          </Animated.View>
+        )}
+        
+        {/* Favorite Action */}
+        {onAddToFavorites && (
+          <Animated.View
+            style={[
+              styles.actionContainer,
+              {
+                transform: [
+                  {
+                    translateX: progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [ACTION_WIDTH, 0],
+                      extrapolate: 'clamp',
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <RectButton
+              style={[styles.action, styles.favoriteAction]}
+              onPress={handleAddToFavorites}
+            >
+              <Ionicons name="heart-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.actionText}>Like</Text>
+            </RectButton>
+          </Animated.View>
+        )}
+        
+        {/* Delete Action */}
+        <Animated.View
+          style={[
+            styles.actionContainer,
+            {
+              transform: [
+                {
+                  translateX: progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [ACTION_WIDTH, 0],
+                    extrapolate: 'clamp',
+                  }),
+                },
+                {
+                  scale: dragX.interpolate({
+                    inputRange: [-200, -100, 0],
+                    outputRange: [1.1, 1, 0.9],
+                    extrapolate: 'clamp',
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <RectButton
+            style={[styles.action, styles.deleteAction]}
+            onPress={handleDelete}
+          >
+            <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.actionText}>Remove</Text>
+          </RectButton>
+        </Animated.View>
+      </View>
+    );
+  };
+  
+  // Handle swipe events
+  const onSwipeableWillOpen = (direction: 'left' | 'right') => {
+    HapticFeedback.light();
+    setIsSwipeOpen(true);
+    if (onSwipeStart) {
+      onSwipeStart();
+    }
+  };
+  
+  const onSwipeableWillClose = () => {
+    setIsSwipeOpen(false);
+    if (onSwipeEnd) {
+      onSwipeEnd();
+    }
   };
   
   return (
     <Animated.View 
       style={[
-        styles.container, 
-        { 
-          transform: [
-            { scale: scaleValue },
-            { translateX: slideAnim }
-          ],
-          opacity: opacityValue
+        styles.container,
+        {
+          opacity: itemOpacity,
+          transform: [{ scale: itemScale }],
         }
       ]}
     >
-      <TouchableOpacity 
-        style={styles.imageContainer} 
-        onPress={handleItemPress}
+      <Swipeable
+        ref={swipeableRef}
+        renderRightActions={renderRightActions}
+        onSwipeableWillOpen={onSwipeableWillOpen}
+        onSwipeableWillClose={onSwipeableWillClose}
+        rightThreshold={40}
+        friction={2}
+        overshootRight={false}
+        enabled={!isDeleting}
       >
-        <Image 
-          source={item.imageUrl} 
-          style={styles.image}
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
-      
-      <View style={styles.content}>
-        <TouchableOpacity onPress={handleItemPress}>
-          <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
-        </TouchableOpacity>
-        
-        <Text style={styles.unitPrice}>{formattedUnitPrice} each</Text>
-        
-        <View style={styles.actionRow}>
-          <QuantitySelector
-            value={item.quantity}
-            onChange={handleQuantityChange}
-            size="medium"
-            productName={item.name}
-          />
-          <Text style={styles.price}>{formattedPrice}</Text>
+        <View style={[styles.card, isSwipeOpen && styles.cardSwiped]}>
+          <TouchableOpacity 
+            style={styles.imageContainer} 
+            onPress={handleItemPress}
+            activeOpacity={0.8}
+          >
+            <Image 
+              source={item.imageUrl} 
+              style={styles.image}
+              resizeMode="contain"
+            />
+            {!item.inStock && (
+              <View style={styles.outOfStockOverlay}>
+                <Text style={styles.outOfStockText}>Out of Stock</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          
+          <View style={styles.content}>
+            <TouchableOpacity onPress={handleItemPress}>
+              <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
+            </TouchableOpacity>
+            
+            <Text style={styles.unitPrice}>{formattedUnitPrice} each</Text>
+            
+            <View style={styles.actionRow}>
+              <QuantitySelector
+                value={item.quantity}
+                onChange={handleQuantityChange}
+                size="medium"
+                productName={item.name}
+                disabled={isDeleting || !item.inStock}
+              />
+              <View style={styles.priceContainer}>
+                <Text style={styles.price}>{formattedPrice}</Text>
+                {!item.inStock && (
+                  <Text style={styles.unavailableText}>Unavailable</Text>
+                )}
+              </View>
+            </View>
+          </View>
         </View>
-      </View>
+      </Swipeable>
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.card,
+    backgroundColor: '#fff',
     borderRadius: 16,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 2,
+    minHeight: 120,
+  },
+  card: {
     flexDirection: 'row',
-    ...SHADOWS.light
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+  },
+  cardSwiped: {
+    shadowOpacity: 0.15,
+    shadowOffset: { width: -2, height: 2 },
   },
   imageContainer: {
-    width: 80,
-    height: 80,
+    width: 70,
+    height: 70,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: COLORS.card,
+    backgroundColor: '#fff',
+    flexShrink: 0,
+    marginRight: 18,
+    position: 'relative',
   },
   image: {
     width: '100%',
     height: '100%',
   },
+  outOfStockOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  outOfStockText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   content: {
     flex: 1,
-    marginLeft: SPACING.md,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    minHeight: 80,
   },
   name: {
-    ...TYPOGRAPHY.h5,
+    fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
+    color: '#000',
   },
   unitPrice: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.inactive,
-    marginBottom: 8,
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 10,
   },
   actionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 8,
+  },
+  priceContainer: {
+    alignItems: 'flex-end',
+    marginLeft: 18,
   },
   price: {
-    ...TYPOGRAPHY.h4,
+    fontSize: 18,
     fontWeight: '700',
-  }
+    color: '#000',
+  },
+  unavailableText: {
+    fontSize: 12,
+    color: COLORS.error,
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  rightActionsContainer: {
+    flexDirection: 'row',
+  },
+  actionContainer: {
+    width: ACTION_WIDTH,
+  },
+  action: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  saveAction: {
+    backgroundColor: '#2196F3',
+  },
+  favoriteAction: {
+    backgroundColor: '#FF6B6B',
+  },
+  deleteAction: {
+    backgroundColor: '#FF3B30',
+  },
+  actionText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
+  },
 });
 
 export default CartItem; 

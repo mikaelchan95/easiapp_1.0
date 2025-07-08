@@ -46,16 +46,17 @@ import ActivitiesScreen from './app/components/Activities/ActivitiesScreen';
 import LocationPickerDemo from './app/components/Location/LocationPickerDemo';
 import LocationPickerScreen from './app/components/Location/LocationPickerScreen';
 import UberStyleLocationScreen from './app/components/Location/UberStyleLocationScreen';
-import DeliveryLocationScreen from './app/components/Location/DeliveryLocationScreen';
+import SavedLocationsScreen from './app/components/Location/SavedLocationsScreen';
 
 // Import types and theme
 import { RootStackParamList, MainTabParamList } from './app/types/navigation';
-import { COLORS, SHADOWS, TYPOGRAPHY } from './app/utils/theme';
+import { COLORS, SHADOWS, TYPOGRAPHY, SPACING, FONT_WEIGHTS } from './app/utils/theme';
 import * as Animations from './app/utils/animations';
 
 // Import reusable components
 import AnimatedFeedback from './app/components/UI/AnimatedFeedback';
 import CartNotification from './app/components/UI/CartNotification';
+import { HapticFeedback } from './app/utils/haptics';
 
 // Stack and Tab navigators
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -74,47 +75,99 @@ const MyTheme = {
   },
 };
 
-// Custom animated tab bar button
-function TabBarButton({ onPress, children, isActive }: any) {
-  // Animation value for scale
-  const scaleValue = useRef(new Animated.Value(1)).current;
+// Animated cart badge component
+function AnimatedCartBadge({ count }: { count: number }) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const bounceAnim = useRef(new Animated.Value(1)).current;
+  const prevCount = useRef(count);
   
-  // Handle press animations
+  useEffect(() => {
+    if (count > prevCount.current) {
+      // Item added - bounce animation
+      HapticFeedback.light();
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.3,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 4,
+          tension: 300,
+          useNativeDriver: true,
+        })
+      ]).start();
+      
+      // Bounce effect
+      Animated.sequence([
+        Animated.timing(bounceAnim, {
+          toValue: 1.2,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(bounceAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        })
+      ]).start();
+    }
+    prevCount.current = count;
+  }, [count]);
+  
+  return (
+    <Animated.View 
+      style={[
+        styles.cartBadge,
+        {
+          transform: [
+            { scale: scaleAnim },
+            { scale: bounceAnim }
+          ]
+        }
+      ]}
+    >
+      <Text style={styles.cartBadgeText}>
+        {count > 99 ? '99+' : count}
+      </Text>
+    </Animated.View>
+  );
+}
+
+// Custom animated tab bar button
+function TabBarButton({ onPress, children, isActive, route }: any) {
+  // Animation values
+  const scaleValue = useRef(new Animated.Value(1)).current;
+  const opacityValue = useRef(new Animated.Value(isActive ? 1 : 0.7)).current;
+  
+  // Handle press animations with modern spring physics
   const handlePressIn = () => {
-    Animated.timing(scaleValue, {
-      toValue: 0.92,
-      duration: 150,
+    Animated.spring(scaleValue, {
+      toValue: 0.95,
       useNativeDriver: true,
-      easing: Animations.TIMING.easeOut
+      tension: 300,
+      friction: 10,
     }).start();
   };
   
   const handlePressOut = () => {
     Animated.spring(scaleValue, {
       toValue: 1,
-      friction: 5,
-      tension: 40,
-      useNativeDriver: true
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
     }).start();
   };
   
   // Handle active state animation
   useEffect(() => {
-    if (isActive) {
-      Animated.sequence([
-        Animated.timing(scaleValue, {
-          toValue: 1.1,
-          duration: 100,
-          useNativeDriver: true
-        }),
-        Animated.spring(scaleValue, {
-          toValue: 1,
-          friction: 5,
-          tension: 40,
-          useNativeDriver: true
-        })
-      ]).start();
-    }
+    Animated.spring(opacityValue, {
+      toValue: isActive ? 1 : 0.7,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start();
   }, [isActive]);
   
   return (
@@ -122,8 +175,14 @@ function TabBarButton({ onPress, children, isActive }: any) {
       onPress={onPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: isActive }}
+      accessibilityLabel={`${route.name} tab`}
     >
-      <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
+      <Animated.View style={{ 
+        transform: [{ scale: scaleValue }],
+        opacity: opacityValue
+      }}>
         {children}
       </Animated.View>
     </TouchableWithoutFeedback>
@@ -133,81 +192,100 @@ function TabBarButton({ onPress, children, isActive }: any) {
 // Custom tab bar component for better control
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { state: appState } = React.useContext(AppContext);
+  const cartItemCount = appState.cart.reduce((count, item) => count + item.quantity, 0);
   
   return (
     <View style={[
-      styles.tabBarContainer,
-      { paddingBottom: Math.max(insets.bottom, 10) }
+      styles.tabBarWrapper,
+      { 
+        paddingBottom: Math.max(insets.bottom, 12),
+        paddingTop: 8
+      }
     ]}>
-      {state.routes.map((route: any, index: number) => {
-        const { options } = descriptors[route.key];
-        const label =
-          options.tabBarLabel !== undefined
-            ? options.tabBarLabel
-            : options.title !== undefined
-            ? options.title
-            : route.name;
+      {/* Main navbar container */}
+      <View style={styles.navbarContainer}>
+        {/* Menu wrapper */}
+        <View style={styles.menuWrapper}>
+          {state.routes.map((route: any, index: number) => {
+            const { options } = descriptors[route.key];
+            const isFocused = state.index === index;
 
-        const isFocused = state.index === index;
+            // Icon mapping
+            let iconName: string = 'help-circle-outline';
+            let label: string = route.name;
+            
+            if (route.name === 'Home') {
+              iconName = 'home-outline';
+              label = 'Home';
+            } else if (route.name === 'Products') {
+              iconName = 'grid-outline';
+              label = 'Explore';
+            } else if (route.name === 'Cart') {
+              iconName = 'bag-outline';
+              label = 'Cart';
+            } else if (route.name === 'Rewards') {
+              iconName = 'star-outline';
+              label = 'Rewards';
+            } else if (route.name === 'Profile') {
+              iconName = 'person-outline';
+              label = 'Profile';
+            }
 
-        let iconName: string = 'help-circle-outline';
-        if (route.name === 'Home') iconName = 'home';
-        else if (route.name === 'Products') iconName = isFocused ? 'compass' : 'compass-outline';
-        else if (route.name === 'Cart') iconName = isFocused ? 'cart' : 'cart-outline';
-        else if (route.name === 'Rewards') iconName = isFocused ? 'trophy' : 'trophy-outline';
-        else if (route.name === 'Chat') iconName = isFocused ? 'chatbubble' : 'chatbubble-outline';
-        else if (route.name === 'Profile') iconName = isFocused ? 'person' : 'person-outline';
+            const onPress = () => {
+              const event = navigation.emit({
+                type: 'tabPress',
+                target: route.key,
+                canPreventDefault: true,
+              });
 
-        const onPress = () => {
-          const event = navigation.emit({
-            type: 'tabPress',
-            target: route.key,
-            canPreventDefault: true,
-          });
+              if (!isFocused && !event.defaultPrevented) {
+                HapticFeedback.selection();
+                navigation.navigate(route.name);
+              }
+            };
 
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
-          }
-        };
-
-        // Special styles for Home button
-        const isHome = route.name === 'Home';
-
-        return (
-          <View key={route.key} style={styles.tabItemContainer}>
-            <TabBarButton
-              onPress={onPress}
-              isActive={isFocused}
-            >
-              <View style={[
-                styles.tabButton,
-                isHome && styles.homeTabButton
-              ]}>
-                <View style={[
-                  styles.tabIconContainer,
-                  isHome && styles.homeIconContainer,
-                  isFocused && (isHome ? styles.activeHomeIconContainer : styles.activeTabIconContainer)
-                ]}>
-                  <Ionicons 
-                    name={iconName as any} 
-                    size={isHome ? 24 : 24} 
-                    color={isFocused ? (isHome ? '#FFFFFF' : COLORS.primary) : (isHome ? '#FFFFFF' : COLORS.inactive)} 
-                  />
+            return (
+              <TabBarButton
+                key={route.key}
+                onPress={onPress}
+                isActive={isFocused}
+                route={route}
+              >
+                <View style={styles.tabItemWrapper}>
+                  <View style={[
+                    styles.menuButtonContainer,
+                    isFocused && styles.activeMenuButton
+                  ]}>
+                    <View style={styles.menuButton}>
+                      <View style={styles.iconContainer}>
+                        <Ionicons 
+                          name={iconName as any} 
+                          size={22} 
+                          color={isFocused ? COLORS.accent : COLORS.inactive} 
+                        />
+                        
+                        {/* Cart badge with animation */}
+                        {route.name === 'Cart' && cartItemCount > 0 && (
+                          <AnimatedCartBadge count={cartItemCount} />
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                  
+                  {/* Tab label */}
+                  <Text style={[
+                    styles.tabLabel,
+                    isFocused && styles.activeTabLabel
+                  ]}>
+                    {label}
+                  </Text>
                 </View>
-                
-                {/* Badge for cart if needed */}
-                {route.name === 'Cart' && route.params?.count > 0 && (
-                  <Animated.View style={styles.tabBadge}>
-                    <Text style={styles.tabBadgeText}>
-                      {route.params.count > 9 ? '9+' : route.params.count}
-                    </Text>
-                  </Animated.View>
-                )}
-              </View>
-            </TabBarButton>
-          </View>
-        );
-      })}
+              </TabBarButton>
+            );
+          })}
+        </View>
+      </View>
     </View>
   );
 }
@@ -220,35 +298,16 @@ function MainTabs() {
   return (
     // @ts-ignore - Ignore ID requirement
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
-          if (route.name === 'Home') iconName = 'home';
-          else if (route.name === 'Products') iconName = focused ? 'compass' : 'compass-outline';
-          else if (route.name === 'Cart') iconName = focused ? 'cart' : 'cart-outline';
-          else if (route.name === 'Rewards') iconName = focused ? 'trophy' : 'trophy-outline';
-          else if (route.name === 'Chat') iconName = focused ? 'chatbubble' : 'chatbubble-outline';
-          else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
-          return (
-            <View style={styles.tabIconContainer}>
-              <Ionicons name={iconName as any} size={size} color={color} />
-            </View>
-          );
-        },
-        tabBarLabel: ({ focused }) => {
-          let label = route.name;
-          if (route.name === 'Home') label = 'Home';
-          else if (route.name === 'Products') label = 'Explore';
-          else if (route.name === 'Cart') label = 'Cart';
-          else if (route.name === 'Rewards') label = 'Rewards';
-          else if (route.name === 'Chat') label = 'Chat';
-          else if (route.name === 'Profile') label = 'Profile';
-          return <Text style={{ ...TYPOGRAPHY.label, color: focused ? COLORS.primary : COLORS.inactive }}>{label}</Text>;
-        },
+      tabBar={(props) => <CustomTabBar {...props} />}
+      screenOptions={{
         headerShown: false,
-        tabBarShowLabel: true,
-      })}
+        tabBarHideOnKeyboard: true,
+      }}
     >
+      <Tab.Screen 
+        name="Home" 
+        component={HomeScreen}
+      />
       <Tab.Screen 
         name="Products" 
         component={ProductsScreen}
@@ -257,10 +316,6 @@ function MainTabs() {
         name="Cart" 
         component={CartScreen}
         initialParams={{ count: cartItemCount }}
-      />
-      <Tab.Screen 
-        name="Home" 
-        component={HomeScreen}
       />
       <Tab.Screen 
         name="Rewards" 
@@ -397,7 +452,11 @@ export default function App() {
                   />
                   <Stack.Screen 
                     name="DeliveryLocationScreen" 
-                    component={DeliveryLocationScreen}
+                    component={UberStyleLocationScreen}
+                  />
+                  <Stack.Screen 
+                    name="SavedLocations" 
+                    component={SavedLocationsScreen}
                   />
                 </Stack.Navigator>
               </NavigationContainer>
@@ -445,86 +504,102 @@ const CartNotificationConsumer = React.memo(({ navigateToCart }: { navigateToCar
 CartNotificationConsumer.displayName = 'CartNotificationConsumer';
 
 const styles = StyleSheet.create({
-  tabBarContainer: {
-    flexDirection: 'row',
+  tabBarWrapper: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: COLORS.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
-    paddingTop: 8,
-    paddingBottom: 0,
-    shadowColor: 'rgba(0,0,0,0.08)',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 8,
-    height: 80,
-    justifyContent: 'space-around',
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
+    minHeight: 80,
+  },
+  navbarContainer: {
+    backgroundColor: COLORS.card,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.sm,
+  },
+  menuWrapper: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     width: '100%',
+    maxWidth: '95%',
+    alignSelf: 'center',
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.xs,
   },
-  tabItemContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 60,
-    width: 64,
-  },
-  homeTabButton: {
-    position: 'relative',
-    height: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-    width: 64,
-  },
-  tabIconContainer: {
+  menuButtonContainer: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 12,
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  homeIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  menuButton: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  activeMenuButton: {
     backgroundColor: COLORS.primary,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    ...SHADOWS.medium,
   },
-  activeTabIconContainer: {
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    transform: [{ scale: 1.05 }],
+  iconContainer: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
   },
-  activeHomeIconContainer: {
-    transform: [{ scale: 1.1 }],
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  tabBadge: {
+  cartBadge: {
     position: 'absolute',
-    top: 6,
-    right: '30%',
+    top: -8,
+    right: -8,
     backgroundColor: COLORS.error,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 4,
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: COLORS.card,
+    zIndex: 1,
+    ...SHADOWS.light,
   },
-  tabBadgeText: {
+  cartBadgeText: {
     ...TYPOGRAPHY.tiny,
     color: COLORS.accent,
-    fontWeight: 'bold',
+    fontWeight: FONT_WEIGHTS.bold,
+    fontSize: 10,
+    lineHeight: 12,
+  },
+  tabItemWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 48,
+  },
+  tabLabel: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+    textAlign: 'center',
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+  activeTabLabel: {
+    color: COLORS.primary,
+    fontWeight: FONT_WEIGHTS.semibold,
   },
 }); 

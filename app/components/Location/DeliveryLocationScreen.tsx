@@ -1,57 +1,37 @@
-import React, { useCallback } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-
+import React from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import DeliveryLocationPicker from './DeliveryLocationPicker';
 import { LocationSuggestion } from '../../types/location';
-import { COLORS } from '../../utils/theme';
+import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 
-interface DeliveryLocationScreenProps {
-  onLocationSelect?: (location: LocationSuggestion) => void;
-}
-
-interface RouteParams {
-  onLocationSelect?: (location: LocationSuggestion) => void;
-  initialLocation?: LocationSuggestion;
-}
-
-const DeliveryLocationScreen: React.FC<DeliveryLocationScreenProps> = ({
-  onLocationSelect
-}) => {
+const DeliveryLocationScreen: React.FC = () => {
   const navigation = useNavigation();
-  const route = useRoute();
-  const params = route.params as RouteParams || {};
-
-  const handleLocationSelect = useCallback((location: LocationSuggestion) => {
-    console.log('Location selected:', location);
-    
-    // Use callback from route params or props
-    const callback = params.onLocationSelect || onLocationSelect;
-    if (callback) {
-      callback(location);
+  const { setDeliveryLocation } = useDeliveryLocation();
+  
+  const handleLocationSelect = async (location: LocationSuggestion) => {
+    try {
+      // Set the selected location globally
+      await setDeliveryLocation(location);
+      
+      // Navigate back to the previous screen
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      }
+    } catch (error) {
+      console.error('Error setting delivery location:', error);
     }
-    
-    // Navigate back
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    }
-  }, [navigation, onLocationSelect, params.onLocationSelect]);
+  };
 
   return (
-    <View style={styles.container}>
-      <DeliveryLocationPicker 
+    <SafeAreaView style={{ flex: 1 }}>
+      <DeliveryLocationPicker
         onLocationSelect={handleLocationSelect}
-        initialLocation={params.initialLocation}
+        initialLocation={null}
+        placeholder="Enter delivery address"
       />
-    </View>
+    </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-});
 
 export default DeliveryLocationScreen;

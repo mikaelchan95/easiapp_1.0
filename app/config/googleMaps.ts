@@ -17,63 +17,65 @@ export const GOOGLE_MAPS_CONFIG = {
     longitudeDelta: 0.05,
   },
   
-  // Geocoding settings
+  // Enhanced geocoding settings for Singapore
   geocoding: {
     region: 'sg',
     language: 'en',
     components: 'country:sg', // Restrict to Singapore
+    // Additional parameters for better postal code support
+    bounds: '1.1496,103.5983|1.4784,104.0120', // Singapore bounds
   },
   
-  // Places autocomplete settings
+  // Enhanced Places autocomplete settings
   autocomplete: {
-    types: ['establishment', 'geocode'],
+    types: ['establishment', 'geocode', 'address'], // Added 'address' for better postal code support
     componentRestrictions: { country: 'sg' },
-    fields: ['formatted_address', 'geometry', 'name', 'place_id', 'types'],
+    fields: ['formatted_address', 'geometry', 'name', 'place_id', 'types', 'address_components'],
+    // Additional settings for Singapore
+    strictbounds: true, // Strictly enforce Singapore bounds
+    bounds: {
+      northeast: { lat: 1.4784, lng: 104.0120 },
+      southwest: { lat: 1.1496, lng: 103.5983 }
+    },
   },
   
-  // Delivery zones for Singapore
+  // Delivery zones for Singapore - We deliver anywhere in Singapore!
   deliveryZones: [
+    {
+      name: 'Singapore Island-wide',
+      center: { latitude: 1.3521, longitude: 103.8198 }, // Singapore center
+      radius: 50, // Covers all of Singapore
+      isAvailable: true,
+      specialPricing: false,
+    },
+    // Premium zones with special pricing (optional)
     {
       name: 'Marina Bay',
       center: { latitude: 1.2834, longitude: 103.8607 },
-      radius: 5, // kilometers
+      radius: 3, // kilometers
       isAvailable: true,
       specialPricing: true,
     },
     {
       name: 'Central Business District',
       center: { latitude: 1.2789, longitude: 103.8536 },
-      radius: 3,
+      radius: 2,
       isAvailable: true,
-      specialPricing: false,
+      specialPricing: true,
     },
     {
       name: 'Orchard Road',
       center: { latitude: 1.3048, longitude: 103.8318 },
-      radius: 3,
-      isAvailable: true,
-      specialPricing: false,
-    },
-    {
-      name: 'Clarke Quay',
-      center: { latitude: 1.2888, longitude: 103.8467 },
       radius: 2,
       isAvailable: true,
-      specialPricing: false,
+      specialPricing: true,
     },
     {
       name: 'Sentosa',
       center: { latitude: 1.2494, longitude: 103.8303 },
       radius: 4,
       isAvailable: true,
-      specialPricing: false,
-    },
-    {
-      name: 'Jurong East',
-      center: { latitude: 1.3329, longitude: 103.7436 },
-      radius: 5,
-      isAvailable: true,
-      specialPricing: false,
+      specialPricing: true,
     },
   ],
   

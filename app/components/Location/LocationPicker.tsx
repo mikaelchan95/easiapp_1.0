@@ -417,7 +417,27 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
   // Get current location on mount
   useEffect(() => {
-    handleRefreshLocation();
+    const loadCurrentLocationConditionally = async () => {
+      try {
+        // Check user preferences before auto-loading current location
+        const storedPreferences = await AsyncStorage.getItem('@easiapp:location_preferences');
+        let shouldAutoLoadCurrent = false;
+        
+        if (storedPreferences) {
+          const preferences = JSON.parse(storedPreferences);
+          shouldAutoLoadCurrent = preferences.autoSuggestCurrent === true; // Only if explicitly enabled
+        }
+        
+        if (shouldAutoLoadCurrent) {
+          handleRefreshLocation();
+        }
+      } catch (error) {
+        console.error('Error checking location preferences:', error);
+        // Don't load current location on error
+      }
+    };
+    
+    loadCurrentLocationConditionally();
   }, [handleRefreshLocation]);
 
   return (
