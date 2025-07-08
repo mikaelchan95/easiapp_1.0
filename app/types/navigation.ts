@@ -39,6 +39,56 @@ export type RootStackParamList = {
   Support: undefined;
   Referrals: undefined;
   LocationPickerScreen: undefined;
+  // Company-related screens
+  CompanyProfile: undefined;
+  TeamManagement: undefined;
+  PendingApprovals: undefined;
+  CompanyReports: undefined;
+  EditCompanyInfo: undefined;
+  EditTeamMember: { userId: string };
+  BillingInvoices: undefined;
+  // Auth screen
+  Auth: undefined;
+};
+
+export type AppStackParamList = {
+  Main: undefined;
+  Home: undefined;
+  Products: undefined;
+  Cart: undefined;
+  Checkout: undefined;
+  Chat: undefined;
+  Rewards: undefined;
+  Profile: undefined;
+  ProductDetail: { productId: string };
+  OrderSuccess: { orderId: string; deliveryDate: string; deliveryTime: string };
+  OrderTracking: { orderId: string };
+  SmartSearch: undefined;
+  ThemeShowcase: undefined;
+  MomentumShowcase: undefined;
+  LocationPicker: undefined;
+  LocationPickerDemo: undefined;
+  UberStyleLocationPicker: undefined;
+  DeliveryLocationScreen: {
+    onLocationSelect?: (location: LocationSuggestion) => void;
+    currentLocation?: LocationSuggestion;
+  };
+  SavedLocations: undefined;
+  LocationPickerScreen: undefined;
+  OrderHistory: undefined;
+  Wishlist: undefined;
+  Reviews: undefined;
+  Support: undefined;
+  // Company-related screens
+  CompanyProfile: undefined;
+  TeamManagement: undefined;
+  PendingApprovals: undefined;
+  CompanyReports: undefined;
+  EditCompanyInfo: undefined;
+  EditTeamMember: { userId: string };
+  BillingInvoices: undefined;
+  // Auth screen
+  Auth: undefined;
 };
 
 declare global {

@@ -36,6 +36,24 @@ interface UberStyleLocationPickerProps {
   onLocationSelect: (location: LocationSuggestion) => void;
 }
 
+// Helper function to get appropriate icon for saved locations
+const getSavedLocationIcon = (iconName: string): keyof typeof Ionicons.glyphMap => {
+  const iconMap: { [key: string]: keyof typeof Ionicons.glyphMap } = {
+    'home': 'home',
+    'business': 'business',
+    'work': 'briefcase',
+    'briefcase': 'briefcase',
+    'heart': 'heart',
+    'star': 'star',
+    'location': 'location',
+    'school': 'school',
+    'car': 'car',
+    'restaurant': 'restaurant',
+  };
+  
+  return iconMap[iconName] || 'location';
+};
+
 // Header Component
 const LocationHeader: React.FC<{ onBackPress: () => void }> = ({ onBackPress }) => (
   <View style={[styles.header, { backgroundColor: COLORS.card }]}>
@@ -60,52 +78,7 @@ const SheetHeader: React.FC = () => (
   </View>
 );
 
-// Saved Location Item Component
-const SavedLocationItem: React.FC<{
-  item: SavedAddress;
-  onPress: (address: SavedAddress) => void;
-  onQuickSave?: (address: SavedAddress) => void;
-}> = ({ item, onPress, onQuickSave }) => (
-  <TouchableOpacity 
-    style={styles.savedLocationCard}
-    onPress={() => onPress(item)}
-    activeOpacity={0.7}
-  >
-    <View style={[styles.savedLocationIcon, { backgroundColor: item.color || COLORS.primary }]}>
-      <Ionicons 
-        name={item.icon as any || 'location'} 
-        size={20} 
-        color={COLORS.card} 
-      />
-    </View>
-    <View style={styles.savedLocationInfo}>
-      <Text style={styles.savedLocationLabel} numberOfLines={1}>
-        {item.label}
-      </Text>
-      <Text style={styles.savedLocationAddress} numberOfLines={1}>
-        {item.location.title}
-      </Text>
-      {item.isDefault && (
-        <View style={styles.defaultBadge}>
-          <Text style={styles.defaultBadgeText}>Default</Text>
-        </View>
-      )}
-    </View>
-    {onQuickSave && (
-      <TouchableOpacity 
-        style={styles.quickSaveButton}
-        onPress={(e) => {
-          e.stopPropagation();
-          onQuickSave(item);
-        }}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="bookmark-outline" size={16} color={COLORS.primary} />
-      </TouchableOpacity>
-    )}
-    <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
-  </TouchableOpacity>
-);
+
 
 // Current Location Button Component
 const CurrentLocationButton: React.FC<{
@@ -660,7 +633,7 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
               inputRef={inputRef}
             />
             
-            {showSavedLocations && (
+            {showSavedLocations && savedAddresses.length > 0 && (
               <View style={styles.savedLocationsContainer}>
                 <View style={styles.savedLocationsHeader}>
                   <Text style={styles.savedLocationsTitle}>Saved Locations</Text>
@@ -668,25 +641,66 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
                     style={styles.manageButton}
                     onPress={() => {
                       // Navigate to saved locations management
-                      navigation.navigate('SavedLocations');
+                      navigation.navigate('SavedLocations' as never);
                     }}
                   >
                     <Text style={styles.manageButtonText}>Manage</Text>
                   </TouchableOpacity>
                 </View>
-                <FlatList
-                  data={savedAddresses}
-                  keyExtractor={(item) => item.id}
-                  renderItem={({ item }) => (
-                    <SavedLocationItem
-                      item={item}
-                      onPress={handleSavedLocationSelect}
-                      onQuickSave={handleQuickSave}
-                    />
-                  )}
-                  scrollEnabled={false}
-                  nestedScrollEnabled={false}
-                />
+                
+                {/* Quick Select Cards */}
+                <View style={styles.quickSelectContainer}>
+                  {savedAddresses.slice(0, 2).map((item) => {
+                    const iconName = getSavedLocationIcon(item.icon || 'home');
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={styles.quickSelectCard}
+                        onPress={() => handleSavedLocationSelect(item)}
+                        activeOpacity={0.7}
+                        accessibilityLabel={`Select ${item.label}`}
+                      >
+                        <View style={styles.quickSelectIcon}>
+                                                   <Ionicons 
+                           name={iconName} 
+                           size={20} 
+                           color={COLORS.buttonText} 
+                         />
+                        </View>
+                        <Text style={styles.quickSelectLabel} numberOfLines={1}>
+                          {item.label}
+                        </Text>
+                        <Text style={styles.quickSelectAddress} numberOfLines={2}>
+                          {item.location.title}
+                        </Text>
+                        {item.isDefault && (
+                          <View style={styles.quickSelectBadge}>
+                            <Text style={styles.quickSelectBadgeText}>Default</Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* Show More Button if there are more than 2 locations */}
+                {savedAddresses.length > 2 && (
+                  <TouchableOpacity 
+                    style={styles.showMoreButton}
+                    onPress={() => {
+                      navigation.navigate('SavedLocations' as never);
+                    }}
+                    accessibilityLabel="View all saved locations"
+                  >
+                    <View style={styles.showMoreContent}>
+                      <Ionicons name="location" size={20} color={COLORS.text} />
+                      <Text style={styles.showMoreText}>
+                        View all {savedAddresses.length} saved locations
+                      </Text>
+                      <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+                    </View>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
             
@@ -783,8 +797,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    minHeight: 400,
-    maxHeight: '85%',
+    minHeight: '60%',
+    maxHeight: '90%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
@@ -921,7 +935,8 @@ const styles = StyleSheet.create({
   suggestionsContainer: {
     flex: 1,
     paddingHorizontal: 20,
-    minHeight: 200,
+    minHeight: 150,
+    maxHeight: 400,
   },
   searchResultsTitle: {
     fontSize: 16,
@@ -931,6 +946,7 @@ const styles = StyleSheet.create({
   },
   suggestionsList: {
     flex: 1,
+    maxHeight: 300,
   },
   suggestionItem: {
     flexDirection: 'row',
@@ -978,24 +994,27 @@ const styles = StyleSheet.create({
   },
   mapContainerKeyboard: {
     // Reduce map height when keyboard is visible to give more space to input
-    flex: 0.3,
-    minHeight: 150,
+    flex: 0.2,
+    minHeight: 120,
   },
   locationSheetKeyboard: {
     // Ensure the sheet has enough space and proper scrolling when keyboard is visible
     flex: 1,
-    minHeight: 300,
-    maxHeight: '70%',
+    minHeight: '70%',
+    maxHeight: '95%',
   },
   sheetContent: {
     flex: 1,
+    paddingBottom: 20,
   },
   sheetContentContainer: {
     flexGrow: 1,
     paddingBottom: 20,
   },
   savedLocationsContainer: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    maxHeight: 200,
   },
   savedLocationsTitle: {
     fontSize: 16,
@@ -1003,47 +1022,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: 12,
   },
-  savedLocationCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: COLORS.background,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  savedLocationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  savedLocationInfo: {
-    flex: 1,
-  },
-  savedLocationLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: COLORS.text,
-    marginBottom: 2,
-  },
-  savedLocationAddress: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
-  defaultBadge: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    marginTop: 4,
-  },
-  defaultBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.card,
-  },
+
   savedLocationsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1086,6 +1065,77 @@ const styles = StyleSheet.create({
   savePromptText: {
     color: COLORS.text,
     fontSize: 16,
+    fontWeight: '500',
+  },
+  // Quick Select Styles
+  quickSelectContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  quickSelectCard: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    minHeight: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.light,
+  },
+  quickSelectIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.buttonBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  quickSelectLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  quickSelectAddress: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  quickSelectBadge: {
+    backgroundColor: COLORS.buttonBg,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginTop: 4,
+  },
+  quickSelectBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.buttonText,
+  },
+  showMoreButton: {
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginTop: 8,
+  },
+  showMoreContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  showMoreText: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.text,
     fontWeight: '500',
   },
 });

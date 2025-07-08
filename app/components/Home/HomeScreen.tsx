@@ -25,6 +25,7 @@ import { HapticFeedback } from '../../utils/haptics';
 import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 import { useAppContext } from '../../context/AppContext';
 import DeliveryLocationHeader from '../Location/DeliveryLocationHeader';
+import { isCompanyUser } from '../../types/user';
 
 type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -33,8 +34,33 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [currentBanner, setCurrentBanner] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  const { state } = useAppContext();
+  const { state, testSupabaseIntegration } = useAppContext();
   const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
+  
+  // Get user data from Supabase
+  const user = state.user;
+  const company = state.company;
+  
+  // Test Supabase integration behind the scenes on component mount
+  useEffect(() => {
+    const testIntegration = async () => {
+      try {
+        console.log('🏠 Home: Testing Supabase integration in background...');
+        const success = await testSupabaseIntegration();
+        if (success) {
+          console.log('🏠 Home: Background Supabase test completed successfully');
+        } else {
+          console.log('🏠 Home: Background Supabase test failed, using mock data');
+        }
+      } catch (error) {
+        console.log('🏠 Home: Background Supabase test error:', error);
+      }
+    };
+
+    testIntegration();
+  }, []);
+  
+
   
   // Auto-rotate banner every 6 seconds
   useEffect(() => {
@@ -49,21 +75,34 @@ export default function HomeScreen() {
     HapticFeedback.medium();
     setRefreshing(true);
     
-    // Simulate data refresh
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Test Supabase integration on refresh
+    try {
+      await testSupabaseIntegration();
+    } catch (error) {
+      console.log('🏠 Home: Error during refresh:', error);
+    }
     
-    // You can add actual data refresh logic here
-    // For example: refetch products, update balances, etc.
+    // Simulate additional data refresh
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     HapticFeedback.success();
     setRefreshing(false);
-  }, []);
+  }, [testSupabaseIntegration]);
   
   // Memoized product sections for better performance
   const productSections = React.useMemo(() => {
     const featuredProducts = products.filter(p => p.rating >= 4.9).slice(0, 6);
     const newArrivals = products.slice(0, 3);
-    const recommended = products.slice(2, 5);
+    
+    // Personalize recommendations based on user type
+    let recommended = products.slice(2, 5);
+    if (user && isCompanyUser(user)) {
+      // For company users, prioritize premium/business-oriented products
+      recommended = products.filter(p => p.price >= 100).slice(0, 3);
+    } else if (user) {
+      // For individual users, show popular mid-range products
+      recommended = products.filter(p => p.rating >= 4.5 && p.price < 200).slice(0, 3);
+    }
     
     return {
       featured: featuredProducts,
@@ -71,7 +110,7 @@ export default function HomeScreen() {
       newArrivals,
       recommended
     };
-  }, []);
+  }, [user]);
   
   const handleProductPress = useCallback((product: Product) => {
     navigation.navigate('ProductDetail', { id: product.id });
@@ -130,9 +169,12 @@ export default function HomeScreen() {
             location={deliveryLocation}
             onPress={handleAddressPress}
             showDeliveryInfo={true}
+            showSavedLocations={false}
             style={styles.topLocationHeader}
           />
         </View>
+        
+
         
         {/* Mobile Header */}
         <MobileHeader
@@ -161,6 +203,7 @@ export default function HomeScreen() {
           <BalanceCards 
             onCreditClick={handleCreditPress}
             onRewardsClick={handleRewardsPress}
+            isLoggedIn={!!user}
           />
         </View>
         

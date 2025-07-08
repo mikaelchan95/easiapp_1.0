@@ -1,37 +1,66 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   TouchableOpacity, 
   ScrollView, 
-  SafeAreaView,
-  Pressable,
   Alert,
-  StatusBar
+  StatusBar,
+  Image,
+  ActivityIndicator,
+  Animated,
+  LayoutAnimation,
+  Platform,
+  UIManager
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
-import { AppContext } from '../../context/AppContext';
+import { AppContext, getUserRole } from '../../context/AppContext';
 import MobileHeader from '../Layout/MobileHeader';
+import { isCompanyUser, CompanyUser, IndividualUser } from '../../types/user';
+import { formatPrice } from '../../utils/pricing';
+import { getUsersByCompany, getPendingApprovalsForUser } from '../../data/mockUsers';
+import { formatStatCurrency, formatStatNumber } from '../../utils/formatting';
+import { useAppContext } from '../../context/AppContext';
 
-// Mock user data with more details
-const user = {
-  name: 'Jane Doe',
-  email: 'jane@example.com',
-  phone: '+65 8123 4567',
-  memberSince: 'March 2023',
-  totalOrders: 12,
-  rewardPoints: 1250,
-  preferredStore: 'Marina Bay'
-};
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { state } = useContext(AppContext);
+  const { state, signOut, updateUserProfile } = useContext(AppContext);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCompanyExpanded, setIsCompanyExpanded] = useState(false);
+  const { testSupabaseIntegration, loadUserFromSupabase } = useAppContext();
+  
+  const { user, company } = state;
+  const pendingApprovals = user ? getPendingApprovalsForUser(user.id) : [];
+  const teamMembers = company ? getUsersByCompany(company.id) : [];
+
+  // Test Supabase integration behind the scenes on component mount
+  useEffect(() => {
+    const testIntegration = async () => {
+      try {
+        console.log('🔄 Testing Supabase integration in background...');
+        const success = await testSupabaseIntegration();
+        if (success) {
+          console.log('✅ Background Supabase test completed successfully');
+        } else {
+          console.log('⚠️ Background Supabase test failed, using mock data');
+        }
+      } catch (error) {
+        console.log('⚠️ Background Supabase test error:', error);
+      }
+    };
+
+    testIntegration();
+  }, []);
 
   const handleLogout = () => {
     Alert.alert(
@@ -39,7 +68,22 @@ export default function ProfileScreen() {
       'Are you sure you want to sign out?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: 'destructive', onPress: () => console.log('Logged out') }
+        { 
+          text: 'Sign Out', 
+          style: 'destructive', 
+          onPress: async () => {
+            setIsLoading(true);
+            const success = await signOut();
+            setIsLoading(false);
+            
+            if (success) {
+              // Navigation will be handled by app state change
+              console.log('Successfully signed out');
+            } else {
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
+          }
+        }
       ]
     );
   };
@@ -49,6 +93,17 @@ export default function ProfileScreen() {
     
     // Navigate to specific screens
     switch (feature) {
+      case 'Company Profile':
+        navigation.navigate('CompanyProfile');
+        break;
+      case 'Team Management':
+        navigation.navigate('TeamManagement');
+        break;
+      case 'Pending Approvals':
+        // TODO: Implement PendingApprovals screen
+        // navigation.navigate('PendingApprovals');
+        console.log('Navigate to Pending Approvals - not implemented yet');
+        break;
       case 'Order History':
         navigation.navigate('OrderHistory');
         break;
@@ -66,6 +121,266 @@ export default function ProfileScreen() {
     }
   };
 
+  const toggleCompanyExpansion = () => {
+    LayoutAnimation.configureNext({
+      duration: 300,
+      create: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.opacity,
+      },
+      update: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+      },
+    });
+    setIsCompanyExpanded(!isCompanyExpanded);
+  };
+
+  // Load user data behind the scenes if needed
+  const loadUserData = async (userId: string) => {
+    try {
+      const userData = await loadUserFromSupabase(userId);
+      if (userData) {
+        console.log('✅ Successfully loaded user data behind the scenes:', userData.name);
+      }
+    } catch (error) {
+      console.log('⚠️ Error loading user data:', error);
+    }
+  };
+
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
+        <View style={[styles.statusBarSpacer, { height: insets.top }]} />
+        <View style={styles.headerContainer}>
+          <MobileHeader 
+            title="Profile" 
+            showBackButton={false} 
+            showSearch={false}
+            showCartButton={false}
+          />
+        </View>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.noUserText}>Please sign in to view your profile</Text>
+        </View>
+      </View>
+    );
+  }
+
+  const renderCompanySection = () => {
+    if (!isCompanyUser(user) || !company) return null;
+
+    const companyUser = user as CompanyUser;
+    
+    return (
+      <>
+        {/* Modern Collapsible Company Widget */}
+        <TouchableOpacity 
+          style={styles.modernCompanyCard}
+          onPress={toggleCompanyExpansion}
+          activeOpacity={0.98}
+        >
+          {/* Compact Header */}
+          <View style={styles.modernCompanyHeader}>
+            <View style={styles.modernCompanyIcon}>
+              <Ionicons name="business" size={24} color={COLORS.text} />
+            </View>
+            
+            <View style={styles.modernCompanyInfo}>
+              <Text style={styles.modernCompanyName}>{company.name}</Text>
+              <View style={styles.modernCompanyMeta}>
+                <View style={styles.modernCompanyBadge}>
+                  <Text style={styles.modernCompanyBadgeText}>
+                    {company.status === 'active' ? 'Verified' : 'Pending'}
+                  </Text>
+                </View>
+                <Text style={styles.modernCompanyUEN}>UEN: {company.uen}</Text>
+              </View>
+            </View>
+            
+            <View style={styles.modernExpandButton}>
+              <Ionicons 
+                name={isCompanyExpanded ? "chevron-up" : "chevron-down"} 
+                size={20} 
+                color={COLORS.textSecondary} 
+              />
+            </View>
+          </View>
+
+          {/* Compact Stats - Always Visible */}
+          <View style={styles.modernStatsContainer}>
+            <View style={styles.modernStatItem}>
+              <Text style={styles.modernStatNumber}>
+                {formatStatCurrency(company.currentCredit || 0)}
+              </Text>
+              <Text style={styles.modernStatLabel}>Used</Text>
+            </View>
+            <View style={styles.modernStatDivider} />
+            <View style={styles.modernStatItem}>
+              <Text style={styles.modernStatNumber}>
+                {formatStatCurrency(company.creditLimit || 0)}
+              </Text>
+              <Text style={styles.modernStatLabel}>Limit</Text>
+            </View>
+            <View style={styles.modernStatDivider} />
+            <View style={styles.modernStatItem}>
+              <Text style={styles.modernStatNumber}>{company.paymentTerms}</Text>
+              <Text style={styles.modernStatLabel}>Terms</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Expanded Content - Company Quick Actions */}
+        {isCompanyExpanded && (
+          <View style={styles.expandedSection}>
+            <Text style={styles.expandedSectionTitle}>Company Management</Text>
+            <View style={styles.modernQuickActionsGrid}>
+              <TouchableOpacity 
+                style={styles.modernQuickActionItem}
+                onPress={() => handleFeaturePress('Team Management')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.modernQuickActionIcon}>
+                  <Ionicons name="people-outline" size={20} color={COLORS.text} />
+                </View>
+                <Text style={styles.modernQuickActionLabel}>Team</Text>
+                {teamMembers.length > 0 && (
+                  <View style={styles.modernQuickActionBadge}>
+                    <Text style={styles.modernQuickActionBadgeText}>{teamMembers.length}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.modernQuickActionItem}
+                onPress={() => handleFeaturePress('Pending Approvals')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.modernQuickActionIcon}>
+                  <MaterialIcons name="approval" size={20} color={COLORS.text} />
+                </View>
+                <Text style={styles.modernQuickActionLabel}>Approvals</Text>
+                {pendingApprovals.length > 0 && (
+                  <View style={styles.modernQuickActionBadge}>
+                    <Text style={styles.modernQuickActionBadgeText}>{pendingApprovals.length}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.modernQuickActionItem}
+                onPress={() => handleFeaturePress('Order History')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.modernQuickActionIcon}>
+                  <Ionicons name="receipt-outline" size={20} color={COLORS.text} />
+                </View>
+                <Text style={styles.modernQuickActionLabel}>Orders</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.modernQuickActionItem}
+                onPress={() => handleFeaturePress('Company Reports')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.modernQuickActionIcon}>
+                  <Ionicons name="bar-chart-outline" size={20} color={COLORS.text} />
+                </View>
+                <Text style={styles.modernQuickActionLabel}>Reports</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Quick Access to Company Profile */}
+            <TouchableOpacity 
+              style={styles.modernProfileButton}
+              onPress={() => handleFeaturePress('Company Profile')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.modernProfileButtonText}>View Full Company Profile</Text>
+              <Ionicons name="arrow-forward" size={16} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </>
+    );
+  };
+
+  const renderUserProfile = () => {
+    const isCompany = isCompanyUser(user);
+    const userRole = getUserRole(user);
+    
+    return (
+      <View style={styles.profileCard}>
+        <View style={styles.profileHeader}>
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatar}>
+              {user.profileImage ? (
+                <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />
+              ) : (
+                <Ionicons name="person" size={32} color={COLORS.card} />
+              )}
+            </View>
+            {isCompany && (
+              <View style={styles.roleBadge}>
+                <Text style={styles.roleBadgeText}>
+                  {(user as CompanyUser).role.toUpperCase()}
+                </Text>
+              </View>
+            )}
+          </View>
+          
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{user.name}</Text>
+            <Text style={styles.userEmail}>{user.email}</Text>
+            <Text style={styles.userPhone}>{user.phone}</Text>
+            {isCompany && (
+              <>
+                <Text style={styles.userPosition}>
+                  {(user as CompanyUser).position} • {(user as CompanyUser).department}
+                </Text>
+                <Text style={styles.userRole}>
+                  {userRole === 'trade' ? 'Trade Pricing' : 'Retail Pricing'}
+                </Text>
+              </>
+            )}
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.editButton}
+            onPress={() => handleFeaturePress('Edit Profile')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="create-outline" size={20} color={COLORS.text} />
+          </TouchableOpacity>
+        </View>
+
+        {/* User Stats - Different for Individual vs Company */}
+        {!isCompany && (
+          <View style={styles.modernStatsContainer}>
+            <View style={styles.modernStatItem}>
+              <Text style={styles.modernStatNumber}>
+                {formatStatNumber((user as IndividualUser).totalOrders || 0)}
+              </Text>
+              <Text style={styles.modernStatLabel}>Orders</Text>
+            </View>
+            <View style={styles.modernStatDivider} />
+            <View style={styles.modernStatItem}>
+              <Text style={styles.modernStatNumber}>
+                {formatStatCurrency((user as IndividualUser).totalSpent || 0)}
+              </Text>
+              <Text style={styles.modernStatLabel}>Spent</Text>
+            </View>
+            <View style={styles.modernStatDivider} />
+            <View style={styles.modernStatItem}>
+              <Text style={styles.modernStatNumber}>4.9</Text>
+              <Text style={styles.modernStatLabel}>Rating</Text>
+            </View>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
@@ -75,12 +390,12 @@ export default function ProfileScreen() {
       
       {/* Header */}
       <View style={styles.headerContainer}>
-      <MobileHeader 
-        title="Profile" 
-        showBackButton={false} 
-        showSearch={false}
-        showCartButton={false}
-      />
+        <MobileHeader 
+          title="Profile" 
+          showBackButton={false} 
+          showSearch={false}
+          showCartButton={false}
+        />
       </View>
 
       <ScrollView 
@@ -89,104 +404,16 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* User Profile Card */}
-        <View style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                <Ionicons name="person" size={32} color="#FFFFFF" />
-              </View>
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-              </View>
-            </View>
-            
-            <View style={styles.userInfo}>
-              <Text style={styles.userName}>{user.name}</Text>
-              <Text style={styles.userEmail}>{user.email}</Text>
-              <Text style={styles.memberSince}>Member since {user.memberSince}</Text>
-            </View>
-            
-            <TouchableOpacity 
-              style={styles.editButton}
-              onPress={() => handleFeaturePress('Edit Profile')}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="create-outline" size={20} color="#000000" />
-            </TouchableOpacity>
-          </View>
+        {renderUserProfile()}
 
-          {/* User Stats */}
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{user.totalOrders}</Text>
-              <Text style={styles.statLabel}>Orders</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{user.rewardPoints}</Text>
-              <Text style={styles.statLabel}>Points</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>4.9</Text>
-              <Text style={styles.statLabel}>Rating</Text>
-            </View>
-          </View>
-        </View>
+        {/* Company Section (only for company users) */}
+        {renderCompanySection()}
 
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActionsGrid}>
-            <TouchableOpacity 
-              style={styles.quickActionItem}
-              onPress={() => handleFeaturePress('Order History')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.quickActionIcon}>
-                <Ionicons name="receipt-outline" size={24} color="#000000" />
-              </View>
-              <Text style={styles.quickActionLabel}>Order History</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.quickActionItem}
-              onPress={() => navigation.navigate('Main', { screen: 'Rewards' })}
-              activeOpacity={0.7}
-            >
-              <View style={styles.quickActionIcon}>
-                <Ionicons name="gift-outline" size={24} color="#000000" />
-              </View>
-              <Text style={styles.quickActionLabel}>Rewards</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.quickActionItem}
-              onPress={() => handleFeaturePress('Wishlist')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.quickActionIcon}>
-                <Ionicons name="heart-outline" size={24} color="#000000" />
-              </View>
-              <Text style={styles.quickActionLabel}>Wishlist</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.quickActionItem}
-              onPress={() => handleFeaturePress('Support')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.quickActionIcon}>
-                <Ionicons name="help-circle-outline" size={24} color="#000000" />
-              </View>
-              <Text style={styles.quickActionLabel}>Support</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        
 
         {/* Activities */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Activities</Text>
+          <Text style={styles.sectionTitle}>Activities</Text>
           <View style={styles.menuContainer}>
             <TouchableOpacity 
               style={styles.menuItem}
@@ -194,17 +421,15 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: '#4CAF5015' }]}>
-                  <Ionicons name="receipt-outline" size={20} color="#4CAF50" />
+                <View style={styles.menuIcon}>
+                  <Ionicons name="receipt-outline" size={20} color={COLORS.text} />
                 </View>
                 <View style={styles.menuLabelContainer}>
                   <Text style={styles.menuLabel}>Order History</Text>
-                  <Text style={styles.menuSubLabel}>Track past & current orders</Text>
+                  <Text style={styles.menuSubLabel}>Track orders & delivery</Text>
                 </View>
               </View>
-              <View style={styles.menuBadge}>
-                <Text style={styles.menuBadgeText}>2</Text>
-              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -213,36 +438,15 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: '#E91E6315' }]}>
-                  <Ionicons name="heart-outline" size={20} color="#E91E63" />
+                <View style={styles.menuIcon}>
+                  <Ionicons name="heart-outline" size={20} color={COLORS.text} />
                 </View>
                 <View style={styles.menuLabelContainer}>
                   <Text style={styles.menuLabel}>Wishlist</Text>
                   <Text style={styles.menuSubLabel}>Saved items & favorites</Text>
                 </View>
               </View>
-              <View style={styles.menuBadge}>
-                <Text style={styles.menuBadgeText}>5</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => handleFeaturePress('Reviews')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: '#FF980015' }]}>
-                  <Ionicons name="star-outline" size={20} color="#FF9800" />
-                </View>
-                <View style={styles.menuLabelContainer}>
-                  <Text style={styles.menuLabel}>Reviews & Ratings</Text>
-                  <Text style={styles.menuSubLabel}>Share your experience</Text>
-                </View>
-              </View>
-              <View style={styles.newBadge}>
-                <Text style={styles.newBadgeText}>NEW</Text>
-              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -251,22 +455,22 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: '#9C27B015' }]}>
-                  <Ionicons name="gift-outline" size={20} color="#9C27B0" />
+                <View style={styles.menuIcon}>
+                  <Ionicons name="gift-outline" size={20} color={COLORS.text} />
                 </View>
                 <View style={styles.menuLabelContainer}>
                   <Text style={styles.menuLabel}>Rewards & Points</Text>
-                  <Text style={styles.menuSubLabel}>Earn points, get rewards</Text>
+                  <Text style={styles.menuSubLabel}>Earn points & rewards</Text>
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#666666" />
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Account Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
+          <Text style={styles.sectionTitle}>Settings</Text>
           <View style={styles.menuContainer}>
             <TouchableOpacity 
               style={styles.menuItem}
@@ -275,11 +479,11 @@ export default function ProfileScreen() {
             >
               <View style={styles.menuItemLeft}>
                 <View style={styles.menuIcon}>
-                  <Ionicons name="person-outline" size={20} color="#000000" />
+                  <Ionicons name="person-outline" size={20} color={COLORS.text} />
                 </View>
                 <Text style={styles.menuLabel}>Personal Information</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#666666" />
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -289,11 +493,11 @@ export default function ProfileScreen() {
             >
               <View style={styles.menuItemLeft}>
                 <View style={styles.menuIcon}>
-                  <Ionicons name="location-outline" size={20} color="#000000" />
+                  <Ionicons name="location-outline" size={20} color={COLORS.text} />
                 </View>
                 <Text style={styles.menuLabel}>Delivery Addresses</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#666666" />
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -303,122 +507,28 @@ export default function ProfileScreen() {
             >
               <View style={styles.menuItemLeft}>
                 <View style={styles.menuIcon}>
-                  <Ionicons name="card-outline" size={20} color="#000000" />
+                  <Ionicons name="card-outline" size={20} color={COLORS.text} />
                 </View>
                 <Text style={styles.menuLabel}>Payment Methods</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#666666" />
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => handleFeaturePress('Security & Privacy')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Ionicons name="shield-checkmark-outline" size={20} color="#000000" />
+            {isCompanyUser(user) && user.permissions?.canManageBilling && (
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => handleFeaturePress('Billing & Invoices')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  <View style={styles.menuIcon}>
+                    <Ionicons name="document-text-outline" size={20} color={COLORS.text} />
+                  </View>
+                  <Text style={styles.menuLabel}>Billing & Invoices</Text>
                 </View>
-                <Text style={styles.menuLabel}>Security & Privacy</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#666666" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* App Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
-          <View style={styles.menuContainer}>
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => handleFeaturePress('Notifications')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Ionicons name="notifications-outline" size={20} color="#000000" />
-                </View>
-                <Text style={styles.menuLabel}>Notifications</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#666666" />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => handleFeaturePress('App Settings')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Ionicons name="settings-outline" size={20} color="#000000" />
-                </View>
-                <Text style={styles.menuLabel}>App Settings</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#666666" />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('MomentumShowcase')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Ionicons name="trending-up" size={20} color="#000000" />
-                </View>
-                <Text style={styles.menuLabel}>Progress & Momentum</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#666666" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Support & Legal */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
-          <View style={styles.menuContainer}>
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => handleFeaturePress('Help Center')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Ionicons name="help-circle-outline" size={20} color="#000000" />
-                </View>
-                <Text style={styles.menuLabel}>Help Center</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#666666" />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => handleFeaturePress('Contact Support')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Ionicons name="chatbubble-outline" size={20} color="#000000" />
-                </View>
-                <Text style={styles.menuLabel}>Contact Support</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#666666" />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => handleFeaturePress('Terms & Privacy')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Ionicons name="document-text-outline" size={20} color="#000000" />
-                </View>
-                <Text style={styles.menuLabel}>Terms & Privacy</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#666666" />
-            </TouchableOpacity>
+                <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -428,7 +538,7 @@ export default function ProfileScreen() {
           onPress={handleLogout}
           activeOpacity={0.7}
         >
-          <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
+          <Ionicons name="log-out-outline" size={20} color={COLORS.card} />
           <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
 
@@ -436,6 +546,9 @@ export default function ProfileScreen() {
         <View style={styles.versionContainer}>
           <Text style={styles.versionText}>EASI by Epico</Text>
           <Text style={styles.versionNumber}>Version 1.0.0</Text>
+          {isCompanyUser(user) && (
+            <Text style={styles.versionNumber}>Trade Edition</Text>
+          )}
         </View>
 
         {/* Bottom Padding */}
@@ -448,7 +561,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background, // Frame background (98% lightness)
+    backgroundColor: COLORS.background,
   },
   scrollContainer: {
     flex: 1,
@@ -458,10 +571,19 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.sm,
     paddingBottom: SPACING.xl,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noUserText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+  },
 
   // Profile Card
   profileCard: {
-    backgroundColor: COLORS.card, // Canvas white
+    backgroundColor: COLORS.card,
     borderRadius: 16,
     padding: SPACING.lg,
     marginBottom: SPACING.md,
@@ -480,22 +602,30 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#000000', // Black background
+    backgroundColor: COLORS.text,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
-  verifiedBadge: {
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  roleBadge: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#4CAF50',
-    justifyContent: 'center',
-    alignItems: 'center',
+    bottom: -4,
+    right: -4,
+    backgroundColor: COLORS.text,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: COLORS.card,
+  },
+  roleBadgeText: {
+    ...TYPOGRAPHY.tiny,
+    color: COLORS.card,
+    fontWeight: 'bold',
   },
   userInfo: {
     flex: 1,
@@ -508,62 +638,146 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     marginBottom: 2,
   },
-  memberSince: {
+  userPhone: {
     ...TYPOGRAPHY.small,
+    marginBottom: 2,
+  },
+  userPosition: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  userRole: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.text,
+    fontWeight: '600',
+    marginTop: 2,
   },
   editButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E5E5E5', // Border color (90% lightness)
+    borderColor: COLORS.border,
   },
 
-  // Stats
-  statsContainer: {
+  // Company Card
+  modernCompanyCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
+    ...SHADOWS.medium,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  modernCompanyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  modernCompanyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.md,
+  },
+  modernCompanyInfo: {
+    flex: 1,
+  },
+  modernCompanyName: {
+    ...TYPOGRAPHY.h3,
+    marginBottom: 2,
+  },
+  modernCompanyMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  modernCompanyBadge: {
+    backgroundColor: COLORS.text,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginRight: SPACING.sm,
+  },
+  modernCompanyBadgeText: {
+    ...TYPOGRAPHY.tiny,
+    color: COLORS.card,
+    fontWeight: 'bold',
+  },
+  modernCompanyUEN: {
+    ...TYPOGRAPHY.small,
+    marginTop: 4,
+  },
+  modernExpandButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  modernStatsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
     paddingTop: SPACING.md,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
+    borderTopColor: COLORS.border,
   },
-  statItem: {
+  modernStatItem: {
     alignItems: 'center',
     flex: 1,
   },
-  statNumber: {
+  modernStatNumber: {
     ...TYPOGRAPHY.h2,
     marginBottom: 4,
   },
-  statLabel: {
+  modernStatLabel: {
     ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
   },
-  statDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: '#E5E5E5',
-  },
+     modernStatDivider: {
+     width: 1,
+     height: 32,
+     backgroundColor: COLORS.border,
+   },
 
-  // Sections
-  section: {
-    marginBottom: SPACING.md,
-  },
-  sectionTitle: {
+   // Sections
+   section: {
+     marginBottom: SPACING.md,
+   },
+   sectionTitle: {
+     ...TYPOGRAPHY.h4,
+     marginBottom: SPACING.sm,
+     paddingHorizontal: 4,
+   },
+   expandedSection: {
+     backgroundColor: COLORS.card,
+     borderRadius: 16,
+     padding: SPACING.lg,
+     marginTop: SPACING.sm,
+     ...SHADOWS.light,
+   },
+  expandedSectionTitle: {
     ...TYPOGRAPHY.h4,
     marginBottom: SPACING.sm,
-    paddingHorizontal: 4,
   },
-
-  // Quick Actions
-  quickActionsGrid: {
+  modernQuickActionsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  quickActionItem: {
+  modernQuickActionItem: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: SPACING.md,
@@ -571,21 +785,57 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 4,
     ...SHADOWS.light,
-    minHeight: 88, // Ensure proper touch target
+    minHeight: 88,
+    position: 'relative',
   },
-  quickActionIcon: {
+  modernQuickActionIcon: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.sm,
   },
-  quickActionLabel: {
+  modernQuickActionLabel: {
     ...TYPOGRAPHY.small,
     textAlign: 'center',
     fontWeight: '600',
+  },
+  modernQuickActionBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: COLORS.text,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  modernQuickActionBadgeText: {
+    ...TYPOGRAPHY.tiny,
+    color: COLORS.card,
+    fontWeight: 'bold',
+  },
+  modernProfileButton: {
+    backgroundColor: COLORS.text,
+    borderRadius: 12,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: SPACING.lg,
+    ...SHADOWS.medium,
+    minHeight: 48,
+  },
+  modernProfileButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.card,
+    fontWeight: '600',
+    marginLeft: SPACING.sm,
   },
 
   // Menu
@@ -601,9 +851,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
-    minHeight: 56, // Proper touch target
+    minHeight: 56,
     borderBottomWidth: 1,
-    borderBottomColor: '#F8F8F8',
+    borderBottomColor: COLORS.background,
   },
   menuItemLeft: {
     flexDirection: 'row',
@@ -614,7 +864,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.sm,
@@ -631,35 +881,10 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
   },
-  menuBadge: {
-    backgroundColor: '#4CAF50',
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-  },
-  menuBadgeText: {
-    ...TYPOGRAPHY.label,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  newBadge: {
-    backgroundColor: '#FF4444',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  newBadgeText: {
-    ...TYPOGRAPHY.tiny,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
 
   // Sign Out Button
   signOutButton: {
-    backgroundColor: '#000000', // Black button
+    backgroundColor: COLORS.text,
     borderRadius: 12,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
@@ -668,11 +893,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginVertical: SPACING.lg,
     ...SHADOWS.medium,
-    minHeight: 48, // Proper touch target
+    minHeight: 48,
   },
   signOutText: {
     ...TYPOGRAPHY.button,
-    color: '#FFFFFF', // White text on black button
+    color: COLORS.card,
     fontWeight: '600',
     marginLeft: SPACING.sm,
   },
@@ -689,6 +914,7 @@ const styles = StyleSheet.create({
   },
   versionNumber: {
     ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
   },
 
   // Bottom Padding
@@ -705,5 +931,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     backgroundColor: COLORS.card,
     zIndex: 10,
+    ...SHADOWS.light,
   },
+
 }); 

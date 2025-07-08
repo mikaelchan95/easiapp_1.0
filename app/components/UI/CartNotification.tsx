@@ -179,9 +179,9 @@ const CartNotification: React.FC<CartNotificationProps> = React.memo(({
   // Generate message based on item count
   const getMessage = () => {
     if (itemCount === 1) {
-      return lastItemName ? `${lastItemName} added to cart` : 'Item added to cart';
+      return lastItemName ? `${lastItemName} added` : 'Item added';
     } else {
-      return `${itemCount} items added to cart`;
+      return `${itemCount} items added`;
     }
   };
   

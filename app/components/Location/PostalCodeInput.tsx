@@ -144,12 +144,12 @@ const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
         <Text style={styles.errorText}>{localError}</Text>
       ) : (
         <Text style={styles.helperText}>
-          Singapore postal codes are 6 digits long
+          6-digit Singapore postal code
         </Text>
       )}
 
       <View style={styles.quickAccessContainer}>
-        <Text style={styles.quickAccessLabel}>Popular locations:</Text>
+        <Text style={styles.quickAccessLabel}>Popular areas:</Text>
         
         <FlatList
           horizontal

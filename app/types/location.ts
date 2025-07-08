@@ -169,7 +169,7 @@ export interface AddressDetailsFormProps {
   location: LocationSuggestion;
   initialValues?: Partial<DeliveryDetails>;
   onSubmit: (details: DeliveryDetails) => void;
-  onSave?: (details: DeliveryDetails & {label: string}) => void;
+  onSave?: (details: DeliveryDetails & {label: string; icon?: string; color?: string}) => void;
   onCancel: () => void;
   isSaveMode?: boolean;
 }

@@ -48,6 +48,10 @@ import LocationPickerScreen from './app/components/Location/LocationPickerScreen
 import UberStyleLocationScreen from './app/components/Location/UberStyleLocationScreen';
 import SavedLocationsScreen from './app/components/Location/SavedLocationsScreen';
 
+// Import Company screens
+import CompanyProfileScreen from './app/components/Profile/CompanyProfileScreen';
+import TeamManagementScreen from './app/components/Profile/TeamManagementScreen';
+
 // Import types and theme
 import { RootStackParamList, MainTabParamList } from './app/types/navigation';
 import { COLORS, SHADOWS, TYPOGRAPHY, SPACING, FONT_WEIGHTS } from './app/utils/theme';
@@ -457,6 +461,14 @@ export default function App() {
                   <Stack.Screen 
                     name="SavedLocations" 
                     component={SavedLocationsScreen}
+                  />
+                  <Stack.Screen 
+                    name="CompanyProfile" 
+                    component={CompanyProfileScreen}
+                  />
+                  <Stack.Screen 
+                    name="TeamManagement" 
+                    component={TeamManagementScreen}
                   />
                 </Stack.Navigator>
               </NavigationContainer>
