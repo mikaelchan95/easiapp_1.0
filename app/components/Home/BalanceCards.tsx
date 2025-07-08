@@ -1,32 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
+import { formatStatCurrency, formatStatNumber, cleanText } from '../../utils/formatting';
 import { useRewards } from '../../context/RewardsContext';
 import { useAppContext } from '../../context/AppContext';
+import { isCompanyUser } from '../../types/user';
 
 type BalanceCardsProps = {
   onCreditClick?: () => void;
   onRewardsClick?: () => void;
   onSignIn?: () => void;
   isLoggedIn?: boolean;
-};
-
-// Utility function to format numbers in shortened form
-const formatNumber = (num: number): string => {
-  if (num >= 1000000000) {
-    const formatted = (num / 1000000000).toFixed(1);
-    return formatted.endsWith('.0') ? `${Math.floor(num / 1000000000)}B` : `${formatted}B`;
-  }
-  if (num >= 1000000) {
-    const formatted = (num / 1000000).toFixed(1);
-    return formatted.endsWith('.0') ? `${Math.floor(num / 1000000)}M` : `${formatted}M`;
-  }
-  if (num >= 1000) {
-    const formatted = (num / 1000).toFixed(1);
-    return formatted.endsWith('.0') ? `${Math.floor(num / 1000)}k` : `${formatted}k`;
-  }
-  return num.toString();
 };
 
 const BalanceCards: React.FC<BalanceCardsProps> = ({ 
@@ -42,9 +27,56 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
   const { state: rewardsState } = useRewards();
   const { state: appState } = useAppContext();
   
+  // Get user-specific data from Supabase/AppContext
+  const user = appState.user;
+  const company = appState.company;
+  
+  // Calculate account balance based on user type
+  const getAccountBalance = () => {
+    if (!user) return 0;
+    
+    if (isCompanyUser(user) && company) {
+      // For company users, show company's current credit
+      return company.currentCredit || 0;
+    } else {
+      // For individual users, could be wallet balance, stored value, etc.
+      // For now, using a default individual balance
+      return 2500; // This could come from a user wallet/balance field in the future
+    }
+  };
+  
+  // Get credit label based on user type
+  const getCreditLabel = () => {
+    if (!user) return 'Balance';
+    
+    if (isCompanyUser(user)) {
+      return 'Credit';
+    } else {
+      return 'Balance';
+    }
+  };
+  
+  // Get credit subtext based on user type
+  const getCreditSubtext = () => {
+    return 'Available';
+  };
+  
   // Use real data from contexts
-  const accountBalance = 10500; // This would come from user/payment context in real app
+  const accountBalance = getAccountBalance();
   const rewardPoints = rewardsState.userRewards.points; // Actual points from rewards context
+  
+  // Log user data for debugging (behind the scenes)
+  useEffect(() => {
+    if (user) {
+      console.log('🏠 Home: User data loaded:', {
+        name: user.name,
+        type: user.accountType,
+        balance: accountBalance,
+        company: company?.name,
+        credit: company?.currentCredit
+      });
+    }
+  }, [user, company, accountBalance]);
 
   const handleCreditPress = async () => {
     if (loadingCredit) return;
@@ -64,7 +96,7 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
     }, 300);
   };
 
-  if (!isLoggedIn) {
+  if (!isLoggedIn || !user) {
     return (
       <View style={styles.container}>
         <TouchableOpacity 
@@ -74,14 +106,14 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
         >
           <View style={styles.signInContent}>
             <View style={styles.signInIconContainer}>
-              <Ionicons name="person-outline" size={18} color="hsl(0, 0%, 0%)" />
+              <Ionicons name="person-outline" size={18} color={COLORS.text} />
             </View>
             <View style={styles.signInText}>
               <Text style={styles.signInTitle}>Sign in to view balance</Text>
-              <Text style={styles.signInSubtitle}>Access your account & rewards</Text>
+              <Text style={styles.signInSubtitle}>Access account & rewards</Text>
             </View>
             <View style={styles.signInAction}>
-              <Ionicons name="chevron-forward" size={18} color="hsl(0, 0%, 30%)" />
+              <Ionicons name="chevron-forward" size={18} color={COLORS.textSecondary} />
             </View>
           </View>
         </TouchableOpacity>
@@ -91,7 +123,7 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
   
   return (
     <View style={styles.container}>
-      {/* Account Balance Card */}
+      {/* Account Balance/Credit Card */}
       <TouchableOpacity 
         style={[styles.balanceCard, loadingCredit && styles.cardLoading]} 
         onPress={handleCreditPress}
@@ -103,24 +135,28 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
           <View style={styles.cardHeader}>
             <View style={styles.balanceIconContainer}>
               {loadingCredit ? (
-                <ActivityIndicator size="small" color="hsl(0, 0%, 30%)" />
+                <ActivityIndicator size="small" color={COLORS.textSecondary} />
               ) : (
-                <Ionicons name="wallet" size={16} color="hsl(0, 0%, 30%)" />
+                <Ionicons 
+                  name={isCompanyUser(user) ? "business" : "wallet"} 
+                  size={16} 
+                  color={COLORS.textSecondary} 
+                />
               )}
             </View>
-            <Text style={styles.balanceCardLabel}>Account Balance</Text>
+            <Text style={styles.balanceCardLabel}>{getCreditLabel()}</Text>
             <View style={styles.actionIndicator}>
-              <Ionicons name="chevron-forward" size={14} color="hsl(0, 0%, 50%)" />
+              <Ionicons name="chevron-forward" size={14} color={COLORS.inactive} />
             </View>
           </View>
           
           {/* Amount */}
           <View style={styles.amountContainer}>
-            <Text style={styles.balanceAmount}>${formatNumber(accountBalance)}</Text>
+            <Text style={styles.balanceAmount}>{formatStatCurrency(accountBalance)}</Text>
           </View>
           
           {/* Subtext */}
-          <Text style={styles.balanceSubtext}>Available to spend</Text>
+          <Text style={styles.balanceSubtext}>{getCreditSubtext()}</Text>
         </View>
       </TouchableOpacity>
 
@@ -136,24 +172,24 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
           <View style={styles.cardHeader}>
             <View style={styles.rewardsIconContainer}>
               {loadingRewards ? (
-                <ActivityIndicator size="small" color="hsl(0, 0%, 30%)" />
+                <ActivityIndicator size="small" color={COLORS.textSecondary} />
               ) : (
-                <Ionicons name="gift" size={16} color="hsl(0, 0%, 30%)" />
+                <Ionicons name="gift" size={16} color={COLORS.textSecondary} />
               )}
             </View>
-            <Text style={styles.rewardsCardLabel}>Reward Points</Text>
+            <Text style={styles.rewardsCardLabel}>Points</Text>
             <View style={styles.actionIndicator}>
-              <Ionicons name="chevron-forward" size={14} color="hsl(0, 0%, 50%)" />
+              <Ionicons name="chevron-forward" size={14} color={COLORS.inactive} />
             </View>
           </View>
           
           {/* Amount */}
           <View style={styles.amountContainer}>
-            <Text style={styles.rewardsAmount}>{formatNumber(rewardPoints)}</Text>
+            <Text style={styles.rewardsAmount}>{formatStatNumber(rewardPoints)}</Text>
           </View>
           
           {/* Subtext */}
-          <Text style={styles.rewardsSubtext}>Ready to redeem</Text>
+          <Text style={styles.rewardsSubtext}>Ready to use</Text>
         </View>
       </TouchableOpacity>
     </View>
@@ -161,55 +197,41 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
 };
 
 const { width } = Dimensions.get('window');
-const cardSpacing = 16;
+const cardSpacing = SPACING.md;
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     paddingHorizontal: cardSpacing,
-    paddingVertical: 16,
+    paddingVertical: SPACING.md,
     gap: cardSpacing,
   },
   balanceCard: {
     flex: 1,
-    backgroundColor: 'hsl(0, 0%, 100%)', // Pure white
+    backgroundColor: COLORS.card,
     borderRadius: 20,
     minHeight: 130,
     borderWidth: 1,
-    borderColor: 'hsl(0, 0%, 90%)',
-    // Enhanced shadow
-    shadowColor: 'rgba(0, 0, 0, 0.08)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 6,
-    elevation: 3,
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
   },
   rewardsCard: {
     flex: 1,
-    backgroundColor: 'hsl(0, 0%, 98%)', // Very light grey
+    backgroundColor: COLORS.background,
     borderRadius: 20,
     minHeight: 130,
     borderWidth: 1,
-    borderColor: 'hsl(0, 0%, 90%)',
-    // Enhanced shadow
-    shadowColor: 'rgba(0, 0, 0, 0.08)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 6,
-    elevation: 3,
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
   },
   signInCard: {
     flex: 1,
-    backgroundColor: 'hsl(0, 0%, 100%)',
+    backgroundColor: COLORS.card,
     borderRadius: 20,
     minHeight: 130,
     borderWidth: 1,
-    borderColor: 'hsl(0, 0%, 90%)',
-    shadowColor: 'rgba(0, 0, 0, 0.08)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 6,
-    elevation: 3,
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
   },
   cardLoading: {
     opacity: 0.6,
@@ -222,13 +244,13 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: SPACING.md,
   },
   balanceIconContainer: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'hsl(0, 0%, 95%)',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -237,54 +259,50 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'hsl(0, 0%, 92%)',
+    backgroundColor: COLORS.card,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
   },
   balanceCardLabel: {
-    fontSize: 14,
+    ...TYPOGRAPHY.caption,
     fontWeight: '500',
-    color: 'hsl(0, 0%, 30%)',
+    color: COLORS.textSecondary,
     flex: 1,
   },
   rewardsCardLabel: {
-    fontSize: 14,
+    ...TYPOGRAPHY.caption,
     fontWeight: '500',
-    color: 'hsl(0, 0%, 30%)',
+    color: COLORS.textSecondary,
     flex: 1,
   },
   actionIndicator: {
     opacity: 0.6,
   },
   amountContainer: {
-    marginVertical: 8,
+    marginVertical: SPACING.xs,
   },
   balanceAmount: {
-    fontSize: 32,
+    ...TYPOGRAPHY.h1,
     fontWeight: '700',
-    color: 'hsl(0, 0%, 0%)',
+    color: COLORS.text,
     letterSpacing: -1,
-    lineHeight: 36,
   },
   rewardsAmount: {
-    fontSize: 32,
+    ...TYPOGRAPHY.h1,
     fontWeight: '700',
-    color: 'hsl(0, 0%, 0%)',
+    color: COLORS.text,
     letterSpacing: -1,
-    lineHeight: 36,
   },
   balanceSubtext: {
-    fontSize: 13,
-    color: 'hsl(0, 0%, 50%)',
+    ...TYPOGRAPHY.small,
+    color: COLORS.inactive,
     fontWeight: '400',
-    lineHeight: 16,
   },
   rewardsSubtext: {
-    fontSize: 13,
-    color: 'hsl(0, 0%, 50%)',
+    ...TYPOGRAPHY.small,
+    color: COLORS.inactive,
     fontWeight: '400',
-    lineHeight: 16,
   },
   signInContent: {
     flex: 1,
@@ -296,26 +314,24 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'hsl(0, 0%, 96%)',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: SPACING.md,
   },
   signInText: {
     flex: 1,
   },
   signInTitle: {
-    fontSize: 16,
+    ...TYPOGRAPHY.body,
     fontWeight: '600',
-    color: 'hsl(0, 0%, 0%)',
+    color: COLORS.text,
     marginBottom: 4,
-    lineHeight: 20,
   },
   signInSubtitle: {
-    fontSize: 13,
-    color: 'hsl(0, 0%, 50%)',
+    ...TYPOGRAPHY.small,
+    color: COLORS.inactive,
     fontWeight: '400',
-    lineHeight: 16,
   },
   signInAction: {
     opacity: 0.6,

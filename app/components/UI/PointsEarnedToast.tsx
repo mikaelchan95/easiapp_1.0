@@ -9,6 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
+import { formatStatNumber } from '../../utils/formatting';
 
 interface PointsEarnedToastProps {
   visible: boolean;
@@ -110,13 +111,13 @@ export default function PointsEarnedToast({
         
         <View style={styles.textContainer}>
           <Text style={styles.title}>
-            +{points.toLocaleString()} points earned!
+            +{formatStatNumber(points)} points earned!
           </Text>
           {message ? (
             <Text style={styles.message}>{message}</Text>
           ) : tier ? (
             <Text style={styles.message}>
-              You're a {tier} member
+              {tier} member
             </Text>
           ) : null}
         </View>

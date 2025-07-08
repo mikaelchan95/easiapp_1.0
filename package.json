@@ -16,6 +16,7 @@
     "@react-navigation/bottom-tabs": "^7.4.2",
     "@react-navigation/native": "^7.1.14",
     "@react-navigation/native-stack": "^7.3.21",
+    "@supabase/supabase-js": "^2.50.3",
     "expo": "^53.0.18",
     "expo-constants": "~17.1.4",
     "expo-haptics": "^14.1.4",
@@ -33,11 +34,13 @@
     "react-native-maps": "^1.20.1",
     "react-native-safe-area-context": "^5.4.0",
     "react-native-screens": "~4.11.1",
-    "react-native-web": "^0.20.0"
+    "react-native-web": "^0.20.0",
+    "react-native-svg": "15.11.2"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@types/react": "~19.0.10",
+    "supabase": "^2.30.4",
     "typescript": "~5.8.3"
   },
   "private": true

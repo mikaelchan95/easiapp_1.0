@@ -231,7 +231,7 @@ const DeliveryLocationHeader: React.FC<DeliveryLocationHeaderProps> = ({
             <Text style={[styles.label, isBlackTheme && styles.whiteText]}>Deliver to</Text>
             
             {isLoading ? (
-              <Text style={[styles.loadingText, isBlackTheme && styles.whiteText]}>Getting location...</Text>
+              <Text style={[styles.loadingText, isBlackTheme && styles.whiteText]}>Loading...</Text>
             ) : location ? (
               <>
                 <Text style={[styles.locationTitle, isBlackTheme && styles.whiteText]} numberOfLines={1}>
@@ -262,7 +262,7 @@ const DeliveryLocationHeader: React.FC<DeliveryLocationHeaderProps> = ({
               </>
             ) : (
               <Text style={[styles.placeholder, isBlackTheme && styles.whiteText]}>
-                Tap to set delivery address
+                Set delivery address
               </Text>
             )}
           </View>

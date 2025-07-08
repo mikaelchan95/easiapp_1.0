@@ -252,7 +252,7 @@ export default function OrderHistoryScreen() {
             ))}
             {order.items.length > 2 && (
               <Text style={styles.moreItems}>
-                +{order.items.length - 2} more item{order.items.length - 2 !== 1 ? 's' : ''}
+                +{order.items.length - 2} more
               </Text>
             )}
           </View>

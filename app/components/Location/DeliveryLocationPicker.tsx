@@ -36,6 +36,10 @@ interface DeliveryLocationPickerProps {
   placeholder?: string;
 }
 
+/**
+ * Modern delivery location picker with improved UI/UX
+ * Following design principles: clarity, consistency, visual hierarchy
+ */
 const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   onLocationSelect,
   initialLocation,
@@ -66,6 +70,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   // Animation values
   const searchBarFocused = useRef(new Animated.Value(0)).current;
   const suggestionListHeight = useRef(new Animated.Value(0)).current;
+  const [fadeAnim] = useState(new Animated.Value(0));
   
   // Refs
   const searchInputRef = useRef<TextInput>(null);
@@ -126,13 +131,20 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
     };
   }, []);
 
-  // Load initial data
+  // Load initial data with animation
   const loadInitialData = useCallback(async () => {
     try {
       const recent = await GoogleMapsService.getRecentLocations();
       
       if (mountedRef.current) {
         setRecentLocations(recent.slice(0, 3)); // Show max 3 recent
+        
+        // Animate in content
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
       }
       
       // Only load current location if preferences allow it
@@ -159,7 +171,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
         HapticFeedback.error();
       }
     }
-  }, []);
+  }, [fadeAnim]);
 
   useEffect(() => {
     loadInitialData();
@@ -248,40 +260,10 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
       console.error('Error selecting location:', error);
       HapticFeedback.error();
       Alert.alert(
-        'Error',
-        'Unable to select this location. Please try again.',
+        'Selection Failed',
+        'Please try again.',
         [{ text: 'OK', style: 'default' }]
       );
-    }
-  };
-
-  // Handle quick save of current location
-  const handleQuickSave = async (location: LocationSuggestion) => {
-    try {
-      if (Platform.OS === 'ios') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }
-      
-      // Quick save with default label
-      const success = await saveCurrentLocation(
-        `Saved Location ${new Date().toLocaleDateString()}`,
-        'location',
-        COLORS.primary
-      );
-      
-      if (success) {
-        if (Platform.OS === 'ios') {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-        // Show success feedback
-        setShowSavePrompt(true);
-        setTimeout(() => setShowSavePrompt(false), 2000);
-      }
-    } catch (error) {
-      console.error('Error quick saving location:', error);
-      if (Platform.OS === 'ios') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      }
     }
   };
 
@@ -344,8 +326,8 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
     } else {
       HapticFeedback.error();
       Alert.alert(
-        'Location Unavailable',
-        'Unable to get your current location. Please search for an address instead.',
+        'Location Access',
+        'Enable location access in settings to use this feature.',
         [{ text: 'OK', style: 'default' }]
       );
     }
@@ -375,6 +357,21 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
     return 0;
   };
 
+  // Get icon for saved location with consistent styling
+  const getSavedLocationIcon = (iconName: string): keyof typeof Ionicons.glyphMap => {
+    const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
+      'home': 'home',
+      'business': 'business',
+      'school': 'school',
+      'fitness-center': 'fitness',
+      'local-hospital': 'medical',
+      'shopping-cart': 'storefront',
+      'restaurant': 'restaurant',
+      'location-on': 'location',
+    };
+    return iconMap[iconName] || 'location';
+  };
+
   // Render suggestion item with accessibility
   const renderSuggestionItem = (item: LocationSuggestion, index: number) => (
     <TouchableOpacity
@@ -394,7 +391,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
         <Ionicons 
           name={item.type === 'current' ? 'location' : 'location-outline'} 
           size={20} 
-          color={COLORS.text} 
+          color={COLORS.buttonText} 
         />
       </View>
       <View style={styles.suggestionContent}>
@@ -412,268 +409,292 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} translucent />
-      
-      {/* Success Animation Overlay */}
-      <Animated.View
-        style={[
-          styles.successOverlay,
-          {
-            opacity: successAnimation,
-            transform: [
-              {
-                scale: successAnimation.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.8, 1.1],
-                }),
-              },
-            ],
-          },
-        ]}
-        pointerEvents="none"
-      >
-        <View style={styles.successIndicator}>
-          <Ionicons name="checkmark-circle" size={48} color={COLORS.success} />
-          <Text style={styles.successText}>Location Selected!</Text>
-        </View>
-      </Animated.View>
-      
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top }]}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={handleBackPress}
-          accessible={true}
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-        >
-          <Ionicons name="chevron-back" size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Delivery Address</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-      
-      <KeyboardAvoidingView 
-        style={[styles.content, { marginBottom: getKeyboardOffset() }]}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={getKeyboardVerticalOffset()}
-      >
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={[
-            styles.searchBar,
-            showSuggestions && styles.searchBarFocused,
-            isKeyboardVisible && styles.searchBarKeyboard
-          ]}>
-            <Ionicons name="search" size={20} color={COLORS.textSecondary} />
-            <TextInput
-              ref={searchInputRef}
-              style={styles.searchInput}
-              placeholder={placeholder}
-              placeholderTextColor={COLORS.textSecondary}
-              value={searchText}
-              onChangeText={handleSearchChange}
-              onFocus={handleInputFocus}
-              onBlur={handleInputBlur}
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="search"
-              onSubmitEditing={() => Keyboard.dismiss()}
-            />
-            {searchText.length > 0 && (
-              <TouchableOpacity
-                style={styles.clearButton}
-                onPress={() => {
-                  setSearchText('');
-                  setSuggestions([]);
-                  HapticFeedback.selection();
-                }}
-              >
-                <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* Current Location Button */}
-        {!showSuggestions && currentLocation && (
-          <TouchableOpacity
-            style={styles.currentLocationButton}
-            onPress={handleUseCurrentLocation}
-            activeOpacity={0.7}
-          >
-            <View style={styles.currentLocationIcon}>
-              <Ionicons name="locate" size={20} color={COLORS.primary} />
-            </View>
-            <View style={styles.currentLocationContent}>
-              <Text style={styles.currentLocationTitle}>Use current location</Text>
-              <Text style={styles.currentLocationSubtitle}>{currentLocation.subtitle}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
-          </TouchableOpacity>
-        )}
-
-        {/* Saved Locations Section */}
-        {savedAddresses.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Saved Locations</Text>
-                              <TouchableOpacity 
-                  style={styles.manageButton}
-                  onPress={() => {
-                    // Navigate to saved locations management
-                    navigation.navigate('SavedLocations');
-                  }}
-                >
-                <Text style={styles.manageButtonText}>Manage</Text>
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={savedAddresses}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.savedLocationItem}
-                  onPress={() => handleLocationSelect(item.location)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.savedLocationIcon, { backgroundColor: item.color || COLORS.primary }]}>
-                    <Ionicons 
-                      name={item.icon as any || 'location'} 
-                      size={16} 
-                      color={COLORS.card} 
-                    />
-                  </View>
-                  <View style={styles.savedLocationInfo}>
-                    <Text style={styles.savedLocationLabel} numberOfLines={1}>
-                      {item.label}
-                    </Text>
-                    <Text style={styles.savedLocationAddress} numberOfLines={1}>
-                      {item.location.title}
-                    </Text>
-                    {item.isDefault && (
-                      <View style={styles.defaultBadge}>
-                        <Text style={styles.defaultBadgeText}>Default</Text>
-                      </View>
-                    )}
-                  </View>
-                  <TouchableOpacity 
-                    style={styles.quickSaveButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleQuickSave(item.location);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="bookmark-outline" size={16} color={COLORS.primary} />
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        )}
-
-        {/* Suggestions List */}
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} translucent />
+        
+        {/* Success Animation Overlay */}
         <Animated.View
           style={[
-            styles.suggestionsContainer,
+            styles.successOverlay,
             {
-              height: suggestionListHeight,
-              opacity: showSuggestions ? 1 : 0,
-            }
+              opacity: successAnimation,
+              transform: [
+                {
+                  scale: successAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.8, 1.1],
+                  }),
+                },
+              ],
+            },
           ]}
-          pointerEvents={showSuggestions ? 'auto' : 'none'}
+          pointerEvents="none"
         >
-          <FlatList
-            data={[
-              ...(isLoading ? [{ id: 'loading', type: 'loading' }] : []),
-              ...(suggestions.length > 0 ? [
-                { id: 'search-header', type: 'header', title: 'Search Results' },
-                ...suggestions.map(sug => ({ ...sug, type: 'suggestion' as const }))
-              ] : []),
-              ...(searchText.length <= 2 && recentLocations.length > 0 ? [
-                { id: 'recent-header', type: 'header', title: 'Recent' },
-                ...recentLocations.map(loc => ({ ...loc, type: 'recent' as const }))
-              ] : []),
-              ...(searchText.length <= 2 && currentLocation ? [
-                { id: 'current-header', type: 'header', title: 'Current Location' },
-                { ...currentLocation, type: 'current' as const }
-              ] : []),
-              ...(searchText.length > 2 && suggestions.length === 0 && !isLoading ? [
-                { id: 'no-results', type: 'no-results' }
-              ] : [])
-            ]}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => {
-              if (item.type === 'loading') {
-                return (
-                  <View style={styles.loadingContainer}>
-                    <Text style={styles.loadingText}>Searching...</Text>
+          <View style={styles.successIndicator}>
+            <Ionicons name="checkmark-circle" size={48} color={COLORS.success} />
+            <Text style={styles.successText}>Location Selected!</Text>
+          </View>
+        </Animated.View>
+        
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={handleBackPress}
+            accessible={true}
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
+          >
+            <Ionicons name="chevron-back" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Set delivery location</Text>
+            <Text style={styles.headerSubtitle}>Choose where you'd like your order delivered</Text>
+          </View>
+          <View style={styles.headerSpacer} />
+        </View>
+        
+        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+          <KeyboardAvoidingView 
+            style={[styles.keyboardView, { marginBottom: getKeyboardOffset() }]}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={getKeyboardVerticalOffset()}
+          >
+            {/* Current Location Widget */}
+            {!showSuggestions && (
+              <View style={styles.currentLocationWidget}>
+                <TouchableOpacity
+                  style={styles.currentLocationButton}
+                  onPress={handleUseCurrentLocation}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Use current location"
+                >
+                  <View style={styles.currentLocationIconContainer}>
+                    <Ionicons name="locate" size={24} color={COLORS.buttonText} />
                   </View>
-                );
-              }
-              
-              if (item.type === 'header') {
-                return <Text style={styles.sectionTitle}>{(item as any).title}</Text>;
-              }
-              
-              if (item.type === 'no-results') {
-                return (
-                  <View style={styles.noResultsContainer}>
-                    <Ionicons name="location-outline" size={48} color={COLORS.textSecondary} />
-                    <Text style={styles.noResultsTitle}>No locations found</Text>
-                    <Text style={styles.noResultsText}>
-                      Try searching with a different address or postal code
-                    </Text>
+                  <View style={styles.currentLocationContent}>
+                    <Text style={styles.currentLocationTitle}>Use my current location</Text>
+                    <Text style={styles.currentLocationSubtitle}>We'll detect your location automatically</Text>
                   </View>
-                );
-              }
-              
-              return renderSuggestionItem(item as LocationSuggestion, 0);
-            }}
-            style={styles.suggestionsList}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={[
-              styles.suggestionsScrollContent,
-              isKeyboardVisible && styles.suggestionsScrollContentKeyboard
-            ]}
-          />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* OR Divider */}
+            {!showSuggestions && (
+              <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.dividerLine} />
+              </View>
+            )}
+
+            {/* Search Section */}
+            <View style={styles.searchSection}>
+              <Text style={styles.searchSectionTitle}>Enter a specific address</Text>
+              <View style={styles.searchContainer}>
+                <View style={[
+                  styles.searchBar,
+                  showSuggestions && styles.searchBarFocused,
+                  isKeyboardVisible && styles.searchBarKeyboard
+                ]}>
+                  <View style={styles.searchIconContainer}>
+                    <Ionicons name="ellipse" size={8} color={COLORS.text} />
+                  </View>
+                  <TextInput
+                    ref={searchInputRef}
+                    style={styles.searchInput}
+                    placeholder={placeholder}
+                    placeholderTextColor={COLORS.textSecondary}
+                    value={searchText}
+                    onChangeText={handleSearchChange}
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="search"
+                    onSubmitEditing={() => Keyboard.dismiss()}
+                  />
+                  {searchText.length > 0 && (
+                    <TouchableOpacity
+                      style={styles.clearButton}
+                      onPress={() => {
+                        setSearchText('');
+                        setSuggestions([]);
+                        HapticFeedback.selection();
+                      }}
+                    >
+                      <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Saved Locations Section */}
+            {!showSuggestions && savedAddresses.length > 0 && (
+              <View style={styles.savedLocationsSection}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Saved Locations</Text>
+                  <TouchableOpacity 
+                    style={styles.manageButton}
+                    onPress={() => {
+                      // Navigate to saved locations management
+                      navigation.navigate('SavedLocations' as never);
+                    }}
+                  >
+                    <Text style={styles.manageButtonText}>Manage</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                {/* Quick Select Cards */}
+                <View style={styles.quickSelectContainer}>
+                  {savedAddresses.slice(0, 2).map((item) => {
+                    const iconName = getSavedLocationIcon(item.icon || 'home');
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={styles.quickSelectCard}
+                        onPress={() => handleLocationSelect(item.location)}
+                        activeOpacity={0.7}
+                        accessibilityLabel={`Select ${item.label}`}
+                      >
+                        <View style={styles.quickSelectIcon}>
+                          <Ionicons 
+                            name={iconName} 
+                            size={24} 
+                            color={COLORS.buttonText} 
+                          />
+                        </View>
+                        <Text style={styles.quickSelectLabel} numberOfLines={1}>
+                          {item.label}
+                        </Text>
+                        <Text style={styles.quickSelectAddress} numberOfLines={2}>
+                          {item.location.title}
+                        </Text>
+                        {item.isDefault && (
+                          <View style={styles.quickSelectBadge}>
+                            <Text style={styles.quickSelectBadgeText}>Default</Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* Show More Button if there are more than 2 locations */}
+                {savedAddresses.length > 2 && (
+                  <TouchableOpacity 
+                    style={styles.showMoreButton}
+                    onPress={() => {
+                      navigation.navigate('SavedLocations' as never);
+                    }}
+                    accessibilityLabel="View all saved locations"
+                  >
+                    <View style={styles.showMoreContent}>
+                      <Ionicons name="location" size={20} color={COLORS.text} />
+                      <Text style={styles.showMoreText}>
+                        View all {savedAddresses.length} saved locations
+                      </Text>
+                      <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+                    </View>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            {/* Suggestions List */}
+            <Animated.View
+              style={[
+                styles.suggestionsContainer,
+                {
+                  height: suggestionListHeight,
+                  opacity: showSuggestions ? 1 : 0,
+                }
+              ]}
+              pointerEvents={showSuggestions ? 'auto' : 'none'}
+            >
+              <FlatList
+                data={[
+                  ...(isLoading ? [{ id: 'loading', type: 'loading' }] : []),
+                  ...(suggestions.length > 0 ? [
+                    { id: 'search-header', type: 'header', title: 'Search Results' },
+                    ...suggestions.map(sug => ({ ...sug, type: 'suggestion' as const }))
+                  ] : []),
+                  ...(searchText.length <= 2 && recentLocations.length > 0 ? [
+                    { id: 'recent-header', type: 'header', title: 'Recent' },
+                    ...recentLocations.map(loc => ({ ...loc, type: 'recent' as const }))
+                  ] : []),
+                  ...(searchText.length <= 2 && currentLocation ? [
+                    { id: 'current-header', type: 'header', title: 'Current Location' },
+                    { ...currentLocation, type: 'current' as const }
+                  ] : []),
+                  ...(searchText.length > 2 && suggestions.length === 0 && !isLoading ? [
+                    { id: 'no-results', type: 'no-results' }
+                  ] : [])
+                ]}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => {
+                  if (item.type === 'loading') {
+                    return (
+                      <View style={styles.loadingContainer}>
+                        <Text style={styles.loadingText}>Searching...</Text>
+                      </View>
+                    );
+                  }
+                  
+                  if (item.type === 'header') {
+                    return <Text style={styles.suggestionsHeader}>{(item as any).title}</Text>;
+                  }
+                  
+                  if (item.type === 'no-results') {
+                    return (
+                      <View style={styles.noResultsContainer}>
+                        <View style={styles.noResultsIcon}>
+                          <Ionicons name="search-outline" size={32} color={COLORS.textSecondary} />
+                        </View>
+                        <Text style={styles.noResultsTitle}>No Results</Text>
+                        <Text style={styles.noResultsText}>
+                          Try a different search term
+                        </Text>
+                      </View>
+                    );
+                  }
+                  
+                  return renderSuggestionItem(item as LocationSuggestion, 0);
+                }}
+                style={styles.suggestionsList}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={styles.suggestionsScrollContent}
+              />
+            </Animated.View>
+          </KeyboardAvoidingView>
         </Animated.View>
 
-        {/* Instructions (when not showing suggestions) */}
-        {!showSuggestions && (
-          <View style={styles.instructionsContainer}>
-            <View style={styles.instructionItem}>
-              <Ionicons name="search" size={20} color={COLORS.textSecondary} />
-              <Text style={styles.instructionText}>Search by address, building name, or postal code</Text>
-            </View>
-            <View style={styles.instructionItem}>
-              <Ionicons name="location" size={20} color={COLORS.textSecondary} />
-              <Text style={styles.instructionText}>We deliver to most areas in Singapore</Text>
+        {/* Save Prompt Overlay */}
+        {showSavePrompt && (
+          <View style={styles.savePromptOverlay}>
+            <View style={styles.savePromptContent}>
+              <Ionicons name="checkmark-circle" size={24} color={COLORS.text} />
+              <Text style={styles.savePromptText}>Location saved!</Text>
             </View>
           </View>
         )}
-      </KeyboardAvoidingView>
-
-      {/* Save Prompt Overlay */}
-      {showSavePrompt && (
-        <View style={styles.savePromptOverlay}>
-          <View style={styles.savePromptContent}>
-            <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
-            <Text style={styles.savePromptText}>Location saved!</Text>
-          </View>
-        </View>
-      )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.card, // Match header background
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.background, // Content area background
   },
   successOverlay: {
     position: 'absolute',
@@ -699,12 +720,14 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginTop: SPACING.sm,
   },
+  
+  // Header with improved design
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
@@ -713,108 +736,273 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: SPACING.xs,
+  },
+  headerContent: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
   },
   headerTitle: {
     ...TYPOGRAPHY.h3,
     color: COLORS.text,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: SPACING.xs,
+  },
+  headerSubtitle: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   headerSpacer: {
     width: 40,
   },
+  
+  // Content area
   content: {
     flex: 1,
   },
-  searchContainer: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.card,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-    borderRadius: 8,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  searchBarFocused: {
-    borderColor: COLORS.primary,
-  },
-  searchBarKeyboard: {
-    borderColor: COLORS.primary,
-  },
-  searchInput: {
+  keyboardView: {
     flex: 1,
-    marginLeft: SPACING.sm,
-    ...TYPOGRAPHY.body,
-    color: COLORS.text,
   },
-  clearButton: {
-    padding: SPACING.xs,
+
+  // Current location widget
+  currentLocationWidget: {
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.lg,
   },
   currentLocationButton: {
+    backgroundColor: COLORS.buttonBg,
+    borderRadius: 20,
+    padding: SPACING.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.card,
-    marginHorizontal: SPACING.md,
-    marginTop: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    ...SHADOWS.light,
   },
-  currentLocationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
+  currentLocationIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.background + '40',
     justifyContent: 'center',
-    marginRight: SPACING.sm,
+    alignItems: 'center',
+    marginRight: SPACING.md,
   },
   currentLocationContent: {
     flex: 1,
   },
   currentLocationTitle: {
-    ...TYPOGRAPHY.body,
+    ...TYPOGRAPHY.h4,
+    color: COLORS.buttonText,
     fontWeight: '600',
-    color: COLORS.text,
+    marginBottom: SPACING.xs,
   },
   currentLocationSubtitle: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginTop: 2,
+    color: COLORS.buttonText + 'CC',
+    lineHeight: 18,
   },
+
+  // OR Divider
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.xl,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.border,
+  },
+  dividerText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+    paddingHorizontal: SPACING.md,
+  },
+
+  // Search section
+  searchSection: {
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.lg,
+  },
+  searchSectionTitle: {
+    ...TYPOGRAPHY.h4,
+    color: COLORS.text,
+    fontWeight: '600',
+    marginBottom: SPACING.md,
+  },
+  searchContainer: {
+    marginBottom: SPACING.sm,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    borderRadius: 16,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.light,
+  },
+  searchBarFocused: {
+    borderColor: COLORS.text,
+  },
+  searchBarKeyboard: {
+    borderColor: COLORS.text,
+  },
+  searchIconContainer: {
+    marginRight: SPACING.sm,
+  },
+  searchInput: {
+    flex: 1,
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    paddingVertical: SPACING.xs,
+  },
+  clearButton: {
+    padding: SPACING.xs,
+    marginLeft: SPACING.xs,
+  },
+
+  // Saved locations section with improved UI
+  savedLocationsSection: {
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.lg,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  sectionTitle: {
+    ...TYPOGRAPHY.h4,
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  manageButton: {
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+  },
+  manageButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.text,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+
+  // Quick select cards for better UX
+  quickSelectContainer: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  quickSelectCard: {
+    flex: 1,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: SPACING.lg,
+    alignItems: 'center',
+    minHeight: 120,
+    ...SHADOWS.light,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  quickSelectIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.buttonBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+  },
+  quickSelectLabel: {
+    ...TYPOGRAPHY.h4,
+    color: COLORS.text,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: SPACING.xs,
+  },
+  quickSelectAddress: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
+    flex: 1,
+  },
+  quickSelectBadge: {
+    backgroundColor: COLORS.buttonBg,
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: SPACING.sm,
+    marginTop: SPACING.xs,
+  },
+  quickSelectBadgeText: {
+    ...TYPOGRAPHY.tiny,
+    fontWeight: '600',
+    color: COLORS.buttonText,
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
+  // Show more button
+  showMoreButton: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...SHADOWS.light,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  showMoreContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+  },
+  showMoreText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    fontWeight: '600',
+    flex: 1,
+    marginLeft: SPACING.sm,
+  },
+
+  // Suggestions
   suggestionsContainer: {
     backgroundColor: COLORS.card,
     overflow: 'hidden',
+    flex: 1,
   },
   suggestionsList: {
     flex: 1,
   },
-  suggestionsSection: {
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.md,
+  suggestionsScrollContent: {
+    paddingBottom: SPACING.xl,
   },
-  sectionTitle: {
-    ...TYPOGRAPHY.caption,
+  suggestionsHeader: {
+    ...TYPOGRAPHY.h4,
+    color: COLORS.text,
     fontWeight: '600',
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.background,
   },
   suggestionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -822,89 +1010,65 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.buttonBg,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: SPACING.sm,
+    marginRight: SPACING.md,
   },
   suggestionContent: {
     flex: 1,
+    marginRight: SPACING.md,
   },
   suggestionTitle: {
     ...TYPOGRAPHY.body,
-    fontWeight: '500',
+    fontWeight: '600',
     color: COLORS.text,
+    marginBottom: SPACING.xs,
   },
   suggestionSubtitle: {
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
-    marginTop: 2,
+    lineHeight: 18,
   },
+  
+  // Loading and empty states
   loadingContainer: {
     padding: SPACING.lg,
     alignItems: 'center',
   },
   loadingText: {
-    ...TYPOGRAPHY.caption,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
   },
   noResultsContainer: {
     padding: SPACING.xl,
     alignItems: 'center',
   },
+  noResultsIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+    ...SHADOWS.light,
+  },
   noResultsTitle: {
     ...TYPOGRAPHY.h4,
     color: COLORS.text,
-    marginTop: SPACING.sm,
-    marginBottom: SPACING.xs,
+    fontWeight: '600',
+    marginBottom: SPACING.sm,
+    textAlign: 'center',
   },
   noResultsText: {
-    ...TYPOGRAPHY.caption,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 24,
   },
-  instructionsContainer: {
-    flex: 1,
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.xl,
-  },
-  instructionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  instructionText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginLeft: SPACING.sm,
-    flex: 1,
-  },
-  suggestionsScrollContent: {
-    paddingBottom: SPACING.xl,
-  },
-  suggestionsScrollContentKeyboard: {
-    paddingBottom: SPACING.xl + SPACING.xl,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  manageButton: {
-    paddingVertical: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
-  },
-  manageButtonText: {
-    color: COLORS.primary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  quickSaveButton: {
-    padding: SPACING.xs,
-    marginLeft: SPACING.xs,
-  },
+  
+  // Save prompt
   savePromptOverlay: {
     position: 'absolute',
     top: '50%',
@@ -913,11 +1077,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: SPACING.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    ...SHADOWS.medium,
     zIndex: 1000,
   },
   savePromptContent: {
@@ -926,53 +1086,9 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   savePromptText: {
-    color: COLORS.text,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  section: {
-    padding: SPACING.md,
-  },
-  savedLocationItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  savedLocationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: SPACING.sm,
-  },
-  savedLocationInfo: {
-    flex: 1,
-  },
-  savedLocationLabel: {
     ...TYPOGRAPHY.body,
-    fontWeight: '500',
     color: COLORS.text,
-  },
-  savedLocationAddress: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  defaultBadge: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    paddingVertical: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
-    marginTop: SPACING.xs,
-  },
-  defaultBadgeText: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '500',
-    color: COLORS.card,
+    fontWeight: '600',
   },
 });
 
