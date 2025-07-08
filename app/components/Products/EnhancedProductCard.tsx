@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   },
   compactContainer: {
     width: 160,
-    height: 250, // Fixed height for compact card
+    height: 280, // Increased height for compact card to show product name properly
   },
   imageContainer: {
     width: '100%',
