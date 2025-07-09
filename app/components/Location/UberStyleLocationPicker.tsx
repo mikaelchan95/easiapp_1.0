@@ -16,6 +16,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   FlatList,
+  Modal,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,9 +27,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { GOOGLE_MAPS_CONFIG } from '../../config/googleMaps';
-import { LocationSuggestion, LocationCoordinate, SavedAddress } from '../../types/location';
+import { LocationSuggestion, LocationCoordinate, SavedAddress, DeliveryDetails } from '../../types/location';
 import { GoogleMapsService } from '../../services/googleMapsService';
 import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
+import AddressDetailsForm from './AddressDetailsForm';
 
 const { width, height } = Dimensions.get('window');
 
@@ -158,7 +160,8 @@ const SearchResults: React.FC<{
   suggestions: LocationSuggestion[];
   isLoading: boolean;
   onSelectLocation: (location: LocationSuggestion) => void;
-}> = ({ searchText, suggestions, isLoading, onSelectLocation }) => {
+  onSaveLocation: (location: LocationSuggestion) => void;
+}> = ({ searchText, suggestions, isLoading, onSelectLocation, onSaveLocation }) => {
   if (searchText.length === 0) return null;
 
   return (
@@ -172,21 +175,30 @@ const SearchResults: React.FC<{
           </View>
         )}
         {!isLoading && suggestions.length > 0 && suggestions.map((suggestion, index) => (
-          <TouchableOpacity
-            key={`${suggestion.id}-${index}`}
-            style={styles.suggestionItem}
-            onPress={() => onSelectLocation(suggestion)}
-            accessibilityLabel={`Select location ${suggestion.title}`}
-            accessibilityRole="button"
-          >
-                          <View style={styles.suggestionIcon}>
-              <Ionicons name={suggestion.isPremiumLocation ? "star" : "location"} size={20} color={COLORS.textSecondary} />
-            </View>
-            <View style={styles.suggestionTextContainer}>
-              <Text style={styles.suggestionTitle} numberOfLines={1}>{suggestion.title}</Text>
-              <Text style={styles.suggestionSubtitle} numberOfLines={1}>{suggestion.subtitle}</Text>
-            </View>
-          </TouchableOpacity>
+          <View key={`${suggestion.id}-${index}`} style={styles.suggestionItemContainer}>
+            <TouchableOpacity
+              style={styles.suggestionItem}
+              onPress={() => onSelectLocation(suggestion)}
+              accessibilityLabel={`Select location ${suggestion.title}`}
+              accessibilityRole="button"
+            >
+              <View style={styles.suggestionIcon}>
+                <Ionicons name={suggestion.isPremiumLocation ? "star" : "location"} size={20} color={COLORS.textSecondary} />
+              </View>
+              <View style={styles.suggestionTextContainer}>
+                <Text style={styles.suggestionTitle} numberOfLines={1}>{suggestion.title}</Text>
+                <Text style={styles.suggestionSubtitle} numberOfLines={1}>{suggestion.subtitle}</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.saveLocationButton}
+              onPress={() => onSaveLocation(suggestion)}
+              accessibilityLabel={`Save location ${suggestion.title}`}
+              accessibilityRole="button"
+            >
+              <Ionicons name="bookmark-outline" size={18} color={COLORS.text} />
+            </TouchableOpacity>
+          </View>
         ))}
         {!isLoading && searchText.length > 0 && suggestions.length === 0 && (
           <View style={styles.loadingContainer}>
@@ -227,6 +239,8 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [activeTab, setActiveTab] = useState<'recent' | 'saved' | 'current'>('recent');
+  const [selectedLocationToSave, setSelectedLocationToSave] = useState<LocationSuggestion | null>(null);
+  const [showAddressForm, setShowAddressForm] = useState(false);
 
   // Enhanced keyboard handling with proper iOS support
   useEffect(() => {
@@ -569,6 +583,60 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
     }
   };
 
+  // Handle save location from search results
+  const handleSaveLocation = (location: LocationSuggestion) => {
+    setSelectedLocationToSave(location);
+    setShowAddressForm(true);
+  };
+
+  // Handle address form submission for saving
+  const handleAddressFormSave = async (details: DeliveryDetails & {label: string; icon?: string; color?: string}) => {
+    try {
+      if (Platform.OS === 'ios') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      
+      const newAddress: SavedAddress = {
+        id: Date.now().toString(),
+        label: details.label,
+        location: selectedLocationToSave!,
+        isDefault: details.isDefault || false,
+        icon: details.icon || 'home',
+        color: COLORS.text,
+        unitNumber: details.unitNumber,
+        buildingName: details.buildingName,
+        deliveryInstructions: details.deliveryInstructions,
+        contactNumber: details.contactNumber,
+        preferredTime: details.preferredTime,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await GoogleMapsService.saveAddress(newAddress);
+      await loadSavedAddresses();
+      
+      setShowAddressForm(false);
+      setSelectedLocationToSave(null);
+      
+      // Show success feedback
+      setShowSavePrompt(true);
+      setTimeout(() => setShowSavePrompt(false), 2000);
+      
+    } catch (error) {
+      console.error('Error saving address:', error);
+      if (Platform.OS === 'ios') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+      Alert.alert('Save Failed', 'Please try again.');
+    }
+  };
+
+  // Handle address form cancellation
+  const handleAddressFormCancel = () => {
+    setShowAddressForm(false);
+    setSelectedLocationToSave(null);
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.card }}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} translucent={false} />
@@ -853,6 +921,7 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
               suggestions={suggestions}
               isLoading={isLoading}
               onSelectLocation={handleLocationSelection}
+              onSaveLocation={handleSaveLocation}
             />
           </View>
         </View>
@@ -866,6 +935,26 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
             <Text style={styles.savePromptText}>Location saved!</Text>
           </View>
         </View>
+      )}
+
+      {/* Address Details Form Modal for Saving Locations */}
+      {selectedLocationToSave && (
+        <Modal
+          visible={showAddressForm}
+          animationType="slide"
+          presentationStyle="fullScreen"
+        >
+          <AddressDetailsForm
+            location={selectedLocationToSave}
+            onSubmit={(details) => {
+              // This won't be called since we're in save mode
+              handleAddressFormCancel();
+            }}
+            onSave={handleAddressFormSave}
+            onCancel={handleAddressFormCancel}
+            isSaveMode={true}
+          />
+        </Modal>
       )}
     </SafeAreaView>
   );
@@ -1093,15 +1182,11 @@ const styles = StyleSheet.create({
     maxHeight: 300,
   },
   suggestionItem: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 12,
-    backgroundColor: COLORS.background,
-    borderRadius: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
   suggestionIcon: {
     width: 32,
@@ -1544,6 +1629,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
+  },
+  
+  // Save Location Button Styles
+  suggestionItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  saveLocationButton: {
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderLeftWidth: 1,
+    borderLeftColor: COLORS.border,
   },
 });
 
