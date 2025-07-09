@@ -12,7 +12,8 @@ import {
   Animated,
   LayoutAnimation,
   Platform,
-  UIManager
+  UIManager,
+  Linking
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -25,11 +26,42 @@ import { formatPrice } from '../../utils/pricing';
 import { getUsersByCompany, getPendingApprovalsForUser } from '../../data/mockUsers';
 import { formatStatCurrency, formatStatNumber } from '../../utils/formatting';
 import { useAppContext } from '../../context/AppContext';
+import { HapticFeedback } from '../../utils/haptics';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
+
+// Enhanced contact interactions
+const handleContactPress = async (type: 'email' | 'phone', value: string) => {
+  HapticFeedback.light();
+  
+  if (type === 'email') {
+    // Open email app
+    const emailUrl = `mailto:${value}`;
+    const canOpen = await Linking.canOpenURL(emailUrl);
+    if (canOpen) {
+      Linking.openURL(emailUrl);
+    } else {
+      Alert.alert('Email', value, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Copy', onPress: () => console.log('Email copied') }
+      ]);
+    }
+  } else if (type === 'phone') {
+    const phoneUrl = `tel:${value}`;
+    const canOpen = await Linking.canOpenURL(phoneUrl);
+    if (canOpen) {
+      Linking.openURL(phoneUrl);
+    } else {
+      Alert.alert('Phone', value, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Copy', onPress: () => console.log('Phone copied') }
+      ]);
+    }
+  }
+};
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
@@ -311,37 +343,64 @@ export default function ProfileScreen() {
     
     return (
       <View style={styles.profileCard}>
+        {/* Enhanced Profile Header with Better UX */}
         <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              {user.profileImage ? (
-                <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />
-              ) : (
-                <Ionicons name="person" size={32} color={COLORS.card} />
-              )}
-            </View>
-            {isCompany && (
-              <View style={styles.roleBadge}>
-                <Text style={styles.roleBadgeText}>
-                  {(user as CompanyUser).role.toUpperCase()}
-                </Text>
+          <TouchableOpacity 
+            style={styles.avatarSection}
+            onPress={() => handleFeaturePress('Edit Profile')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatar}>
+                {user.profileImage ? (
+                  <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Text style={styles.avatarInitials}>
+                      {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </Text>
+                  </View>
+                )}
               </View>
-            )}
-          </View>
+              {/* Visual indicator that avatar is tappable */}
+              <View style={styles.editIndicator}>
+                <Ionicons name="camera" size={16} color={COLORS.card} />
+              </View>
+            </View>
+          </TouchableOpacity>
           
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user.name}</Text>
-            <Text style={styles.userEmail}>{user.email}</Text>
-            <Text style={styles.userPhone}>{user.phone}</Text>
+          <View style={styles.userInfoSection}>
+            <View style={styles.userMainInfo}>
+              <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">{user.name}</Text>
+              <View style={styles.contactInfo}>
+                <TouchableOpacity 
+                  style={styles.contactItem}
+                  onPress={() => handleContactPress('email', user.email)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="mail" size={14} color={COLORS.textSecondary} />
+                  <Text style={styles.userEmail} numberOfLines={1} ellipsizeMode="tail">{user.email}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.contactItem}
+                  onPress={() => handleContactPress('phone', user.phone)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="call" size={14} color={COLORS.textSecondary} />
+                  <Text style={styles.userPhone} numberOfLines={1} ellipsizeMode="tail">{user.phone}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            
             {isCompany && (
-              <>
-                <Text style={styles.userPosition}>
+              <View style={styles.professionalInfo}>
+                <Text style={styles.userPosition} numberOfLines={1} ellipsizeMode="tail">
                   {(user as CompanyUser).position} • {(user as CompanyUser).department}
                 </Text>
                 <Text style={styles.userRole}>
                   {userRole === 'trade' ? 'Trade Pricing' : 'Retail Pricing'}
                 </Text>
-              </>
+              </View>
             )}
           </View>
           
@@ -354,26 +413,60 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* User Stats - Different for Individual vs Company */}
+        {/* Enhanced User Stats with Better UX */}
         {!isCompany && (
-          <View style={styles.modernStatsContainer}>
-            <View style={styles.modernStatItem}>
-              <Text style={styles.modernStatNumber}>
-                {formatStatNumber((user as IndividualUser).totalOrders || 0)}
-              </Text>
-              <Text style={styles.modernStatLabel}>Orders</Text>
+          <View style={styles.userStatsSection}>
+            <View style={styles.statsSectionHeader}>
+              <Text style={styles.statsTitle}>Your Activity</Text>
+              <TouchableOpacity 
+                style={styles.viewAllButton}
+                onPress={() => handleFeaturePress('Order History')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.viewAllText}>View All</Text>
+                <Ionicons name="arrow-forward" size={14} color={COLORS.textSecondary} />
+              </TouchableOpacity>
             </View>
-            <View style={styles.modernStatDivider} />
-            <View style={styles.modernStatItem}>
-              <Text style={styles.modernStatNumber}>
-                {formatStatCurrency((user as IndividualUser).totalSpent || 0)}
-              </Text>
-              <Text style={styles.modernStatLabel}>Spent</Text>
-            </View>
-            <View style={styles.modernStatDivider} />
-            <View style={styles.modernStatItem}>
-              <Text style={styles.modernStatNumber}>4.9</Text>
-              <Text style={styles.modernStatLabel}>Rating</Text>
+            <View style={styles.modernStatsContainer}>
+              <TouchableOpacity 
+                style={styles.modernStatItem}
+                onPress={() => handleFeaturePress('Order History')}
+                activeOpacity={0.8}
+              >
+                <View style={styles.statIconContainer}>
+                  <Ionicons name="receipt-outline" size={20} color={COLORS.text} />
+                </View>
+                <Text style={styles.modernStatNumber}>
+                  {formatStatNumber((user as IndividualUser).totalOrders || 0)}
+                </Text>
+                <Text style={styles.modernStatLabel}>Orders</Text>
+              </TouchableOpacity>
+              <View style={styles.modernStatDivider} />
+              <TouchableOpacity 
+                style={styles.modernStatItem}
+                onPress={() => handleFeaturePress('Order History')}
+                activeOpacity={0.8}
+              >
+                <View style={styles.statIconContainer}>
+                  <Ionicons name="trending-up-outline" size={20} color={COLORS.text} />
+                </View>
+                <Text style={styles.modernStatNumber}>
+                  {formatStatCurrency((user as IndividualUser).totalSpent || 0)}
+                </Text>
+                <Text style={styles.modernStatLabel}>Spent</Text>
+              </TouchableOpacity>
+              <View style={styles.modernStatDivider} />
+              <TouchableOpacity 
+                style={styles.modernStatItem}
+                onPress={() => handleFeaturePress('Reviews')}
+                activeOpacity={0.8}
+              >
+                <View style={styles.statIconContainer}>
+                  <Ionicons name="star-outline" size={20} color={COLORS.text} />
+                </View>
+                <Text style={styles.modernStatNumber}>4.9</Text>
+                <Text style={styles.modernStatLabel}>Rating</Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -588,15 +681,20 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     marginBottom: SPACING.md,
     ...SHADOWS.medium,
+    position: 'relative',
   },
   profileHeader: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: SPACING.md,
+  },
+  avatarSection: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.lg,
+    marginRight: SPACING.md,
   },
   avatarContainer: {
     position: 'relative',
-    marginRight: SPACING.md,
   },
   avatar: {
     width: 64,
@@ -611,52 +709,80 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  roleBadge: {
+  avatarPlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitials: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.text,
+    fontWeight: 'bold',
+  },
+  editIndicator: {
     position: 'absolute',
-    bottom: -4,
-    right: -4,
+    bottom: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: COLORS.text,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 2,
     borderColor: COLORS.card,
   },
-  roleBadgeText: {
-    ...TYPOGRAPHY.tiny,
-    color: COLORS.card,
-    fontWeight: 'bold',
-  },
-  userInfo: {
+  userInfoSection: {
     flex: 1,
+    marginRight: SPACING.sm,
+  },
+  userMainInfo: {
+    marginBottom: SPACING.xs,
   },
   userName: {
     ...TYPOGRAPHY.h3,
-    marginBottom: 2,
+    marginBottom: 4,
+    flex: 1,
+  },
+  contactInfo: {
+    flexDirection: 'column',
+    gap: 2,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 2,
   },
   userEmail: {
     ...TYPOGRAPHY.caption,
-    marginBottom: 2,
+    marginLeft: SPACING.xs,
+    flex: 1,
   },
   userPhone: {
     ...TYPOGRAPHY.small,
-    marginBottom: 2,
+    marginLeft: SPACING.xs,
+    flex: 1,
+  },
+  professionalInfo: {
+    marginTop: SPACING.xs,
   },
   userPosition: {
     ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
-    marginTop: 4,
+    flex: 1,
   },
   userRole: {
     ...TYPOGRAPHY.small,
-    color: COLORS.text,
-    fontWeight: '600',
-    marginTop: 2,
+    color: COLORS.textSecondary,
+    flex: 1,
   },
   editButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
@@ -932,6 +1058,45 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     zIndex: 10,
     ...SHADOWS.light,
+  },
+
+  // User Stats Section
+  userStatsSection: {
+    marginBottom: SPACING.md,
+  },
+  statsSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+    paddingHorizontal: 4,
+  },
+  statsTitle: {
+    ...TYPOGRAPHY.h4,
+    marginBottom: 0,
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
+  },
+  viewAllText: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+    marginRight: SPACING.xs,
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
   },
 
 }); 
