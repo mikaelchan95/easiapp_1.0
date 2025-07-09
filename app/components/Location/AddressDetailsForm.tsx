@@ -653,24 +653,25 @@ export default function AddressDetailsForm({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        {/* Enhanced header with progress */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleCancel} style={styles.headerButton}>
-            <Ionicons name="close" size={24} color={COLORS.text} />
-          </TouchableOpacity>
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>
-              {isSaveMode ? 'Save Location' : 'Delivery Details'}
-            </Text>
-            {isSaveMode && renderProgressIndicator()}
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+        >
+          {/* Enhanced header with progress */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={handleCancel} style={styles.headerButton}>
+              <Ionicons name="close" size={24} color={COLORS.text} />
+            </TouchableOpacity>
+            <View style={styles.headerContent}>
+              <Text style={styles.headerTitle}>
+                {isSaveMode ? 'Save Location' : 'Delivery Details'}
+              </Text>
+              {isSaveMode && renderProgressIndicator()}
+            </View>
+            <View style={styles.headerSpacer} />
           </View>
-          <View style={styles.headerSpacer} />
-        </View>
 
         <Animated.View 
           style={[
@@ -727,6 +728,7 @@ export default function AddressDetailsForm({
         </Animated.View>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  </View>
   );
 }
 
@@ -734,6 +736,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  safeArea: {
+    flex: 1,
   },
   keyboardView: {
     flex: 1,
