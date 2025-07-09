@@ -219,6 +219,7 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
   const [searchText, setSearchText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
+  const [recentLocations, setRecentLocations] = useState<LocationSuggestion[]>([]);
   const [currentLocation, setCurrentLocation] = useState<LocationSuggestion | null>(null);
   const [pickupLocation, setPickupLocation] = useState<LocationSuggestion | null>(null);
   const [mapRegion, setMapRegion] = useState(GOOGLE_MAPS_CONFIG.marinaBayRegion);
@@ -292,8 +293,12 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        // Load saved addresses
+        // Load saved addresses and recent locations
         await loadSavedAddresses();
+        
+        // Load recent locations
+        const recent = await GoogleMapsService.getRecentLocations();
+        setRecentLocations(recent);
         
         // Only load current location if preferences allow it
         if (locationPreferences.autoSuggestCurrent) {
@@ -389,6 +394,11 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
       
       setPickupLocation(enrichedLocation);
       await setDeliveryLocation(enrichedLocation);
+
+      // Add to recent locations
+      await GoogleMapsService.addToRecentLocations(enrichedLocation);
+      const updatedRecent = await GoogleMapsService.getRecentLocations();
+      setRecentLocations(updatedRecent);
 
       if (enrichedLocation.coordinate) {
         setMapRegion({
@@ -701,6 +711,37 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
                     </View>
                   </TouchableOpacity>
                 )}
+              </View>
+            )}
+
+            {/* Recent Locations Section */}
+            {showSavedLocations && recentLocations.length > 0 && searchText.length === 0 && (
+              <View style={styles.recentLocationsContainer}>
+                <Text style={styles.recentLocationsTitle}>Recent</Text>
+                <View style={styles.recentLocationsList}>
+                  {recentLocations.slice(0, 3).map((location, index) => (
+                    <TouchableOpacity
+                      key={`${location.id}-${index}`}
+                      style={styles.recentLocationItem}
+                      onPress={() => handleLocationSelection(location)}
+                      activeOpacity={0.7}
+                      accessibilityLabel={`Select recent location ${location.title}`}
+                    >
+                      <View style={styles.recentLocationIcon}>
+                        <Ionicons name="time-outline" size={18} color={COLORS.textSecondary} />
+                      </View>
+                      <View style={styles.recentLocationInfo}>
+                        <Text style={styles.recentLocationTitle} numberOfLines={1}>
+                          {location.title}
+                        </Text>
+                        <Text style={styles.recentLocationSubtitle} numberOfLines={1}>
+                          {location.subtitle || location.formattedAddress}
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
             )}
             
@@ -1137,6 +1178,57 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.text,
     fontWeight: '500',
+  },
+  
+  // Recent Locations Styles
+  recentLocationsContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  recentLocationsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  recentLocationsList: {
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: 'hidden',
+  },
+  recentLocationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  recentLocationIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  recentLocationInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  recentLocationTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  recentLocationSubtitle: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    lineHeight: 16,
   },
 });
 
