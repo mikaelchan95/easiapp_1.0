@@ -193,11 +193,80 @@ function TabBarButton({ onPress, children, isActive, route }: any) {
   );
 }
 
+// Animated profile icon with jiggle effect
+function AnimatedProfileIcon({ hasNotification, isFocused }: { hasNotification: boolean; isFocused: boolean }) {
+  const jiggleAnim = useRef(new Animated.Value(0)).current;
+  
+  useEffect(() => {
+    if (hasNotification && !isFocused) {
+      // Start jiggle animation
+      const jiggle = () => {
+        Animated.sequence([
+          Animated.timing(jiggleAnim, {
+            toValue: 1,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(jiggleAnim, {
+            toValue: -1,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(jiggleAnim, {
+            toValue: 1,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(jiggleAnim, {
+            toValue: 0,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          // Repeat jiggle every 3 seconds
+          setTimeout(jiggle, 3000);
+        });
+      };
+      
+      jiggle();
+    } else {
+      jiggleAnim.setValue(0);
+    }
+  }, [hasNotification, isFocused, jiggleAnim]);
+  
+  return (
+    <Animated.View
+      style={{
+        transform: [
+          {
+            rotate: jiggleAnim.interpolate({
+              inputRange: [-1, 1],
+              outputRange: ['-5deg', '5deg'],
+            }),
+          },
+        ],
+      }}
+    >
+      <Ionicons 
+        name="person-outline" 
+        size={22} 
+        color={isFocused ? COLORS.accent : COLORS.inactive} 
+      />
+      {hasNotification && (
+        <View style={styles.notificationDot} />
+      )}
+    </Animated.View>
+  );
+}
+
 // Custom tab bar component for better control
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const insets = useSafeAreaInsets();
   const { state: appState } = React.useContext(AppContext);
   const cartItemCount = appState.cart.reduce((count, item) => count + item.quantity, 0);
+  
+  // Mock notification states - in a real app, these would come from context/state
+  const hasProfileNotifications = true; // New features, updates, etc.
   
   return (
     <View style={[
@@ -263,11 +332,19 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                   ]}>
                     <View style={styles.menuButton}>
                       <View style={styles.iconContainer}>
-                        <Ionicons 
-                          name={iconName as any} 
-                          size={22} 
-                          color={isFocused ? COLORS.accent : COLORS.inactive} 
-                        />
+                        {/* Special handling for Profile tab with jiggle animation */}
+                        {route.name === 'Profile' ? (
+                          <AnimatedProfileIcon 
+                            hasNotification={hasProfileNotifications} 
+                            isFocused={isFocused} 
+                          />
+                        ) : (
+                          <Ionicons 
+                            name={iconName as any} 
+                            size={22} 
+                            color={isFocused ? COLORS.accent : COLORS.inactive} 
+                          />
+                        )}
                         
                         {/* Cart badge with animation */}
                         {route.name === 'Cart' && cartItemCount > 0 && (
@@ -613,5 +690,16 @@ const styles = StyleSheet.create({
   activeTabLabel: {
     color: COLORS.primary,
     fontWeight: FONT_WEIGHTS.semibold,
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.error,
+    borderWidth: 1,
+    borderColor: COLORS.card,
   },
 }); 

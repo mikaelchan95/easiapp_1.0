@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   View, 
   ScrollView, 
@@ -17,6 +17,9 @@ import MobileHeader from '../Layout/MobileHeader';
 import BannerCarousel from './BannerCarousel';
 import BalanceCards from './BalanceCards';
 import ProductSectionCard from '../Products/ProductSectionCard';
+import ShopByBrandsSection from './ShopByBrandsSection';
+import PastOrdersSection from './PastOrdersSection';
+import BackToTopButton from '../UI/BackToTopButton';
 import { products, Product } from '../../data/mockProducts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
@@ -34,8 +37,10 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [currentBanner, setCurrentBanner] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const { state, testSupabaseIntegration } = useAppContext();
   const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
+  const scrollViewRef = useRef<ScrollView>(null);
   
   // Get user data from Supabase
   const user = state.user;
@@ -157,6 +162,52 @@ export default function HomeScreen() {
   const handleProductSelect = useCallback((product: Product) => {
     navigation.navigate('ProductDetail', { id: product.id });
   }, [navigation]);
+
+  // Handle scroll events for back to top button
+  const handleScroll = useCallback((event: any) => {
+    const scrollY = event.nativeEvent.contentOffset.y;
+    setShowBackToTop(scrollY > 300); // Show after scrolling 300px
+  }, []);
+
+  // Handle back to top button press
+  const handleBackToTop = useCallback(() => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    HapticFeedback.light();
+  }, []);
+
+  // Handle brand press
+  const handleBrandPress = useCallback((brand: any) => {
+    // Navigate to products filtered by brand
+    navigation.navigate('SmartSearch', { category: brand.category });
+  }, [navigation]);
+
+  // Handle brands view all
+  const handleBrandsViewAll = useCallback(() => {
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'Products'
+      })
+    );
+  }, [navigation]);
+
+  // Handle past order press
+  const handlePastOrderPress = useCallback((order: any) => {
+    // Navigate to order history for now - in a real app this would show order details
+    navigation.navigate('OrderHistory');
+  }, [navigation]);
+
+  // Handle past orders view all
+  const handlePastOrdersViewAll = useCallback(() => {
+    navigation.navigate('OrderHistory');
+  }, [navigation]);
+
+  // Handle reorder
+  const handleReorder = useCallback((order: any) => {
+    // In a real app, this would add the order items back to cart
+    console.log('Reordering:', order.orderNumber);
+    // Show success feedback
+    HapticFeedback.success();
+  }, []);
   
   return (
     <View style={styles.container}>
@@ -186,9 +237,12 @@ export default function HomeScreen() {
       
       {/* Scrollable Content */}
       <ScrollView 
+        ref={scrollViewRef}
         style={styles.content} 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -247,10 +301,33 @@ export default function HomeScreen() {
             onProductPress={handleProductPress}
           />
         </View>
+
+        {/* Shop by Brands */}
+        <View style={styles.section}>
+          <ShopByBrandsSection
+            onBrandPress={handleBrandPress}
+            onViewAll={handleBrandsViewAll}
+          />
+        </View>
+
+        {/* Past Orders */}
+        <View style={styles.section}>
+          <PastOrdersSection
+            onOrderPress={handlePastOrderPress}
+            onViewAll={handlePastOrdersViewAll}
+            onReorderPress={handleReorder}
+          />
+        </View>
         
         {/* Bottom padding for better scrolling experience */}
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {/* Back to Top Button */}
+      <BackToTopButton
+        visible={showBackToTop}
+        onPress={handleBackToTop}
+      />
     </View>
   );
 }
@@ -279,7 +356,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: SPACING.xxl,
+    paddingBottom: 140, // Extra padding to ensure content isn't covered by back to top button
   },
   section: {
     marginBottom: SPACING.section,
