@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -7,7 +7,8 @@ import {
   ScrollView, 
   StatusBar,
   Alert,
-  Switch
+  Switch,
+  Linking
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -17,13 +18,48 @@ import { AppContext } from '../../context/AppContext';
 import MobileHeader from '../Layout/MobileHeader';
 import { isCompanyUser } from '../../types/user';
 import { formatStatCurrency, formatPercentage } from '../../utils/formatting';
+import { HapticFeedback } from '../../utils/haptics';
 
 export default function CompanyProfileScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { state, updateCompanyProfile } = useContext(AppContext);
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
   
   const { user, company } = state;
+
+  const toggleSection = (section: string) => {
+    HapticFeedback.light();
+    setExpandedSections(prev => 
+      prev.includes(section) 
+        ? prev.filter(s => s !== section)
+        : [...prev, section]
+    );
+  };
+
+  const handleContactPress = async (type: 'email' | 'phone' | 'address', value: string) => {
+    HapticFeedback.light();
+    
+    if (type === 'email') {
+      const emailUrl = `mailto:${value}`;
+      const canOpen = await Linking.canOpenURL(emailUrl);
+      if (canOpen) {
+        Linking.openURL(emailUrl);
+      }
+    } else if (type === 'phone') {
+      const phoneUrl = `tel:${value}`;
+      const canOpen = await Linking.canOpenURL(phoneUrl);
+      if (canOpen) {
+        Linking.openURL(phoneUrl);
+      }
+    } else if (type === 'address') {
+      const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(value)}`;
+      const canOpen = await Linking.canOpenURL(mapsUrl);
+      if (canOpen) {
+        Linking.openURL(mapsUrl);
+      }
+    }
+  };
 
   if (!user || !isCompanyUser(user) || !company) {
     return (
@@ -71,51 +107,84 @@ export default function CompanyProfileScreen() {
         contentContainerStyle={styles.scrollContent} 
         showsVerticalScrollIndicator={false}
       >
-        {/* Company Header Card */}
+        {/* Enhanced Company Header Card */}
         <View style={styles.headerCard}>
-          <View style={styles.companyIconContainer}>
-            <Ionicons name="business" size={24} color={COLORS.text} />
+          <View style={styles.companyHeader}>
+            <View style={styles.companyIconContainer}>
+              <Ionicons name="business" size={28} color={COLORS.text} />
+            </View>
+            <View style={styles.companyInfo}>
+              <Text style={styles.companyName}>{company.name}</Text>
+              <Text style={styles.companyLegal}>{company.companyName}</Text>
+              <View style={styles.verificationBadge}>
+                <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+                <Text style={styles.verificationText}>Verified Company</Text>
+              </View>
+            </View>
           </View>
-          <View style={styles.companyInfo}>
-            <Text style={styles.companyName}>{company.name}</Text>
-            <Text style={styles.companyLegal}>{company.companyName}</Text>
-            <View style={styles.verificationBadge}>
-              <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
-              <Text style={styles.verificationText}>Verified</Text>
-              <Text style={styles.uenText}>UEN: {company.uen}</Text>
+          
+          <View style={styles.companyMeta}>
+            <View style={styles.metaRow}>
+              <View style={styles.metaItem}>
+                <Text style={styles.metaLabel}>UEN</Text>
+                <Text style={styles.metaValue} numberOfLines={1} ellipsizeMode="tail">{company.uen}</Text>
+              </View>
+              <View style={styles.metaItem}>
+                <Text style={styles.metaLabel}>Status</Text>
+                <Text style={[styles.metaValue, { color: '#4CAF50' }]} numberOfLines={1} ellipsizeMode="tail">
+                  {company.status === 'active' ? 'Active' : 'Inactive'}
+                </Text>
+              </View>
+              <View style={styles.metaItem}>
+                <Text style={styles.metaLabel}>Terms</Text>
+                <Text style={styles.metaValue} numberOfLines={1} ellipsizeMode="tail">{company.paymentTerms}</Text>
+              </View>
             </View>
           </View>
         </View>
 
-        {/* Credit Overview - Modern Widget */}
+        {/* Enhanced Credit Overview */}
         <View style={styles.creditWidget}>
-          <Text style={styles.widgetTitle}>Credit Overview</Text>
+          <View style={styles.creditHeader}>
+            <Text style={styles.widgetTitle}>Credit Overview</Text>
+            <View style={styles.creditStatus}>
+              <View style={[styles.statusDot, { 
+                backgroundColor: creditUtilization > 80 ? '#FF6B6B' : 
+                               creditUtilization > 60 ? '#FFA500' : '#4CAF50'
+              }]} />
+              <Text style={styles.statusText}>
+                {creditUtilization > 80 ? 'High Usage' : 
+                 creditUtilization > 60 ? 'Moderate' : 'Healthy'}
+              </Text>
+            </View>
+          </View>
           
           <View style={styles.creditStatsRow}>
             <View style={styles.creditStat}>
-              <Text style={styles.creditAmount}>${Math.round(availableCredit / 1000)}k</Text>
+              <Text style={styles.creditAmount}>{formatStatCurrency(availableCredit)}</Text>
               <Text style={styles.creditLabel}>Available</Text>
             </View>
+            <View style={styles.creditStatDivider} />
             <View style={styles.creditStat}>
-              <Text style={styles.creditAmount}>${Math.round((company.creditLimit || 0) / 1000)}k</Text>
-              <Text style={styles.creditLabel}>Limit</Text>
+              <Text style={styles.creditAmount}>{formatStatCurrency(usedCredit)}</Text>
+              <Text style={styles.creditLabel}>Used</Text>
             </View>
+            <View style={styles.creditStatDivider} />
             <View style={styles.creditStat}>
-              <Text style={styles.creditAmount}>{company.paymentTerms}</Text>
-              <Text style={styles.creditLabel}>Terms</Text>
+              <Text style={styles.creditAmount}>{formatStatCurrency(company.creditLimit || 0)}</Text>
+              <Text style={styles.creditLabel}>Total Limit</Text>
             </View>
           </View>
 
-          {/* Progress Bar */}
+          {/* Enhanced Progress Bar */}
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
               <View 
                 style={[
                   styles.progressFill, 
                   { 
-                    width: `${creditUtilization}%`,
-                    backgroundColor: creditUtilization > 80 ? '#FF6B6B' : 
-                                   creditUtilization > 60 ? '#FFA500' : '#4CAF50'
+                    width: `${Math.min(creditUtilization, 100)}%`,
+                    backgroundColor: COLORS.text
                   }
                 ]} 
               />
@@ -126,43 +195,76 @@ export default function CompanyProfileScreen() {
           </View>
         </View>
 
-        {/* Contact Information Grid */}
+        {/* Enhanced Contact Information */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Contact Information</Text>
           <View style={styles.contactGrid}>
-            <View style={styles.contactItem}>
-              <Ionicons name="location" size={20} color={COLORS.textSecondary} />
+            <TouchableOpacity 
+              style={styles.contactItem}
+              onPress={() => handleContactPress('address', company.address)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.contactIconContainer}>
+                <Ionicons name="location" size={20} color={COLORS.text} />
+              </View>
               <View style={styles.contactText}>
                 <Text style={styles.contactLabel}>Address</Text>
                 <Text style={styles.contactValue}>{company.address}</Text>
               </View>
-            </View>
+              <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+            </TouchableOpacity>
             
             {company.phone && (
-              <View style={styles.contactItem}>
-                <Ionicons name="call" size={20} color={COLORS.textSecondary} />
+              <TouchableOpacity 
+                style={styles.contactItem}
+                onPress={() => handleContactPress('phone', company.phone)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.contactIconContainer}>
+                  <Ionicons name="call" size={20} color={COLORS.text} />
+                </View>
                 <View style={styles.contactText}>
                   <Text style={styles.contactLabel}>Phone</Text>
                   <Text style={styles.contactValue}>{company.phone}</Text>
                 </View>
-              </View>
+                <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+              </TouchableOpacity>
             )}
             
             {company.email && (
-              <View style={styles.contactItem}>
-                <Ionicons name="mail" size={20} color={COLORS.textSecondary} />
+              <TouchableOpacity 
+                style={styles.contactItem}
+                onPress={() => handleContactPress('email', company.email)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.contactIconContainer}>
+                  <Ionicons name="mail" size={20} color={COLORS.text} />
+                </View>
                 <View style={styles.contactText}>
                   <Text style={styles.contactLabel}>Email</Text>
                   <Text style={styles.contactValue}>{company.email}</Text>
                 </View>
-              </View>
+                <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+              </TouchableOpacity>
             )}
           </View>
         </View>
 
-        {/* Order Approval Settings */}
+        {/* Enhanced Order Approval Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Order Approval Settings</Text>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('approvals')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.sectionTitle}>Order Approval Settings</Text>
+            <Ionicons 
+              name={expandedSections.includes('approvals') ? 'chevron-up' : 'chevron-down'} 
+              size={20} 
+              color={COLORS.textSecondary} 
+            />
+          </TouchableOpacity>
+          
           <View style={styles.settingsCard}>
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
@@ -179,23 +281,34 @@ export default function CompanyProfileScreen() {
               />
             </View>
             
-            {company.approvalSettings.requireApproval && (
+            {expandedSections.includes('approvals') && company.approvalSettings.requireApproval && (
               <View style={styles.approvalDetails}>
                 <View style={styles.approvalItem}>
-                  <Text style={styles.approvalLabel}>Approval Threshold</Text>
+                  <View style={styles.approvalInfo}>
+                    <Text style={styles.approvalLabel}>Approval Threshold</Text>
+                    <Text style={styles.approvalDescription}>Orders above this amount need approval</Text>
+                  </View>
                   <Text style={styles.approvalValue}>
                     {formatStatCurrency(company.approvalSettings.approvalThreshold || 0)}
                   </Text>
                 </View>
                 <View style={styles.approvalItem}>
-                  <Text style={styles.approvalLabel}>Auto-Approve Below</Text>
+                  <View style={styles.approvalInfo}>
+                    <Text style={styles.approvalLabel}>Auto-Approve Below</Text>
+                    <Text style={styles.approvalDescription}>Orders below this amount are auto-approved</Text>
+                  </View>
                   <Text style={styles.approvalValue}>
                     {formatStatCurrency(company.approvalSettings.autoApproveBelow || 0)}
                   </Text>
                 </View>
                 <View style={styles.approvalItem}>
-                  <Text style={styles.approvalLabel}>Multi-Level Approval</Text>
-                  <Text style={styles.approvalValue}>
+                  <View style={styles.approvalInfo}>
+                    <Text style={styles.approvalLabel}>Multi-Level Approval</Text>
+                    <Text style={styles.approvalDescription}>Requires multiple approvers</Text>
+                  </View>
+                  <Text style={[styles.approvalValue, { 
+                    color: company.approvalSettings.multiLevelApproval ? '#4CAF50' : COLORS.textSecondary 
+                  }]}>
                     {company.approvalSettings.multiLevelApproval ? 'Enabled' : 'Disabled'}
                   </Text>
                 </View>
@@ -204,36 +317,54 @@ export default function CompanyProfileScreen() {
           </View>
         </View>
 
-        {/* Quick Actions */}
+        {/* Enhanced Quick Actions */}
         {user.permissions?.canEditCompanyInfo && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
             <View style={styles.actionsGrid}>
               <TouchableOpacity 
                 style={styles.actionCard}
-                onPress={() => Alert.alert('Edit Company', 'Feature coming soon')}
-                activeOpacity={0.7}
+                onPress={() => {
+                  HapticFeedback.medium();
+                  Alert.alert('Edit Company', 'Feature coming soon');
+                }}
+                activeOpacity={0.8}
               >
-                <Ionicons name="create-outline" size={24} color={COLORS.text} />
+                <View style={styles.actionIconContainer}>
+                  <Ionicons name="create-outline" size={24} color={COLORS.text} />
+                </View>
                 <Text style={styles.actionText}>Edit Info</Text>
+                <Text style={styles.actionDescription}>Update company details</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={styles.actionCard}
-                onPress={() => Alert.alert('Team Management', 'Feature coming soon')}
-                activeOpacity={0.7}
+                onPress={() => {
+                  HapticFeedback.medium();
+                  navigation.navigate('TeamManagement');
+                }}
+                activeOpacity={0.8}
               >
-                <Ionicons name="people-outline" size={24} color={COLORS.text} />
-                <Text style={styles.actionText}>Manage Team</Text>
+                <View style={styles.actionIconContainer}>
+                  <Ionicons name="people-outline" size={24} color={COLORS.text} />
+                </View>
+                <Text style={styles.actionText}>Team</Text>
+                <Text style={styles.actionDescription}>Manage team members</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={styles.actionCard}
-                onPress={() => Alert.alert('Reports', 'Feature coming soon')}
-                activeOpacity={0.7}
+                onPress={() => {
+                  HapticFeedback.medium();
+                  Alert.alert('Reports', 'Feature coming soon');
+                }}
+                activeOpacity={0.8}
               >
-                <Ionicons name="bar-chart-outline" size={24} color={COLORS.text} />
-                <Text style={styles.actionText}>View Reports</Text>
+                <View style={styles.actionIconContainer}>
+                  <Ionicons name="bar-chart-outline" size={24} color={COLORS.text} />
+                </View>
+                <Text style={styles.actionText}>Reports</Text>
+                <Text style={styles.actionDescription}>View analytics</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -282,9 +413,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: SPACING.lg,
     marginBottom: SPACING.lg,
+    ...SHADOWS.medium,
+  },
+  companyHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    ...SHADOWS.medium,
   },
   companyIconContainer: {
     width: 60,
@@ -319,9 +452,33 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     marginRight: SPACING.sm,
   },
-  uenText: {
+  companyMeta: {
+    marginTop: SPACING.md,
+    paddingTop: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  metaItem: {
+    alignItems: 'center',
+    flex: 1,
+    paddingHorizontal: SPACING.xs,
+  },
+  metaLabel: {
     ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  metaValue: {
+    ...TYPOGRAPHY.small,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 
   // Credit Widget
@@ -332,10 +489,29 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
     ...SHADOWS.medium,
   },
+  creditHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
   widgetTitle: {
     ...TYPOGRAPHY.h4,
     fontWeight: '600',
-    marginBottom: SPACING.md,
+  },
+  creditStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: SPACING.sm,
+  },
+  statusText: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
   },
   creditStatsRow: {
     flexDirection: 'row',
@@ -355,6 +531,11 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
     fontWeight: '500',
+  },
+  creditStatDivider: {
+    width: 1,
+    height: '100%',
+    backgroundColor: COLORS.border,
   },
   progressContainer: {
     marginTop: SPACING.sm,
@@ -386,6 +567,13 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
     paddingHorizontal: 4,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+    paddingHorizontal: 4,
+  },
 
   // Contact Grid
   contactGrid: {
@@ -398,6 +586,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: SPACING.md,
+  },
+  contactIconContainer: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.sm,
   },
   contactText: {
     marginLeft: SPACING.sm,
@@ -451,8 +648,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: SPACING.sm,
   },
+  approvalInfo: {
+    flex: 1,
+    marginRight: SPACING.md,
+  },
   approvalLabel: {
     ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+  },
+  approvalDescription: {
+    ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
   },
   approvalValue: {
@@ -474,10 +679,24 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     ...SHADOWS.light,
   },
+  actionIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
   actionText: {
     ...TYPOGRAPHY.small,
     fontWeight: '600',
     marginTop: SPACING.xs,
+    textAlign: 'center',
+  },
+  actionDescription: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
     textAlign: 'center',
   },
 
