@@ -8,7 +8,7 @@ import {
   Image 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SHADOWS, SPACING, FONT_SIZES, FONT_WEIGHTS } from '../../utils/theme';
+import { COLORS, SHADOWS, SPACING, FONT_SIZES, FONT_WEIGHTS, TYPOGRAPHY } from '../../utils/theme';
 import { HapticFeedback } from '../../utils/haptics';
 
 interface PastOrder {
@@ -175,13 +175,14 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
 
   return (
     <View style={styles.container}>
-      {/* Section Header */}
+      {/* Section Header - Match ProductSectionCard pattern */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="receipt" size={20} color={COLORS.primary} />
-          </View>
+        <View style={styles.titleContainer}>
+          <Ionicons name="receipt" size={20} color={COLORS.primary} style={styles.icon} />
           <Text style={styles.title}>Past Orders</Text>
+          <View style={styles.countBadge}>
+            <Text style={styles.countText}>{RECENT_ORDERS.length}</Text>
+          </View>
         </View>
         
         <TouchableOpacity
@@ -193,7 +194,7 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
           accessibilityLabel="View all orders"
         >
           <Text style={styles.viewAllText}>View All</Text>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+          <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
 
@@ -221,66 +222,77 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     marginBottom: SPACING.md,
   },
-  headerLeft: {
+  titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: `${COLORS.primary}15`,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.sm,
+  icon: {
+    marginRight: SPACING.element,
   },
   title: {
-    fontSize: FONT_SIZES.h4,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.text,
+    ...TYPOGRAPHY.h3,
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginRight: SPACING.sm,
+  },
+  countBadge: {
+    backgroundColor: COLORS.primary + '20',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  countText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.primary,
+    fontWeight: '600',
   },
   viewAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary + '10',
+    minWidth: 80,
+    justifyContent: 'center',
   },
   viewAllText: {
-    fontSize: FONT_SIZES.bodySmall,
-    color: COLORS.textSecondary,
-    marginRight: SPACING.xs,
+    ...TYPOGRAPHY.button,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginRight: 4,
   },
   ordersScrollView: {
-    marginHorizontal: -SPACING.md,
+    // Remove negative margin to align with other sections
   },
   ordersContainer: {
-    paddingHorizontal: SPACING.md,
-    gap: SPACING.sm,
+    paddingLeft: SPACING.md,
+    paddingRight: SPACING.element,
   },
   orderCard: {
-    width: 280,
+    width: 320,
     backgroundColor: COLORS.card,
-    borderRadius: 12,
-    padding: SPACING.md,
+    borderRadius: 16,
+    padding: SPACING.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: SPACING.sm,
+    marginRight: SPACING.md,
     ...SHADOWS.light,
   },
   orderImageContainer: {
     position: 'relative',
-    marginRight: SPACING.md,
+    marginRight: SPACING.lg,
   },
   orderImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
+    width: 64,
+    height: 64,
+    borderRadius: 12,
     backgroundColor: COLORS.background,
   },
   placeholderImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
+    width: 64,
+    height: 64,
+    borderRadius: 12,
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
@@ -289,46 +301,46 @@ const styles = StyleSheet.create({
   },
   itemCountBadge: {
     position: 'absolute',
-    top: -4,
-    right: -4,
+    top: -6,
+    right: -6,
     backgroundColor: COLORS.primary,
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    minWidth: 20,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    minWidth: 24,
     alignItems: 'center',
   },
   itemCountText: {
-    fontSize: FONT_SIZES.tiny,
-    fontWeight: FONT_WEIGHTS.medium,
+    ...TYPOGRAPHY.caption,
+    fontWeight: '600',
     color: COLORS.card,
   },
   orderInfo: {
     flex: 1,
-    marginRight: SPACING.sm,
+    marginRight: SPACING.md,
   },
   orderHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   orderNumber: {
-    fontSize: FONT_SIZES.bodySmall,
-    fontWeight: FONT_WEIGHTS.medium,
+    ...TYPOGRAPHY.h4,
+    fontWeight: '600',
     color: COLORS.text,
     flex: 1,
   },
   statusBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    marginLeft: SPACING.xs,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: SPACING.sm,
   },
   orderItemName: {
-    fontSize: FONT_SIZES.label,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
   orderFooter: {
     flexDirection: 'row',
@@ -336,22 +348,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   orderDate: {
-    fontSize: FONT_SIZES.label,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
   },
   orderTotal: {
-    fontSize: FONT_SIZES.bodySmall,
-    fontWeight: FONT_WEIGHTS.semibold,
+    ...TYPOGRAPHY.h4,
+    fontWeight: '700',
     color: COLORS.text,
   },
   reorderButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-}); 
+});

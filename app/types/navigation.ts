@@ -39,6 +39,9 @@ export type RootStackParamList = {
   Support: undefined;
   Referrals: undefined;
   LocationPickerScreen: undefined;
+  // Rewards-related screens
+  VoucherTracking: undefined;
+  RewardsFAQ: undefined;
   // Company-related screens
   CompanyProfile: undefined;
   TeamManagement: undefined;
@@ -79,6 +82,9 @@ export type AppStackParamList = {
   Wishlist: undefined;
   Reviews: undefined;
   Support: undefined;
+  // Rewards-related screens
+  VoucherTracking: undefined;
+  RewardsFAQ: undefined;
   // Company-related screens
   CompanyProfile: undefined;
   TeamManagement: undefined;

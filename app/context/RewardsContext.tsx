@@ -2,14 +2,51 @@ import React, { createContext, useContext, useReducer, ReactNode, useEffect } fr
 
 // Types
 export type TierLevel = 'Bronze' | 'Silver' | 'Gold';
+export type VoucherStatus = 'pending' | 'confirmed' | 'expired' | 'used';
+export type PointsTransactionType = 'earned' | 'redeemed' | 'expired' | 'missing';
 
 export interface PointsHistory {
   id: string;
   date: string;
   description: string;
   points: number;
-  type: 'earned' | 'redeemed';
+  type: PointsTransactionType;
   orderId?: string;
+  category?: 'purchase' | 'bonus' | 'milestone' | 'voucher' | 'expiry' | 'adjustment';
+  expiryDate?: string; // For points that will expire
+}
+
+export interface VoucherRedemption {
+  id: string;
+  rewardId: string;
+  title: string;
+  value: number;
+  pointsUsed: number;
+  status: VoucherStatus;
+  redeemedDate: string;
+  expiryDate: string;
+  usedDate?: string;
+  orderId?: string; // Order where voucher was used
+  confirmationCode?: string;
+}
+
+export interface MissingPointsEntry {
+  id: string;
+  orderId: string;
+  orderDate: string;
+  expectedPoints: number;
+  reason: string;
+  status: 'reported' | 'investigating' | 'resolved' | 'rejected';
+  reportedDate: string;
+  resolvedDate?: string;
+}
+
+export interface PointsExpiry {
+  id: string;
+  points: number;
+  earnedDate: string;
+  expiryDate: string;
+  source: string; // What earned these points
 }
 
 export interface RewardItem {
@@ -21,6 +58,7 @@ export interface RewardItem {
   value?: number; // For vouchers
   imageUrl?: string;
   stock?: number;
+  validityDays?: number; // How many days the voucher is valid after redemption
 }
 
 export interface UserRewards {
@@ -37,6 +75,9 @@ export interface UserRewards {
     expiryDate: string;
     used: boolean;
   }[];
+  voucherRedemptions: VoucherRedemption[];
+  missingPoints: MissingPointsEntry[];
+  pointsExpiring: PointsExpiry[];
 }
 
 interface RewardsState {
@@ -47,14 +88,17 @@ interface RewardsState {
 }
 
 type RewardsAction =
-  | { type: 'EARN_POINTS'; payload: { points: number; description: string; orderId?: string } }
+  | { type: 'EARN_POINTS'; payload: { points: number; description: string; orderId?: string; category?: string } }
   | { type: 'REDEEM_REWARD'; payload: { rewardId: string } }
   | { type: 'USE_VOUCHER'; payload: { voucherId: string } }
   | { type: 'UPDATE_TIER' }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'LOAD_USER_REWARDS'; payload: UserRewards }
-  | { type: 'SET_REWARDS_CATALOG'; payload: RewardItem[] };
+  | { type: 'SET_REWARDS_CATALOG'; payload: RewardItem[] }
+  | { type: 'REPORT_MISSING_POINTS'; payload: { orderId: string; orderDate: string; expectedPoints: number; reason: string } }
+  | { type: 'UPDATE_VOUCHER_STATUS'; payload: { redemptionId: string; status: VoucherStatus; usedDate?: string; orderId?: string } }
+  | { type: 'EXPIRE_POINTS'; payload: { pointsExpiryId: string } };
 
 // Tier thresholds (based on 12-month rolling spend)
 const TIER_THRESHOLDS = {
@@ -105,7 +149,7 @@ const mockRewardsCatalog: RewardItem[] = [
   },
 ];
 
-// Initial state
+// Initial state with enhanced mock data
 const initialState: RewardsState = {
   userRewards: {
     points: 125000, // Mock starting points
@@ -118,7 +162,8 @@ const initialState: RewardsState = {
         date: '2024-01-15',
         description: 'Q4 2023 Volume Milestone',
         points: 25000,
-        type: 'earned'
+        type: 'earned',
+        category: 'milestone'
       },
       {
         id: '2',
@@ -126,18 +171,79 @@ const initialState: RewardsState = {
         description: 'Order #ORD-2024-001',
         points: 15000,
         type: 'earned',
-        orderId: 'ORD-2024-001'
+        orderId: 'ORD-2024-001',
+        category: 'purchase'
       },
       {
         id: '3',
         date: '2023-12-20',
         description: 'Annual Renewal Bonus',
         points: 15000,
-        type: 'earned'
+        type: 'earned',
+        category: 'bonus'
+      },
+      {
+        id: '4',
+        date: '2024-01-08',
+        description: 'Redeemed: S$500 Voucher',
+        points: -20000,
+        type: 'redeemed',
+        category: 'voucher'
       }
     ],
-    redeemedRewards: [],
-    availableVouchers: []
+    redeemedRewards: ['voucher-500'],
+    availableVouchers: [],
+    voucherRedemptions: [
+      {
+        id: 'redemption-1',
+        rewardId: 'voucher-500',
+        title: 'S$500 Voucher',
+        value: 500,
+        pointsUsed: 20000,
+        status: 'confirmed',
+        redeemedDate: '2024-01-08',
+        expiryDate: '2024-02-07',
+        confirmationCode: 'VCH-500-2024-001'
+      },
+      {
+        id: 'redemption-2',
+        rewardId: 'voucher-1500',
+        title: 'S$1,500 Voucher',
+        value: 1500,
+        pointsUsed: 50000,
+        status: 'pending',
+        redeemedDate: '2024-01-12',
+        expiryDate: '2024-02-11',
+        confirmationCode: 'VCH-1500-2024-002'
+      }
+    ],
+    missingPoints: [
+      {
+        id: 'missing-1',
+        orderId: 'ORD-2024-003',
+        orderDate: '2024-01-05',
+        expectedPoints: 2500,
+        reason: 'Points not credited for large order',
+        status: 'investigating',
+        reportedDate: '2024-01-06'
+      }
+    ],
+    pointsExpiring: [
+      {
+        id: 'expiry-1',
+        points: 15000,
+        earnedDate: '2023-01-15',
+        expiryDate: '2024-01-31',
+        source: 'Q4 2022 Volume Milestone'
+      },
+      {
+        id: 'expiry-2',
+        points: 8500,
+        earnedDate: '2023-02-10',
+        expiryDate: '2024-02-29',
+        source: 'Order #ORD-2023-045'
+      }
+    ]
   },
   rewardsCatalog: mockRewardsCatalog,
   loading: false,
@@ -243,6 +349,71 @@ const rewardsReducer = (state: RewardsState, action: RewardsAction): RewardsStat
     case 'SET_REWARDS_CATALOG':
       return { ...state, rewardsCatalog: action.payload };
       
+    case 'REPORT_MISSING_POINTS':
+      const newMissingEntry: MissingPointsEntry = {
+        id: `missing-${Date.now()}`,
+        orderId: action.payload.orderId,
+        orderDate: action.payload.orderDate,
+        expectedPoints: action.payload.expectedPoints,
+        reason: action.payload.reason,
+        status: 'reported',
+        reportedDate: new Date().toISOString().split('T')[0]
+      };
+      
+      return {
+        ...state,
+        userRewards: {
+          ...state.userRewards,
+          missingPoints: [...state.userRewards.missingPoints, newMissingEntry]
+        }
+      };
+      
+    case 'UPDATE_VOUCHER_STATUS':
+      return {
+        ...state,
+        userRewards: {
+          ...state.userRewards,
+          voucherRedemptions: state.userRewards.voucherRedemptions.map(redemption =>
+            redemption.id === action.payload.redemptionId
+              ? {
+                  ...redemption,
+                  status: action.payload.status,
+                  usedDate: action.payload.usedDate,
+                  orderId: action.payload.orderId
+                }
+              : redemption
+          )
+        }
+      };
+      
+    case 'EXPIRE_POINTS':
+      const expiredPointsEntry = state.userRewards.pointsExpiring.find(
+        p => p.id === action.payload.pointsExpiryId
+      );
+      
+      if (!expiredPointsEntry) return state;
+      
+      const expiryHistory: PointsHistory = {
+        id: Date.now().toString(),
+        date: new Date().toISOString().split('T')[0],
+        description: `Points expired: ${expiredPointsEntry.source}`,
+        points: -expiredPointsEntry.points,
+        type: 'expired',
+        category: 'expiry'
+      };
+      
+      return {
+        ...state,
+        userRewards: {
+          ...state.userRewards,
+          points: state.userRewards.points - expiredPointsEntry.points,
+          pointsHistory: [expiryHistory, ...state.userRewards.pointsHistory],
+          pointsExpiring: state.userRewards.pointsExpiring.filter(
+            p => p.id !== action.payload.pointsExpiryId
+          )
+        }
+      };
+      
     default:
       return state;
   }
@@ -252,19 +423,23 @@ const rewardsReducer = (state: RewardsState, action: RewardsAction): RewardsStat
 const RewardsContext = createContext<{
   state: RewardsState;
   dispatch: React.Dispatch<RewardsAction>;
-  earnPoints: (points: number, description: string, orderId?: string) => void;
+  earnPoints: (points: number, description: string, orderId?: string, category?: string) => void;
   redeemReward: (rewardId: string) => Promise<boolean>;
   getAvailableVouchers: () => typeof initialState.userRewards.availableVouchers;
   getTierBenefits: (tier: TierLevel) => string[];
   getPointsToNextTier: () => number;
+  reportMissingPoints: (orderId: string, orderDate: string, expectedPoints: number, reason: string) => void;
+  updateVoucherStatus: (redemptionId: string, status: VoucherStatus, usedDate?: string, orderId?: string) => void;
+  getExpiringPoints: (daysAhead?: number) => PointsExpiry[];
+  getVouchersByStatus: (status: VoucherStatus) => VoucherRedemption[];
 } | undefined>(undefined);
 
 // Provider
 export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(rewardsReducer, initialState);
   
-  const earnPoints = (points: number, description: string, orderId?: string) => {
-    dispatch({ type: 'EARN_POINTS', payload: { points, description, orderId } });
+  const earnPoints = (points: number, description: string, orderId?: string, category?: string) => {
+    dispatch({ type: 'EARN_POINTS', payload: { points, description, orderId, category } });
   };
   
   const redeemReward = async (rewardId: string): Promise<boolean> => {
@@ -300,6 +475,28 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children })
     return 0; // Already Gold
   };
   
+  const reportMissingPoints = (orderId: string, orderDate: string, expectedPoints: number, reason: string) => {
+    dispatch({ type: 'REPORT_MISSING_POINTS', payload: { orderId, orderDate, expectedPoints, reason } });
+  };
+  
+  const updateVoucherStatus = (redemptionId: string, status: VoucherStatus, usedDate?: string, orderId?: string) => {
+    dispatch({ type: 'UPDATE_VOUCHER_STATUS', payload: { redemptionId, status, usedDate, orderId } });
+  };
+  
+  const getExpiringPoints = (daysAhead: number = 30): PointsExpiry[] => {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + daysAhead);
+    
+    return state.userRewards.pointsExpiring.filter(entry => {
+      const expiryDate = new Date(entry.expiryDate);
+      return expiryDate <= futureDate;
+    });
+  };
+  
+  const getVouchersByStatus = (status: VoucherStatus): VoucherRedemption[] => {
+    return state.userRewards.voucherRedemptions.filter(voucher => voucher.status === status);
+  };
+  
   return (
     <RewardsContext.Provider 
       value={{ 
@@ -309,7 +506,11 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({ children })
         redeemReward, 
         getAvailableVouchers,
         getTierBenefits,
-        getPointsToNextTier
+        getPointsToNextTier,
+        reportMissingPoints,
+        updateVoucherStatus,
+        getExpiringPoints,
+        getVouchersByStatus
       }}
     >
       {children}
