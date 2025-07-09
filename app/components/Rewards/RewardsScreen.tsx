@@ -13,8 +13,10 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useRewards, TierLevel } from '../../context/RewardsContext';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
+import MobileHeader from '../Layout/MobileHeader';
 
 // Mock rewards data
 const mockRewards = [
@@ -141,11 +143,16 @@ const PointsHistoryModal = ({ visible, onClose }: { visible: boolean; onClose: (
 };
 
 export default function RewardsScreen() {
-  const { state, redeemReward, getTierBenefits, getPointsToNextTier } = useRewards();
+  const navigation = useNavigation();
+  const { state, redeemReward, getTierBenefits, getPointsToNextTier, getExpiringPoints } = useRewards();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showHistory, setShowHistory] = useState(false);
   const [redeeming, setRedeeming] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
+  
+  // Check for expiring points
+  const expiringPoints = getExpiringPoints(30);
+  const urgentExpiringPoints = getExpiringPoints(7);
   
   // Animation for tier progress
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -250,75 +257,118 @@ export default function RewardsScreen() {
       {/* Status Bar Background */}
       <View style={[styles.statusBarBackground, { height: insets.top }]} />
       
+      {/* Mobile Header */}
+      <MobileHeader 
+        title="Rewards"
+        showBackButton={false}
+        showCartButton={true}
+        showSearch={false}
+        showLocationHeader={false}
+      />
+      
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Compact Header Widget */}
-        <View style={styles.headerWidget}>
-          <View style={styles.widgetBackground}>
-            {/* Top Row: Title and History Button */}
-            <View style={styles.widgetTopRow}>
-              <View>
-                <Text style={styles.widgetTitle}>Rewards</Text>
-                <Text style={styles.widgetSubtitle}>Earn with every purchase</Text>
+        {/* Unified Rewards Widget */}
+        <View style={styles.unifiedWidget}>
+          <View style={styles.widgetContainer}>
+            {/* Header Row */}
+            <View style={styles.widgetHeader}>
+              <Text style={styles.widgetTitle}>Earn with every purchase</Text>
+              <View style={styles.actionButtons}>
+                <TouchableOpacity 
+                  style={styles.actionButton}
+                  onPress={() => navigation.navigate('VoucherTracking')}
+                >
+                  <Ionicons name="receipt-outline" size={18} color={COLORS.text} />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.actionButton}
+                  onPress={() => setShowHistory(true)}
+                >
+                  <Ionicons name="time-outline" size={18} color={COLORS.text} />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity 
-                style={styles.historyIconButton}
-                onPress={() => setShowHistory(true)}
-              >
-                <Ionicons name="time-outline" size={20} color={COLORS.accent} />
-              </TouchableOpacity>
             </View>
-            
-            {/* Main Content Row */}
-            <View style={styles.widgetMainRow}>
-              {/* Points Section */}
-              <View style={styles.pointsSection}>
-                <Text style={styles.pointsValue}>{state.userRewards.points.toLocaleString()}</Text>
-                <Text style={styles.pointsLabel}>Points Available</Text>
-              </View>
-              
-              {/* Tier Section */}
-              <View style={styles.tierSection}>
-                <View style={styles.tierBadgeContainer}>
-                  <TierBadge tier={state.userRewards.tier} size="small" />
-                  <View style={styles.tierTextContainer}>
-                    <Text style={styles.tierName}>{state.userRewards.tier}</Text>
-                    <Text style={styles.tierStatus}>Member</Text>
+
+            {/* Main Content */}
+            <View style={styles.widgetContent}>
+              {/* Points and Tier Row */}
+              <View style={styles.pointsTierRow}>
+                <View style={styles.pointsSection}>
+                  <Text style={styles.pointsValue}>{state.userRewards.points.toLocaleString()}</Text>
+                  <Text style={styles.pointsLabel}>Points Available</Text>
+                </View>
+                
+                <View style={styles.tierSection}>
+                  <View style={styles.tierBadgeContainer}>
+                    <TierBadge tier={state.userRewards.tier} size="small" />
+                    <View style={styles.tierInfo}>
+                      <Text style={styles.tierName}>{state.userRewards.tier}</Text>
+                      <Text style={styles.tierStatus}>Member</Text>
+                    </View>
                   </View>
                 </View>
               </View>
-            </View>
-            
-            {/* Progress Row (if applicable) */}
-            {getPointsToNextTier() > 0 && (
-              <View style={styles.progressRow}>
-                <View style={styles.progressInfo}>
+
+              {/* Progress Section (if applicable) */}
+              {getPointsToNextTier() > 0 && (
+                <View style={styles.progressSection}>
                   <Text style={styles.progressLabel}>
                     S${getPointsToNextTier().toLocaleString()} to {
                       state.userRewards.tier === 'Bronze' ? 'Silver' : 'Gold'
                     }
                   </Text>
+                  <View style={styles.progressBarContainer}>
+                    <Animated.View 
+                      style={[
+                        styles.progressBar,
+                        {
+                          width: progressAnim.interpolate({
+                            inputRange: [0, 100],
+                            outputRange: ['0%', '100%']
+                          })
+                        }
+                      ]}
+                    />
+                  </View>
                 </View>
-                <View style={styles.progressBarContainer}>
-                  <Animated.View 
-                    style={[
-                      styles.progressBar,
-                      {
-                        width: progressAnim.interpolate({
-                          inputRange: [0, 100],
-                          outputRange: ['0%', '100%']
-                        })
-                      }
-                    ]}
-                  />
+              )}
+
+              {/* Expiring Points Alert (if applicable) */}
+              {urgentExpiringPoints.length > 0 && (
+                <View style={styles.expiringAlert}>
+                  <View style={styles.alertContent}>
+                    <Ionicons name="warning" size={16} color={COLORS.error} />
+                    <View style={styles.alertText}>
+                      <Text style={styles.alertTitle}>Points Expiring Soon!</Text>
+                      <Text style={styles.alertDescription}>
+                        {urgentExpiringPoints.reduce((sum, entry) => sum + entry.points, 0).toLocaleString()} points expire within 7 days
+                      </Text>
+                    </View>
+                    <TouchableOpacity 
+                      style={styles.alertButton}
+                      onPress={() => navigation.navigate('VoucherTracking')}
+                    >
+                      <Text style={styles.alertButtonText}>View Details</Text>
+                      <Ionicons name="arrow-forward" size={14} color={COLORS.error} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-            )}
+              )}
+            </View>
           </View>
         </View>
-        
+
         {/* Tier Benefits */}
         <View style={styles.benefitsCard}>
-          <Text style={styles.benefitsTitle}>Your Benefits</Text>
+          <View style={styles.benefitsHeader}>
+            <Text style={styles.benefitsTitle}>Your Benefits</Text>
+            <TouchableOpacity 
+              style={styles.faqButton}
+              onPress={() => navigation.navigate('RewardsFAQ')}
+            >
+              <Ionicons name="help-circle-outline" size={20} color={COLORS.text} />
+            </TouchableOpacity>
+          </View>
           {getTierBenefits(state.userRewards.tier).map((benefit, index) => (
             <View key={index} style={styles.benefitItem}>
               <View style={styles.benefitDot} />
@@ -326,7 +376,7 @@ export default function RewardsScreen() {
             </View>
           ))}
         </View>
-        
+
         {/* Rewards Catalog */}
         <View style={styles.catalogSection}>
           <Text style={styles.catalogTitle}>Redeem Rewards</Text>
@@ -390,63 +440,62 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  // Header Widget
-  headerWidget: {
+  // Unified Widget
+  unifiedWidget: {
     marginHorizontal: SPACING.md,
     marginTop: SPACING.md,
     marginBottom: SPACING.lg,
   },
-  widgetBackground: {
-    backgroundColor: COLORS.primary,
+  widgetContainer: {
+    backgroundColor: COLORS.card,
     borderRadius: 16,
     padding: SPACING.lg,
     ...SHADOWS.medium,
   },
-  widgetTopRow: {
+  widgetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: SPACING.lg,
   },
   widgetTitle: {
-    ...TYPOGRAPHY.h2,
-    color: COLORS.accent,
-    fontWeight: '700',
-  },
-  widgetSubtitle: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.accent,
-    opacity: 0.8,
-    marginTop: SPACING.xs,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
   },
-  historyIconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  actionButtons: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  widgetMainRow: {
+  widgetContent: {
+    gap: SPACING.lg,
+  },
+  pointsTierRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.md,
   },
   pointsSection: {
     flex: 1,
   },
   pointsValue: {
     ...TYPOGRAPHY.h1,
-    color: COLORS.accent,
+    color: COLORS.text,
     fontWeight: '800',
-    fontSize: 32,
-    lineHeight: 36,
+    fontSize: 36,
+    lineHeight: 40,
   },
   pointsLabel: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.accent,
-    opacity: 0.8,
+    color: COLORS.textSecondary,
     marginTop: SPACING.xs,
   },
   tierSection: {
@@ -456,19 +505,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  tierTextContainer: {
+  tierInfo: {
     marginLeft: SPACING.sm,
     alignItems: 'flex-end',
   },
   tierName: {
     ...TYPOGRAPHY.h4,
-    color: COLORS.accent,
+    color: COLORS.text,
     fontWeight: '600',
   },
   tierStatus: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.accent,
-    opacity: 0.8,
+    color: COLORS.textSecondary,
   },
   tierBadge: {
     borderRadius: 50,
@@ -477,30 +525,28 @@ const styles = StyleSheet.create({
     ...SHADOWS.light,
   },
   
-  // Progress Row
-  progressRow: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+  // Progress Section
+  progressSection: {
+    marginTop: SPACING.md,
     paddingTop: SPACING.md,
-  },
-  progressInfo: {
-    marginBottom: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
   },
   progressLabel: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.accent,
-    opacity: 0.9,
+    color: COLORS.textSecondary,
     fontWeight: '500',
+    marginBottom: SPACING.sm,
   },
   progressBarContainer: {
     height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: COLORS.background,
     borderRadius: 2,
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.text,
     borderRadius: 2,
   },
   
@@ -513,9 +559,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     ...SHADOWS.light,
   },
+  benefitsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
   benefitsTitle: {
     ...TYPOGRAPHY.h4,
-    marginBottom: SPACING.md,
+  },
+  faqButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   benefitItem: {
     flexDirection: 'row',
@@ -691,6 +750,43 @@ const styles = StyleSheet.create({
     color: COLORS.error,
   },
   
+  // Expiring Alert
+  expiringAlert: {
+    marginTop: SPACING.md,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  alertContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: SPACING.sm,
+  },
+  alertText: {
+    flex: 1,
+  },
+  alertTitle: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.error,
+    fontWeight: '600',
+    marginBottom: SPACING.xs,
+  },
+  alertDescription: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.sm,
+  },
+  alertButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  alertButtonText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.error,
+    fontWeight: '600',
+  },
+
   // Bottom Padding
   bottomPadding: {
     height: SPACING.xxl,

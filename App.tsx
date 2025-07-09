@@ -52,6 +52,10 @@ import SavedLocationsScreen from './app/components/Location/SavedLocationsScreen
 import CompanyProfileScreen from './app/components/Profile/CompanyProfileScreen';
 import TeamManagementScreen from './app/components/Profile/TeamManagementScreen';
 
+// Import Rewards screens
+import VoucherTrackingScreen from './app/components/Rewards/VoucherTrackingScreen';
+import RewardsFAQScreen from './app/components/Rewards/RewardsFAQScreen';
+
 // Import types and theme
 import { RootStackParamList, MainTabParamList } from './app/types/navigation';
 import { COLORS, SHADOWS, TYPOGRAPHY, SPACING, FONT_WEIGHTS } from './app/utils/theme';
@@ -514,6 +518,14 @@ export default function App() {
                   <Stack.Screen 
                     name="Rewards" 
                     component={RewardsScreen}
+                  />
+                  <Stack.Screen 
+                    name="VoucherTracking" 
+                    component={VoucherTrackingScreen}
+                  />
+                  <Stack.Screen 
+                    name="RewardsFAQ" 
+                    component={RewardsFAQScreen}
                   />
                   <Stack.Screen 
                     name="Referrals" 
