@@ -225,28 +225,25 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
   const [mapRegion, setMapRegion] = useState(GOOGLE_MAPS_CONFIG.marinaBayRegion);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-  const [showSavedLocations, setShowSavedLocations] = useState(true);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
+  const [activeTab, setActiveTab] = useState<'recent' | 'saved' | 'current'>('recent');
 
   // Enhanced keyboard handling with proper iOS support
   useEffect(() => {
     const keyboardWillShow = (event: any) => {
       setIsKeyboardVisible(true);
       setKeyboardHeight(event.endCoordinates.height);
-      setShowSavedLocations(false); // Hide saved locations when keyboard appears
     };
 
     const keyboardWillHide = () => {
       setIsKeyboardVisible(false);
       setKeyboardHeight(0);
-      setShowSavedLocations(true); // Show saved locations when keyboard disappears
     };
 
     const keyboardDidShow = (event: any) => {
       if (Platform.OS === 'android') {
         setIsKeyboardVisible(true);
         setKeyboardHeight(event.endCoordinates.height);
-        setShowSavedLocations(false);
       }
     };
 
@@ -254,7 +251,6 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
       if (Platform.OS === 'android') {
         setIsKeyboardVisible(false);
         setKeyboardHeight(0);
-        setShowSavedLocations(true);
       }
     };
 
@@ -643,104 +639,211 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
               inputRef={inputRef}
             />
             
-            {showSavedLocations && savedAddresses.length > 0 && (
-              <View style={styles.savedLocationsContainer}>
-                <View style={styles.savedLocationsHeader}>
-                  <Text style={styles.savedLocationsTitle}>Saved Locations</Text>
-                  <TouchableOpacity 
-                    style={styles.manageButton}
-                    onPress={() => {
-                      // Navigate to saved locations management
-                      navigation.navigate('SavedLocations' as never);
-                    }}
+            {/* Tab Navigation */}
+            {searchText.length === 0 && !isKeyboardVisible && (
+              <View style={styles.tabContainer}>
+                <View style={styles.tabNavigation}>
+                  <TouchableOpacity
+                    style={[styles.tabButton, activeTab === 'recent' && styles.tabButtonActive]}
+                    onPress={() => setActiveTab('recent')}
+                    accessibilityLabel="Recent locations tab"
                   >
-                    <Text style={styles.manageButtonText}>Manage</Text>
+                    <Ionicons 
+                      name="time-outline" 
+                      size={20} 
+                      color={activeTab === 'recent' ? COLORS.buttonText : COLORS.textSecondary} 
+                    />
+                    <Text style={[
+                      styles.tabButtonText, 
+                      activeTab === 'recent' && styles.tabButtonTextActive
+                    ]}>
+                      Recent
+                    </Text>
+                    {recentLocations.length > 0 && (
+                      <View style={styles.tabBadge}>
+                        <Text style={styles.tabBadgeText}>{recentLocations.length}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.tabButton, activeTab === 'saved' && styles.tabButtonActive]}
+                    onPress={() => setActiveTab('saved')}
+                    accessibilityLabel="Saved locations tab"
+                  >
+                    <Ionicons 
+                      name="bookmark-outline" 
+                      size={20} 
+                      color={activeTab === 'saved' ? COLORS.buttonText : COLORS.textSecondary} 
+                    />
+                    <Text style={[
+                      styles.tabButtonText, 
+                      activeTab === 'saved' && styles.tabButtonTextActive
+                    ]}>
+                      Saved
+                    </Text>
+                    {savedAddresses.length > 0 && (
+                      <View style={styles.tabBadge}>
+                        <Text style={styles.tabBadgeText}>{savedAddresses.length}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.tabButton, activeTab === 'current' && styles.tabButtonActive]}
+                    onPress={() => setActiveTab('current')}
+                    accessibilityLabel="Current location tab"
+                  >
+                    <Ionicons 
+                      name="locate-outline" 
+                      size={20} 
+                      color={activeTab === 'current' ? COLORS.buttonText : COLORS.textSecondary} 
+                    />
+                    <Text style={[
+                      styles.tabButtonText, 
+                      activeTab === 'current' && styles.tabButtonTextActive
+                    ]}>
+                      Current
+                    </Text>
                   </TouchableOpacity>
                 </View>
-                
-                {/* Quick Select Cards */}
-                <View style={styles.quickSelectContainer}>
-                  {savedAddresses.slice(0, 2).map((item) => {
-                    const iconName = getSavedLocationIcon(item.icon || 'home');
-                    return (
-                      <TouchableOpacity
-                        key={item.id}
-                        style={styles.quickSelectCard}
-                        onPress={() => handleSavedLocationSelect(item)}
-                        activeOpacity={0.7}
-                        accessibilityLabel={`Select ${item.label}`}
-                      >
-                        <View style={styles.quickSelectIcon}>
-                                                   <Ionicons 
-                           name={iconName} 
-                           size={20} 
-                           color={COLORS.buttonText} 
-                         />
+
+                {/* Tab Content */}
+                <View style={styles.tabContent}>
+                  {activeTab === 'recent' && (
+                    <View style={styles.tabContentSection}>
+                      {recentLocations.length > 0 ? (
+                        <View style={styles.locationsList}>
+                          {recentLocations.map((location, index) => (
+                            <TouchableOpacity
+                              key={`${location.id}-${index}`}
+                              style={styles.locationItem}
+                              onPress={() => handleLocationSelection(location)}
+                              activeOpacity={0.7}
+                              accessibilityLabel={`Select recent location ${location.title}`}
+                            >
+                              <View style={styles.locationIcon}>
+                                <Ionicons name="time-outline" size={18} color={COLORS.textSecondary} />
+                              </View>
+                              <View style={styles.locationInfo}>
+                                <Text style={styles.locationTitle} numberOfLines={1}>
+                                  {location.title}
+                                </Text>
+                                <Text style={styles.locationSubtitle} numberOfLines={1}>
+                                  {location.subtitle || location.formattedAddress}
+                                </Text>
+                              </View>
+                              <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+                            </TouchableOpacity>
+                          ))}
                         </View>
-                        <Text style={styles.quickSelectLabel} numberOfLines={1}>
-                          {item.label}
-                        </Text>
-                        <Text style={styles.quickSelectAddress} numberOfLines={2}>
-                          {item.location.title}
-                        </Text>
-                        {item.isDefault && (
-                          <View style={styles.quickSelectBadge}>
-                            <Text style={styles.quickSelectBadgeText}>Default</Text>
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-                {/* Show More Button if there are more than 2 locations */}
-                {savedAddresses.length > 2 && (
-                  <TouchableOpacity 
-                    style={styles.showMoreButton}
-                    onPress={() => {
-                      navigation.navigate('SavedLocations' as never);
-                    }}
-                    accessibilityLabel="View all saved locations"
-                  >
-                    <View style={styles.showMoreContent}>
-                      <Ionicons name="location" size={20} color={COLORS.text} />
-                      <Text style={styles.showMoreText}>
-                        View all {savedAddresses.length} saved locations
-                      </Text>
-                      <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+                      ) : (
+                        <View style={styles.emptyState}>
+                          <Ionicons name="time-outline" size={32} color={COLORS.textSecondary} />
+                          <Text style={styles.emptyStateTitle}>No recent locations</Text>
+                          <Text style={styles.emptyStateSubtitle}>Your recent searches will appear here</Text>
+                        </View>
+                      )}
                     </View>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
+                  )}
 
-            {/* Recent Locations Section */}
-            {showSavedLocations && recentLocations.length > 0 && searchText.length === 0 && (
-              <View style={styles.recentLocationsContainer}>
-                <Text style={styles.recentLocationsTitle}>Recent</Text>
-                <View style={styles.recentLocationsList}>
-                  {recentLocations.slice(0, 3).map((location, index) => (
-                    <TouchableOpacity
-                      key={`${location.id}-${index}`}
-                      style={styles.recentLocationItem}
-                      onPress={() => handleLocationSelection(location)}
-                      activeOpacity={0.7}
-                      accessibilityLabel={`Select recent location ${location.title}`}
-                    >
-                      <View style={styles.recentLocationIcon}>
-                        <Ionicons name="time-outline" size={18} color={COLORS.textSecondary} />
-                      </View>
-                      <View style={styles.recentLocationInfo}>
-                        <Text style={styles.recentLocationTitle} numberOfLines={1}>
-                          {location.title}
-                        </Text>
-                        <Text style={styles.recentLocationSubtitle} numberOfLines={1}>
-                          {location.subtitle || location.formattedAddress}
-                        </Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
-                    </TouchableOpacity>
-                  ))}
+                  {activeTab === 'saved' && (
+                    <View style={styles.tabContentSection}>
+                      {savedAddresses.length > 0 ? (
+                        <View style={styles.locationsList}>
+                          {savedAddresses.map((item) => {
+                            const iconName = getSavedLocationIcon(item.icon || 'home');
+                            return (
+                              <TouchableOpacity
+                                key={item.id}
+                                style={styles.locationItem}
+                                onPress={() => handleSavedLocationSelect(item)}
+                                activeOpacity={0.7}
+                                accessibilityLabel={`Select saved location ${item.label}`}
+                              >
+                                <View style={styles.locationIcon}>
+                                  <Ionicons name={iconName} size={18} color={COLORS.text} />
+                                </View>
+                                <View style={styles.locationInfo}>
+                                  <View style={styles.locationTitleRow}>
+                                    <Text style={styles.locationTitle} numberOfLines={1}>
+                                      {item.label}
+                                    </Text>
+                                    {item.isDefault && (
+                                      <View style={styles.defaultBadge}>
+                                        <Text style={styles.defaultBadgeText}>Default</Text>
+                                      </View>
+                                    )}
+                                  </View>
+                                  <Text style={styles.locationSubtitle} numberOfLines={1}>
+                                    {item.location.title}
+                                  </Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+                              </TouchableOpacity>
+                            );
+                          })}
+                          <TouchableOpacity 
+                            style={styles.manageLocationsButton}
+                            onPress={() => navigation.navigate('SavedLocations' as never)}
+                            accessibilityLabel="Manage saved locations"
+                          >
+                            <Ionicons name="settings-outline" size={18} color={COLORS.text} />
+                            <Text style={styles.manageLocationsText}>Manage saved locations</Text>
+                            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <View style={styles.emptyState}>
+                          <Ionicons name="bookmark-outline" size={32} color={COLORS.textSecondary} />
+                          <Text style={styles.emptyStateTitle}>No saved locations</Text>
+                          <Text style={styles.emptyStateSubtitle}>Save locations for quick access</Text>
+                          <TouchableOpacity 
+                            style={styles.addLocationButton}
+                            onPress={() => navigation.navigate('SavedLocations' as never)}
+                          >
+                            <Text style={styles.addLocationButtonText}>Add Location</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  )}
+
+                  {activeTab === 'current' && (
+                    <View style={styles.tabContentSection}>
+                      <TouchableOpacity
+                        style={styles.currentLocationCard}
+                        onPress={handleCurrentLocationPress}
+                        activeOpacity={0.7}
+                        accessibilityLabel="Use current location"
+                      >
+                        <View style={styles.currentLocationIconLarge}>
+                          <Ionicons name="locate" size={24} color={COLORS.buttonText} />
+                        </View>
+                        <View style={styles.currentLocationContent}>
+                          <Text style={styles.currentLocationTitle}>Use my current location</Text>
+                          <Text style={styles.currentLocationSubtitle}>
+                            We'll detect your location automatically
+                          </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+                      </TouchableOpacity>
+                      
+                      {currentLocation && (
+                        <View style={styles.detectedLocationCard}>
+                          <View style={styles.locationIcon}>
+                            <Ionicons name="location" size={18} color={COLORS.primary} />
+                          </View>
+                          <View style={styles.locationInfo}>
+                            <Text style={styles.locationTitle}>Current Location</Text>
+                            <Text style={styles.locationSubtitle} numberOfLines={2}>
+                              {currentLocation.title}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                  )}
                 </View>
               </View>
             )}
@@ -1229,6 +1332,218 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textSecondary,
     lineHeight: 16,
+  },
+  
+  // Tab Navigation Styles
+  tabContainer: {
+    flex: 1,
+    backgroundColor: COLORS.card,
+  },
+  tabNavigation: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.background,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 12,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  tabButtonActive: {
+    backgroundColor: COLORS.text,
+  },
+  tabButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
+  tabButtonTextActive: {
+    color: COLORS.buttonText,
+    fontWeight: '600',
+  },
+  tabBadge: {
+    backgroundColor: COLORS.error,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  tabBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.card,
+  },
+  
+  // Tab Content Styles
+  tabContent: {
+    flex: 1,
+    marginTop: 16,
+  },
+  tabContentSection: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  locationsList: {
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: 'hidden',
+  },
+  locationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  locationIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  locationInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  locationTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  locationTitle: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: COLORS.text,
+    flex: 1,
+  },
+  locationSubtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 18,
+  },
+  defaultBadge: {
+    backgroundColor: COLORS.text,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 8,
+  },
+  defaultBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.buttonText,
+  },
+  
+  // Empty State Styles
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  emptyStateTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  emptyStateSubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  addLocationButton: {
+    backgroundColor: COLORS.text,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginTop: 16,
+  },
+  addLocationButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.buttonText,
+  },
+  
+  // Manage Locations Button
+  manageLocationsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: COLORS.card,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  manageLocationsText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '500',
+    color: COLORS.text,
+    marginLeft: 12,
+    marginRight: 12,
+  },
+  
+  // Current Location Card Styles
+  currentLocationCard: {
+    backgroundColor: COLORS.text,
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    ...SHADOWS.medium,
+  },
+  currentLocationIconLarge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  currentLocationContent: {
+    flex: 1,
+  },
+  currentLocationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.buttonText,
+    marginBottom: 2,
+  },
+  currentLocationSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+    lineHeight: 18,
+  },
+  detectedLocationCard: {
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 });
 
