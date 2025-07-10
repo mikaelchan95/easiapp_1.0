@@ -282,12 +282,13 @@ const styles = StyleSheet.create({
   },
   form: {
     backgroundColor: COLORS.card,
-    borderRadius: 12,
-    padding: SPACING.md,
+    borderRadius: 20,
+    padding: SPACING.lg,
     marginBottom: SPACING.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
-    ...SHADOWS.light,
+    ...SHADOWS.medium,
+    elevation: 6,
   },
   formGroup: {
     marginBottom: SPACING.md,

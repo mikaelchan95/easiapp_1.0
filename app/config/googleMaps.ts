@@ -28,7 +28,7 @@ export const GOOGLE_MAPS_CONFIG = {
   
   // Enhanced Places autocomplete settings
   autocomplete: {
-    types: ['establishment', 'geocode', 'address'], // Added 'address' for better postal code support
+    types: ['geocode'], // Fixed: removed 'establishment' and 'address' to avoid API error
     componentRestrictions: { country: 'sg' },
     fields: ['formatted_address', 'geometry', 'name', 'place_id', 'types', 'address_components'],
     // Additional settings for Singapore

@@ -8,8 +8,6 @@ export interface Product {
   originalPrice?: number; // Optional for products with discounts
   category: string;
   imageUrl: ImageSourcePropType;
-  inStock: boolean;
-  stock: number; // Actual stock quantity
   retailPrice: number; // Retail price before GST
   tradePrice: number; // Trade price before GST (typically 10-15% less)
   rating: number;
@@ -31,8 +29,6 @@ export const products: Product[] = [
     originalPrice: 129.99,
     category: 'Scotch',
     imageUrl: require('../assets/MAC-2023-Double-Cask-12YO-700ml-bottle-pack-shot-square-WEB-2xl.webp'),
-    inStock: true,
-    stock: 25,
     retailPrice: 110,
     tradePrice: 95,
     rating: 4.9,
@@ -49,8 +45,6 @@ export const products: Product[] = [
     price: 450,
     category: 'Scotch',
     imageUrl: require('../assets/MAC-2024-18YO-Sherry-Cask-BottleBox-Front-REFLECTION-5000x5000-PNG-300dpi-2xl.webp'),
-    inStock: true,
-    stock: 8,
     retailPrice: 450,
     tradePrice: 385,
     rating: 4.9,
@@ -68,8 +62,6 @@ export const products: Product[] = [
     originalPrice: 3200,
     category: 'Scotch',
     imageUrl: require('../assets/MAC-2024-25YO-Sherry-Oak-BottleBox-Front-REFLECTION-5000x5000-PNG-300dpi-2xl.webp'),
-    inStock: false,
-    stock: 0,
     retailPrice: 2800,
     tradePrice: 2400,
     rating: 5.0,
@@ -87,8 +79,6 @@ export const products: Product[] = [
     price: 5500,
     category: 'Scotch',
     imageUrl: require('../assets/MAC-2024-30YO-Sherry-Cask-BottleBox-Front-REFLECTION-5000x5000-PNG-300dpi-2xl.webp'),
-    inStock: true,
-    stock: 3,
     retailPrice: 5500,
     tradePrice: 4700,
     rating: 5.0,
@@ -106,8 +96,6 @@ export const products: Product[] = [
     originalPrice: 299.99,
     category: 'Champagne',
     imageUrl: require('../assets/SHERRY OAK 12 YEARS OLD.webp'), // Temporary placeholder
-    inStock: true,
-    stock: 15,
     retailPrice: 269.99,
     tradePrice: 230,
     rating: 4.8,
@@ -122,8 +110,6 @@ export const products: Product[] = [
     price: 249.99,
     category: 'Cognac',
     imageUrl: require('../assets/SHERRY OAK 12 YEARS OLD.webp'), // Temporary placeholder
-    inStock: true,
-    stock: 12,
     retailPrice: 249.99,
     tradePrice: 215,
     rating: 4.7,
@@ -140,8 +126,6 @@ export const products: Product[] = [
     originalPrice: 189.99,
     category: 'Japanese Whisky',
     imageUrl: require('../assets/SHERRY OAK 12 YEARS OLD.webp'), // Temporary placeholder
-    inStock: true,
-    stock: 20,
     retailPrice: 159.99,
     tradePrice: 135,
     rating: 4.6,
@@ -158,8 +142,6 @@ export const products: Product[] = [
     price: 4500,
     category: 'Cognac',
     imageUrl: require('../assets/SHERRY OAK 12 YEARS OLD.webp'), // Temporary placeholder
-    inStock: true,
-    stock: 2,
     retailPrice: 4500,
     tradePrice: 3850,
     rating: 5.0,

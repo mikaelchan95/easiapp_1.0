@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, StatusBar, RefreshControl } from 'react-native';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, StatusBar, RefreshControl, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { products, Product } from '../../data/mockProducts';
 import ProductCard from '../UI/ProductCard';
@@ -9,6 +9,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import SmartSearchDropdown from '../UI/SmartSearchDropdown';
 import { HapticFeedback } from '../../utils/haptics';
+import * as Animations from '../../utils/animations';
+import MobileHeader from '../Layout/MobileHeader';
+import DeliveryLocationHeader from '../Location/DeliveryLocationHeader';
+import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 
 const categories = [
   { id: 'all', name: 'All', icon: 'grid-outline' },
@@ -24,6 +28,29 @@ export default function ProductsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
+  
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+
+  // Initial entrance animation
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+        easing: Animations.TIMING.easeOut
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+        easing: Animations.TIMING.easeOut
+      })
+    ]).start();
+  }, []);
 
   const filteredProducts = useMemo(() => {
     if (selectedCategory === 'all') return products;
@@ -47,6 +74,12 @@ export default function ProductsScreen() {
     HapticFeedback.success();
     setRefreshing(false);
   }, []);
+
+  const handleAddressPress = useCallback(() => {
+    HapticFeedback.selection();
+    // Navigate to the delivery location picker
+    navigation.navigate('DeliveryLocationScreen');
+  }, [navigation]);
 
   const renderCategory = (cat: typeof categories[0]) => (
     <TouchableOpacity
@@ -77,24 +110,26 @@ export default function ProductsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Status Bar */}
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
       
-      {/* Safe Area Spacer for iOS Notch */}
-      <View style={[styles.statusBarSpacer, { height: insets.top }]} />
-      
-      {/* Header with Search Bar */}
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>Explore</Text>
-      </View>
-      
-      {/* Smart Search Dropdown */}
-      <View style={styles.searchContainer}>
-        <SmartSearchDropdown 
-          placeholder="Search wines, spirits, brands..."
-          onProductSelect={handleProductSelect}
-          showDropdownOnFocus={true}
-          maxSuggestions={5}
+      <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
+        {/* Delivery Location Header */}
+        <View style={styles.topLocationContainer}>
+          <DeliveryLocationHeader 
+            location={deliveryLocation}
+            onPress={handleAddressPress}
+            showDeliveryInfo={true}
+            showSavedLocations={false}
+            style={styles.topLocationHeader}
+          />
+        </View>
+        
+        {/* Mobile Header with Search */}
+        <MobileHeader
+          showBackButton={false}
+          showLocationHeader={false}
+          showSearch={true}
+          title="Explore"
         />
       </View>
       
@@ -200,25 +235,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  statusBarSpacer: {
-    backgroundColor: COLORS.card,
-  },
   headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
     backgroundColor: COLORS.card,
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.h2,
-    color: COLORS.text,
-  },
-  searchContainer: {
-    backgroundColor: COLORS.card,
-    paddingBottom: SPACING.sm,
+    zIndex: 10,
     ...SHADOWS.light,
+    paddingBottom: SPACING.sm,
+  },
+  topLocationContainer: {
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.md,
+  },
+  topLocationHeader: {
+    backgroundColor: '#000', // Black background
+    borderColor: '#333', // Dark border
   },
   categoryBarContainer: {
     backgroundColor: COLORS.card,

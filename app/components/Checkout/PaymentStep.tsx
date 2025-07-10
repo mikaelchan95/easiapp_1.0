@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PaymentMethod } from './CheckoutScreen';
-import { TYPOGRAPHY } from '../../utils/theme';
+import { TYPOGRAPHY, COLORS, SPACING, SHADOWS } from '../../utils/theme';
 
 // Payment method options
 const PAYMENT_METHODS: PaymentMethod[] = [
@@ -240,16 +240,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: COLORS.border,
+    ...SHADOWS.light,
+    elevation: 3,
   },
   selectedMethodCard: {
-    borderColor: '#1a1a1a',
-    backgroundColor: '#f9f9f9',
+    borderColor: COLORS.text,
+    backgroundColor: COLORS.background,
   },
   disabledMethodCard: {
     opacity: 0.6,
@@ -260,16 +262,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   methodIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   selectedMethodIcon: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.text,
   },
   methodInfo: {
     flex: 1,

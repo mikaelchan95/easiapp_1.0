@@ -71,6 +71,10 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   const searchBarFocused = useRef(new Animated.Value(0)).current;
   const suggestionListHeight = useRef(new Animated.Value(0)).current;
   const [fadeAnim] = useState(new Animated.Value(0));
+  const headerAnimation = useRef(new Animated.Value(0)).current;
+  const searchBarScale = useRef(new Animated.Value(1)).current;
+  const currentLocationScale = useRef(new Animated.Value(1)).current;
+  const quickSelectAnimations = useRef<Animated.Value[]>([]).current;
   
   // Refs
   const searchInputRef = useRef<TextInput>(null);
@@ -139,12 +143,20 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
       if (mountedRef.current) {
         setRecentLocations(recent.slice(0, 3)); // Show max 3 recent
         
-        // Animate in content
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
+        // Animate in content with staggered effects
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(headerAnimation, {
+            toValue: 1,
+            duration: 600,
+            delay: 100,
+            useNativeDriver: true,
+          })
+        ]).start();
       }
       
       // Only load current location if preferences allow it
@@ -267,9 +279,10 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
     }
   };
 
-  // Handle input focus with improved keyboard handling
+  // Handle input focus with improved keyboard handling and micro animations
   const handleInputFocus = () => {
     setShowSuggestions(true);
+    HapticFeedback.light();
     
     Animated.parallel([
       Animated.timing(searchBarFocused, {
@@ -281,6 +294,12 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
         toValue: isKeyboardVisible ? height * 0.4 : height * 0.6,
         duration: 300,
         useNativeDriver: false,
+      }),
+      Animated.spring(searchBarScale, {
+        toValue: 1.02,
+        useNativeDriver: true,
+        tension: 150,
+        friction: 8,
       }),
     ]).start();
   };
@@ -303,6 +322,12 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
           duration: 300,
           useNativeDriver: false,
         }),
+        Animated.spring(searchBarScale, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 150,
+          friction: 8,
+        }),
       ]).start();
     }, 100);
   };
@@ -318,10 +343,25 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
     }
   };
 
-  // Handle use current location
+  // Handle use current location with micro animation
   const handleUseCurrentLocation = () => {
+    HapticFeedback.selection();
+    
+    // Animate button press
+    Animated.sequence([
+      Animated.timing(currentLocationScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(currentLocationScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
     if (currentLocation) {
-      HapticFeedback.selection();
       handleLocationSelect(currentLocation);
     } else {
       HapticFeedback.error();
@@ -372,46 +412,72 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
     return iconMap[iconName] || 'location';
   };
 
-  // Render suggestion item with accessibility
-  const renderSuggestionItem = (item: LocationSuggestion, index: number) => (
-    <TouchableOpacity
-      key={`${item.id}-${index}`}
-      style={styles.suggestionItem}
-      onPress={() => {
-        HapticFeedback.selection();
-        handleLocationSelect(item);
-      }}
-      activeOpacity={0.7}
-      accessible={true}
-      accessibilityLabel={`Select ${item.title}${item.subtitle ? `, ${item.subtitle}` : ''}`}
-      accessibilityRole="button"
-      accessibilityHint="Tap to select this location for delivery"
-    >
-      <View style={styles.suggestionIcon}>
-        <Ionicons 
-          name={item.type === 'current' ? 'location' : 'location-outline'} 
-          size={20} 
-          color={COLORS.buttonText} 
-        />
-      </View>
-      <View style={styles.suggestionContent}>
-        <Text style={styles.suggestionTitle} numberOfLines={1}>
-          {item.title}
-        </Text>
-        {item.subtitle && (
-          <Text style={styles.suggestionSubtitle} numberOfLines={1}>
-            {item.subtitle}
-          </Text>
-        )}
-      </View>
-      <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
-    </TouchableOpacity>
-  );
+  // Render suggestion item with accessibility and micro animations
+  const renderSuggestionItem = (item: LocationSuggestion, index: number) => {
+    const itemScale = useRef(new Animated.Value(1)).current;
+    
+    const handlePressIn = () => {
+      Animated.spring(itemScale, {
+        toValue: 0.98,
+        useNativeDriver: true,
+        tension: 300,
+        friction: 10,
+      }).start();
+    };
+    
+    const handlePressOut = () => {
+      Animated.spring(itemScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 300,
+        friction: 10,
+      }).start();
+    };
+    
+    return (
+      <Animated.View style={{ transform: [{ scale: itemScale }] }}>
+        <TouchableOpacity
+          key={`${item.id}-${index}`}
+          style={styles.suggestionItem}
+          onPress={() => {
+            HapticFeedback.selection();
+            handleLocationSelect(item);
+          }}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          activeOpacity={0.95}
+          accessible={true}
+          accessibilityLabel={`Select ${item.title}${item.subtitle ? `, ${item.subtitle}` : ''}`}
+          accessibilityRole="button"
+          accessibilityHint="Tap to select this location for delivery"
+        >
+          <View style={styles.suggestionIcon}>
+            <Ionicons 
+              name={item.type === 'current' ? 'location' : 'location-outline'} 
+              size={20} 
+              color={COLORS.buttonText} 
+            />
+          </View>
+          <View style={styles.suggestionContent}>
+            <Text style={styles.suggestionTitle} numberOfLines={1}>
+              {item.title}
+            </Text>
+            {item.subtitle && (
+              <Text style={styles.suggestionSubtitle} numberOfLines={1}>
+                {item.subtitle}
+              </Text>
+            )}
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
 
   return (
     <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} translucent />
+      <View style={[styles.statusBarBackground, { height: insets.top }]} />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} translucent />
         
         {/* Success Animation Overlay */}
         <Animated.View
@@ -438,22 +504,36 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
         </Animated.View>
         
         {/* Header */}
-        <View style={styles.header}>
+        <Animated.View 
+          style={[
+            styles.header,
+            {
+              opacity: headerAnimation,
+              transform: [{
+                translateY: headerAnimation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [-20, 0],
+                })
+              }]
+            }
+          ]}
+        >
           <TouchableOpacity 
             style={styles.backButton} 
             onPress={handleBackPress}
             accessible={true}
             accessibilityLabel="Go back"
             accessibilityRole="button"
+            activeOpacity={0.8}
           >
             <Ionicons name="chevron-back" size={24} color={COLORS.text} />
           </TouchableOpacity>
           <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Set delivery location</Text>
-            <Text style={styles.headerSubtitle}>Choose where you'd like your order delivered</Text>
+            <Text style={styles.headerTitle}>Delivery Address</Text>
+            <Text style={styles.headerSubtitle}>Where should we deliver your order?</Text>
           </View>
           <View style={styles.headerSpacer} />
-        </View>
+        </Animated.View>
         
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           <KeyboardAvoidingView 
@@ -464,20 +544,23 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
             {/* Current Location Widget */}
             {!showSuggestions && (
               <View style={styles.currentLocationWidget}>
-                <TouchableOpacity
-                  style={styles.currentLocationButton}
-                  onPress={handleUseCurrentLocation}
-                  activeOpacity={0.7}
-                  accessibilityLabel="Use current location"
-                >
-                  <View style={styles.currentLocationIconContainer}>
-                    <Ionicons name="locate" size={24} color={COLORS.buttonText} />
-                  </View>
-                  <View style={styles.currentLocationContent}>
-                    <Text style={styles.currentLocationTitle}>Use my current location</Text>
-                    <Text style={styles.currentLocationSubtitle}>We'll detect your location automatically</Text>
-                  </View>
-                </TouchableOpacity>
+                <Animated.View style={{ transform: [{ scale: currentLocationScale }] }}>
+                  <TouchableOpacity
+                    style={styles.currentLocationButton}
+                    onPress={handleUseCurrentLocation}
+                    activeOpacity={0.8}
+                    accessibilityLabel="Use current location"
+                  >
+                    <View style={styles.currentLocationIconContainer}>
+                      <Ionicons name="locate" size={24} color={COLORS.buttonText} />
+                    </View>
+                    <View style={styles.currentLocationContent}>
+                      <Text style={styles.currentLocationTitle}>Use my current location</Text>
+                      <Text style={styles.currentLocationSubtitle}>Automatically detect your location</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={COLORS.buttonText + 'CC'} />
+                  </TouchableOpacity>
+                </Animated.View>
               </View>
             )}
 
@@ -492,15 +575,16 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
 
             {/* Search Section */}
             <View style={styles.searchSection}>
-              <Text style={styles.searchSectionTitle}>Enter a specific address</Text>
+              <Text style={styles.searchSectionTitle}>Search for an address</Text>
               <View style={styles.searchContainer}>
-                <View style={[
+                <Animated.View style={[
                   styles.searchBar,
                   showSuggestions && styles.searchBarFocused,
-                  isKeyboardVisible && styles.searchBarKeyboard
+                  isKeyboardVisible && styles.searchBarKeyboard,
+                  { transform: [{ scale: searchBarScale }] }
                 ]}>
                   <View style={styles.searchIconContainer}>
-                    <Ionicons name="ellipse" size={8} color={COLORS.text} />
+                    <Ionicons name="search" size={20} color={COLORS.textSecondary} />
                   </View>
                   <TextInput
                     ref={searchInputRef}
@@ -524,11 +608,12 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
                         setSuggestions([]);
                         HapticFeedback.selection();
                       }}
+                      activeOpacity={0.7}
                     >
                       <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
                     </TouchableOpacity>
                   )}
-                </View>
+                </Animated.View>
               </View>
             </View>
 
@@ -682,7 +767,6 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
             </View>
           </View>
         )}
-      </SafeAreaView>
     </View>
   );
 };
@@ -690,11 +774,10 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.card, // Match header background
+    backgroundColor: COLORS.background, // Main background
   },
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background, // Content area background
+  statusBarBackground: {
+    backgroundColor: COLORS.card, // Extends header color into notch
   },
   successOverlay: {
     position: 'absolute',
@@ -727,19 +810,24 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.lg,
     backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    ...SHADOWS.light,
+    elevation: 4,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: SPACING.xs,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.light,
   },
   headerContent: {
     flex: 1,
@@ -747,17 +835,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
   },
   headerTitle: {
-    ...TYPOGRAPHY.h3,
+    ...TYPOGRAPHY.h2,
     color: COLORS.text,
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
-    marginBottom: SPACING.xs,
+    marginBottom: 4,
   },
   headerSubtitle: {
-    ...TYPOGRAPHY.caption,
+    ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 20,
+    fontWeight: '500',
   },
   headerSpacer: {
     width: 40,
@@ -777,18 +866,19 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.lg,
   },
   currentLocationButton: {
-    backgroundColor: COLORS.buttonBg,
+    backgroundColor: COLORS.text,
     borderRadius: 20,
     padding: SPACING.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    ...SHADOWS.light,
+    ...SHADOWS.medium,
+    elevation: 6,
   },
   currentLocationIconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: COLORS.background + '40',
+    backgroundColor: COLORS.card + '40',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.md,
@@ -798,14 +888,15 @@ const styles = StyleSheet.create({
   },
   currentLocationTitle: {
     ...TYPOGRAPHY.h4,
-    color: COLORS.buttonText,
-    fontWeight: '600',
-    marginBottom: SPACING.xs,
+    color: COLORS.card,
+    fontWeight: '700',
+    marginBottom: 4,
   },
   currentLocationSubtitle: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.buttonText + 'CC',
+    ...TYPOGRAPHY.small,
+    color: COLORS.card + 'CC',
     lineHeight: 18,
+    fontWeight: '500',
   },
 
   // OR Divider
@@ -835,7 +926,7 @@ const styles = StyleSheet.create({
   searchSectionTitle: {
     ...TYPOGRAPHY.h4,
     color: COLORS.text,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: SPACING.md,
   },
   searchContainer: {
@@ -844,16 +935,19 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.card,
     borderRadius: 16,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: COLORS.border,
     ...SHADOWS.light,
+    elevation: 4,
   },
   searchBarFocused: {
     borderColor: COLORS.text,
+    ...SHADOWS.medium,
+    elevation: 6,
   },
   searchBarKeyboard: {
     borderColor: COLORS.text,
@@ -866,6 +960,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.text,
     paddingVertical: SPACING.xs,
+    fontWeight: '500',
   },
   clearButton: {
     padding: SPACING.xs,

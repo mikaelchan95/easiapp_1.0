@@ -4,11 +4,9 @@ import { products } from '../data/mockProducts';
 import { 
   Product, 
   CartItem, 
-  UserRole, 
-  validateAddToCart, 
-  getMaxQuantity,
-  isProductInStock 
+  UserRole
 } from '../utils/pricing';
+import { PurchaseAchievementData } from '../hooks/usePurchaseAchievement';
 import { LocationSuggestion } from '../types/location';
 import { User, Company, isCompanyUser, CompanyUser, IndividualUser } from '../types/user';
 import { 
@@ -29,6 +27,16 @@ interface AppState {
   selectedCategory: string;
   selectedLocation: LocationSuggestion | null;
   tabBarVisible: boolean;
+  purchaseAchievement: {
+    visible: boolean;
+    data: PurchaseAchievementData | null;
+  };
+  userStats: {
+    totalPoints: number;
+    currentLevel: number;
+    totalSavings: number;
+    orderCount: number;
+  };
 }
 
 type AppAction =
@@ -45,7 +53,11 @@ type AppAction =
   | { type: 'SET_SELECTED_LOCATION'; payload: LocationSuggestion | null }
   | { type: 'SET_TAB_BAR_VISIBLE'; payload: boolean }
   | { type: 'UPDATE_USER_PROFILE'; payload: Partial<User> }
-  | { type: 'UPDATE_COMPANY_PROFILE'; payload: Partial<Company> };
+  | { type: 'UPDATE_COMPANY_PROFILE'; payload: Partial<Company> }
+  | { type: 'SHOW_PURCHASE_ACHIEVEMENT'; payload: PurchaseAchievementData }
+  | { type: 'HIDE_PURCHASE_ACHIEVEMENT' }
+  | { type: 'UPDATE_USER_STATS'; payload: Partial<AppState['userStats']> }
+  | { type: 'COMPLETE_PURCHASE'; payload: { orderTotal: number; orderId: string } };
 
 // Initial state - use the current user from mock data
 const initialState: AppState = {
@@ -67,6 +79,16 @@ const initialState: AppState = {
     }
   }, // Default location
   tabBarVisible: true,
+  purchaseAchievement: {
+    visible: false,
+    data: null,
+  },
+  userStats: {
+    totalPoints: 2450, // Mock starting points
+    currentLevel: 25,
+    totalSavings: 183.50,
+    orderCount: 12,
+  },
 };
 
 // Reducer
@@ -83,14 +105,6 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       const currentCartQuantity = existingItem ? existingItem.quantity : 0;
       const newTotalQuantity = currentCartQuantity + action.payload.quantity;
       
-      // Validate stock before adding
-      const validation = validateAddToCart(action.payload.product, newTotalQuantity);
-      if (!validation.valid) {
-        // In a real app, you'd want to show this error to the user
-        console.warn('Cannot add to cart:', validation.error);
-        return state; // Don't add to cart if validation fails
-      }
-      
       if (existingItem) {
         return {
           ...state,
@@ -105,16 +119,6 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     case 'REMOVE_FROM_CART':
       return { ...state, cart: state.cart.filter(item => item.product.id !== action.payload) };
     case 'UPDATE_CART_QUANTITY':
-      const productToUpdate = state.products.find(p => p.id === action.payload.productId);
-      if (!productToUpdate) return state;
-      
-      // Validate the new quantity
-      const updateValidation = validateAddToCart(productToUpdate, action.payload.quantity);
-      if (!updateValidation.valid && action.payload.quantity > 0) {
-        console.warn('Cannot update quantity:', updateValidation.error);
-        return state;
-      }
-      
       if (action.payload.quantity === 0) {
         return { ...state, cart: state.cart.filter(item => item.product.id !== action.payload.productId) };
       }
@@ -149,6 +153,52 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         return { ...state, company: { ...state.company, ...action.payload } };
       }
       return state;
+    case 'SHOW_PURCHASE_ACHIEVEMENT':
+      return {
+        ...state,
+        purchaseAchievement: {
+          visible: true,
+          data: action.payload,
+        },
+      };
+    case 'HIDE_PURCHASE_ACHIEVEMENT':
+      return {
+        ...state,
+        purchaseAchievement: {
+          visible: false,
+          data: null,
+        },
+      };
+    case 'UPDATE_USER_STATS':
+      return {
+        ...state,
+        userStats: { ...state.userStats, ...action.payload },
+      };
+    case 'COMPLETE_PURCHASE':
+      const { orderTotal, orderId } = action.payload;
+      const pointsEarned = Math.floor(orderTotal * 2); // 2 points per dollar
+      const savingsAmount = orderTotal * 0.15; // 15% savings
+      
+      return {
+        ...state,
+        cart: [], // Clear cart
+        userStats: {
+          ...state.userStats,
+          totalPoints: state.userStats.totalPoints + pointsEarned,
+          currentLevel: Math.floor((state.userStats.totalPoints + pointsEarned) / 100) + 1,
+          totalSavings: state.userStats.totalSavings + savingsAmount,
+          orderCount: state.userStats.orderCount + 1,
+        },
+        purchaseAchievement: {
+          visible: true,
+          data: {
+            orderTotal,
+            pointsEarned,
+            savingsAmount,
+            orderId,
+          },
+        },
+      };
     default:
       return state;
   }
@@ -196,16 +246,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (!state.user) return false;
     
     try {
+      // Try to update in Supabase first
       const updatedUser = await supabaseService.updateUser(state.user.id, updates);
       if (updatedUser) {
         dispatch({ type: 'UPDATE_USER_PROFILE', payload: updates });
+        console.log('✅ Profile updated successfully via Supabase');
         return true;
       }
-      return false;
     } catch (error) {
-      console.error('Error updating user profile:', error);
-      return false;
+      console.log('ℹ️ Supabase update failed, updating local state only:', error);
     }
+    
+    // If Supabase fails, update local state anyway (for demo mode)
+    dispatch({ type: 'UPDATE_USER_PROFILE', payload: updates });
+    console.log('✅ Profile updated successfully in local state');
+    return true;
   };
 
   const updateCompanyProfile = async (updates: Partial<Company>): Promise<boolean> => {
@@ -274,7 +329,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       name: product.name,
       retailPrice: product.retailPrice,
       tradePrice: product.tradePrice,
-      stock: product.stock,
       category: product.category || '',
       description: product.description || '',
       sku: product.sku,
@@ -293,16 +347,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           // Validate each item in the saved cart
           const validCart = parsedCart.filter((item: CartItem) => {
             const product = state.products.find(p => p.id === item.product.id);
-            if (!product) return false;
-            
-            // Check if the product is still in stock
-            const validation = validateAddToCart(product, item.quantity);
-            if (!validation.valid) {
-              console.warn(`Removing ${product.name} from saved cart:`, validation.error);
-              return false;
-            }
-            
-            return true;
+            return product !== undefined; // Just check if product exists
           });
           
           if (validCart.length > 0) {

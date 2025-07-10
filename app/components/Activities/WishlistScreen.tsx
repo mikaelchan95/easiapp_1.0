@@ -164,7 +164,6 @@ export default function WishlistScreen() {
   };
   
   const handleAddToCart = (item: WishlistItem) => {
-    if (!item.inStock) return;
     
     dispatch({
       type: 'ADD_TO_CART',

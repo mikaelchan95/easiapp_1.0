@@ -8,7 +8,8 @@ import {
   Animated,
   TextInput,
   FlatList,
-  Dimensions
+  Dimensions,
+  StatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -319,7 +320,10 @@ export default function OrderHistoryScreen() {
   );
   
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <View style={[styles.statusBarSpacer, { height: insets.top }]} />
+      
       {/* Header */}
       <Animated.View 
         style={[
@@ -422,6 +426,9 @@ export default function OrderHistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  statusBarSpacer: {
     backgroundColor: COLORS.background,
   },
   header: {

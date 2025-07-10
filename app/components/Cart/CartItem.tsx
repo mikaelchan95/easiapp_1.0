@@ -20,23 +20,22 @@ import * as Animations from '../../utils/animations';
 import { HapticFeedback, HapticPatterns } from '../../utils/haptics';
 import QuantitySelector from '../UI/QuantitySelector';
 
-type CartItemProps = {
+interface CartItemProps {
   item: {
     id: string;
     productId: string;
     name: string;
     price: number;
-    quantity: number;
     imageUrl: any;
-    inStock?: boolean;
+    quantity: number;
   };
   onQuantityChange: (quantity: number) => void;
-  onDelete?: () => void;
+  onDelete: () => void;
   onSaveForLater?: () => void;
   onAddToFavorites?: () => void;
   onSwipeStart?: () => void;
   onSwipeEnd?: () => void;
-};
+}
 
 type ProductNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ProductDetail'>;
 
@@ -310,11 +309,6 @@ const CartItem: React.FC<CartItemProps> = ({
               style={styles.image}
               resizeMode="contain"
             />
-            {!item.inStock && (
-              <View style={styles.outOfStockOverlay}>
-                <Text style={styles.outOfStockText}>Out of Stock</Text>
-              </View>
-            )}
           </TouchableOpacity>
           
           <View style={styles.content}>
@@ -330,13 +324,10 @@ const CartItem: React.FC<CartItemProps> = ({
                 onChange={handleQuantityChange}
                 size="medium"
                 productName={item.name}
-                disabled={isDeleting || !item.inStock}
+                disabled={isDeleting}
               />
               <View style={styles.priceContainer}>
                 <Text style={styles.price}>{formattedPrice}</Text>
-                {!item.inStock && (
-                  <Text style={styles.unavailableText}>Unavailable</Text>
-                )}
               </View>
             </View>
           </View>
@@ -383,23 +374,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  outOfStockOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  outOfStockText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
   content: {
     flex: 1,
     justifyContent: 'center',
@@ -430,12 +404,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#000',
-  },
-  unavailableText: {
-    fontSize: 12,
-    color: COLORS.error,
-    marginTop: 2,
-    fontWeight: '500',
   },
   rightActionsContainer: {
     flexDirection: 'row',

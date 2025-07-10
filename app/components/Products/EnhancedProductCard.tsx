@@ -43,8 +43,7 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
     originalPrice,
     imageUrl, 
     category,
-    rating,
-    inStock
+    rating
   } = product;
 
   // Get app context for cart functionality
@@ -142,8 +141,6 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
   
   // Handle add button animation
   const handleAddButtonPress = () => {
-    // Only proceed if the product is in stock
-    if (!inStock) return;
     
     // Haptic feedback for add to cart
     HapticPatterns.addToCart();
@@ -173,7 +170,6 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
               name: product.name,
               price: product.price,
               image: product.imageUrl,
-              stock: product.inStock ? 10 : 0,
               category: product.category || '',
               description: product.description || '',
               sku: product.id,
@@ -238,11 +234,7 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
             resizeMode="contain"
           />
           
-          {/* Stock indicator dot */}
-          <View style={[
-            styles.stockIndicator, 
-            { backgroundColor: inStock ? COLORS.success : COLORS.error }
-          ]} />
+
           
           {/* Purchase count badge */}
           {purchaseCount > 0 && (
@@ -289,11 +281,10 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
             <TouchableOpacity 
               style={[
                 styles.addButton,
-                isAdding && styles.addButtonActive,
-                !inStock && styles.addButtonDisabled
+                isAdding && styles.addButtonActive
               ]}
               onPress={handleAddButtonPress}
-              disabled={!inStock || isAdding}
+              disabled={isAdding}
             >
               {isAdding ? (
                 <Ionicons name="checkmark" size={18} color={COLORS.accent} />
@@ -369,14 +360,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     borderRadius: 8,
   },
-  stockIndicator: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
+
   purchaseCountBadge: {
     position: 'absolute',
     top: 8,

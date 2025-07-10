@@ -40,7 +40,7 @@ const SuggestedAddons: React.FC<SuggestedAddonsProps> = ({
   // Filter and enhance product suggestions
   const suggestedProducts = products
     .filter(p => !cartProductIds.includes(p.id))
-    .filter(p => p.inStock)
+
     .slice(0, 6) // Show more suggestions
     .map(product => ({
       ...product,

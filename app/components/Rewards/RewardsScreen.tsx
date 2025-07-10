@@ -9,7 +9,8 @@ import {
   Animated,
   Modal,
   ActivityIndicator,
-  StatusBar
+  StatusBar,
+  Image
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +18,9 @@ import { useNavigation } from '@react-navigation/native';
 import { useRewards, TierLevel } from '../../context/RewardsContext';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import MobileHeader from '../Layout/MobileHeader';
+import { useAppContext } from '../../context/AppContext';
+import { isCompanyUser, CompanyUser, IndividualUser } from '../../types/user';
+import { formatStatCurrency, formatStatNumber } from '../../utils/formatting';
 
 // Mock rewards data
 const mockRewards = [
@@ -145,26 +149,180 @@ const PointsHistoryModal = ({ visible, onClose }: { visible: boolean; onClose: (
 export default function RewardsScreen() {
   const navigation = useNavigation();
   const { state, redeemReward, getTierBenefits, getPointsToNextTier, getExpiringPoints } = useRewards();
+  const { state: appState } = useAppContext();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showHistory, setShowHistory] = useState(false);
   const [redeeming, setRedeeming] = useState<string | null>(null);
+  const [showExpiringPoints, setShowExpiringPoints] = useState(false);
   const insets = useSafeAreaInsets();
+  
+  const user = appState.user;
+  
+  const handleFeaturePress = (feature: string) => {
+    console.log(`Pressed: ${feature}`);
+    // Add navigation logic here if needed
+  };
+
+  const renderUserProfile = () => {
+    if (!user) return null;
+    
+    const isCompany = isCompanyUser(user);
+    
+    return (
+      <View style={styles.profileCard}>
+        {/* Center-aligned Header */}
+        <View style={styles.headerTopRow}>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>Rewards</Text>
+          </View>
+        </View>
+
+        {/* Enhanced Profile Section */}
+        <View style={styles.profileSection}>
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatar}>
+              {user.profileImage ? (
+                <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Text style={styles.avatarInitials}>
+                    {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+          
+          <View style={styles.userInfoSection}>
+            <View style={styles.userMainInfo}>
+              <View style={styles.nameRow}>
+                <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">{user.name}</Text>
+                <View style={styles.verifiedBadge}>
+                  <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
+                </View>
+              </View>
+              <View style={styles.userMetaInfo}>
+                <Text style={styles.accountType}>
+                  {isCompany ? 'Business Account' : 'Personal Account'}
+                </Text>
+                <Text style={styles.rewardTier}>{state.userRewards.tier} Tier</Text>
+              </View>
+            </View>
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.settingsButton}
+            onPress={() => handleFeaturePress('Settings')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="settings-outline" size={22} color={COLORS.text} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Enhanced User Stats with Better UX */}
+        {!isCompany && (
+          <View style={styles.userStatsSection}>
+            <View style={styles.statsSectionHeader}>
+              <Text style={styles.statsTitle}>Activity Overview</Text>
+            </View>
+            <View style={styles.modernStatsContainer}>
+              <TouchableOpacity 
+                style={styles.modernStatItem}
+                onPress={() => handleFeaturePress('Order History')}
+                activeOpacity={0.8}
+              >
+                <View style={styles.statIconContainer}>
+                  <Ionicons name="receipt-outline" size={20} color={COLORS.text} />
+                </View>
+                <Text style={styles.modernStatNumber}>
+                  {formatStatNumber((user as IndividualUser).totalOrders || 0)}
+                </Text>
+                <Text style={styles.modernStatLabel}>Orders</Text>
+              </TouchableOpacity>
+              <View style={styles.modernStatDivider} />
+              <TouchableOpacity 
+                style={styles.modernStatItem}
+                onPress={() => handleFeaturePress('Order History')}
+                activeOpacity={0.8}
+              >
+                <View style={styles.statIconContainer}>
+                  <Ionicons name="trending-up-outline" size={20} color={COLORS.text} />
+                </View>
+                <Text style={styles.modernStatNumber}>
+                  {formatStatCurrency((user as IndividualUser).totalSpent || 0)}
+                </Text>
+                <Text style={styles.modernStatLabel}>Spent</Text>
+              </TouchableOpacity>
+              <View style={styles.modernStatDivider} />
+              <TouchableOpacity 
+                style={styles.modernStatItem}
+                onPress={() => handleFeaturePress('Reviews')}
+                activeOpacity={0.8}
+              >
+                <View style={styles.statIconContainer}>
+                  <Ionicons name="star-outline" size={20} color={COLORS.text} />
+                </View>
+                <Text style={styles.modernStatNumber}>4.9</Text>
+                <Text style={styles.modernStatLabel}>Rating</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+    );
+  };
   
   // Check for expiring points
   const expiringPoints = getExpiringPoints(30);
   const urgentExpiringPoints = getExpiringPoints(7);
   
-  // Animation for tier progress
+  // Animation for tier progress and carousel transitions
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const carouselAnim = useRef(new Animated.Value(0)).current;
+  const progressBarAnim = useRef(new Animated.Value(0)).current;
   
+  // Animate progress bar continuously
   React.useEffect(() => {
+    const animateProgressBar = () => {
+      progressBarAnim.setValue(0);
+      Animated.timing(progressBarAnim, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: false
+      }).start();
+    };
+
     const progress = calculateProgress();
     Animated.timing(progressAnim, {
       toValue: progress,
       duration: 1000,
       useNativeDriver: false
     }).start();
+
+    animateProgressBar();
+    const interval = setInterval(animateProgressBar, 5000);
+    return () => clearInterval(interval);
   }, [state.userRewards.yearlySpend]);
+
+  // Carousel animation - alternate between progress and expiring points every 5 seconds
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setShowExpiringPoints(prev => {
+        const newValue = !prev;
+        
+        // Animate carousel slide
+        Animated.timing(carouselAnim, {
+          toValue: newValue ? 1 : 0,
+          duration: 600,
+          useNativeDriver: true
+        }).start();
+        
+        return newValue;
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
   
   const calculateProgress = useCallback(() => {
     const pointsToNext = getPointsToNextTier();
@@ -204,28 +362,36 @@ export default function RewardsScreen() {
     const canRedeem = state.userRewards.points >= item.points;
     const isRedeeming = redeeming === item.id;
     
+    const getRewardIcon = () => {
+      switch (item.type) {
+        case 'voucher': return 'pricetag-outline';
+        case 'bundle': return 'cube-outline';
+        default: return 'gift-outline';
+      }
+    };
+    
     return (
       <View style={styles.rewardCard}>
         <View style={styles.rewardHeader}>
           <View style={styles.rewardIconContainer}>
             <Ionicons 
-              name={
-                item.type === 'voucher' ? 'pricetag' : 
-                item.type === 'bundle' ? 'cube' : 
-                'gift'
-              } 
+              name={getRewardIcon()} 
               size={20} 
               color={COLORS.text} 
             />
           </View>
-          <View style={styles.rewardInfo}>
+          <View style={styles.rewardContent}>
             <Text style={styles.rewardTitle}>{item.title}</Text>
             <Text style={styles.rewardDescription}>{item.description}</Text>
           </View>
         </View>
         
         <View style={styles.rewardFooter}>
-          <Text style={styles.rewardPoints}>{item.points.toLocaleString()} pts</Text>
+          <View style={styles.rewardPointsContainer}>
+            <Text style={styles.rewardPoints}>{item.points.toLocaleString()}</Text>
+            <Text style={styles.rewardPointsLabel}>points</Text>
+          </View>
+          
           <TouchableOpacity
             style={[
               styles.redeemButton,
@@ -233,6 +399,7 @@ export default function RewardsScreen() {
             ]}
             onPress={() => handleRedeem(item.id)}
             disabled={!canRedeem || isRedeeming}
+            activeOpacity={0.7}
           >
             {isRedeeming ? (
               <ActivityIndicator size="small" color={COLORS.accent} />
@@ -254,69 +421,89 @@ export default function RewardsScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
       
-      {/* Status Bar Background */}
-      <View style={[styles.statusBarBackground, { height: insets.top }]} />
-      
-      {/* Mobile Header */}
-      <MobileHeader 
-        title="Rewards"
-        showBackButton={false}
-        showCartButton={true}
-        showSearch={false}
-        showLocationHeader={false}
-      />
+      {/* Header Container */}
+      <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
+        {/* User Profile Header */}
+        {renderUserProfile()}
+      </View>
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Unified Rewards Widget */}
-        <View style={styles.unifiedWidget}>
-          <View style={styles.widgetContainer}>
-            {/* Header Row */}
-            <View style={styles.widgetHeader}>
-              <Text style={styles.widgetTitle}>Earn with every purchase</Text>
-              <View style={styles.actionButtons}>
-                <TouchableOpacity 
-                  style={styles.actionButton}
-                  onPress={() => navigation.navigate('VoucherTracking')}
-                >
-                  <Ionicons name="receipt-outline" size={18} color={COLORS.text} />
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.actionButton}
-                  onPress={() => setShowHistory(true)}
-                >
-                  <Ionicons name="time-outline" size={18} color={COLORS.text} />
-                </TouchableOpacity>
+        {/* Rewards Balance Cards */}
+        <View style={styles.balanceCardsContainer}>
+          {/* Points Card */}
+          <TouchableOpacity 
+            style={styles.pointsCard}
+            onPress={() => setShowHistory(true)}
+            activeOpacity={0.95}
+          >
+            <View style={styles.cardContent}>
+              <View style={styles.cardHeader}>
+                <View style={styles.pointsIconContainer}>
+                  <Ionicons name="gift" size={16} color={COLORS.textSecondary} />
+                </View>
+                <Text style={styles.cardLabel}>Points</Text>
+                <View style={styles.actionIndicator}>
+                  <Ionicons name="chevron-forward" size={14} color={COLORS.inactive} />
+                </View>
               </View>
+              <View style={styles.amountContainer}>
+                <Text style={styles.pointsAmount}>{state.userRewards.points.toLocaleString()}</Text>
+              </View>
+              <Text style={styles.cardSubtext}>Available to use</Text>
             </View>
+          </TouchableOpacity>
 
-            {/* Main Content */}
-            <View style={styles.widgetContent}>
-              {/* Points and Tier Row */}
-              <View style={styles.pointsTierRow}>
-                <View style={styles.pointsSection}>
-                  <Text style={styles.pointsValue}>{state.userRewards.points.toLocaleString()}</Text>
-                  <Text style={styles.pointsLabel}>Points Available</Text>
+          {/* Tier Card */}
+          <TouchableOpacity 
+            style={styles.tierCard}
+            onPress={() => navigation.navigate('TierBenefitsScreen')}
+            activeOpacity={0.95}
+          >
+            <View style={styles.cardContent}>
+              <View style={styles.cardHeader}>
+                <View style={styles.tierIconContainer}>
+                  <TierBadge tier={state.userRewards.tier} size="small" />
                 </View>
-                
-                <View style={styles.tierSection}>
-                  <View style={styles.tierBadgeContainer}>
-                    <TierBadge tier={state.userRewards.tier} size="small" />
-                    <View style={styles.tierInfo}>
-                      <Text style={styles.tierName}>{state.userRewards.tier}</Text>
-                      <Text style={styles.tierStatus}>Member</Text>
-                    </View>
-                  </View>
+                <Text style={styles.cardLabel}>Tier</Text>
+                <View style={styles.actionIndicator}>
+                  <Ionicons name="chevron-forward" size={14} color={COLORS.inactive} />
                 </View>
               </View>
+              <View style={styles.amountContainer}>
+                <Text style={styles.tierAmount}>{state.userRewards.tier}</Text>
+              </View>
+              <Text style={styles.cardSubtext}>Member status</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
 
-              {/* Progress Section (if applicable) */}
-              {getPointsToNextTier() > 0 && (
-                <View style={styles.progressSection}>
-                  <Text style={styles.progressLabel}>
-                    S${getPointsToNextTier().toLocaleString()} to {
-                      state.userRewards.tier === 'Bronze' ? 'Silver' : 'Gold'
-                    }
-                  </Text>
+        {/* Combined Progress/Expiring Points Carousel */}
+        {(getPointsToNextTier() > 0 || urgentExpiringPoints.length > 0) && (
+          <View style={styles.progressCard}>
+            <View style={styles.carouselContainer}>
+              <Animated.View 
+                style={[
+                  styles.carouselTrack,
+                  {
+                    transform: [{
+                      translateX: carouselAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['0%', '-50%'] // Move to show second slide
+                      })
+                    }]
+                  }
+                ]}
+              >
+                {/* Progress to next tier slide */}
+                <View style={styles.carouselSlide}>
+                  <View style={styles.progressHeader}>
+                    <Ionicons name="trending-up" size={16} color={COLORS.primary} />
+                    <Text style={styles.progressTitle}>
+                      S${getPointsToNextTier().toLocaleString()} to {
+                        state.userRewards.tier === 'Bronze' ? 'Silver' : 'Gold'
+                      }
+                    </Text>
+                  </View>
                   <View style={styles.progressBarContainer}>
                     <Animated.View 
                       style={[
@@ -329,57 +516,129 @@ export default function RewardsScreen() {
                         }
                       ]}
                     />
+                    <Animated.View 
+                      style={[
+                        styles.progressBarGlow,
+                        {
+                          width: progressAnim.interpolate({
+                            inputRange: [0, 100],
+                            outputRange: ['0%', '100%']
+                          }),
+                          opacity: progressBarAnim.interpolate({
+                            inputRange: [0, 0.5, 1],
+                            outputRange: [0.3, 1, 0.3]
+                          })
+                        }
+                      ]}
+                    />
                   </View>
                 </View>
-              )}
 
-              {/* Expiring Points Alert (if applicable) */}
-              {urgentExpiringPoints.length > 0 && (
-                <View style={styles.expiringAlert}>
-                  <View style={styles.alertContent}>
-                    <Ionicons name="warning" size={16} color={COLORS.error} />
-                    <View style={styles.alertText}>
-                      <Text style={styles.alertTitle}>Points Expiring Soon!</Text>
-                      <Text style={styles.alertDescription}>
+                {/* Expiring points slide */}
+                {urgentExpiringPoints.length > 0 && (
+                  <View style={styles.carouselSlide}>
+                    <View style={styles.expiringHeader}>
+                      <Ionicons name="warning" size={16} color={COLORS.error} />
+                      <Text style={styles.expiringTitle}>Points Expiring Soon!</Text>
+                    </View>
+                    <View style={styles.expiringDescription}>
+                      <Text style={styles.expiringText}>
                         {urgentExpiringPoints.reduce((sum, entry) => sum + entry.points, 0).toLocaleString()} points expire within 7 days
                       </Text>
+                      <TouchableOpacity 
+                        style={styles.expiringButton}
+                        onPress={() => navigation.navigate('VoucherTracking')}
+                      >
+                        <Text style={styles.expiringButtonText}>View Details</Text>
+                        <Ionicons name="arrow-forward" size={14} color={COLORS.error} />
+                      </TouchableOpacity>
                     </View>
-                    <TouchableOpacity 
-                      style={styles.alertButton}
-                      onPress={() => navigation.navigate('VoucherTracking')}
-                    >
-                      <Text style={styles.alertButtonText}>View Details</Text>
-                      <Ionicons name="arrow-forward" size={14} color={COLORS.error} />
-                    </TouchableOpacity>
                   </View>
-                </View>
+                )}
+              </Animated.View>
+            </View>
+            
+            {/* Carousel indicators */}
+            <View style={styles.carouselIndicators}>
+              <View style={[
+                styles.indicator,
+                !showExpiringPoints && styles.activeIndicator
+              ]} />
+              {urgentExpiringPoints.length > 0 && (
+                <View style={[
+                  styles.indicator,
+                  showExpiringPoints && styles.activeIndicator
+                ]} />
               )}
             </View>
           </View>
-        </View>
+        )}
 
-        {/* Tier Benefits */}
-        <View style={styles.benefitsCard}>
-          <View style={styles.benefitsHeader}>
-            <Text style={styles.benefitsTitle}>Your Benefits</Text>
+        {/* Quick Actions */}
+        <View style={styles.quickActionsCard}>
+          <Text style={styles.quickActionsTitle}>Explore More</Text>
+          <View style={styles.quickActionsGrid}>
             <TouchableOpacity 
-              style={styles.faqButton}
-              onPress={() => navigation.navigate('RewardsFAQ')}
+              style={styles.quickActionItem}
+              onPress={() => navigation.navigate('ReferralScreen')}
             >
-              <Ionicons name="help-circle-outline" size={20} color={COLORS.text} />
+              <View style={styles.quickActionIcon}>
+                <Ionicons name="people-outline" size={24} color={COLORS.text} />
+              </View>
+              <Text style={styles.quickActionLabel}>Referrals</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.quickActionItem}
+              onPress={() => navigation.navigate('AchievementsScreen')}
+            >
+              <View style={styles.quickActionIcon}>
+                <Ionicons name="trophy-outline" size={24} color={COLORS.text} />
+              </View>
+              <Text style={styles.quickActionLabel}>Achievements</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.quickActionItem}
+              onPress={() => navigation.navigate('MilestonesScreen')}
+            >
+              <View style={styles.quickActionIcon}>
+                <Ionicons name="flag-outline" size={24} color={COLORS.text} />
+              </View>
+              <Text style={styles.quickActionLabel}>Milestones</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.quickActionItem}
+              onPress={() => navigation.navigate('RewardsAnalytics')}
+            >
+              <View style={styles.quickActionIcon}>
+                <Ionicons name="analytics-outline" size={24} color={COLORS.text} />
+              </View>
+              <Text style={styles.quickActionLabel}>Analytics</Text>
             </TouchableOpacity>
           </View>
-          {getTierBenefits(state.userRewards.tier).map((benefit, index) => (
-            <View key={index} style={styles.benefitItem}>
-              <View style={styles.benefitDot} />
-              <Text style={styles.benefitText}>{benefit}</Text>
-            </View>
-          ))}
         </View>
+
 
         {/* Rewards Catalog */}
         <View style={styles.catalogSection}>
-          <Text style={styles.catalogTitle}>Redeem Rewards</Text>
+          <View style={styles.catalogHeader}>
+            <View style={styles.catalogTitleContainer}>
+              <Ionicons name="gift" size={20} color={COLORS.primary} style={styles.catalogIcon} />
+              <Text style={styles.catalogTitle}>Redeem Rewards</Text>
+              <View style={styles.catalogCountBadge}>
+                <Text style={styles.catalogCountText}>{filteredRewards.length}</Text>
+              </View>
+            </View>
+            <TouchableOpacity 
+              style={styles.catalogViewAllButton}
+              onPress={() => navigation.navigate('RewardsAnalytics')}
+            >
+              <Text style={styles.catalogViewAllText}>View All</Text>
+              <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
           
           {/* Category Filter */}
           <ScrollView 
@@ -434,90 +693,217 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  statusBarBackground: {
+  headerContainer: {
     backgroundColor: COLORS.card,
+    zIndex: 10,
+    ...SHADOWS.light,
+    paddingBottom: SPACING.xs,
   },
   scrollView: {
     flex: 1,
   },
-  // Unified Widget
-  unifiedWidget: {
-    marginHorizontal: SPACING.md,
-    marginTop: SPACING.md,
-    marginBottom: SPACING.lg,
+  
+  // Balance Cards Container
+  balanceCardsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    gap: SPACING.md,
   },
-  widgetContainer: {
+  
+  // Points Card
+  pointsCard: {
+    flex: 1,
     backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: SPACING.lg,
+    borderRadius: 20,
+    minHeight: 130,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     ...SHADOWS.medium,
   },
-  widgetHeader: {
-    flexDirection: 'row',
+  
+  // Tier Card
+  tierCard: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    borderRadius: 20,
+    minHeight: 130,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
+  },
+  
+  // Card Content
+  cardContent: {
+    flex: 1,
+    padding: 20,
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
   },
-  widgetTitle: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-  },
-  actionButtons: {
+  cardHeader: {
     flexDirection: 'row',
-    gap: SPACING.sm,
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
   },
-  actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  cardLabel: {
+    ...TYPOGRAPHY.caption,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    flex: 1,
+  },
+  actionIndicator: {
+    opacity: 0.6,
+  },
+  amountContainer: {
+    marginVertical: SPACING.xs,
+  },
+  pointsAmount: {
+    ...TYPOGRAPHY.h1,
+    fontWeight: '700',
+    color: COLORS.text,
+    letterSpacing: -1,
+  },
+  tierAmount: {
+    ...TYPOGRAPHY.h1,
+    fontWeight: '700',
+    color: COLORS.text,
+    letterSpacing: -1,
+    fontSize: 28,
+  },
+  cardSubtext: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.inactive,
+    fontWeight: '400',
+  },
+  
+  // Icon Containers
+  pointsIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 10,
   },
-  widgetContent: {
-    gap: SPACING.lg,
+  tierIconContainer: {
+    marginRight: 10,
   },
-  pointsTierRow: {
+  
+  // Progress Card
+  progressCard: {
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.sm,
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.light,
+  },
+  // Carousel Container
+  carouselContainer: {
+    overflow: 'hidden',
+    minHeight: 80,
+  },
+  carouselTrack: {
+    flexDirection: 'row',
+    width: '200%', // Double width to fit both slides
+  },
+  carouselSlide: {
+    width: '50%', // Each slide takes half the track width
+    padding: SPACING.lg,
+    minHeight: 56,
+    justifyContent: 'space-between',
+  },
+  
+  // Progress Section
+  progressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+    gap: SPACING.xs,
+  },
+  progressTitle: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  progressBarContainer: {
+    height: 4,
+    backgroundColor: COLORS.background,
+    borderRadius: 2,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: COLORS.text,
+    borderRadius: 2,
+  },
+  progressBarGlow: {
+    position: 'absolute',
+    height: '100%',
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  
+  // Expiring Points Section
+  expiringHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    marginBottom: SPACING.sm,
+  },
+  expiringTitle: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.error,
+    fontWeight: '600',
+  },
+  expiringDescription: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  pointsSection: {
-    flex: 1,
-  },
-  pointsValue: {
-    ...TYPOGRAPHY.h1,
-    color: COLORS.text,
-    fontWeight: '800',
-    fontSize: 36,
-    lineHeight: 40,
-  },
-  pointsLabel: {
+  expiringText: {
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
+    flex: 1,
+    marginRight: SPACING.sm,
   },
-  tierSection: {
-    alignItems: 'flex-end',
-  },
-  tierBadgeContainer: {
+  expiringButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: SPACING.xs,
   },
-  tierInfo: {
-    marginLeft: SPACING.sm,
-    alignItems: 'flex-end',
-  },
-  tierName: {
-    ...TYPOGRAPHY.h4,
-    color: COLORS.text,
+  expiringButtonText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.error,
     fontWeight: '600',
   },
-  tierStatus: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+  
+  // Carousel Indicators
+  carouselIndicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingBottom: SPACING.md,
+    gap: SPACING.xs,
   },
+  indicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.inactive,
+  },
+  activeIndicator: {
+    backgroundColor: COLORS.primary,
+    width: 18,
+  },
+  
+  // Legacy Tier Badge
   tierBadge: {
     borderRadius: 50,
     justifyContent: 'center',
@@ -525,84 +911,59 @@ const styles = StyleSheet.create({
     ...SHADOWS.light,
   },
   
-  // Progress Section
-  progressSection: {
-    marginTop: SPACING.md,
-    paddingTop: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  progressLabel: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-    marginBottom: SPACING.sm,
-  },
-  progressBarContainer: {
-    height: 4,
-    backgroundColor: COLORS.background,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: COLORS.text,
-    borderRadius: 2,
-  },
-  
-  // Benefits Card
-  benefitsCard: {
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.md,
-    padding: SPACING.lg,
-    backgroundColor: COLORS.card,
-    borderRadius: 12,
-    ...SHADOWS.light,
-  },
-  benefitsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  benefitsTitle: {
-    ...TYPOGRAPHY.h4,
-  },
-  faqButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  benefitItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  benefitDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.primary,
-    marginRight: SPACING.sm,
-  },
-  benefitText: {
-    ...TYPOGRAPHY.bodySmall,
-    flex: 1,
-  },
   
   // Catalog Section
   catalogSection: {
     paddingHorizontal: SPACING.md,
   },
+  catalogHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  catalogTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  catalogIcon: {
+    marginRight: SPACING.element,
+  },
   catalogTitle: {
     ...TYPOGRAPHY.h3,
-    marginBottom: SPACING.md,
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginRight: SPACING.sm,
+  },
+  catalogCountBadge: {
+    backgroundColor: COLORS.primary + '20',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  catalogCountText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  catalogViewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary + '10',
+    minWidth: 80,
+    justifyContent: 'center',
+  },
+  catalogViewAllText: {
+    ...TYPOGRAPHY.button,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginRight: 4,
   },
   categoryScroll: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   categoryButton: {
     paddingHorizontal: SPACING.md,
@@ -614,12 +975,13 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   categoryButtonActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: COLORS.text,
+    borderColor: COLORS.text,
   },
   categoryButtonText: {
     ...TYPOGRAPHY.bodySmall,
     fontWeight: '500',
+    color: COLORS.text,
   },
   categoryButtonTextActive: {
     color: COLORS.accent,
@@ -650,30 +1012,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: SPACING.md,
   },
-  rewardInfo: {
+  rewardContent: {
     flex: 1,
   },
   rewardTitle: {
     ...TYPOGRAPHY.h5,
     marginBottom: SPACING.xs,
+    color: COLORS.text,
   },
   rewardDescription: {
     ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
   },
   rewardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  rewardPointsContainer: {
+    alignItems: 'flex-start',
+  },
   rewardPoints: {
     ...TYPOGRAPHY.h5,
-    color: COLORS.primary,
+    color: COLORS.text,
     fontWeight: '600',
+  },
+  rewardPointsLabel: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   redeemButton: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.text,
     borderRadius: 8,
     minWidth: 80,
     alignItems: 'center',
@@ -750,45 +1122,203 @@ const styles = StyleSheet.create({
     color: COLORS.error,
   },
   
-  // Expiring Alert
-  expiringAlert: {
-    marginTop: SPACING.md,
-    paddingTop: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+
+  // Quick Actions Card
+  quickActionsCard: {
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.md,
+    padding: SPACING.lg,
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    ...SHADOWS.light,
   },
-  alertContent: {
+  quickActionsTitle: {
+    ...TYPOGRAPHY.h4,
+    marginBottom: SPACING.md,
+  },
+  quickActionsGrid: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     gap: SPACING.sm,
   },
-  alertText: {
+  quickActionItem: {
     flex: 1,
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
   },
-  alertTitle: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.error,
-    fontWeight: '600',
+  quickActionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: SPACING.xs,
   },
-  alertDescription: {
+  quickActionLabel: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.sm,
-  },
-  alertButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-  },
-  alertButtonText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.error,
-    fontWeight: '600',
+    textAlign: 'center',
+    fontWeight: '500',
   },
 
   // Bottom Padding
   bottomPadding: {
     height: SPACING.xxl,
+  },
+
+  // Profile Header Styles
+  profileCard: {
+    backgroundColor: 'transparent',
+    padding: SPACING.lg,
+    paddingBottom: SPACING.sm,
+    position: 'relative',
+  },
+  
+  // Enhanced Header Top Row
+  headerTopRow: {
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  headerCenter: {
+    alignItems: 'center',
+  },
+  headerTitle: {
+    ...TYPOGRAPHY.h2,
+    marginBottom: 4,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  
+  // Enhanced Profile Section
+  profileSection: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: SPACING.md,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginRight: SPACING.md,
+  },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.text,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarPlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitials: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.text,
+    fontWeight: 'bold',
+  },
+  userInfoSection: {
+    flex: 1,
+    marginRight: SPACING.sm,
+  },
+  userMainInfo: {
+    flex: 1,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
+  userName: {
+    ...TYPOGRAPHY.h3,
+    marginRight: SPACING.xs,
+    fontWeight: '600',
+  },
+  verifiedBadge: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userMetaInfo: {
+    flexDirection: 'column',
+    gap: 4,
+  },
+  accountType: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  rewardTier: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  settingsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.light,
+  },
+
+  // User Stats Section
+  userStatsSection: {
+    marginBottom: SPACING.md,
+  },
+  statsSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+    paddingHorizontal: 4,
+  },
+  statsTitle: {
+    ...TYPOGRAPHY.h4,
+    marginBottom: 0,
+  },
+  modernStatsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  modernStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  modernStatNumber: {
+    ...TYPOGRAPHY.h2,
+    marginBottom: 4,
+  },
+  modernStatLabel: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+  },
+  modernStatDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: COLORS.border,
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
   },
 }); 

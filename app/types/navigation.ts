@@ -17,7 +17,7 @@ export type RootStackParamList = {
   Products: undefined;
   Cart: undefined;
   Checkout: undefined;
-  Profile: undefined;
+  Profile: { highlightRecentOrder?: boolean };
   Rewards: undefined;
   Activities: undefined;
   LocationPickerDemo: undefined;
@@ -29,8 +29,8 @@ export type RootStackParamList = {
   ProductDetail: { id: string };
   SmartSearch: { category?: string };
   Main: { screen: string };
-  OrderSuccess: undefined;
-  OrderTracking: undefined;
+  OrderSuccess: { orderId: string; deliveryDate: string; deliveryTime: string; total?: number };
+  OrderTracking: { orderId: string };
   MomentumShowcase: undefined;
   OrderHistory: undefined;
   OrderDetails: undefined;
@@ -42,6 +42,12 @@ export type RootStackParamList = {
   // Rewards-related screens
   VoucherTracking: undefined;
   RewardsFAQ: undefined;
+  ReferralScreen: undefined;
+  ReferralHistory: undefined;
+  InviteFriends: undefined;
+  AchievementsScreen: undefined;
+  MilestonesScreen: undefined;
+  RewardsAnalytics: undefined;
   // Company-related screens
   CompanyProfile: undefined;
   TeamManagement: undefined;
@@ -64,7 +70,7 @@ export type AppStackParamList = {
   Rewards: undefined;
   Profile: undefined;
   ProductDetail: { productId: string };
-  OrderSuccess: { orderId: string; deliveryDate: string; deliveryTime: string };
+  OrderSuccess: { orderId: string; deliveryDate: string; deliveryTime: string; total?: number };
   OrderTracking: { orderId: string };
   SmartSearch: undefined;
   ThemeShowcase: undefined;
@@ -85,6 +91,12 @@ export type AppStackParamList = {
   // Rewards-related screens
   VoucherTracking: undefined;
   RewardsFAQ: undefined;
+  ReferralScreen: undefined;
+  ReferralHistory: undefined;
+  InviteFriends: undefined;
+  AchievementsScreen: undefined;
+  MilestonesScreen: undefined;
+  RewardsAnalytics: undefined;
   // Company-related screens
   CompanyProfile: undefined;
   TeamManagement: undefined;

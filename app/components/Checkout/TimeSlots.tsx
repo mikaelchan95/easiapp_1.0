@@ -1,7 +1,7 @@
 import React, { useMemo, memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SHADOWS } from '../../utils/theme';
+import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 
 // Time slot options with queue counts - moved outside component to prevent recreation
 const TIME_SLOTS = [
@@ -115,18 +115,17 @@ TimeSlots.displayName = 'TimeSlots';
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 24,
+    marginBottom: SPACING.xl,
   },
   title: {
-    fontSize: 16,
+    ...TYPOGRAPHY.h4,
     fontWeight: '700',
     color: COLORS.text,
-    marginTop: 16,
-    marginBottom: 12,
-    paddingHorizontal: 16,
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   slotsContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
   },
   timeSlot: {
     flexDirection: 'row',
@@ -141,8 +140,8 @@ const styles = StyleSheet.create({
     ...SHADOWS.light,
   },
   selectedTimeSlot: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: COLORS.text,
+    borderColor: COLORS.text,
   },
   disabledTimeSlot: {
     opacity: 0.5,
@@ -151,13 +150,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   timeText: {
-    fontSize: 16,
+    ...TYPOGRAPHY.body,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: 4,
   },
   selectedTimeText: {
-    color: COLORS.accent,
+    color: COLORS.card,
   },
   disabledTimeText: {
     color: COLORS.inactive,
@@ -167,7 +166,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   queueText: {
-    fontSize: 13,
+    ...TYPOGRAPHY.small,
     color: COLORS.inactive,
     marginLeft: 4,
   },
