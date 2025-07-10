@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DeliveryAddress, DeliverySlot, PaymentMethod } from './CheckoutScreen';
-import { TYPOGRAPHY } from '../../utils/theme';
+import { TYPOGRAPHY, COLORS, SPACING, SHADOWS } from '../../utils/theme';
 
 interface CartItem {
   product: {
@@ -34,6 +34,34 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
   deliveryFee,
   total
 }) => {
+  // Animation values
+  const fadeAnim = useState(new Animated.Value(0))[0];
+  const slideAnim = useState(new Animated.Value(30))[0];
+  const cardScaleAnim = useState(new Animated.Value(0.95))[0];
+  
+  // Mount animation
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.stagger(100, [
+        Animated.spring(cardScaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 150,
+          friction: 8,
+        }),
+      ]),
+    ]).start();
+  }, []);
   if (!deliverySlot || !paymentMethod) {
     return (
       <View style={styles.errorContainer}>
@@ -48,27 +76,64 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
   
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <Text style={styles.title}>Review Your Order</Text>
-      <Text style={styles.subtitle}>Please confirm the details below</Text>
-      
-      {/* Items */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Items</Text>
-        {cart.map((item, index) => (
-          <View key={item.product.id} style={styles.itemRow}>
-            <Image source={item.product.imageUrl} style={styles.itemImage} />
-            <View style={styles.itemInfo}>
-              <Text style={styles.itemName}>{item.product.name}</Text>
-              <Text style={styles.itemMeta}>Qty: {item.quantity}</Text>
+      <Animated.View
+        style={{
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }]
+        }}
+      >
+        <Text style={styles.title}>Review Your Order</Text>
+        <Text style={styles.subtitle}>Please confirm all details before placing your order</Text>
+        
+        {/* Items */}
+        <Animated.View 
+          style={[
+            styles.section,
+            {
+              transform: [{ scale: cardScaleAnim }]
+            }
+          ]}
+        >
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionIconContainer}>
+              <Ionicons name="bag" size={24} color={COLORS.text} />
             </View>
-            <Text style={styles.itemPrice}>${(item.product.price * item.quantity).toFixed(0)}</Text>
+            <View style={styles.sectionHeaderContent}>
+              <Text style={styles.sectionTitle}>Order Items</Text>
+              <Text style={styles.sectionSubtitle}>{cart.length} {cart.length === 1 ? 'item' : 'items'}</Text>
+            </View>
           </View>
-        ))}
-      </View>
-      
-      {/* Delivery Details */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Delivery Details</Text>
+          
+          {cart.map((item, index) => (
+            <View key={item.product.id} style={styles.itemRow}>
+              <Image source={item.product.imageUrl} style={styles.itemImage} />
+              <View style={styles.itemInfo}>
+                <Text style={styles.itemName}>{item.product.name}</Text>
+                <Text style={styles.itemMeta}>Quantity: {item.quantity}</Text>
+              </View>
+              <Text style={styles.itemPrice}>${(item.product.price * item.quantity).toFixed(0)}</Text>
+            </View>
+          ))}
+        </Animated.View>
+        
+        {/* Delivery Details */}
+        <Animated.View 
+          style={[
+            styles.section,
+            {
+              transform: [{ scale: cardScaleAnim }]
+            }
+          ]}
+        >
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionIconContainer}>
+              <Ionicons name="location" size={24} color={COLORS.text} />
+            </View>
+            <View style={styles.sectionHeaderContent}>
+              <Text style={styles.sectionTitle}>Delivery Details</Text>
+              <Text style={styles.sectionSubtitle}>Address and timing</Text>
+            </View>
+          </View>
         
         <View style={styles.detailRow}>
           <View style={styles.detailIconContainer}>
@@ -118,11 +183,26 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             </Text>
           </View>
         </View>
-      </View>
-      
-      {/* Payment Method */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Payment Method</Text>
+        </Animated.View>
+        
+        {/* Payment Method */}
+        <Animated.View 
+          style={[
+            styles.section,
+            {
+              transform: [{ scale: cardScaleAnim }]
+            }
+          ]}
+        >
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionIconContainer}>
+              <Ionicons name="card" size={24} color={COLORS.text} />
+            </View>
+            <View style={styles.sectionHeaderContent}>
+              <Text style={styles.sectionTitle}>Payment Method</Text>
+              <Text style={styles.sectionSubtitle}>How you'll pay</Text>
+            </View>
+          </View>
         
         <View style={styles.paymentRow}>
           <View style={styles.paymentIconContainer}>
@@ -144,11 +224,26 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             )}
           </View>
         </View>
-      </View>
-      
-      {/* Order Summary */}
-      <View style={styles.summarySection}>
-        <Text style={styles.sectionTitle}>Order Summary</Text>
+        </Animated.View>
+        
+        {/* Order Summary */}
+        <Animated.View 
+          style={[
+            styles.summarySection,
+            {
+              transform: [{ scale: cardScaleAnim }]
+            }
+          ]}
+        >
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionIconContainer}>
+              <Ionicons name="receipt" size={24} color={COLORS.text} />
+            </View>
+            <View style={styles.sectionHeaderContent}>
+              <Text style={styles.sectionTitle}>Order Summary</Text>
+              <Text style={styles.sectionSubtitle}>Total breakdown</Text>
+            </View>
+          </View>
         
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Subtotal</Text>
@@ -166,14 +261,15 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
           <Text style={styles.totalLabel}>Total</Text>
           <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
         </View>
-      </View>
-      
-      {/* Policy Note */}
-      <View style={styles.policyNote}>
-        <Text style={styles.policyText}>
-          By placing your order, you agree to our Terms of Service and Privacy Policy.
-        </Text>
-      </View>
+        </Animated.View>
+        
+        {/* Policy Note */}
+        <View style={styles.policyNote}>
+          <Text style={styles.policyText}>
+            By placing your order, you agree to our Terms of Service and Privacy Policy.
+          </Text>
+        </View>
+      </Animated.View>
     </ScrollView>
   );
 };
@@ -181,46 +277,79 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: COLORS.background,
   },
   contentContainer: {
-    padding: 16,
-    paddingBottom: 100,
+    padding: SPACING.lg,
+    paddingBottom: SPACING.xl + 80,
   },
   title: {
-    ...TYPOGRAPHY.h2,
-    fontWeight: '700',
-    marginBottom: 8,
+    ...TYPOGRAPHY.h1,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+    textAlign: 'center',
   },
   subtitle: {
     ...TYPOGRAPHY.body,
-    color: '#666',
-    marginBottom: 24,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xl,
+    textAlign: 'center',
+    fontWeight: '500',
   },
   section: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
+    elevation: 6,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: SPACING.md,
+  },
+  sectionIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  sectionHeaderContent: {
+    flex: 1,
   },
   sectionTitle: {
-    ...TYPOGRAPHY.h5,
+    ...TYPOGRAPHY.h4,
     fontWeight: '700',
-    marginBottom: 16,
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  sectionSubtitle: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    padding: 4,
+    marginBottom: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   itemImage: {
     width: 70,
     height: 70,
-    borderRadius: 8,
-    marginRight: 12,
+    borderRadius: 12,
+    marginRight: SPACING.md,
     resizeMode: 'contain',
   },
   itemInfo: {
@@ -228,17 +357,20 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   itemName: {
-    ...TYPOGRAPHY.h6,
-    fontWeight: '600',
+    ...TYPOGRAPHY.body,
+    fontWeight: '700',
+    color: COLORS.text,
     marginBottom: 6,
   },
   itemMeta: {
-    ...TYPOGRAPHY.caption,
-    color: '#666',
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
   },
   itemPrice: {
-    ...TYPOGRAPHY.h6,
+    ...TYPOGRAPHY.h4,
     fontWeight: '700',
+    color: COLORS.text,
     minWidth: 60,
     textAlign: 'right',
   },
@@ -313,12 +445,14 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   summarySection: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
+    elevation: 6,
   },
   summaryRow: {
     flexDirection: 'row',

@@ -29,7 +29,7 @@ interface DayItem {
 }
 
 const { width } = Dimensions.get('window');
-const CELL_SIZE = Math.floor((width - 32) / 7);
+const CELL_SIZE = Math.floor((width - (SPACING.lg * 4)) / 7); // Account for container padding
 
 // Days of the week - memoized to avoid recreation
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -273,55 +273,59 @@ const CalendarView: React.FC<CalendarViewProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 16,
-    margin: 16,
+    borderRadius: 20,
+    padding: SPACING.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
+    marginHorizontal: 0, // Remove any external margins
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: SPACING.lg,
   },
   navButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.03)',
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   disabledNavButton: {
     opacity: 0.5,
   },
   monthTitle: {
-    fontSize: 18,
+    ...TYPOGRAPHY.h3,
     fontWeight: '700',
     color: COLORS.text,
   },
   weekdayRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: SPACING.sm,
+    justifyContent: 'space-between',
   },
   weekdayCell: {
     width: CELL_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: SPACING.sm,
   },
   weekdayText: {
-    fontSize: 12,
+    ...TYPOGRAPHY.small,
     fontWeight: '600',
-    color: COLORS.inactive,
+    color: COLORS.textSecondary,
   },
   calendarGrid: {
-    marginBottom: 16,
+    marginBottom: SPACING.lg,
   },
   weekRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: SPACING.sm,
+    justifyContent: 'space-between',
   },
   dayCell: {
     width: CELL_SIZE,
@@ -337,28 +341,28 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   selectedDay: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.text,
   },
   outsideMonthDay: {
     opacity: 0.3,
   },
   todayDay: {
-    borderWidth: 1,
-    borderColor: COLORS.primary,
+    borderWidth: 2,
+    borderColor: COLORS.text,
   },
   dayText: {
-    fontSize: 16,
+    ...TYPOGRAPHY.body,
     fontWeight: '600',
     color: COLORS.text,
   },
   outsideMonthText: {
-    color: COLORS.inactive,
+    color: COLORS.textSecondary,
   },
   todayText: {
-    color: COLORS.primary,
+    color: COLORS.text,
   },
   selectedDayText: {
-    color: COLORS.accent,
+    color: COLORS.card,
   },
   todayDot: {
     position: 'absolute',
@@ -366,13 +370,13 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.text,
   },
   legend: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 8,
-    paddingTop: 16,
+    marginTop: SPACING.sm,
+    paddingTop: SPACING.lg,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
@@ -381,26 +385,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 6,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: SPACING.sm,
   },
   todayLegendDot: {
-    borderWidth: 1,
-    borderColor: COLORS.primary,
+    borderWidth: 2,
+    borderColor: COLORS.text,
   },
   selectedLegendDot: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.text,
   },
   availableLegendDot: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: COLORS.inactive,
+    borderColor: COLORS.textSecondary,
   },
   legendText: {
-    fontSize: 12,
+    ...TYPOGRAPHY.small,
     color: COLORS.text,
+    fontWeight: '500',
   },
 });
 

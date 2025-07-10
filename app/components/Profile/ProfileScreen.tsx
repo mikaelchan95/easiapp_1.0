@@ -18,6 +18,7 @@ import {
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { AppContext, getUserRole } from '../../context/AppContext';
 import MobileHeader from '../Layout/MobileHeader';
@@ -26,7 +27,9 @@ import { formatPrice } from '../../utils/pricing';
 import { getUsersByCompany, getPendingApprovalsForUser } from '../../data/mockUsers';
 import { formatStatCurrency, formatStatNumber } from '../../utils/formatting';
 import { useAppContext } from '../../context/AppContext';
+import { useRewards } from '../../context/RewardsContext';
 import { HapticFeedback } from '../../utils/haptics';
+import notificationService from '../../services/notificationService';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -67,12 +70,32 @@ export default function ProfileScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { state, signOut, updateUserProfile } = useContext(AppContext);
+  const { state: rewardsState } = useRewards();
   const [isLoading, setIsLoading] = useState(false);
   const [isCompanyExpanded, setIsCompanyExpanded] = useState(false);
+  const [isChangingProfilePicture, setIsChangingProfilePicture] = useState(false);
   const { testSupabaseIntegration, loadUserFromSupabase } = useAppContext();
   
-  const { user, company } = state;
+  const { user, company, userStats } = state;
   const pendingApprovals = user ? getPendingApprovalsForUser(user.id) : [];
+  
+  // Check if we should highlight recent order (from achievement notification)
+  const [highlightRecentOrder, setHighlightRecentOrder] = useState(false);
+  
+  useEffect(() => {
+    // This could be set via navigation params
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Check if we should highlight recent order
+      const route = navigation.getState()?.routes?.find(r => r.name === 'Profile');
+      if (route?.params?.highlightRecentOrder) {
+        setHighlightRecentOrder(true);
+        // Clear the highlight after 3 seconds
+        setTimeout(() => setHighlightRecentOrder(false), 3000);
+      }
+    });
+    
+    return unsubscribe;
+  }, [navigation]);
   const teamMembers = company ? getUsersByCompany(company.id) : [];
 
   // Test Supabase integration behind the scenes on component mount
@@ -120,8 +143,114 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleProfilePictureChange = async () => {
+    HapticFeedback.light();
+    
+    Alert.alert(
+      'Change Profile Picture',
+      'Choose an option',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Take Photo', onPress: () => takePhoto() },
+        { text: 'Choose from Library', onPress: () => pickFromLibrary() }
+      ]
+    );
+  };
+
+  const takePhoto = async () => {
+    try {
+      setIsChangingProfilePicture(true);
+      
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert('Permission required', 'Camera permission is needed to take photos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const imageUri = result.assets[0].uri;
+        await updateProfilePicture(imageUri);
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo. Please try again.');
+    } finally {
+      setIsChangingProfilePicture(false);
+    }
+  };
+
+  const pickFromLibrary = async () => {
+    try {
+      setIsChangingProfilePicture(true);
+      
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert('Permission required', 'Photo library permission is needed to select photos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const imageUri = result.assets[0].uri;
+        await updateProfilePicture(imageUri);
+      }
+    } catch (error) {
+      console.error('Error picking from library:', error);
+      Alert.alert('Error', 'Failed to select photo. Please try again.');
+    } finally {
+      setIsChangingProfilePicture(false);
+    }
+  };
+
+  const updateProfilePicture = async (imageUri: string) => {
+    try {
+      if (user && updateUserProfile) {
+        // Only pass the profileImage update, not the entire user object
+        const success = await updateUserProfile({ profileImage: imageUri });
+        
+        if (success) {
+          HapticFeedback.success();
+          console.log('✅ Profile picture updated successfully');
+        } else {
+          Alert.alert('Error', 'Failed to update profile picture. Please try again.');
+        }
+      }
+    } catch (error) {
+      console.error('Error updating profile picture:', error);
+      Alert.alert('Error', 'Failed to update profile picture. Please try again.');
+    }
+  };
+
+  const handleTestNotifications = async () => {
+    try {
+      await notificationService.simulateOrderProgress('TEST-ORDER-123');
+      Alert.alert('Test Notifications', 'Order progress notifications scheduled! You should see them over the next 30 seconds.');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to schedule test notifications');
+    }
+  };
+
   const handleFeaturePress = (feature: string) => {
     console.log(`Pressed: ${feature}`);
+    
+    // Handle test notifications
+    if (feature === 'Test Notifications') {
+      handleTestNotifications();
+      return;
+    }
     
     // Navigate to specific screens
     switch (feature) {
@@ -199,6 +328,98 @@ export default function ProfileScreen() {
     );
   }
 
+  // Mock recent orders data
+  const recentOrders = [
+    {
+      id: '1',
+      orderNumber: 'ORD-2024-001',
+      date: '2024-01-15',
+      status: 'delivered' as const,
+      total: 145.99,
+      items: [
+        { name: 'Macallan 18 Year Old', quantity: 1 },
+        { name: 'Premium Wine Selection', quantity: 2 }
+      ]
+    },
+    {
+      id: '2', 
+      orderNumber: 'ORD-2024-002',
+      date: '2024-01-20',
+      status: 'processing' as const,
+      total: 89.50,
+      items: [
+        { name: 'Craft Beer Bundle', quantity: 1 }
+      ]
+    }
+  ];
+
+  const renderRecentOrdersSection = () => {
+    return (
+      <View style={styles.recentOrdersSection}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Orders</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity 
+              onPress={() => handleFeaturePress('Test Notifications')}
+              style={styles.testButton}
+            >
+              <Ionicons name="notifications-outline" size={16} color={COLORS.text} />
+              <Text style={styles.testButtonText}>Test</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={() => handleFeaturePress('Order History')}
+              style={styles.viewAllButton}
+            >
+              <Text style={styles.viewAllText}>View All</Text>
+              <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+        
+        {recentOrders.map((order, index) => (
+          <TouchableOpacity
+            key={order.id}
+            style={[
+              styles.orderCard,
+              highlightRecentOrder && index === 0 && styles.highlightedOrderCard
+            ]}
+            onPress={() => navigation.navigate('OrderTracking', { orderId: order.id })}
+            activeOpacity={0.7}
+          >
+            <View style={styles.orderHeader}>
+              <Text style={styles.orderNumber}>{order.orderNumber}</Text>
+              <View style={[styles.statusBadge, styles[`status_${order.status}`]]}>
+                <Text style={[styles.statusText, styles[`statusText_${order.status}`]]}>
+                  {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.orderDetails}>
+              <Text style={styles.orderDate}>{new Date(order.date).toLocaleDateString()}</Text>
+              <Text style={styles.orderTotal}>${order.total.toFixed(2)}</Text>
+            </View>
+            
+            <Text style={styles.orderItems}>
+              {order.items.length} item{order.items.length > 1 ? 's' : ''} • {order.items[0].name}
+              {order.items.length > 1 && ` +${order.items.length - 1} more`}
+            </Text>
+            
+            <View style={styles.orderActions}>
+              <TouchableOpacity 
+                style={styles.trackButton}
+                onPress={() => navigation.navigate('OrderTracking', { orderId: order.id })}
+              >
+                <Ionicons name="location-outline" size={16} color={COLORS.text} />
+                <Text style={styles.trackButtonText}>Track Order</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
+
   const renderCompanySection = () => {
     if (!isCompanyUser(user) || !company) return null;
 
@@ -239,25 +460,17 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          {/* Compact Stats - Always Visible */}
-          <View style={styles.modernStatsContainer}>
-            <View style={styles.modernStatItem}>
-              <Text style={styles.modernStatNumber}>
-                {formatStatCurrency(company.currentCredit || 0)}
+          {/* Company Status Indicator */}
+          <View style={styles.companyStatusContainer}>
+            <View style={styles.companyStatusItem}>
+              <Ionicons 
+                name={company.status === 'active' ? 'checkmark-circle' : 'time'} 
+                size={20} 
+                color={company.status === 'active' ? COLORS.text : COLORS.textSecondary} 
+              />
+              <Text style={styles.companyStatusText}>
+                {company.status === 'active' ? 'Account Active' : 'Account Pending'}
               </Text>
-              <Text style={styles.modernStatLabel}>Used</Text>
-            </View>
-            <View style={styles.modernStatDivider} />
-            <View style={styles.modernStatItem}>
-              <Text style={styles.modernStatNumber}>
-                {formatStatCurrency(company.creditLimit || 0)}
-              </Text>
-              <Text style={styles.modernStatLabel}>Limit</Text>
-            </View>
-            <View style={styles.modernStatDivider} />
-            <View style={styles.modernStatItem}>
-              <Text style={styles.modernStatNumber}>{company.paymentTerms}</Text>
-              <Text style={styles.modernStatLabel}>Terms</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -343,12 +556,20 @@ export default function ProfileScreen() {
     
     return (
       <View style={styles.profileCard}>
-        {/* Enhanced Profile Header with Better UX */}
-        <View style={styles.profileHeader}>
+        {/* Center-aligned Header */}
+        <View style={styles.headerTopRow}>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>Profile</Text>
+          </View>
+        </View>
+
+        {/* Enhanced Profile Section */}
+        <View style={styles.profileSection}>
           <TouchableOpacity 
             style={styles.avatarSection}
-            onPress={() => handleFeaturePress('Edit Profile')}
+            onPress={handleProfilePictureChange}
             activeOpacity={0.8}
+            disabled={isChangingProfilePicture}
           >
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
@@ -361,55 +582,88 @@ export default function ProfileScreen() {
                     </Text>
                   </View>
                 )}
+                {isChangingProfilePicture && (
+                  <View style={styles.avatarLoader}>
+                    <ActivityIndicator size="small" color={COLORS.card} />
+                  </View>
+                )}
               </View>
-              {/* Visual indicator that avatar is tappable */}
               <View style={styles.editIndicator}>
-                <Ionicons name="camera" size={16} color={COLORS.card} />
+                <Ionicons name="camera" size={14} color={COLORS.card} />
               </View>
             </View>
           </TouchableOpacity>
           
           <View style={styles.userInfoSection}>
             <View style={styles.userMainInfo}>
-              <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">{user.name}</Text>
-              <View style={styles.contactInfo}>
-                <TouchableOpacity 
-                  style={styles.contactItem}
-                  onPress={() => handleContactPress('email', user.email)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="mail" size={14} color={COLORS.textSecondary} />
-                  <Text style={styles.userEmail} numberOfLines={1} ellipsizeMode="tail">{user.email}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.contactItem}
-                  onPress={() => handleContactPress('phone', user.phone)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="call" size={14} color={COLORS.textSecondary} />
-                  <Text style={styles.userPhone} numberOfLines={1} ellipsizeMode="tail">{user.phone}</Text>
-                </TouchableOpacity>
+              <View style={styles.nameRow}>
+                <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">{user.name}</Text>
+                <View style={styles.verifiedBadge}>
+                  <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
+                </View>
+              </View>
+              <View style={styles.userMetaInfo}>
+                <Text style={styles.accountType}>
+                  {isCompany ? 'Business Account' : 'Personal Account'}
+                </Text>
+                <Text style={styles.rewardTier}>{rewardsState.userRewards.tier} Tier</Text>
               </View>
             </View>
-            
-            {isCompany && (
-              <View style={styles.professionalInfo}>
-                <Text style={styles.userPosition} numberOfLines={1} ellipsizeMode="tail">
-                  {(user as CompanyUser).position} • {(user as CompanyUser).department}
-                </Text>
-                <Text style={styles.userRole}>
-                  {userRole === 'trade' ? 'Trade Pricing' : 'Retail Pricing'}
-                </Text>
-              </View>
-            )}
           </View>
           
           <TouchableOpacity 
-            style={styles.editButton}
-            onPress={() => handleFeaturePress('Edit Profile')}
+            style={styles.settingsButton}
+            onPress={() => handleFeaturePress('Settings')}
             activeOpacity={0.7}
           >
-            <Ionicons name="create-outline" size={20} color={COLORS.text} />
+            <Ionicons name="settings-outline" size={22} color={COLORS.text} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Enhanced Quick Actions */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity 
+            style={styles.quickActionButton}
+            onPress={() => handleFeaturePress('Order History')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.quickActionIcon}>
+              <Ionicons name="receipt-outline" size={18} color={COLORS.text} />
+            </View>
+            <Text style={styles.quickActionLabel}>Orders</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.quickActionButton}
+            onPress={() => handleFeaturePress('Wishlist')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.quickActionIcon}>
+              <Ionicons name="heart-outline" size={18} color={COLORS.text} />
+            </View>
+            <Text style={styles.quickActionLabel}>Wishlist</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.quickActionButton}
+            onPress={() => navigation.navigate('Rewards')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.quickActionIcon}>
+              <Ionicons name="gift-outline" size={18} color={COLORS.text} />
+            </View>
+            <Text style={styles.quickActionLabel}>Rewards</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.quickActionButton}
+            onPress={() => handleFeaturePress('Support')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.quickActionIcon}>
+              <Ionicons name="help-circle-outline" size={18} color={COLORS.text} />
+            </View>
+            <Text style={styles.quickActionLabel}>Support</Text>
           </TouchableOpacity>
         </View>
 
@@ -417,7 +671,7 @@ export default function ProfileScreen() {
         {!isCompany && (
           <View style={styles.userStatsSection}>
             <View style={styles.statsSectionHeader}>
-              <Text style={styles.statsTitle}>Your Activity</Text>
+              <Text style={styles.statsTitle}>Activity Overview</Text>
               <TouchableOpacity 
                 style={styles.viewAllButton}
                 onPress={() => handleFeaturePress('Order History')}
@@ -437,35 +691,38 @@ export default function ProfileScreen() {
                   <Ionicons name="receipt-outline" size={20} color={COLORS.text} />
                 </View>
                 <Text style={styles.modernStatNumber}>
-                  {formatStatNumber((user as IndividualUser).totalOrders || 0)}
+                  {formatStatNumber(userStats.orderCount)}
                 </Text>
                 <Text style={styles.modernStatLabel}>Orders</Text>
               </TouchableOpacity>
               <View style={styles.modernStatDivider} />
               <TouchableOpacity 
-                style={styles.modernStatItem}
+                style={[
+                  styles.modernStatItem,
+                  highlightRecentOrder && styles.highlightedStat
+                ]}
                 onPress={() => handleFeaturePress('Order History')}
                 activeOpacity={0.8}
               >
                 <View style={styles.statIconContainer}>
-                  <Ionicons name="trending-up-outline" size={20} color={COLORS.text} />
+                  <Ionicons name="pricetag-outline" size={20} color={COLORS.text} />
                 </View>
                 <Text style={styles.modernStatNumber}>
-                  {formatStatCurrency((user as IndividualUser).totalSpent || 0)}
+                  ${userStats.totalSavings.toFixed(0)}
                 </Text>
-                <Text style={styles.modernStatLabel}>Spent</Text>
+                <Text style={styles.modernStatLabel}>Saved</Text>
               </TouchableOpacity>
               <View style={styles.modernStatDivider} />
               <TouchableOpacity 
                 style={styles.modernStatItem}
-                onPress={() => handleFeaturePress('Reviews')}
+                onPress={() => navigation.navigate('Rewards')}
                 activeOpacity={0.8}
               >
                 <View style={styles.statIconContainer}>
-                  <Ionicons name="star-outline" size={20} color={COLORS.text} />
+                  <Ionicons name="star" size={20} color="#FFD700" />
                 </View>
-                <Text style={styles.modernStatNumber}>4.9</Text>
-                <Text style={styles.modernStatLabel}>Rating</Text>
+                <Text style={styles.modernStatNumber}>{userStats.totalPoints}</Text>
+                <Text style={styles.modernStatLabel}>Points</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -478,17 +735,9 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
       
-      {/* Safe Area Status Bar Spacer */}
-      <View style={[styles.statusBarSpacer, { height: insets.top }]} />
-      
-      {/* Header */}
-      <View style={styles.headerContainer}>
-        <MobileHeader 
-          title="Profile" 
-          showBackButton={false} 
-          showSearch={false}
-          showCartButton={false}
-        />
+      <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
+        {/* User Profile Header */}
+        {renderUserProfile()}
       </View>
 
       <ScrollView 
@@ -496,153 +745,12 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContent} 
         showsVerticalScrollIndicator={false}
       >
-        {/* User Profile Card */}
-        {renderUserProfile()}
+
+        {/* Recent Orders Section */}
+        {renderRecentOrdersSection()}
 
         {/* Company Section (only for company users) */}
         {renderCompanySection()}
-
-        
-
-        {/* Activities */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Activities</Text>
-          <View style={styles.menuContainer}>
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => handleFeaturePress('Order History')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Ionicons name="receipt-outline" size={20} color={COLORS.text} />
-                </View>
-                <View style={styles.menuLabelContainer}>
-                  <Text style={styles.menuLabel}>Order History</Text>
-                  <Text style={styles.menuSubLabel}>Track orders & delivery</Text>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => handleFeaturePress('Wishlist')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Ionicons name="heart-outline" size={20} color={COLORS.text} />
-                </View>
-                <View style={styles.menuLabelContainer}>
-                  <Text style={styles.menuLabel}>Wishlist</Text>
-                  <Text style={styles.menuSubLabel}>Saved items & favorites</Text>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('Rewards')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Ionicons name="gift-outline" size={20} color={COLORS.text} />
-                </View>
-                <View style={styles.menuLabelContainer}>
-                  <Text style={styles.menuLabel}>Rewards & Points</Text>
-                  <Text style={styles.menuSubLabel}>Earn points & rewards</Text>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Account Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Settings</Text>
-          <View style={styles.menuContainer}>
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => handleFeaturePress('Personal Information')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Ionicons name="person-outline" size={20} color={COLORS.text} />
-                </View>
-                <Text style={styles.menuLabel}>Personal Information</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => handleFeaturePress('Delivery Addresses')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Ionicons name="location-outline" size={20} color={COLORS.text} />
-                </View>
-                <Text style={styles.menuLabel}>Delivery Addresses</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => handleFeaturePress('Payment Methods')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={styles.menuIcon}>
-                  <Ionicons name="card-outline" size={20} color={COLORS.text} />
-                </View>
-                <Text style={styles.menuLabel}>Payment Methods</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-
-            {isCompanyUser(user) && user.permissions?.canManageBilling && (
-              <TouchableOpacity 
-                style={styles.menuItem}
-                onPress={() => handleFeaturePress('Billing & Invoices')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.menuItemLeft}>
-                  <View style={styles.menuIcon}>
-                    <Ionicons name="document-text-outline" size={20} color={COLORS.text} />
-                  </View>
-                  <Text style={styles.menuLabel}>Billing & Invoices</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* Sign Out Button */}
-        <TouchableOpacity 
-          style={styles.signOutButton}
-          onPress={handleLogout}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="log-out-outline" size={20} color={COLORS.card} />
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
-
-        {/* App Version */}
-        <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>EASI by Epico</Text>
-          <Text style={styles.versionNumber}>Version 1.0.0</Text>
-          {isCompanyUser(user) && (
-            <Text style={styles.versionNumber}>Trade Edition</Text>
-          )}
-        </View>
 
         {/* Bottom Padding */}
         <View style={styles.bottomPadding} />
@@ -661,7 +769,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.sm,
+    paddingTop: SPACING.md,
     paddingBottom: SPACING.xl,
   },
   loadingContainer: {
@@ -674,19 +782,34 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
 
-  // Profile Card
+  // Profile Card (now header)
   profileCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
+    backgroundColor: 'transparent',
     padding: SPACING.lg,
-    marginBottom: SPACING.md,
-    ...SHADOWS.medium,
+    paddingBottom: SPACING.md,
     position: 'relative',
   },
-  profileHeader: {
+  
+  // Enhanced Header Top Row
+  headerTopRow: {
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  headerCenter: {
+    alignItems: 'center',
+  },
+  headerTitle: {
+    ...TYPOGRAPHY.h2,
+    marginBottom: 4,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  
+  // Enhanced Profile Section
+  profileSection: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
   },
   avatarSection: {
     flexDirection: 'row',
@@ -735,17 +858,47 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.card,
   },
+  avatarLoader: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 32,
+  },
   userInfoSection: {
     flex: 1,
     marginRight: SPACING.sm,
   },
   userMainInfo: {
+    flex: 1,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: SPACING.xs,
   },
   userName: {
     ...TYPOGRAPHY.h3,
-    marginBottom: 4,
-    flex: 1,
+    marginRight: SPACING.xs,
+    fontWeight: '600',
+  },
+  verifiedBadge: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userMetaInfo: {
+    flexDirection: 'column',
+    gap: 4,
+  },
+  accountType: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  rewardTier: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.text,
+    fontWeight: '600',
   },
   contactInfo: {
     flexDirection: 'column',
@@ -754,20 +907,28 @@ const styles = StyleSheet.create({
   contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 2,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    borderRadius: 6,
+  },
+  contactIconWrapper: {
+    width: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.xs,
   },
   userEmail: {
     ...TYPOGRAPHY.caption,
-    marginLeft: SPACING.xs,
     flex: 1,
+    color: COLORS.textSecondary,
   },
   userPhone: {
     ...TYPOGRAPHY.small,
-    marginLeft: SPACING.xs,
     flex: 1,
+    color: COLORS.textSecondary,
   },
   professionalInfo: {
-    marginTop: SPACING.xs,
+    marginTop: SPACING.sm,
   },
   userPosition: {
     ...TYPOGRAPHY.small,
@@ -779,15 +940,16 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     flex: 1,
   },
-  editButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  settingsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
+    ...SHADOWS.light,
   },
 
   // Company Card
@@ -852,6 +1014,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
+  },
+  companyStatusContainer: {
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  companyStatusItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  companyStatusText: {
+    ...TYPOGRAPHY.body,
+    marginLeft: SPACING.xs,
+    fontWeight: '500',
   },
   modernStatsContainer: {
     flexDirection: 'row',
@@ -1058,6 +1235,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     zIndex: 10,
     ...SHADOWS.light,
+    paddingBottom: SPACING.sm,
   },
 
   // User Stats Section
@@ -1097,6 +1275,194 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.sm,
+  },
+
+  // Quick Actions
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.background,
+    borderRadius: 16,
+    marginBottom: SPACING.md,
+    ...SHADOWS.light,
+  },
+  quickActionButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+  },
+  quickActionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+    ...SHADOWS.light,
+  },
+  quickActionLabel: {
+    ...TYPOGRAPHY.small,
+    fontWeight: '500',
+    textAlign: 'center',
+    color: COLORS.text,
+  },
+  highlightedStat: {
+    backgroundColor: '#FFD700',
+    borderRadius: 12,
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  
+  // Recent Orders Section
+  recentOrdersSection: {
+    marginBottom: SPACING.lg,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  testButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  testButtonText: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.text,
+    fontWeight: '500',
+    fontSize: 12,
+  },
+  sectionTitle: {
+    ...TYPOGRAPHY.h3,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewAllText: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  orderCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.light,
+  },
+  highlightedOrderCard: {
+    borderColor: '#FFD700',
+    borderWidth: 2,
+    backgroundColor: 'rgba(255, 215, 0, 0.05)',
+  },
+  orderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  orderNumber: {
+    ...TYPOGRAPHY.h4,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  status_delivered: {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+  },
+  status_processing: {
+    backgroundColor: 'rgba(255, 152, 0, 0.1)',
+  },
+  status_shipped: {
+    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+  },
+  status_cancelled: {
+    backgroundColor: 'rgba(244, 67, 54, 0.1)',
+  },
+  statusText: {
+    ...TYPOGRAPHY.small,
+    fontWeight: '500',
+  },
+  statusText_delivered: {
+    color: '#4CAF50',
+  },
+  statusText_processing: {
+    color: '#FF9800',
+  },
+  statusText_shipped: {
+    color: '#2196F3',
+  },
+  statusText_cancelled: {
+    color: '#F44336',
+  },
+  orderDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  orderDate: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+  },
+  orderTotal: {
+    ...TYPOGRAPHY.h4,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  orderItems: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.sm,
+  },
+  orderActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  trackButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  trackButtonText: {
+    ...TYPOGRAPHY.small,
+    fontWeight: '500',
+    color: COLORS.text,
   },
 
 }); 

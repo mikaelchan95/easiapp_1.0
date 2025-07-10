@@ -23,6 +23,11 @@ import { TransitionProvider } from './app/context/TransitionContext';
 import CartNotificationProvider, { CartNotificationContext } from './app/context/CartNotificationContext';
 import { RewardsProvider } from './app/context/RewardsContext';
 
+// Import achievement notification
+import PurchaseAchievementNotification from './app/components/UI/PurchaseAchievementNotification';
+import notificationService from './app/services/notificationService';
+import * as Notifications from 'expo-notifications';
+
 // Import screens
 import HomeScreen from './app/components/Home/HomeScreen';
 import ProductsScreen from './app/components/Products/ProductsScreen';
@@ -55,6 +60,12 @@ import TeamManagementScreen from './app/components/Profile/TeamManagementScreen'
 // Import Rewards screens
 import VoucherTrackingScreen from './app/components/Rewards/VoucherTrackingScreen';
 import RewardsFAQScreen from './app/components/Rewards/RewardsFAQScreen';
+import ReferralScreen from './app/components/Rewards/ReferralScreen';
+import ReferralHistoryScreen from './app/components/Rewards/ReferralHistoryScreen';
+import InviteFriendsScreen from './app/components/Rewards/InviteFriendsScreen';
+import AchievementsScreen from './app/components/Rewards/AchievementsScreen';
+import MilestonesScreen from './app/components/Rewards/MilestonesScreen';
+import RewardsAnalyticsScreen from './app/components/Rewards/RewardsAnalyticsScreen';
 
 // Import types and theme
 import { RootStackParamList, MainTabParamList } from './app/types/navigation';
@@ -414,8 +425,86 @@ function MainTabs() {
   );
 }
 
+// Global Achievement Notification Wrapper
+const GlobalAchievementWrapper: React.FC<{ 
+  children: React.ReactNode;
+  navigationRef?: any;
+}> = ({ children, navigationRef }) => {
+  const { state, dispatch } = React.useContext(AppContext);
+  
+  const handleViewOrder = () => {
+    // Navigate to profile page with order highlight
+    if (navigationRef?.isReady()) {
+      navigationRef.navigate('Main', { 
+        screen: 'Profile',
+        params: { highlightRecentOrder: true }
+      });
+    }
+    dispatch({ type: 'HIDE_PURCHASE_ACHIEVEMENT' });
+  };
+  
+  const handleDismiss = () => {
+    dispatch({ type: 'HIDE_PURCHASE_ACHIEVEMENT' });
+  };
+  
+  return (
+    <>
+      {children}
+      {state.purchaseAchievement.data && (
+        <PurchaseAchievementNotification
+          visible={state.purchaseAchievement.visible}
+          orderTotal={state.purchaseAchievement.data.orderTotal}
+          pointsEarned={state.purchaseAchievement.data.pointsEarned}
+          savingsAmount={state.purchaseAchievement.data.savingsAmount}
+          onDismiss={handleDismiss}
+          onViewOrder={handleViewOrder}
+        />
+      )}
+    </>
+  );
+};
+
 export default function App() {
   const navigationRef = useNavigationContainerRef();
+  
+  // Initialize notifications
+  React.useEffect(() => {
+    let notificationSubscription: (() => void) | null = null;
+
+    const initializeNotifications = async () => {
+      try {
+        await notificationService.initialize();
+        
+        // Add notification listeners
+        notificationSubscription = notificationService.addNotificationListener(
+          (notification) => {
+            console.log('📱 Notification received:', notification);
+          },
+          (response) => {
+            console.log('📱 Notification response:', response);
+            const data = response.notification.request.content.data;
+            
+            // Handle order update notifications
+            if (data?.type === 'order_update' && data?.orderId && typeof data.orderId === 'string') {
+              if (navigationRef.isReady()) {
+                navigationRef.navigate('OrderTracking', { orderId: data.orderId });
+              }
+            }
+          }
+        );
+      } catch (error) {
+        console.error('Failed to initialize notifications:', error);
+      }
+    };
+
+    initializeNotifications();
+
+    return () => {
+      if (notificationSubscription) {
+        notificationSubscription();
+      }
+    };
+  }, [navigationRef]);
   
   // Global feedback state
   const [feedbackState, setFeedbackState] = React.useState<{
@@ -464,12 +553,16 @@ export default function App() {
             <CartNotificationProvider>
               <TransitionProvider>
               <StatusBar style="dark" />
-              <NavigationContainer ref={navigationRef} theme={MyTheme}>
+              <GlobalAchievementWrapper navigationRef={navigationRef}>
+                <NavigationContainer ref={navigationRef} theme={MyTheme}>
                 {/* @ts-ignore - Ignore ID requirement */}
                 <Stack.Navigator 
                   screenOptions={{
                     headerShown: false,
                     animation: 'slide_from_right',
+                    animationDuration: 300,
+                    gestureEnabled: true,
+                    gestureDirection: 'horizontal',
                   }}
                 >
                   <Stack.Screen name="Main" component={MainTabs} />
@@ -528,6 +621,30 @@ export default function App() {
                     component={RewardsFAQScreen}
                   />
                   <Stack.Screen 
+                    name="ReferralScreen" 
+                    component={ReferralScreen}
+                  />
+                  <Stack.Screen 
+                    name="ReferralHistory" 
+                    component={ReferralHistoryScreen}
+                  />
+                  <Stack.Screen 
+                    name="InviteFriends" 
+                    component={InviteFriendsScreen}
+                  />
+                  <Stack.Screen 
+                    name="AchievementsScreen" 
+                    component={AchievementsScreen}
+                  />
+                  <Stack.Screen 
+                    name="MilestonesScreen" 
+                    component={MilestonesScreen}
+                  />
+                  <Stack.Screen 
+                    name="RewardsAnalytics" 
+                    component={RewardsAnalyticsScreen}
+                  />
+                  <Stack.Screen 
                     name="Referrals" 
                     component={ActivitiesScreen}
                   />
@@ -560,7 +677,11 @@ export default function App() {
                     component={TeamManagementScreen}
                   />
                 </Stack.Navigator>
-              </NavigationContainer>
+                
+                {/* Global cart notification with navigation ref */}
+                <CartNotificationConsumer navigateToCart={navigateToCart} />
+                </NavigationContainer>
+              </GlobalAchievementWrapper>
               
               {/* Global feedback component */}
               <AnimatedFeedback
@@ -569,9 +690,6 @@ export default function App() {
                 visible={feedbackState.visible}
                 onHide={hideFeedback}
               />
-              
-              {/* Global cart notification with navigation ref */}
-              <CartNotificationConsumer navigateToCart={navigateToCart} />
               </TransitionProvider>
             </CartNotificationProvider>
           </RewardsProvider>

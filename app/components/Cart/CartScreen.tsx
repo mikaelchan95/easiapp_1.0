@@ -7,7 +7,8 @@ import {
   TouchableOpacity, 
   Animated, 
   Platform,
-  RefreshControl
+  RefreshControl,
+  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -20,6 +21,9 @@ import { products, Product as MockProduct } from '../../data/mockProducts';
 import { AppContext } from '../../context/AppContext';
 import { CartNotificationContext } from '../../context/CartNotificationContext';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
+import { useRewards } from '../../context/RewardsContext';
+import { isCompanyUser, CompanyUser, IndividualUser } from '../../types/user';
+import { formatStatCurrency, formatStatNumber } from '../../utils/formatting';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Animations from '../../utils/animations';
 import AnimatedButton from '../UI/AnimatedButton';
@@ -29,8 +33,6 @@ import {
   calculateCartTotals, 
   formatPrice, 
   getProductPrice,
-  getStockStatus,
-  isProductInStock,
   Product as PricingProduct
 } from '../../utils/pricing';
 
@@ -41,8 +43,6 @@ interface CartItemType {
   price: number;
   imageUrl: any;
   quantity: number;
-  inStock: boolean;
-  stockStatus?: string;
 }
 
 interface DeletedItemType {
@@ -59,6 +59,44 @@ export default function CartScreen() {
   // Use the AppContext instead of local state
   const { state, dispatch } = useContext(AppContext);
   const { showCartNotification } = useContext(CartNotificationContext);
+  const { state: rewardsState } = useRewards();
+  
+  const user = state.user;
+  
+  const handleFeaturePress = (feature: string) => {
+    console.log(`Pressed: ${feature}`);
+    // Add navigation logic here if needed
+  };
+
+  const renderCartHeader = () => {
+    const cartItemCount = state.cart.reduce((count, item) => count + item.quantity, 0);
+    
+    return (
+      <View style={styles.simpleHeader}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => {
+            HapticFeedback.light();
+            navigation.goBack();
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-back" size={24} color={COLORS.text} />
+        </TouchableOpacity>
+        
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>Shopping Cart</Text>
+          {cartItemCount > 0 && (
+            <Text style={styles.headerSubtitle}>
+              {cartItemCount} {cartItemCount === 1 ? 'item' : 'items'}
+            </Text>
+          )}
+        </View>
+        
+        <View style={styles.headerSpacer} />
+      </View>
+    );
+  };
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -101,7 +139,6 @@ export default function CartScreen() {
   
   // Enhanced cart items mapping with better error handling
   const cartItems: CartItemType[] = state.cart.map(item => {
-    const stockStatus = getStockStatus(item.product);
     const priceWithGST = getProductPrice(item.product, state.user?.role || 'retail');
     
     // Get proper image from products array with fallback
@@ -113,9 +150,7 @@ export default function CartScreen() {
       name: item.product.name,
       price: priceWithGST,
       imageUrl: productImage || item.product.image, // Use product image from products list or fallback
-      quantity: item.quantity,
-      inStock: isProductInStock(item.product, item.quantity),
-      stockStatus: stockStatus?.status || 'in_stock'
+      quantity: item.quantity
     };
   }).filter(item => item.imageUrl !== null); // Filter out items without images
   
@@ -263,7 +298,6 @@ export default function CartScreen() {
       name: product.name,
       retailPrice: product.retailPrice,
       tradePrice: product.tradePrice,
-      stock: product.inStock ? 10 : 0,
       category: product.category || '',
       description: product.description || '',
       sku: product.sku,
@@ -403,48 +437,11 @@ export default function CartScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Status Bar Spacer */}
-      <View style={[styles.statusBarSpacer, { height: insets.top }]} />
-      
-      {/* Enhanced Header */}
-      <Animated.View 
-        style={[
-          styles.headerContainer,
-          { 
-            opacity: fadeAnim,
-            transform: [{ scale: headerScaleAnim }]
-          }
-        ]}
-      >
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => {
-            HapticFeedback.light();
-            navigation.goBack();
-          }}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        
-        <View style={styles.headerTitleContainer}>
-        <Text style={styles.headerTitle}>Cart</Text>
-          <Text style={styles.headerSubtitle}>
-            {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
-          </Text>
-        </View>
-        
-        <TouchableOpacity 
-          style={styles.clearButton}
-          onPress={() => {
-            HapticFeedback.warning();
-            dispatch({ type: 'CLEAR_CART' });
-          }}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="trash-outline" size={20} color={COLORS.textSecondary} />
-        </TouchableOpacity>
-      </Animated.View>
+      {/* Header Container */}
+      <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
+        {/* Simple Cart Header */}
+        {renderCartHeader()}
+      </View>
       
       <FlatList
         data={cartItems}
@@ -534,13 +531,19 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
   },
   headerContainer: {
+    backgroundColor: COLORS.card,
+    zIndex: 10,
+    ...SHADOWS.light,
+    paddingBottom: SPACING.sm,
+  },
+
+  // Simple Header Styles
+  simpleHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
-    backgroundColor: COLORS.card,
-    ...SHADOWS.light,
   },
   backButton: {
     width: 44,
@@ -552,26 +555,26 @@ const styles = StyleSheet.create({
     ...SHADOWS.light,
   },
   headerTitleContainer: {
-    flex: 1,
+    flexDirection: 'column',
     alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
   },
   headerTitle: {
     ...TYPOGRAPHY.h2,
+    fontWeight: '700',
+    textAlign: 'center',
     marginBottom: 2,
   },
   headerSubtitle: {
-    ...TYPOGRAPHY.label,
+    ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
     fontWeight: '500',
+    textAlign: 'center',
   },
-  clearButton: {
+  headerSpacer: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...SHADOWS.light,
   },
   listContainer: {
     flex: 1,
@@ -591,50 +594,60 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    padding: SPACING.md,
+    padding: SPACING.lg,
     zIndex: 20,
     ...SHADOWS.medium,
+    elevation: 8,
   },
   summaryContent: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
+    paddingHorizontal: SPACING.xs,
   },
   summaryRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.sm,
+    paddingHorizontal: SPACING.xs,
   },
   summaryLabel: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '600',
+    ...TYPOGRAPHY.body,
+    fontWeight: '500',
     color: COLORS.textSecondary,
   },
   summaryValue: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '600',
+    ...TYPOGRAPHY.body,
+    fontWeight: '700',
     color: COLORS.text,
   },
   totalRow: {
-    marginTop: SPACING.xs,
-    paddingTop: SPACING.xs,
+    marginTop: SPACING.sm,
+    paddingTop: SPACING.md,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
+    marginBottom: SPACING.xs,
   },
   totalLabel: {
-    ...TYPOGRAPHY.h5,
+    ...TYPOGRAPHY.h4,
     fontWeight: '700',
+    color: COLORS.text,
   },
   totalValue: {
-    ...TYPOGRAPHY.h3,
-    fontWeight: '700',
+    ...TYPOGRAPHY.h2,
+    fontWeight: '800',
+    color: COLORS.text,
   },
   checkoutButton: {
-    backgroundColor: COLORS.primary,
-    marginTop: 4,
+    backgroundColor: COLORS.text,
+    marginTop: SPACING.sm,
+    paddingVertical: SPACING.md,
+    borderRadius: 16,
+    ...SHADOWS.medium,
+    elevation: 6,
   },
   checkoutText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.accent,
+    ...TYPOGRAPHY.h4,
+    color: COLORS.card,
     fontWeight: '700',
   },
 }); 

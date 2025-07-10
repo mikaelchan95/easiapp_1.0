@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { AppContext } from '../../context/AppContext';
 import MobileHeader from '../Layout/MobileHeader';
@@ -65,14 +65,18 @@ export default function CompanyProfileScreen() {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
-        <View style={[styles.statusBarSpacer, { height: insets.top }]} />
-        <View style={styles.headerContainer}>
-          <MobileHeader 
-            title="Company Profile" 
-            showBackButton={true} 
-            showSearch={false}
-            showCartButton={false}
-          />
+        <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
+          <View style={styles.profileHeader}>
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={() => navigation.goBack()}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="chevron-back" size={24} color={COLORS.text} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Company Profile</Text>
+            <View style={styles.headerRight} />
+          </View>
         </View>
         <View style={styles.loadingContainer}>
           <Text style={styles.noDataText}>No company information available</Text>
@@ -91,33 +95,30 @@ export default function CompanyProfileScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
       
-      <View style={[styles.statusBarSpacer, { height: insets.top }]} />
-      
-      <View style={styles.headerContainer}>
-        <MobileHeader 
-          title="Company Profile" 
-          showBackButton={true} 
-          showSearch={false}
-          showCartButton={false}
-        />
-      </View>
-
-      <ScrollView 
-        style={styles.scrollContainer}
-        contentContainerStyle={styles.scrollContent} 
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Enhanced Company Header Card */}
+      <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
+        <View style={styles.profileHeader}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="chevron-back" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Company Profile</Text>
+          <View style={styles.headerRight} />
+        </View>
+        
+        {/* Company Header Card - Now in header like ProfileScreen */}
         <View style={styles.headerCard}>
           <View style={styles.companyHeader}>
             <View style={styles.companyIconContainer}>
-              <Ionicons name="business" size={28} color={COLORS.text} />
+              <Ionicons name="business" size={32} color={COLORS.text} />
             </View>
             <View style={styles.companyInfo}>
               <Text style={styles.companyName}>{company.name}</Text>
               <Text style={styles.companyLegal}>{company.companyName}</Text>
               <View style={styles.verificationBadge}>
-                <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+                <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
                 <Text style={styles.verificationText}>Verified Company</Text>
               </View>
             </View>
@@ -131,7 +132,7 @@ export default function CompanyProfileScreen() {
               </View>
               <View style={styles.metaItem}>
                 <Text style={styles.metaLabel}>Status</Text>
-                <Text style={[styles.metaValue, { color: '#4CAF50' }]} numberOfLines={1} ellipsizeMode="tail">
+                <Text style={[styles.metaValue, styles.statusActive]} numberOfLines={1} ellipsizeMode="tail">
                   {company.status === 'active' ? 'Active' : 'Inactive'}
                 </Text>
               </View>
@@ -142,11 +143,21 @@ export default function CompanyProfileScreen() {
             </View>
           </View>
         </View>
+      </View>
+
+      <ScrollView 
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+      >
 
         {/* Enhanced Credit Overview */}
         <View style={styles.creditWidget}>
           <View style={styles.creditHeader}>
-            <Text style={styles.widgetTitle}>Credit Overview</Text>
+            <View style={styles.creditTitleContainer}>
+              <Ionicons name="card" size={24} color={COLORS.text} />
+              <Text style={styles.widgetTitle}>Credit Overview</Text>
+            </View>
             <View style={styles.creditStatus}>
               <View style={[styles.statusDot, { 
                 backgroundColor: creditUtilization > 80 ? '#FF6B6B' : 
@@ -184,7 +195,8 @@ export default function CompanyProfileScreen() {
                   styles.progressFill, 
                   { 
                     width: `${Math.min(creditUtilization, 100)}%`,
-                    backgroundColor: COLORS.text
+                    backgroundColor: creditUtilization > 80 ? '#FF6B6B' : 
+                                   creditUtilization > 60 ? '#FFA500' : '#4CAF50'
                   }
                 ]} 
               />
@@ -398,48 +410,78 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
   },
-  statusBarSpacer: {
-    backgroundColor: COLORS.card,
-  },
   headerContainer: {
     backgroundColor: COLORS.card,
     zIndex: 10,
     ...SHADOWS.light,
+    elevation: 4,
+    paddingBottom: SPACING.sm,
+  },
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.light,
+  },
+  headerTitle: {
+    ...TYPOGRAPHY.h2,
+    fontWeight: '600',
+    textAlign: 'center',
+    flex: 1,
+  },
+  headerRight: {
+    width: 44,
+    height: 44,
   },
   
   // Header Card
   headerCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
+    backgroundColor: 'transparent',
     padding: SPACING.lg,
-    marginBottom: SPACING.lg,
-    ...SHADOWS.medium,
+    paddingTop: SPACING.md,
+    marginBottom: 0,
   },
   companyHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   companyIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.md,
+    marginRight: SPACING.lg,
+    borderWidth: 2,
+    borderColor: COLORS.border,
   },
   companyInfo: {
     flex: 1,
   },
   companyName: {
-    ...TYPOGRAPHY.h3,
-    fontWeight: '700',
-    marginBottom: 4,
+    ...TYPOGRAPHY.h2,
+    fontWeight: '800',
+    marginBottom: 6,
+    color: COLORS.text,
   },
   companyLegal: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
     marginBottom: SPACING.sm,
+    fontWeight: '500',
   },
   verificationBadge: {
     flexDirection: 'row',
@@ -448,9 +490,13 @@ const styles = StyleSheet.create({
   verificationText: {
     ...TYPOGRAPHY.small,
     color: '#4CAF50',
-    fontWeight: '600',
-    marginLeft: 4,
+    fontWeight: '700',
+    marginLeft: 6,
     marginRight: SPACING.sm,
+  },
+  statusActive: {
+    color: '#4CAF50',
+    fontWeight: '700',
   },
   companyMeta: {
     marginTop: SPACING.md,
@@ -484,34 +530,41 @@ const styles = StyleSheet.create({
   // Credit Widget
   creditWidget: {
     backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: SPACING.lg,
+    borderRadius: 20,
+    padding: SPACING.xl,
     marginBottom: SPACING.lg,
     ...SHADOWS.medium,
+    elevation: 6,
   },
   creditHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
+  },
+  creditTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
   },
   widgetTitle: {
     ...TYPOGRAPHY.h4,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   creditStatus: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   statusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     marginRight: SPACING.sm,
   },
   statusText: {
     ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
+    fontWeight: '600',
   },
   creditStatsRow: {
     flexDirection: 'row',
@@ -524,13 +577,13 @@ const styles = StyleSheet.create({
   },
   creditAmount: {
     ...TYPOGRAPHY.h2,
-    fontWeight: '700',
-    marginBottom: 4,
+    fontWeight: '800',
+    marginBottom: 6,
   },
   creditLabel: {
     ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   creditStatDivider: {
     width: 1,
@@ -541,20 +594,24 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
   progressBar: {
-    height: 8,
+    height: 10,
     backgroundColor: COLORS.background,
-    borderRadius: 4,
+    borderRadius: 5,
     overflow: 'hidden',
     marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   progressFill: {
     height: '100%',
     borderRadius: 4,
+    minWidth: 2,
   },
   progressText: {
     ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
     textAlign: 'center',
+    fontWeight: '600',
   },
 
   // Sections
@@ -578,23 +635,27 @@ const styles = StyleSheet.create({
   // Contact Grid
   contactGrid: {
     backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: SPACING.lg,
+    borderRadius: 20,
+    padding: SPACING.xl,
     ...SHADOWS.light,
+    elevation: 4,
   },
   contactItem: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: SPACING.md,
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+    paddingVertical: SPACING.sm,
   },
   contactIconContainer: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.sm,
+    marginRight: SPACING.md,
+    borderWidth: 2,
+    borderColor: COLORS.border,
   },
   contactText: {
     marginLeft: SPACING.sm,
@@ -603,20 +664,22 @@ const styles = StyleSheet.create({
   contactLabel: {
     ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
-    fontWeight: '500',
-    marginBottom: 2,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   contactValue: {
     ...TYPOGRAPHY.body,
     color: COLORS.text,
+    fontWeight: '500',
   },
 
   // Settings Card
   settingsCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: SPACING.lg,
+    borderRadius: 20,
+    padding: SPACING.xl,
     ...SHADOWS.light,
+    elevation: 4,
   },
   settingRow: {
     flexDirection: 'row',
@@ -669,28 +732,31 @@ const styles = StyleSheet.create({
   actionsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: SPACING.sm,
   },
   actionCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 12,
-    padding: SPACING.md,
+    borderRadius: 16,
+    padding: SPACING.lg,
     alignItems: 'center',
     flex: 1,
-    marginHorizontal: 4,
     ...SHADOWS.light,
+    elevation: 4,
   },
   actionIconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.sm,
+    borderWidth: 2,
+    borderColor: COLORS.border,
   },
   actionText: {
-    ...TYPOGRAPHY.small,
-    fontWeight: '600',
+    ...TYPOGRAPHY.body,
+    fontWeight: '700',
     marginTop: SPACING.xs,
     textAlign: 'center',
   },
@@ -698,6 +764,8 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
     textAlign: 'center',
+    fontWeight: '500',
+    marginTop: 2,
   },
 
   bottomPadding: {

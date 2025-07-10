@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -6,7 +6,9 @@ import {
   SafeAreaView, 
   TouchableOpacity, 
   ScrollView,
-  StatusBar
+  StatusBar,
+  Animated,
+  Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -19,10 +21,14 @@ import ProcessingStep from './ProcessingStep';
 import { products } from '../../data/mockProducts';
 import AnimatedButton from '../UI/AnimatedButton';
 import AnimatedFeedback from '../UI/AnimatedFeedback';
-import { COLORS, TYPOGRAPHY, SHADOWS } from '../../utils/theme';
+import { COLORS, TYPOGRAPHY, SHADOWS, SPACING } from '../../utils/theme';
 import { AppContext } from '../../context/AppContext';
 import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 import { calculateOrderTotal, formatPrice } from '../../utils/pricing';
+import { HapticFeedback } from '../../utils/haptics';
+import notificationService from '../../services/notificationService';
+
+const { width } = Dimensions.get('window');
 
 // Mock cart items for checkout demo
 const mockCartItems = [
@@ -84,6 +90,12 @@ export default function CheckoutScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   // Create a ref for the scroll view
   const scrollViewRef = useRef<ScrollView>(null);
+  
+  // Animation values for smooth transitions
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const headerScaleAnim = useRef(new Animated.Value(1)).current;
   
   // Convert delivery location to address format
   const getInitialAddress = (): DeliveryAddress => {
@@ -156,13 +168,61 @@ export default function CheckoutScreen() {
   const deliveryFee = orderTotals.deliveryFee;
   const total = orderTotals.finalTotal;
   
-  // Helper function to change step and scroll to top
-  const changeStep = (newStep: CheckoutStep) => {
-    setCurrentStep(newStep);
-    // Scroll to top when changing steps
-    if (scrollViewRef.current) {
-      scrollViewRef.current.scrollTo({ y: 0, animated: true });
-    }
+  // Calculate current step index for animations
+  const steps: CheckoutStep[] = ['address', 'delivery', 'payment', 'review', 'processing'];
+  const currentStepIndex = steps.indexOf(currentStep);
+  
+  // Animate progress bar when step changes
+  useEffect(() => {
+    const progressValue = currentStepIndex / (steps.length - 1);
+    Animated.timing(progressAnim, {
+      toValue: progressValue,
+      duration: 400,
+      useNativeDriver: false,
+    }).start();
+  }, [currentStepIndex]);
+  
+  // Helper function to change step with smooth animations
+  const changeStep = (newStep: CheckoutStep, direction: 'forward' | 'backward' = 'forward') => {
+    HapticFeedback.light();
+    
+    const slideDirection = direction === 'forward' ? -width : width;
+    const slideStart = direction === 'forward' ? width : -width;
+    
+    // Animate slide transition
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: slideDirection,
+        duration: 0,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setCurrentStep(newStep);
+      slideAnim.setValue(slideStart);
+      
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      
+      // Scroll to top when changing steps
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: 0, animated: true });
+      }
+    });
   };
   
   const handleUpdateAddress = (address: DeliveryAddress) => {
@@ -170,7 +230,7 @@ export default function CheckoutScreen() {
       ...checkoutState,
       address
     });
-    changeStep('delivery');
+    changeStep('delivery', 'forward');
   };
   
   const handleSelectDeliverySlot = (slot: DeliverySlot) => {
@@ -178,7 +238,7 @@ export default function CheckoutScreen() {
       ...checkoutState,
       deliverySlot: slot
     });
-    changeStep('payment');
+    changeStep('payment', 'forward');
   };
   
   const handleSelectPaymentMethod = (method: PaymentMethod) => {
@@ -186,23 +246,34 @@ export default function CheckoutScreen() {
       ...checkoutState,
       paymentMethod: method
     });
-    changeStep('review');
+    changeStep('review', 'forward');
   };
   
   const handlePlaceOrder = () => {
-    changeStep('processing');
+    changeStep('processing', 'forward');
     setIsProcessing(true);
     
     // Simulate order processing
     setTimeout(() => {
       setIsProcessing(false);
       
-      // Clear the cart after successful order
-      dispatch({ type: 'CLEAR_CART' });
+      const orderId = `ORD-${Math.floor(Math.random() * 10000)}`;
+      
+      // Complete purchase - this will clear cart, update stats, and show achievement
+      dispatch({ 
+        type: 'COMPLETE_PURCHASE', 
+        payload: { 
+          orderTotal: total, 
+          orderId 
+        } 
+      });
+      
+      // Schedule order notifications
+      notificationService.simulateOrderProgress(orderId);
       
       // Navigate to order confirmation with proper params
       navigation.navigate('OrderSuccess', {
-        orderId: `ORD-${Math.floor(Math.random() * 10000)}`,
+        orderId,
         total: total,
         deliveryDate: checkoutState.deliverySlot?.date || 'Tomorrow',
         deliveryTime: checkoutState.deliverySlot?.timeSlot || '2-4 PM'
@@ -214,11 +285,11 @@ export default function CheckoutScreen() {
     if (currentStep === 'address') {
       navigation.goBack();
     } else if (currentStep === 'delivery') {
-      changeStep('address');
+      changeStep('address', 'backward');
     } else if (currentStep === 'payment') {
-      changeStep('delivery');
+      changeStep('delivery', 'backward');
     } else if (currentStep === 'review') {
-      changeStep('payment');
+      changeStep('payment', 'backward');
     }
   };
   
@@ -268,29 +339,43 @@ export default function CheckoutScreen() {
   };
   
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
+      <View style={[styles.statusBarBackground, { height: insets.top }]} />
       <StatusBar barStyle="dark-content" />
       
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Enhanced Header */}
+      <Animated.View 
+        style={[
+          styles.header,
+          {
+            transform: [{ scale: headerScaleAnim }]
+          }
+        ]}
+      >
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={handleGoBack}
           disabled={currentStep === 'processing'}
+          activeOpacity={0.8}
         >
-          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          <Ionicons name="chevron-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{getStepTitle()}</Text>
         <View style={styles.placeholder} />
-      </View>
+      </Animated.View>
       
-      {/* Progress Bar */}
+      {/* Enhanced Progress Bar */}
       <View style={styles.progressContainer}>
         <View style={styles.progressTrack}>
-          <View 
+          <Animated.View 
             style={[
               styles.progressBar,
-              { width: getProgressPercentage() }
+              {
+                width: progressAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0%', '100%'],
+                })
+              }
             ]} 
           />
         </View>
@@ -344,54 +429,61 @@ export default function CheckoutScreen() {
         </View>
       </View>
       
-      {/* Content */}
+      {/* Content with Animation */}
       <ScrollView 
         ref={scrollViewRef}
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {currentStep === 'address' && (
-          <AddressStep 
-            address={checkoutState.address}
-            onContinue={handleUpdateAddress}
-          />
-        )}
-        
-        {currentStep === 'delivery' && (
-          <DeliveryStep
-            address={checkoutState.address}
-            onSelectSlot={handleSelectDeliverySlot}
-            subtotal={subtotal}
-          />
-        )}
-        
-        {currentStep === 'payment' && (
-          <PaymentStep
-            onSelectMethod={handleSelectPaymentMethod}
-            total={total}
-          />
-        )}
-        
-        {currentStep === 'review' && (
-          <ReviewStep
-            cart={cartItems}
-            address={checkoutState.address}
-            deliverySlot={checkoutState.deliverySlot}
-            paymentMethod={checkoutState.paymentMethod}
-            subtotal={subtotal}
-            deliveryFee={deliveryFee}
-            total={total}
-            onPlaceOrder={handlePlaceOrder}
-          />
-        )}
-        
-        {currentStep === 'processing' && (
-          <ProcessingStep />
-        )}
-        
-        {/* Extra padding to ensure footer button doesn't cover content */}
-        <View style={{ height: 100 }} />
+        <Animated.View
+          style={{
+            opacity: fadeAnim,
+            transform: [{ translateX: slideAnim }]
+          }}
+        >
+          {currentStep === 'address' && (
+            <AddressStep 
+              address={checkoutState.address}
+              onContinue={handleUpdateAddress}
+            />
+          )}
+          
+          {currentStep === 'delivery' && (
+            <DeliveryStep
+              address={checkoutState.address}
+              onSelectSlot={handleSelectDeliverySlot}
+              subtotal={subtotal}
+            />
+          )}
+          
+          {currentStep === 'payment' && (
+            <PaymentStep
+              onSelectMethod={handleSelectPaymentMethod}
+              total={total}
+            />
+          )}
+          
+          {currentStep === 'review' && (
+            <ReviewStep
+              cart={cartItems}
+              address={checkoutState.address}
+              deliverySlot={checkoutState.deliverySlot}
+              paymentMethod={checkoutState.paymentMethod}
+              subtotal={subtotal}
+              deliveryFee={deliveryFee}
+              total={total}
+              onPlaceOrder={handlePlaceOrder}
+            />
+          )}
+          
+          {currentStep === 'processing' && (
+            <ProcessingStep />
+          )}
+          
+          {/* Extra padding to ensure footer button doesn't cover content */}
+          <View style={{ height: 120 }} />
+        </Animated.View>
       </ScrollView>
       
       {/* Footer Actions */}
@@ -401,11 +493,11 @@ export default function CheckoutScreen() {
             label="Continue"
             onPress={() => {
               if (currentStep === 'address' && canContinue()) {
-                changeStep('delivery');
+                changeStep('delivery', 'forward');
               } else if (currentStep === 'delivery' && canContinue()) {
-                changeStep('payment');
+                changeStep('payment', 'forward');
               } else if (currentStep === 'payment' && canContinue()) {
-                changeStep('review');
+                changeStep('review', 'forward');
               }
             }}
             disabled={!canContinue()}
@@ -445,15 +537,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  statusBarBackground: {
+    backgroundColor: COLORS.card, // Extends header color into notch
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.lg,
     backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    ...SHADOWS.medium,
+    elevation: 6,
   },
   backButton: {
     width: 44,
@@ -461,9 +558,13 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.light,
   },
   headerTitle: {
-    fontSize: 18,
+    ...TYPOGRAPHY.h2,
     fontWeight: '700',
     color: COLORS.text,
   },
@@ -471,23 +572,24 @@ const styles = StyleSheet.create({
     width: 44,
   },
   progressContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    ...SHADOWS.light,
   },
   progressTrack: {
-    height: 4,
+    height: 6,
     backgroundColor: COLORS.border,
-    borderRadius: 2,
+    borderRadius: 3,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: SPACING.lg,
   },
   progressBar: {
     height: '100%',
-    backgroundColor: COLORS.success,
-    borderRadius: 2,
+    backgroundColor: COLORS.text,
+    borderRadius: 3,
   },
   stepIndicators: {
     flexDirection: 'row',
@@ -527,11 +629,12 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   footer: {
-    padding: 16,
-    paddingTop: 8,
+    padding: SPACING.lg,
+    paddingTop: SPACING.md,
     backgroundColor: COLORS.card,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     ...SHADOWS.medium,
+    elevation: 8,
   },
 }); 

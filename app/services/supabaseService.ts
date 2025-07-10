@@ -174,7 +174,7 @@ export const supabaseService = {
         .from('users')
         .select('*')
         .eq('id', authUser.id)
-        .single();
+        .maybeSingle();
 
       if (userError) throw userError;
       if (!dbUser) return null;
@@ -186,7 +186,7 @@ export const supabaseService = {
           .from('user_permissions')
           .select('*')
           .eq('user_id', dbUser.id)
-          .single();
+          .maybeSingle();
 
         if (!permissionsError && dbPermissions) {
           permissions = dbPermissions;
@@ -208,7 +208,7 @@ export const supabaseService = {
         .from('users')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       console.log('📊 Supabase query result:', { dbUser, userError });
 
@@ -231,7 +231,7 @@ export const supabaseService = {
           .from('user_permissions')
           .select('*')
           .eq('user_id', dbUser.id)
-          .single();
+          .maybeSingle();
 
         console.log('📊 Permissions query result:', { dbPermissions, permissionsError });
 
@@ -270,7 +270,7 @@ export const supabaseService = {
         .update(dbUpdates)
         .eq('id', userId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (userError) throw userError;
 
@@ -312,7 +312,7 @@ export const supabaseService = {
         .from('companies')
         .select('*')
         .eq('id', companyId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       if (!dbCompany) return null;
@@ -350,7 +350,7 @@ export const supabaseService = {
         .update(dbUpdates)
         .eq('id', companyId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -589,7 +589,7 @@ export const supabaseService = {
         .from('users')
         .insert([dbUser])
         .select()
-        .single();
+        .maybeSingle();
 
       if (userError) {
         console.error('❌ Error inserting user:', userError);

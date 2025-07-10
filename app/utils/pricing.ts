@@ -8,7 +8,6 @@ export interface Product {
   name: string;
   retailPrice: number;
   tradePrice: number;
-  stock: number;
   category: string;
   description: string;
   sku: string;
@@ -19,8 +18,6 @@ export interface CartItem {
   product: Product;
   quantity: number;
 }
-
-export type UserRole = 'retail' | 'trade';
 
 // Singapore GST rate
 export const GST_RATE = 0.09; // 9%
@@ -33,17 +30,17 @@ export const getBasePrice = (product: Product, userRole: UserRole): number => {
 };
 
 /**
- * Calculate GST amount for a given price
+ * Calculate GST amount
  */
 export const calculateGST = (basePrice: number): number => {
-  return basePrice * GST_RATE;
+  return Number((basePrice * GST_RATE).toFixed(2));
 };
 
 /**
- * Get total price including GST
+ * Get price with GST included
  */
 export const getPriceWithGST = (basePrice: number): number => {
-  return basePrice + calculateGST(basePrice);
+  return Number((basePrice * (1 + GST_RATE)).toFixed(2));
 };
 
 /**
@@ -79,157 +76,62 @@ export const getPriceBreakdown = (product: Product, userRole: UserRole, quantity
 };
 
 /**
+ * Format price for display
+ */
+export const formatPrice = (price: number): string => {
+  return `$${price.toFixed(2)}`;
+};
+
+/**
  * Calculate cart totals with GST breakdown
  */
 export const calculateCartTotals = (cartItems: CartItem[], userRole: UserRole) => {
-  let subtotal = 0;
-  let totalGST = 0;
+  const subtotal = cartItems.reduce((total, item) => {
+    const basePrice = getBasePrice(item.product, userRole);
+    return total + (basePrice * item.quantity);
+  }, 0);
   
-  cartItems.forEach(item => {
-    const breakdown = getPriceBreakdown(item.product, userRole, item.quantity);
-    subtotal += breakdown.totalBasePrice;
-    totalGST += breakdown.totalGST;
-  });
-  
-  const total = subtotal + totalGST;
+  const gst = calculateGST(subtotal);
+  const total = subtotal + gst;
   
   return {
     subtotal: Number(subtotal.toFixed(2)),
-    gst: Number(totalGST.toFixed(2)),
-    total: Number(total.toFixed(2)),
-    itemCount: cartItems.reduce((sum, item) => sum + item.quantity, 0)
+    gst: Number(gst.toFixed(2)),
+    total: Number(total.toFixed(2))
   };
 };
 
 /**
- * Format price for display (Singapore dollars)
+ * Calculate delivery fee based on order total and delivery type
  */
-export const formatPrice = (price: number, showCents: boolean = true): string => {
-  if (showCents) {
-    return `$${price.toFixed(2)}`;
-  }
-  return `$${Math.round(price)}`;
-};
-
-/**
- * Format price range for display
- */
-export const formatPriceRange = (minPrice: number, maxPrice: number, showCents: boolean = true): string => {
-  if (minPrice === maxPrice) {
-    return formatPrice(minPrice, showCents);
-  }
-  return `${formatPrice(minPrice, showCents)} - ${formatPrice(maxPrice, showCents)}`;
-};
-
-/**
- * Check if product is in stock for requested quantity
- */
-export const isProductInStock = (product: Product, requestedQuantity: number = 1): boolean => {
-  return product.stock >= requestedQuantity && product.stock > 0;
-};
-
-/**
- * Get stock status information
- */
-export const getStockStatus = (product: Product) => {
-  if (product.stock === 0) {
-    return {
-      status: 'out_of_stock',
-      message: 'Out of Stock',
-      color: '#D32F2F',
-      backgroundColor: '#FFEBEE'
-    };
-  } else if (product.stock <= 5) {
-    return {
-      status: 'low_stock',
-      message: `Only ${product.stock} left`,
-      color: '#FFA000',
-      backgroundColor: '#FFF8E1'
-    };
-  } else {
-    return {
-      status: 'in_stock',
-      message: 'In Stock',
-      color: '#388E3C',
-      backgroundColor: '#E8F5E9'
-    };
-  }
-};
-
-/**
- * Validate if item can be added to cart
- */
-export const validateAddToCart = (product: Product, requestedQuantity: number): {
-  valid: boolean;
-  error?: string;
-} => {
-  if (!isProductInStock(product, requestedQuantity)) {
-    if (product.stock === 0) {
-      return {
-        valid: false,
-        error: 'This item is currently out of stock'
-      };
-    } else {
-      return {
-        valid: false,
-        error: `Only ${product.stock} items available. Please reduce quantity.`
-      };
-    }
-  }
-  
-  if (requestedQuantity <= 0) {
-    return {
-      valid: false,
-      error: 'Quantity must be greater than 0'
-    };
-  }
-  
-  return { valid: true };
-};
-
-/**
- * Get maximum quantity that can be added to cart
- */
-export const getMaxQuantity = (product: Product, currentCartQuantity: number = 0): number => {
-  return Math.max(0, product.stock - currentCartQuantity);
-};
-
-/**
- * Calculate delivery fee (if needed)
- */
-export const calculateDeliveryFee = (orderTotal: number, deliveryType: 'standard' | 'express' | 'same_day' = 'standard'): number => {
-  // Free delivery for orders above $150
+export const calculateDeliveryFee = (orderTotal: number, deliveryType: 'standard' | 'express' = 'standard'): number => {
+  // Free delivery over $150
   if (orderTotal >= 150) {
     return 0;
   }
   
-  switch (deliveryType) {
-    case 'same_day':
-      return 15;
-    case 'express':
-      return 10;
-    case 'standard':
-    default:
-      return 5;
+  // Standard delivery fee
+  if (deliveryType === 'standard') {
+    return 5.00;
   }
+  
+  // Express delivery fee
+  return 8.00;
 };
 
 /**
- * Calculate final order total with delivery
+ * Calculate order total including delivery
  */
-export const calculateOrderTotal = (
-  cartItems: CartItem[], 
-  userRole: UserRole, 
-  deliveryType: 'standard' | 'express' | 'same_day' = 'standard'
-) => {
+export const calculateOrderTotal = (cartItems: CartItem[], userRole: UserRole, deliveryType: 'standard' | 'express' = 'standard') => {
   const cartTotals = calculateCartTotals(cartItems, userRole);
   const deliveryFee = calculateDeliveryFee(cartTotals.total, deliveryType);
-  const finalTotal = cartTotals.total + deliveryFee;
   
   return {
     ...cartTotals,
     deliveryFee: Number(deliveryFee.toFixed(2)),
-    finalTotal: Number(finalTotal.toFixed(2)),
-    freeDeliveryEligible: cartTotals.total >= 150
+    finalTotal: Number((cartTotals.total + deliveryFee).toFixed(2))
   };
 };
+
+// User role type
+export type UserRole = 'retail' | 'trade';

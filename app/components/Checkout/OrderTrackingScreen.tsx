@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../types/navigation';
 
 type OrderTrackingRouteProp = RouteProp<RootStackParamList, 'OrderTracking'>;
@@ -18,6 +19,7 @@ const OrderTrackingScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<OrderTrackingRouteProp>();
   const { orderId } = route.params;
+  const insets = useSafeAreaInsets();
   
   // Mock order details - in a real app, this would come from an API
   const [order, setOrder] = useState({
@@ -73,6 +75,9 @@ const OrderTrackingScreen: React.FC = () => {
   
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <View style={[styles.statusBarSpacer, { height: insets.top }]} />
+      
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
@@ -189,6 +194,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+  },
+  statusBarSpacer: {
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
