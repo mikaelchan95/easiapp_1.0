@@ -17,6 +17,17 @@ npm run web     # Web browser
 npm run deploy  # Export and deploy to EAS
 ```
 
+## Code Quality Rules
+
+### Cursor Rules (.cursor/rules/)
+- **Refactor Rule**: Files must be refactored if they approach or exceed 500 lines
+- **Color Scheme Rule**: Strict monochrome design system enforcement
+  - Canvas/Cards: `hsl(0, 0%, 100%)` (pure white)
+  - Frame/Backdrop: `hsl(0, 0%, 98%)` (very light gray)
+  - Text: `hsl(0, 0%, 0%)` (black) and `hsl(0, 0%, 30%)` (dark gray)
+  - Interactive: `hsl(0, 0%, 0%)` (black) backgrounds with white text
+  - Shadows: Light `0 1px 3px rgba(0,0,0,0.04)`, Medium `0 4px 6px rgba(0,0,0,0.08)`
+
 ## Architecture Overview
 
 ### Tech Stack
@@ -125,3 +136,17 @@ app/
 - Location permissions required for delivery functionality
 - Supabase RLS policies enforce data security for B2B features
 - Offline-first design with graceful fallbacks to mock data
+
+### Mock Data & Development
+- `app/data/mockProducts.ts` - Product catalog with dual pricing
+- `app/data/mockUsers.ts` - User accounts (individual & company) with roles
+- Demo authentication available in `supabaseService.ts` for development
+- Mock data includes B2B features like company profiles, team management, and permissions
+
+### Key Architecture Decisions
+- Feature-based component organization over type-based structure
+- Context providers for global state instead of Redux/Zustand
+- AsyncStorage for cart and location persistence
+- Monochrome design system with strict HSL color values
+- Dual pricing system (retail/trade) with GST calculation
+- Role-based permissions with company hierarchy support
