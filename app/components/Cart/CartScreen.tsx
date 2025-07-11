@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import CartItem from './CartItem';
 import EmptyCart from './EmptyCart';
 import SuggestedAddons from './SuggestedAddons';
-import { products, Product as MockProduct } from '../../data/mockProducts';
+import { Product } from '../../utils/pricing';
 
 // Import app context
 import { AppContext } from '../../context/AppContext';
@@ -127,14 +127,17 @@ export default function CartScreen() {
   
   // Improved product image lookup with fallback
   const getProductImageById = (productId: string) => {
-    const foundProduct = products.find(p => p.id === productId);
-    if (foundProduct?.imageUrl) {
-      return foundProduct.imageUrl;
+    // Check if it's a live product from state with image_url
+    const liveProduct = state.products.find(p => p.id === productId);
+    if (liveProduct?.image) {
+      return liveProduct.image;
+    }
+    if (liveProduct?.imageUrl) {
+      return liveProduct.imageUrl;
     }
     
-    // Fallback to a default image or return null
-    console.warn(`No image found for product ${productId}`);
-    return null;
+    // Fallback to a placeholder image with proper wine bottle image
+    return 'https://images.unsplash.com/photo-1568213816046-0ee1c42bd559?w=400&h=400&fit=crop';
   };
   
   // Enhanced cart items mapping with better error handling

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, StatusBar, RefreshControl, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { products, Product } from '../../data/mockProducts';
+import { Product } from '../../utils/pricing';
 import ProductCard from '../UI/ProductCard';
 import EnhancedProductCard from './EnhancedProductCard';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
@@ -13,6 +13,7 @@ import * as Animations from '../../utils/animations';
 import MobileHeader from '../Layout/MobileHeader';
 import DeliveryLocationHeader from '../Location/DeliveryLocationHeader';
 import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
+import { useAppContext } from '../../context/AppContext';
 
 const categories = [
   { id: 'all', name: 'All', icon: 'grid-outline' },
@@ -29,6 +30,7 @@ export default function ProductsScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
+  const { state } = useAppContext();
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -53,9 +55,10 @@ export default function ProductsScreen() {
   }, []);
 
   const filteredProducts = useMemo(() => {
+    const products = state.products || [];
     if (selectedCategory === 'all') return products;
     return products.filter(p => p.category.toLowerCase().includes(selectedCategory));
-  }, [selectedCategory]);
+  }, [selectedCategory, state.products]);
 
   const handleProductSelect = (product: Product) => {
     navigation.navigate('ProductDetail', { id: product.id });

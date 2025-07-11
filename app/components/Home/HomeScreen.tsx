@@ -20,7 +20,7 @@ import ProductSectionCard from '../Products/ProductSectionCard';
 import ShopByBrandsSection from './ShopByBrandsSection';
 import PastOrdersSection from './PastOrdersSection';
 import BackToTopButton from '../UI/BackToTopButton';
-import { products, Product } from '../../data/mockProducts';
+import { Product } from '../../utils/pricing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import ExpandableSearch from '../Products/ExpandableSearch';
@@ -96,17 +96,18 @@ export default function HomeScreen() {
   
   // Memoized product sections for better performance
   const productSections = React.useMemo(() => {
-    const featuredProducts = products.filter(p => p.rating >= 4.9).slice(0, 6);
+    const products = state.products || [];
+    const featuredProducts = products.filter(p => (p.rating || 0) >= 4.9).slice(0, 6);
     const newArrivals = products.slice(0, 3);
     
     // Personalize recommendations based on user type
     let recommended = products.slice(2, 5);
     if (user && isCompanyUser(user)) {
       // For company users, prioritize premium/business-oriented products
-      recommended = products.filter(p => p.price >= 100).slice(0, 3);
+      recommended = products.filter(p => p.retailPrice >= 100).slice(0, 3);
     } else if (user) {
       // For individual users, show popular mid-range products
-      recommended = products.filter(p => p.rating >= 4.5 && p.price < 200).slice(0, 3);
+      recommended = products.filter(p => (p.rating || 0) >= 4.5 && p.retailPrice < 200).slice(0, 3);
     }
     
     return {
@@ -115,7 +116,7 @@ export default function HomeScreen() {
       newArrivals,
       recommended
     };
-  }, [user]);
+  }, [user, state.products]);
   
   const handleProductPress = useCallback((product: Product) => {
     navigation.navigate('ProductDetail', { id: product.id });

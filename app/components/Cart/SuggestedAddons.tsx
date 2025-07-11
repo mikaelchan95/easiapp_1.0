@@ -9,9 +9,10 @@ import {
   Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { products, Product } from '../../data/mockProducts';
+import { Product } from '../../utils/pricing';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { CartNotificationContext } from '../../context/CartNotificationContext';
+import { AppContext } from '../../context/AppContext';
 import { HapticFeedback } from '../../utils/haptics';
 import * as Animations from '../../utils/animations';
 import EnhancedProductCard from '../Products/EnhancedProductCard';
@@ -32,24 +33,26 @@ const SuggestedAddons: React.FC<SuggestedAddonsProps> = ({
 }) => {
   const navigation = useNavigation();
   const { showCartNotification } = useContext(CartNotificationContext);
+  const { state } = useContext(AppContext);
   
   // Animation references
   const headerAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   
-  // Filter and enhance product suggestions
-  const suggestedProducts = products
-    .filter(p => !cartProductIds.includes(p.id))
-
-    .slice(0, 6) // Show more suggestions
-    .map(product => ({
-      ...product,
-      // Add some mock "customers also bought" logic
-      popularity: Math.floor(Math.random() * 100) + 50,
-      discount: product.retailPrice > product.tradePrice ? 
-        Math.round(((product.retailPrice - product.tradePrice) / product.retailPrice) * 100) : 0
-    }))
-    .sort((a, b) => b.popularity - a.popularity);
+  // Filter and enhance product suggestions with stable data
+  const suggestedProducts = React.useMemo(() => {
+    return state.products
+      .filter(p => !cartProductIds.includes(p.id))
+      .slice(0, 6) // Show more suggestions
+      .map((product, index) => ({
+        ...product,
+        // Add stable "customers also bought" logic based on product ID
+        popularity: Math.abs(product.id.toString().charCodeAt(0) * 17 + index * 5) % 100 + 50,
+        discount: product.retailPrice > product.tradePrice ? 
+          Math.round(((product.retailPrice - product.tradePrice) / product.retailPrice) * 100) : 0
+      }))
+      .sort((a, b) => b.popularity - a.popularity);
+  }, [cartProductIds, state.products]); // Only recalculate when cart contents change
   
   // Animate on mount
   React.useEffect(() => {

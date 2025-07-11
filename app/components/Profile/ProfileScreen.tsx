@@ -24,7 +24,6 @@ import { AppContext, getUserRole } from '../../context/AppContext';
 import MobileHeader from '../Layout/MobileHeader';
 import { isCompanyUser, CompanyUser, IndividualUser } from '../../types/user';
 import { formatPrice } from '../../utils/pricing';
-import { getUsersByCompany, getPendingApprovalsForUser } from '../../data/mockUsers';
 import { formatStatCurrency, formatStatNumber } from '../../utils/formatting';
 import { useAppContext } from '../../context/AppContext';
 import { useRewards } from '../../context/RewardsContext';
@@ -69,34 +68,71 @@ const handleContactPress = async (type: 'email' | 'phone', value: string) => {
 export default function ProfileScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { state, signOut, updateUserProfile } = useContext(AppContext);
+  const { state, dispatch, signOut, updateUserProfile } = useContext(AppContext);
   const { state: rewardsState } = useRewards();
   const [isLoading, setIsLoading] = useState(false);
   const [isCompanyExpanded, setIsCompanyExpanded] = useState(false);
   const [isChangingProfilePicture, setIsChangingProfilePicture] = useState(false);
+  const [imageKey, setImageKey] = useState(Date.now()); // Force image refresh
   const { testSupabaseIntegration, loadUserFromSupabase } = useAppContext();
   
-  const { user, company, userStats } = state;
-  const pendingApprovals = user ? getPendingApprovalsForUser(user.id) : [];
-  
-  // Check if we should highlight recent order (from achievement notification)
-  const [highlightRecentOrder, setHighlightRecentOrder] = useState(false);
-  
-  useEffect(() => {
-    // This could be set via navigation params
-    const unsubscribe = navigation.addListener('focus', () => {
-      // Check if we should highlight recent order
-      const route = navigation.getState()?.routes?.find(r => r.name === 'Profile');
-      if (route?.params?.highlightRecentOrder) {
-        setHighlightRecentOrder(true);
-        // Clear the highlight after 3 seconds
-        setTimeout(() => setHighlightRecentOrder(false), 3000);
+  // Function to manually refresh company data
+  const refreshCompanyData = async () => {
+    if (user?.accountType === 'company' && user?.companyId) {
+      console.log('🔄 Manually refreshing company data...');
+      try {
+        const { supabaseService } = await import('../../services/supabaseService');
+        const company = await supabaseService.getCompanyById(user.companyId);
+        if (company) {
+          console.log('✅ Company refreshed:', company.name);
+          dispatch({ type: 'SET_COMPANY', payload: company });
+        } else {
+          console.log('❌ No company found for ID:', user.companyId);
+        }
+      } catch (error) {
+        console.error('❌ Error refreshing company data:', error);
       }
-    });
-    
-    return unsubscribe;
-  }, [navigation]);
-  const teamMembers = company ? getUsersByCompany(company.id) : [];
+    }
+  };
+  
+  const { user, company, userStats } = state;
+  const [teamMembers, setTeamMembers] = useState<CompanyUser[]>([]);
+  const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
+  
+  // Load actual team members from Supabase
+  const loadTeamMembers = async () => {
+    if (company && user?.accountType === 'company') {
+      try {
+        const { supabaseService } = await import('../../services/supabaseService');
+        const members = await supabaseService.getCompanyTeamMembers(company.id);
+        setTeamMembers(members || []);
+        console.log('✅ Loaded team members:', members?.length || 0);
+      } catch (error) {
+        console.error('❌ Error loading team members:', error);
+        setTeamMembers([]);
+      }
+    }
+  };
+  
+  // Load actual pending approvals from Supabase
+  const loadPendingApprovals = async () => {
+    if (user?.accountType === 'company') {
+      try {
+        // For now, just set empty array - can implement real approvals later
+        setPendingApprovals([]);
+        console.log('✅ Loaded pending approvals: 0 (not implemented yet)');
+      } catch (error) {
+        console.error('❌ Error loading pending approvals:', error);
+        setPendingApprovals([]);
+      }
+    }
+  };
+  
+  // Load team members and approvals when company changes
+  useEffect(() => {
+    loadTeamMembers();
+    loadPendingApprovals();
+  }, [company?.id]);
 
   // Test Supabase integration behind the scenes on component mount
   useEffect(() => {
@@ -127,13 +163,14 @@ export default function ProfileScreen() {
           text: 'Sign Out', 
           style: 'destructive', 
           onPress: async () => {
-            setIsLoading(true);
+            console.log('🔄 User confirmed sign out');
+            
+            // Don't manage loading state locally - let global state handle it
             const success = await signOut();
-            setIsLoading(false);
             
             if (success) {
-              // Navigation will be handled by app state change
-              console.log('Successfully signed out');
+              console.log('✅ Sign out initiated successfully');
+              // Navigation and state cleanup handled by auth state listener
             } else {
               Alert.alert('Error', 'Failed to sign out. Please try again.');
             }
@@ -168,7 +205,7 @@ export default function ProfileScreen() {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -197,7 +234,7 @@ export default function ProfileScreen() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -218,19 +255,45 @@ export default function ProfileScreen() {
   const updateProfilePicture = async (imageUri: string) => {
     try {
       if (user && updateUserProfile) {
-        // Only pass the profileImage update, not the entire user object
-        const success = await updateUserProfile({ profileImage: imageUri });
+        setIsLoading(true);
+        console.log('📸 Uploading profile image to Supabase Storage...');
         
-        if (success) {
-          HapticFeedback.success();
-          console.log('✅ Profile picture updated successfully');
-        } else {
-          Alert.alert('Error', 'Failed to update profile picture. Please try again.');
+        // Upload directly to Supabase storage - no fallback to local
+        const fileName = `profile-${user.id}-${Date.now()}.jpg`;
+        
+        const { supabaseService } = await import('../../services/supabaseService');
+        const publicUrl = await supabaseService.uploadProfileImageFromUri(user.id, imageUri, fileName);
+        
+        if (!publicUrl) {
+          throw new Error('Failed to upload image to Supabase Storage');
         }
+        
+        console.log('✅ Image uploaded to Supabase Storage:', publicUrl);
+        
+        // Update user profile with Supabase Storage URL (with cache busting)
+        const cacheBustedUrl = `${publicUrl}?v=${Date.now()}`;
+        const success = await updateUserProfile({ profileImage: cacheBustedUrl });
+        
+        if (!success) {
+          throw new Error('Failed to update user profile in database');
+        }
+        
+        // Force image refresh
+        setImageKey(Date.now());
+        
+        HapticFeedback.success();
+        console.log('✅ Profile picture updated successfully in Supabase');
+        Alert.alert('Success', 'Profile picture updated and saved to cloud storage!');
       }
     } catch (error) {
-      console.error('Error updating profile picture:', error);
-      Alert.alert('Error', 'Failed to update profile picture. Please try again.');
+      console.error('❌ Error updating profile picture:', error);
+      Alert.alert(
+        'Upload Failed', 
+        'Failed to upload profile picture to cloud storage. Please check your internet connection and try again.',
+        [{ text: 'OK', style: 'default' }]
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -243,6 +306,7 @@ export default function ProfileScreen() {
     }
   };
 
+
   const handleFeaturePress = (feature: string) => {
     console.log(`Pressed: ${feature}`);
     
@@ -251,6 +315,7 @@ export default function ProfileScreen() {
       handleTestNotifications();
       return;
     }
+    
     
     // Navigate to specific screens
     switch (feature) {
@@ -276,6 +341,9 @@ export default function ProfileScreen() {
         break;
       case 'Support':
         navigation.navigate('Support');
+        break;
+      case 'Settings':
+        navigation.navigate('Settings');
         break;
       default:
         console.log('Feature not implemented:', feature);
@@ -307,6 +375,11 @@ export default function ProfileScreen() {
       console.log('⚠️ Error loading user data:', error);
     }
   };
+  
+  // Auto-refresh company data when component mounts
+  useEffect(() => {
+    refreshCompanyData();
+  }, [user?.id]);
 
   if (!user) {
     return (
@@ -328,100 +401,36 @@ export default function ProfileScreen() {
     );
   }
 
-  // Mock recent orders data
-  const recentOrders = [
-    {
-      id: '1',
-      orderNumber: 'ORD-2024-001',
-      date: '2024-01-15',
-      status: 'delivered' as const,
-      total: 145.99,
-      items: [
-        { name: 'Macallan 18 Year Old', quantity: 1 },
-        { name: 'Premium Wine Selection', quantity: 2 }
-      ]
-    },
-    {
-      id: '2', 
-      orderNumber: 'ORD-2024-002',
-      date: '2024-01-20',
-      status: 'processing' as const,
-      total: 89.50,
-      items: [
-        { name: 'Craft Beer Bundle', quantity: 1 }
-      ]
-    }
-  ];
 
-  const renderRecentOrdersSection = () => {
-    return (
-      <View style={styles.recentOrdersSection}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Orders</Text>
-          <View style={styles.headerActions}>
+
+  const renderCompanySection = () => {
+    if (!isCompanyUser(user)) {
+      return null;
+    }
+
+    // Show loading placeholder if company user but no company data
+    if (!company) {
+      return (
+        <View style={styles.modernCompanyCard}>
+          <View style={styles.modernCompanyHeader}>
+            <View style={styles.modernCompanyIcon}>
+              <Ionicons name="business" size={24} color={COLORS.text} />
+            </View>
+            <View style={styles.modernCompanyInfo}>
+              <Text style={styles.modernCompanyName}>Loading Company...</Text>
+              <Text style={styles.modernCompanyUEN}>Please wait while we load your company information.</Text>
+            </View>
             <TouchableOpacity 
-              onPress={() => handleFeaturePress('Test Notifications')}
-              style={styles.testButton}
+              style={styles.modernExpandButton}
+              onPress={refreshCompanyData}
+              activeOpacity={0.7}
             >
-              <Ionicons name="notifications-outline" size={16} color={COLORS.text} />
-              <Text style={styles.testButtonText}>Test</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => handleFeaturePress('Order History')}
-              style={styles.viewAllButton}
-            >
-              <Text style={styles.viewAllText}>View All</Text>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+              <Ionicons name="refresh" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
-        
-        {recentOrders.map((order, index) => (
-          <TouchableOpacity
-            key={order.id}
-            style={[
-              styles.orderCard,
-              highlightRecentOrder && index === 0 && styles.highlightedOrderCard
-            ]}
-            onPress={() => navigation.navigate('OrderTracking', { orderId: order.id })}
-            activeOpacity={0.7}
-          >
-            <View style={styles.orderHeader}>
-              <Text style={styles.orderNumber}>{order.orderNumber}</Text>
-              <View style={[styles.statusBadge, styles[`status_${order.status}`]]}>
-                <Text style={[styles.statusText, styles[`statusText_${order.status}`]]}>
-                  {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                </Text>
-              </View>
-            </View>
-            
-            <View style={styles.orderDetails}>
-              <Text style={styles.orderDate}>{new Date(order.date).toLocaleDateString()}</Text>
-              <Text style={styles.orderTotal}>${order.total.toFixed(2)}</Text>
-            </View>
-            
-            <Text style={styles.orderItems}>
-              {order.items.length} item{order.items.length > 1 ? 's' : ''} • {order.items[0].name}
-              {order.items.length > 1 && ` +${order.items.length - 1} more`}
-            </Text>
-            
-            <View style={styles.orderActions}>
-              <TouchableOpacity 
-                style={styles.trackButton}
-                onPress={() => navigation.navigate('OrderTracking', { orderId: order.id })}
-              >
-                <Ionicons name="location-outline" size={16} color={COLORS.text} />
-                <Text style={styles.trackButtonText}>Track Order</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
-  };
-
-  const renderCompanySection = () => {
-    if (!isCompanyUser(user) || !company) return null;
+      );
+    }
 
     const companyUser = user as CompanyUser;
     
@@ -574,7 +583,16 @@ export default function ProfileScreen() {
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
                 {user.profileImage ? (
-                  <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />
+                  <Image 
+                    key={imageKey}
+                    source={{ uri: user.profileImage.split('?')[0] }} 
+                    style={styles.avatarImage}
+                    onError={(error) => {
+                      console.log('❌ Image load error:', error.nativeEvent.error);
+                      console.log('❌ Failed URL:', user.profileImage);
+                    }}
+                    onLoad={() => console.log('✅ Image loaded successfully:', user.profileImage)}
+                  />
                 ) : (
                   <View style={styles.avatarPlaceholder}>
                     <Text style={styles.avatarInitials}>
@@ -611,13 +629,20 @@ export default function ProfileScreen() {
             </View>
           </View>
           
-          <TouchableOpacity 
-            style={styles.settingsButton}
-            onPress={() => handleFeaturePress('Settings')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="settings-outline" size={22} color={COLORS.text} />
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity 
+              style={styles.settingsButton}
+              onPress={handleLogout}
+              activeOpacity={0.7}
+              disabled={state.loading}
+            >
+              {state.loading ? (
+                <ActivityIndicator size="small" color={COLORS.text} />
+              ) : (
+                <Ionicons name="log-out-outline" size={22} color={COLORS.text} />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Enhanced Quick Actions */}
@@ -665,68 +690,9 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.quickActionLabel}>Support</Text>
           </TouchableOpacity>
+          
         </View>
 
-        {/* Enhanced User Stats with Better UX */}
-        {!isCompany && (
-          <View style={styles.userStatsSection}>
-            <View style={styles.statsSectionHeader}>
-              <Text style={styles.statsTitle}>Activity Overview</Text>
-              <TouchableOpacity 
-                style={styles.viewAllButton}
-                onPress={() => handleFeaturePress('Order History')}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.viewAllText}>View All</Text>
-                <Ionicons name="arrow-forward" size={14} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.modernStatsContainer}>
-              <TouchableOpacity 
-                style={styles.modernStatItem}
-                onPress={() => handleFeaturePress('Order History')}
-                activeOpacity={0.8}
-              >
-                <View style={styles.statIconContainer}>
-                  <Ionicons name="receipt-outline" size={20} color={COLORS.text} />
-                </View>
-                <Text style={styles.modernStatNumber}>
-                  {formatStatNumber(userStats.orderCount)}
-                </Text>
-                <Text style={styles.modernStatLabel}>Orders</Text>
-              </TouchableOpacity>
-              <View style={styles.modernStatDivider} />
-              <TouchableOpacity 
-                style={[
-                  styles.modernStatItem,
-                  highlightRecentOrder && styles.highlightedStat
-                ]}
-                onPress={() => handleFeaturePress('Order History')}
-                activeOpacity={0.8}
-              >
-                <View style={styles.statIconContainer}>
-                  <Ionicons name="pricetag-outline" size={20} color={COLORS.text} />
-                </View>
-                <Text style={styles.modernStatNumber}>
-                  ${userStats.totalSavings.toFixed(0)}
-                </Text>
-                <Text style={styles.modernStatLabel}>Saved</Text>
-              </TouchableOpacity>
-              <View style={styles.modernStatDivider} />
-              <TouchableOpacity 
-                style={styles.modernStatItem}
-                onPress={() => navigation.navigate('Rewards')}
-                activeOpacity={0.8}
-              >
-                <View style={styles.statIconContainer}>
-                  <Ionicons name="star" size={20} color="#FFD700" />
-                </View>
-                <Text style={styles.modernStatNumber}>{userStats.totalPoints}</Text>
-                <Text style={styles.modernStatLabel}>Points</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
       </View>
     );
   };
@@ -745,9 +711,6 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContent} 
         showsVerticalScrollIndicator={false}
       >
-
-        {/* Recent Orders Section */}
-        {renderRecentOrdersSection()}
 
         {/* Company Section (only for company users) */}
         {renderCompanySection()}
@@ -939,6 +902,10 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
     flex: 1,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
   },
   settingsButton: {
     width: 44,
@@ -1238,44 +1205,6 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.sm,
   },
 
-  // User Stats Section
-  userStatsSection: {
-    marginBottom: SPACING.md,
-  },
-  statsSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-    paddingHorizontal: 4,
-  },
-  statsTitle: {
-    ...TYPOGRAPHY.h4,
-    marginBottom: 0,
-  },
-  viewAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: 8,
-    backgroundColor: COLORS.background,
-  },
-  viewAllText: {
-    ...TYPOGRAPHY.small,
-    color: COLORS.textSecondary,
-    fontWeight: '600',
-    marginRight: SPACING.xs,
-  },
-  statIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
 
   // Quick Actions
   quickActions: {
@@ -1307,161 +1236,6 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.small,
     fontWeight: '500',
     textAlign: 'center',
-    color: COLORS.text,
-  },
-  highlightedStat: {
-    backgroundColor: '#FFD700',
-    borderRadius: 12,
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  
-  // Recent Orders Section
-  recentOrdersSection: {
-    marginBottom: SPACING.lg,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  testButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    backgroundColor: COLORS.background,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  testButtonText: {
-    ...TYPOGRAPHY.small,
-    color: COLORS.text,
-    fontWeight: '500',
-    fontSize: 12,
-  },
-  sectionTitle: {
-    ...TYPOGRAPHY.h3,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  viewAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  viewAllText: {
-    ...TYPOGRAPHY.small,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-  },
-  orderCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    ...SHADOWS.light,
-  },
-  highlightedOrderCard: {
-    borderColor: '#FFD700',
-    borderWidth: 2,
-    backgroundColor: 'rgba(255, 215, 0, 0.05)',
-  },
-  orderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  orderNumber: {
-    ...TYPOGRAPHY.h4,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  status_delivered: {
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
-  },
-  status_processing: {
-    backgroundColor: 'rgba(255, 152, 0, 0.1)',
-  },
-  status_shipped: {
-    backgroundColor: 'rgba(33, 150, 243, 0.1)',
-  },
-  status_cancelled: {
-    backgroundColor: 'rgba(244, 67, 54, 0.1)',
-  },
-  statusText: {
-    ...TYPOGRAPHY.small,
-    fontWeight: '500',
-  },
-  statusText_delivered: {
-    color: '#4CAF50',
-  },
-  statusText_processing: {
-    color: '#FF9800',
-  },
-  statusText_shipped: {
-    color: '#2196F3',
-  },
-  statusText_cancelled: {
-    color: '#F44336',
-  },
-  orderDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  orderDate: {
-    ...TYPOGRAPHY.small,
-    color: COLORS.textSecondary,
-  },
-  orderTotal: {
-    ...TYPOGRAPHY.h4,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  orderItems: {
-    ...TYPOGRAPHY.small,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.sm,
-  },
-  orderActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  trackButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: COLORS.background,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  trackButtonText: {
-    ...TYPOGRAPHY.small,
-    fontWeight: '500',
     color: COLORS.text,
   },
 
