@@ -31,6 +31,9 @@ import { LocationSuggestion, LocationCoordinate, SavedAddress, DeliveryDetails }
 import { GoogleMapsService } from '../../services/googleMapsService';
 import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 import AddressDetailsForm from './AddressDetailsForm';
+import { useContext } from 'react';
+import { AppContext } from '../../context/AppContext';
+import { supabaseService } from '../../services/supabaseService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -217,6 +220,7 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapView>(null);
   const inputRef = useRef<TextInput>(null);
+  const { state, refreshUserLocations } = useContext(AppContext);
   const { 
     deliveryLocation, 
     setDeliveryLocation, 
@@ -231,7 +235,13 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
   const [searchText, setSearchText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
+  // Recent locations - hybrid approach: local state + database sync
   const [recentLocations, setRecentLocations] = useState<LocationSuggestion[]>([]);
+  
+  // Debug logging
+  console.log('🔍 LOCATION PICKER - User:', state.user?.name);
+  console.log('🔍 LOCATION PICKER - Recent locations count:', recentLocations.length);
+  console.log('🔍 LOCATION PICKER - Recent locations data:', recentLocations);
   const [currentLocation, setCurrentLocation] = useState<LocationSuggestion | null>(null);
   const [pickupLocation, setPickupLocation] = useState<LocationSuggestion | null>(null);
   const [mapRegion, setMapRegion] = useState(GOOGLE_MAPS_CONFIG.marinaBayRegion);
@@ -306,9 +316,8 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
         // Load saved addresses and recent locations
         await loadSavedAddresses();
         
-        // Load recent locations
-        const recent = await GoogleMapsService.getRecentLocations();
-        setRecentLocations(recent);
+        // Recent locations are now loaded via real-time subscription in AppContext
+        // No manual loading needed here - the global state will be updated automatically
         
         // Only load current location if preferences allow it
         if (locationPreferences.autoSuggestCurrent) {
@@ -338,7 +347,7 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
     };
 
     loadInitialData();
-  }, [locationPreferences.autoSuggestCurrent, pickupLocation, deliveryLocation, loadSavedAddresses, setDeliveryLocation]);
+  }, [locationPreferences.autoSuggestCurrent, pickupLocation, deliveryLocation, loadSavedAddresses, setDeliveryLocation, state.user]);
 
   // Handlers
   const handleBackPress = () => {
@@ -360,11 +369,17 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
   const handleSearchInput = async (text: string) => {
     setSearchText(text);
     
+    // Clear pickup location when user starts typing
+    if (text.length > 0 && pickupLocation) {
+      setPickupLocation(null);
+    }
+    
     if (text.length > 2) {
       try {
         setIsLoading(true);
         const results = await GoogleMapsService.getAutocompleteSuggestions(text);
         setSuggestions(results);
+        console.log('🔍 Search suggestions:', results.length, 'results for:', text);
       } catch (error) {
         console.error('Search error:', error);
         if (Platform.OS === 'ios') {
@@ -384,8 +399,18 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
 
+      // If location doesn't have coordinates, get them from place details
+      let enrichedLocation = location;
+      if (!location.coordinate && location.placeId) {
+        console.log('🔍 Getting coordinates for selected location:', location.title);
+        const placeDetails = await GoogleMapsService.getPlaceDetails(location.placeId);
+        if (placeDetails) {
+          enrichedLocation = placeDetails;
+        }
+      }
+
       // Validate location
-      const validation = await GoogleMapsService.validateLocation(location);
+      const validation = await GoogleMapsService.validateLocation(enrichedLocation);
       
       if (!validation.valid) {
         if (Platform.OS === 'ios') {
@@ -400,20 +425,31 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
       }
 
       // Use enriched location with delivery info
-      const enrichedLocation = validation.enrichedLocation || location;
+      const finalLocation = validation.enrichedLocation || enrichedLocation;
       
-      setPickupLocation(enrichedLocation);
-      await setDeliveryLocation(enrichedLocation);
+      setPickupLocation(finalLocation);
+      await setDeliveryLocation(finalLocation);
 
-      // Add to recent locations
-      await GoogleMapsService.addToRecentLocations(enrichedLocation);
-      const updatedRecent = await GoogleMapsService.getRecentLocations();
-      setRecentLocations(updatedRecent);
+      // Add to recent locations in database if user is logged in
+      if (state.user) {
+        try {
+          await supabaseService.saveUserLocation(state.user.id, finalLocation, false);
+          // Manually refresh locations to ensure UI updates immediately
+          await refreshUserLocations();
+        } catch (error) {
+          console.error('Error saving location to database:', error);
+          // Fallback to local storage
+          await GoogleMapsService.addToRecentLocations(finalLocation);
+        }
+      } else {
+        // If no user, use local storage
+        await GoogleMapsService.addToRecentLocations(finalLocation);
+      }
 
-      if (enrichedLocation.coordinate) {
+      if (finalLocation.coordinate) {
         setMapRegion({
-          latitude: enrichedLocation.coordinate.latitude,
-          longitude: enrichedLocation.coordinate.longitude,
+          latitude: finalLocation.coordinate.latitude,
+          longitude: finalLocation.coordinate.longitude,
           latitudeDelta: 0.02,
           longitudeDelta: 0.02,
         });
@@ -424,7 +460,7 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
       
       // Auto-confirm after a short delay
       setTimeout(() => {
-        handleConfirmLocation(enrichedLocation);
+        handleConfirmLocation(finalLocation);
       }, 300);
       
     } catch (error) {
@@ -693,12 +729,12 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
             <OrDivider visible={searchText.length === 0} />
             
             <SearchInput
-              value={pickupLocation?.title || searchText}
+              value={searchText}
               onChangeText={handleSearchInput}
               onFocus={handleInputFocus}
               onClear={() => {
                 setSearchText('');
-                setPickupLocation(null);
+                setSuggestions([]);
                 if (Platform.OS === 'ios') {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }
@@ -810,6 +846,17 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
                           <Ionicons name="time-outline" size={32} color={COLORS.textSecondary} />
                           <Text style={styles.emptyStateTitle}>No recent locations</Text>
                           <Text style={styles.emptyStateSubtitle}>Your recent searches will appear here</Text>
+                          {/* Debug button for testing */}
+                          <TouchableOpacity 
+                            style={{ marginTop: 10, padding: 10, backgroundColor: '#007AFF', borderRadius: 5 }}
+                            onPress={async () => {
+                              console.log('🔧 DEBUG - Manual refresh triggered');
+                              await refreshUserLocations();
+                              console.log('🔧 DEBUG - After refresh, recent locations:', recentLocations.length);
+                            }}
+                          >
+                            <Text style={{ color: 'white', fontSize: 12 }}>Debug: Reload Locations</Text>
+                          </TouchableOpacity>
                         </View>
                       )}
                     </View>

@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Product } from '../../data/mockProducts';
+import { Product } from '../../utils/pricing';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { AppContext } from '../../context/AppContext';
 import { CartNotificationContext } from '../../context/CartNotificationContext';

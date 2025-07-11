@@ -106,7 +106,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
           
           {cart.map((item, index) => (
             <View key={item.product.id} style={styles.itemRow}>
-              <Image source={item.product.imageUrl} style={styles.itemImage} />
+              <Image source={typeof item.product.imageUrl === 'string' ? { uri: item.product.imageUrl } : item.product.imageUrl} style={styles.itemImage} />
               <View style={styles.itemInfo}>
                 <Text style={styles.itemName}>{item.product.name}</Text>
                 <Text style={styles.itemMeta}>Quantity: {item.quantity}</Text>

@@ -40,7 +40,7 @@ const MOCK_WISHLIST: WishlistItem[] = [
     name: 'Macallan 18 Year Old',
     price: 145.99,
     originalPrice: 169.99,
-    imageUrl: require('../../assets/MAC-2024-18YO-Sherry-Cask-BottleBox-Front-REFLECTION-5000x5000-PNG-300dpi-2xl.webp'),
+    imageUrl: 'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-18-sherry-oak.webp',
     category: 'Whiskey',
     inStock: true,
     rating: 4.8,
@@ -51,7 +51,7 @@ const MOCK_WISHLIST: WishlistItem[] = [
     id: '2',
     name: 'Dom Pérignon 2013',
     price: 189.50,
-    imageUrl: require('../../assets/Dom Perignon 2013 750ml.webp'),
+    imageUrl: 'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/dom-perignon-2013.webp',
     category: 'Champagne',
     inStock: true,
     rating: 4.9,
@@ -63,7 +63,7 @@ const MOCK_WISHLIST: WishlistItem[] = [
     name: 'Macallan 25 Year Old',
     price: 299.99,
     originalPrice: 349.99,
-    imageUrl: require('../../assets/MAC-2024-25YO-Sherry-Oak-BottleBox-Front-REFLECTION-5000x5000-PNG-300dpi-2xl.webp'),
+    imageUrl: 'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-25-sherry-oak.webp',
     category: 'Whiskey',
     inStock: false,
     rating: 4.9,
@@ -74,7 +74,7 @@ const MOCK_WISHLIST: WishlistItem[] = [
     id: '4',
     name: 'Macallan 30 Year Old',
     price: 799.99,
-    imageUrl: require('../../assets/MAC-2024-30YO-Sherry-Cask-BottleBox-Front-REFLECTION-5000x5000-PNG-300dpi-2xl.webp'),
+    imageUrl: 'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-30-sherry-oak.webp',
     category: 'Whiskey',
     inStock: true,
     rating: 5.0,
@@ -234,7 +234,7 @@ export default function WishlistScreen() {
         >
           {/* Product Image */}
           <View style={styles.imageContainer}>
-            <Image source={item.imageUrl} style={styles.productImage} resizeMode="contain" />
+            <Image source={{ uri: item.imageUrl }} style={styles.productImage} resizeMode="contain" />
             
             {/* Discount Badge */}
             {hasDiscount && (

@@ -43,10 +43,11 @@ export class GoogleMapsService {
   static async getAutocompleteSuggestions(query: string): Promise<LocationSuggestion[]> {
     try {
       console.log('🔍 Starting autocomplete search for:', query);
+      console.log('🔑 API Key check:', this.apiKey ? 'API key present' : 'API key missing');
       
       // Check if API key is valid
       if (!this.apiKey || this.apiKey === 'your_google_maps_api_key_here') {
-        console.error('❌ Invalid or missing Google Maps API key');
+        console.error('❌ Invalid or missing Google Maps API key:', this.apiKey);
         console.log('🔍 GoogleMapsService fallback autocomplete for:', query);
         console.log('🔄 Returning mock Singapore locations...');
         return this.getMockSuggestions(query);
@@ -62,9 +63,14 @@ export class GoogleMapsService {
         language: 'en',
         location: '1.3521,103.8198', // Singapore center
         radius: '50000', // 50km radius to cover all of Singapore
-        types: GOOGLE_MAPS_CONFIG.autocomplete.types.join('|'), // Use config types
         strictbounds: GOOGLE_MAPS_CONFIG.autocomplete.strictbounds.toString(),
       });
+
+      // Only add types parameter if we have specific types to search for
+      // Empty array means search ALL types (addresses, businesses, places, postal codes, etc.)
+      if (GOOGLE_MAPS_CONFIG.autocomplete.types.length > 0) {
+        params.append('types', GOOGLE_MAPS_CONFIG.autocomplete.types.join('|'));
+      }
 
       const url = `${this.baseUrl}/place/autocomplete/json?${params.toString()}`;
       console.log('📡 Making API request to:', url);
@@ -74,6 +80,9 @@ export class GoogleMapsService {
         headers: {
           'Content-Type': 'application/json',
         },
+      }).catch((fetchError) => {
+        console.error('❌ Fetch error:', fetchError);
+        throw new Error(`Network error: ${fetchError.message}`);
       });
 
       console.log('📥 API Response status:', response.status);
@@ -82,7 +91,9 @@ export class GoogleMapsService {
         console.error('❌ HTTP error! status:', response.status);
         const errorText = await response.text();
         console.error('❌ Error response:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}`);
+        console.log('🔍 GoogleMapsService fallback autocomplete for:', query);
+        console.log('🔄 Returning mock Singapore locations...');
+        return this.getMockSuggestions(query);
       }
 
       const data: AutocompleteResponse = await response.json();
@@ -101,32 +112,24 @@ export class GoogleMapsService {
         console.log('✅ Found', data.predictions.length, 'predictions');
         
         // Convert predictions to LocationSuggestion format
-        const suggestions: LocationSuggestion[] = await Promise.all(
-          data.predictions.slice(0, 5).map(async (prediction) => {
-            console.log('🔄 Processing prediction:', prediction.description);
-            
-            // Get place details for coordinates
-            const placeDetails = await this.getPlaceDetails(prediction.place_id);
-            if (placeDetails) {
-              return placeDetails;
-            }
+        const suggestions: LocationSuggestion[] = data.predictions.slice(0, 5).map((prediction) => {
+          console.log('🔄 Processing prediction:', prediction.description);
+          
+          // Create suggestion without place details call (to avoid API errors)
+          return {
+            id: prediction.place_id,
+            placeId: prediction.place_id,
+            title: prediction.structured_formatting.main_text,
+            subtitle: prediction.structured_formatting.secondary_text || prediction.description,
+            type: 'suggestion' as const,
+            address: prediction.description,
+            formattedAddress: prediction.description,
+            // We'll get coordinates when user selects this location
+          };
+        });
 
-            // Fallback if place details fail
-            return {
-              id: prediction.place_id,
-              placeId: prediction.place_id,
-              title: prediction.structured_formatting.main_text,
-              subtitle: prediction.structured_formatting.secondary_text || prediction.description,
-              type: 'suggestion' as const,
-              address: prediction.description,
-              formattedAddress: prediction.description,
-            };
-          })
-        );
-
-        const validSuggestions = suggestions.filter(Boolean);
-        console.log('✅ Returning', validSuggestions.length, 'valid suggestions');
-        return validSuggestions;
+        console.log('✅ Returning', suggestions.length, 'suggestions');
+        return suggestions;
       }
 
       console.log('⚠️ No predictions found in API response');

@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types/navigation';
-import { products, Product } from '../../data/mockProducts';
+import { Product } from '../../utils/pricing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppContext, getUserRole } from '../../context/AppContext';
 import BuyButton from '../UI/BuyButton';
@@ -70,7 +70,9 @@ export default function ProductDetailScreen() {
     return null; // or return an error screen
   }
   
-  const baseProduct = products.find(p => p.id === id);
+  // Use AppContext
+  const { dispatch, state } = useContext(AppContext);
+  const baseProduct = state.products.find(p => p.id === id);
   const insets = useSafeAreaInsets();
   
   // Enhanced product with additional UI properties
@@ -78,16 +80,13 @@ export default function ProductDetailScreen() {
     ...baseProduct,
     sku: baseProduct.sku || `SKU-${baseProduct.id}`,
     volumeOptions: [
-      { size: baseProduct.volume || '700ml', price: baseProduct.price },
-      { size: '1L', price: baseProduct.price * 1.4 },
-      { size: '1.75L', price: baseProduct.price * 2.2 }
+      { size: baseProduct.volume || '700ml', price: baseProduct.retailPrice || baseProduct.price || 0 },
+      { size: '1L', price: (baseProduct.retailPrice || baseProduct.price || 0) * 1.4 },
+      { size: '1.75L', price: (baseProduct.retailPrice || baseProduct.price || 0) * 2.2 }
     ],
-    tastingNotes: 'Rich and complex with notes of dried fruits, vanilla, and spice.',
-    sameDayEligible: baseProduct.price < 300
+    tastingNotes: baseProduct.description || 'A premium product with exceptional quality and craftsmanship.',
+    sameDayEligible: (baseProduct.retailPrice || baseProduct.price || 0) < 300
   } : undefined;
-  
-  // Use AppContext
-  const { dispatch, state } = useContext(AppContext);
   const { showCartNotification } = useContext(CartNotificationContext);
   
   const [quantity, setQuantity] = useState(1);
@@ -220,7 +219,7 @@ export default function ProductDetailScreen() {
       >
         {/* Product Image */}
         <View style={styles.imageContainer}>
-          <Image source={product.imageUrl} style={styles.image} resizeMode="cover" />
+          <Image source={typeof product.imageUrl === 'string' ? { uri: product.imageUrl } : product.imageUrl} style={styles.image} resizeMode="cover" />
         </View>
 
         {/* Continuous Content Section */}

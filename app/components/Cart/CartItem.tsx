@@ -305,10 +305,13 @@ const CartItem: React.FC<CartItemProps> = ({
             activeOpacity={0.8}
           >
             <Image 
-              source={item.imageUrl} 
+              source={typeof item.imageUrl === 'string' ? { uri: item.imageUrl } : item.imageUrl} 
               style={styles.image}
-              resizeMode="contain"
+              resizeMode="cover"
             />
+            <View style={styles.imageOverlay}>
+              <Ionicons name="wine" size={12} color={COLORS.card} />
+            </View>
           </TouchableOpacity>
           
           <View style={styles.content}>
@@ -339,40 +342,50 @@ const CartItem: React.FC<CartItemProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 2,
-    minHeight: 120,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    marginBottom: SPACING.lg,
+    ...SHADOWS.medium,
+    minHeight: 130,
   },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    padding: SPACING.lg,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
   },
   cardSwiped: {
     shadowOpacity: 0.15,
     shadowOffset: { width: -2, height: 2 },
   },
   imageContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 12,
+    width: 85,
+    height: 85,
+    borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
     flexShrink: 0,
     marginRight: 18,
     position: 'relative',
+    ...SHADOWS.light,
   },
   image: {
     width: '100%',
     height: '100%',
+    borderRadius: 16,
+  },
+  imageOverlay: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: COLORS.text,
+    justifyContent: 'center',
+    alignItems: 'center',
+    opacity: 0.8,
   },
   content: {
     flex: 1,
@@ -380,15 +393,17 @@ const styles = StyleSheet.create({
     minHeight: 80,
   },
   name: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
-    marginBottom: 4,
-    color: '#000',
+    marginBottom: 6,
+    color: COLORS.text,
+    lineHeight: 22,
   },
   unitPrice: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 10,
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginBottom: 12,
+    fontWeight: '500',
   },
   actionRow: {
     flexDirection: 'row',
@@ -398,12 +413,13 @@ const styles = StyleSheet.create({
   },
   priceContainer: {
     alignItems: 'flex-end',
-    marginLeft: 18,
+    marginLeft: SPACING.md,
   },
   price: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#000',
+    color: COLORS.text,
+    letterSpacing: -0.5,
   },
   rightActionsContainer: {
     flexDirection: 'row',

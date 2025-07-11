@@ -39,9 +39,8 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
       // For company users, show company's current credit
       return company.currentCredit || 0;
     } else {
-      // For individual users, could be wallet balance, stored value, etc.
-      // For now, using a default individual balance
-      return 2500; // This could come from a user wallet/balance field in the future
+      // For individual users, get wallet balance from database
+      return user.walletBalance || 0;
     }
   };
   

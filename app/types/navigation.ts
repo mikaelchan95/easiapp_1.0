@@ -1,5 +1,5 @@
 import { NavigatorScreenParams, RouteProp } from '@react-navigation/native';
-import { Product } from '../data/mockProducts';
+import { Product } from '../utils/pricing';
 import { LocationSuggestion } from './location';
 
 export type MainTabParamList = {
@@ -56,6 +56,8 @@ export type RootStackParamList = {
   EditCompanyInfo: undefined;
   EditTeamMember: { userId: string };
   BillingInvoices: undefined;
+  // Settings screen
+  Settings: undefined;
   // Auth screen
   Auth: undefined;
 };
@@ -105,6 +107,8 @@ export type AppStackParamList = {
   EditCompanyInfo: undefined;
   EditTeamMember: { userId: string };
   BillingInvoices: undefined;
+  // Settings screen
+  Settings: undefined;
   // Auth screen
   Auth: undefined;
 };

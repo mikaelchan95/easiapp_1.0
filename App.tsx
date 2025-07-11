@@ -41,6 +41,9 @@ import OrderSuccessScreen from './app/components/Checkout/OrderSuccessScreen';
 import OrderTrackingScreen from './app/components/Checkout/OrderTrackingScreen';
 import MomentumShowcase from './app/components/UI/MomentumShowcase';
 
+// Import Auth screens
+import { AuthContainer } from './app/components/Auth/AuthContainer';
+
 // Import Chat screen
 import ChatScreen from './app/components/Chat/ChatScreen';
 import OrderHistoryScreen from './app/components/Activities/OrderHistoryScreen';
@@ -56,6 +59,7 @@ import SavedLocationsScreen from './app/components/Location/SavedLocationsScreen
 // Import Company screens
 import CompanyProfileScreen from './app/components/Profile/CompanyProfileScreen';
 import TeamManagementScreen from './app/components/Profile/TeamManagementScreen';
+import SettingsScreen from './app/components/Profile/SettingsScreen';
 
 // Import Rewards screens
 import VoucherTrackingScreen from './app/components/Rewards/VoucherTrackingScreen';
@@ -425,6 +429,175 @@ function MainTabs() {
   );
 }
 
+// Auth-aware navigation wrapper
+function AuthNavigator() {
+  const { state } = React.useContext(AppContext);
+  
+  React.useEffect(() => {
+    console.log('🔄 AuthNavigator state change:', {
+      hasUser: !!state.user,
+      userName: state.user?.name,
+      loading: state.loading
+    });
+  }, [state.user, state.loading]);
+  
+  // Show loading during app initialization or auth loading
+  if (state.loading) {
+    console.log('🔄 AuthNavigator showing loading screen (app loading)');
+    return (
+      <View style={styles.loadingContainer}>
+        <View style={styles.logoContainer}>
+          <Ionicons name="wine" size={48} color={COLORS.text} />
+        </View>
+        <Text style={styles.loadingText}>EASI</Text>
+      </View>
+    );
+  }
+  
+  // Show auth screen if no user
+  if (!state.user) {
+    console.log('🔄 AuthNavigator showing auth screen');
+    return (
+      <AuthContainer 
+        onAuthSuccess={() => {
+          // This callback is no longer used - auth state listener handles everything
+        }}
+      />
+    );
+  }
+  
+  console.log('🔄 AuthNavigator showing main app for user:', state.user.name);
+  
+  return (
+    // @ts-ignore - Ignore ID requirement
+    <Stack.Navigator 
+      screenOptions={{
+        headerShown: false,
+        animation: 'slide_from_right',
+        animationDuration: 300,
+        gestureEnabled: true,
+        gestureDirection: 'horizontal',
+      }}
+    >
+      <Stack.Screen name="Main" component={MainTabs} />
+      <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+      <Stack.Screen name="SmartSearch" component={SmartSearchScreen} />
+      <Stack.Screen 
+        name="Checkout" 
+        component={CheckoutScreen}
+      />
+      <Stack.Screen 
+        name="OrderSuccess" 
+        component={OrderSuccessScreen}
+        options={{ 
+          animation: 'fade',
+          gestureEnabled: false
+        }}
+      />
+      <Stack.Screen 
+        name="OrderTracking" 
+        component={OrderTrackingScreen}
+      />
+      <Stack.Screen 
+        name="MomentumShowcase" 
+        component={MomentumShowcase}
+      />
+      <Stack.Screen 
+        name="OrderHistory" 
+        component={OrderHistoryScreen}
+      />
+      <Stack.Screen 
+        name="OrderDetails" 
+        component={OrderTrackingScreen}
+      />
+      <Stack.Screen 
+        name="Wishlist" 
+        component={WishlistScreen}
+      />
+      <Stack.Screen 
+        name="Reviews" 
+        component={ReviewsScreen}
+      />
+      <Stack.Screen 
+        name="Support" 
+        component={SupportScreen}
+      />
+      <Stack.Screen 
+        name="Rewards" 
+        component={RewardsScreen}
+      />
+      <Stack.Screen 
+        name="VoucherTracking" 
+        component={VoucherTrackingScreen}
+      />
+      <Stack.Screen 
+        name="RewardsFAQ" 
+        component={RewardsFAQScreen}
+      />
+      <Stack.Screen 
+        name="ReferralScreen" 
+        component={ReferralScreen}
+      />
+      <Stack.Screen 
+        name="ReferralHistory" 
+        component={ReferralHistoryScreen}
+      />
+      <Stack.Screen 
+        name="InviteFriends" 
+        component={InviteFriendsScreen}
+      />
+      <Stack.Screen 
+        name="AchievementsScreen" 
+        component={AchievementsScreen}
+      />
+      <Stack.Screen 
+        name="MilestonesScreen" 
+        component={MilestonesScreen}
+      />
+      <Stack.Screen 
+        name="RewardsAnalytics" 
+        component={RewardsAnalyticsScreen}
+      />
+      <Stack.Screen 
+        name="Referrals" 
+        component={ActivitiesScreen}
+      />
+      <Stack.Screen 
+        name="LocationPickerDemo" 
+        component={LocationPickerDemo}
+      />
+      <Stack.Screen 
+        name="LocationPickerScreen" 
+        component={LocationPickerScreen}
+      />
+      <Stack.Screen 
+        name="UberStyleLocationScreen" 
+        component={UberStyleLocationScreen}
+      />
+      <Stack.Screen 
+        name="DeliveryLocationScreen" 
+        component={UberStyleLocationScreen}
+      />
+      <Stack.Screen 
+        name="SavedLocations" 
+        component={SavedLocationsScreen}
+      />
+      <Stack.Screen 
+        name="CompanyProfile" 
+        component={CompanyProfileScreen}
+      />
+      <Stack.Screen 
+        name="TeamManagement" 
+        component={TeamManagementScreen}
+      />
+      <Stack.Screen 
+        name="Settings" 
+        component={SettingsScreen}
+      />
+    </Stack.Navigator>
+  );
+}
+
 // Global Achievement Notification Wrapper
 const GlobalAchievementWrapper: React.FC<{ 
   children: React.ReactNode;
@@ -555,131 +728,10 @@ export default function App() {
               <StatusBar style="dark" />
               <GlobalAchievementWrapper navigationRef={navigationRef}>
                 <NavigationContainer ref={navigationRef} theme={MyTheme}>
-                {/* @ts-ignore - Ignore ID requirement */}
-                <Stack.Navigator 
-                  screenOptions={{
-                    headerShown: false,
-                    animation: 'slide_from_right',
-                    animationDuration: 300,
-                    gestureEnabled: true,
-                    gestureDirection: 'horizontal',
-                  }}
-                >
-                  <Stack.Screen name="Main" component={MainTabs} />
-                  <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
-                  <Stack.Screen name="SmartSearch" component={SmartSearchScreen} />
-                  <Stack.Screen 
-                    name="Checkout" 
-                    component={CheckoutScreen}
-                  />
-                  <Stack.Screen 
-                    name="OrderSuccess" 
-                    component={OrderSuccessScreen}
-                    options={{ 
-                      animation: 'fade',
-                      gestureEnabled: false
-                    }}
-                  />
-                  <Stack.Screen 
-                    name="OrderTracking" 
-                    component={OrderTrackingScreen}
-                  />
-                  <Stack.Screen 
-                    name="MomentumShowcase" 
-                    component={MomentumShowcase}
-                  />
-                  <Stack.Screen 
-                    name="OrderHistory" 
-                    component={OrderHistoryScreen}
-                  />
-                  <Stack.Screen 
-                    name="OrderDetails" 
-                    component={OrderTrackingScreen}
-                  />
-                  <Stack.Screen 
-                    name="Wishlist" 
-                    component={WishlistScreen}
-                  />
-                  <Stack.Screen 
-                    name="Reviews" 
-                    component={ReviewsScreen}
-                  />
-                  <Stack.Screen 
-                    name="Support" 
-                    component={SupportScreen}
-                  />
-                  <Stack.Screen 
-                    name="Rewards" 
-                    component={RewardsScreen}
-                  />
-                  <Stack.Screen 
-                    name="VoucherTracking" 
-                    component={VoucherTrackingScreen}
-                  />
-                  <Stack.Screen 
-                    name="RewardsFAQ" 
-                    component={RewardsFAQScreen}
-                  />
-                  <Stack.Screen 
-                    name="ReferralScreen" 
-                    component={ReferralScreen}
-                  />
-                  <Stack.Screen 
-                    name="ReferralHistory" 
-                    component={ReferralHistoryScreen}
-                  />
-                  <Stack.Screen 
-                    name="InviteFriends" 
-                    component={InviteFriendsScreen}
-                  />
-                  <Stack.Screen 
-                    name="AchievementsScreen" 
-                    component={AchievementsScreen}
-                  />
-                  <Stack.Screen 
-                    name="MilestonesScreen" 
-                    component={MilestonesScreen}
-                  />
-                  <Stack.Screen 
-                    name="RewardsAnalytics" 
-                    component={RewardsAnalyticsScreen}
-                  />
-                  <Stack.Screen 
-                    name="Referrals" 
-                    component={ActivitiesScreen}
-                  />
-                  <Stack.Screen 
-                    name="LocationPickerDemo" 
-                    component={LocationPickerDemo}
-                  />
-                  <Stack.Screen 
-                    name="LocationPickerScreen" 
-                    component={LocationPickerScreen}
-                  />
-                  <Stack.Screen 
-                    name="UberStyleLocationScreen" 
-                    component={UberStyleLocationScreen}
-                  />
-                  <Stack.Screen 
-                    name="DeliveryLocationScreen" 
-                    component={UberStyleLocationScreen}
-                  />
-                  <Stack.Screen 
-                    name="SavedLocations" 
-                    component={SavedLocationsScreen}
-                  />
-                  <Stack.Screen 
-                    name="CompanyProfile" 
-                    component={CompanyProfileScreen}
-                  />
-                  <Stack.Screen 
-                    name="TeamManagement" 
-                    component={TeamManagementScreen}
-                  />
-                </Stack.Navigator>
-                
-                {/* Global cart notification with navigation ref */}
-                <CartNotificationConsumer navigateToCart={navigateToCart} />
+                  <AuthNavigator />
+                  
+                  {/* Global cart notification with navigation ref */}
+                  <CartNotificationConsumer navigateToCart={navigateToCart} />
                 </NavigationContainer>
               </GlobalAchievementWrapper>
               
@@ -723,6 +775,28 @@ const CartNotificationConsumer = React.memo(({ navigateToCart }: { navigateToCar
 CartNotificationConsumer.displayName = 'CartNotificationConsumer';
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  logoContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+    ...SHADOWS.medium,
+  },
+  loadingText: {
+    ...TYPOGRAPHY.h1,
+    color: COLORS.text,
+    fontWeight: '700',
+    fontSize: 32,
+  },
   tabBarWrapper: {
     position: 'absolute',
     bottom: 0,

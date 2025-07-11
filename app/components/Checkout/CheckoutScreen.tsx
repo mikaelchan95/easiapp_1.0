@@ -18,29 +18,20 @@ import DeliveryStep from './DeliveryStep';
 import PaymentStep from './PaymentStep';
 import ReviewStep from './ReviewStep';
 import ProcessingStep from './ProcessingStep';
-import { products } from '../../data/mockProducts';
+// Products will be retrieved from context/database instead of mock import
 import AnimatedButton from '../UI/AnimatedButton';
 import AnimatedFeedback from '../UI/AnimatedFeedback';
 import { COLORS, TYPOGRAPHY, SHADOWS, SPACING } from '../../utils/theme';
-import { AppContext } from '../../context/AppContext';
+import { AppContext, getUserRole } from '../../context/AppContext';
 import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 import { calculateOrderTotal, formatPrice } from '../../utils/pricing';
 import { HapticFeedback } from '../../utils/haptics';
 import notificationService from '../../services/notificationService';
+import { supabaseService } from '../../services/supabaseService';
 
 const { width } = Dimensions.get('window');
 
-// Mock cart items for checkout demo
-const mockCartItems = [
-  { 
-    product: products[0],
-    quantity: 1
-  },
-  { 
-    product: products[1],
-    quantity: 1
-  }
-];
+// Mock cart items will be replaced with actual cart items from context
 
 // Checkout steps
 type CheckoutStep = 'address' | 'delivery' | 'payment' | 'review' | 'processing';
@@ -99,6 +90,9 @@ export default function CheckoutScreen() {
   
   // Convert delivery location to address format
   const getInitialAddress = (): DeliveryAddress => {
+    const userName = state.user?.name || 'Guest User';
+    const userPhone = state.user?.phone || '+65 9123 4567';
+    
     if (deliveryLocation) {
       // Extract postal code from subtitle
       const postalCodeMatch = deliveryLocation.subtitle?.match(/\b\d{6}\b/);
@@ -108,24 +102,24 @@ export default function CheckoutScreen() {
       const city = deliveryLocation.subtitle?.includes('Singapore') ? 'Singapore' : '';
       
       return {
-        name: 'John Doe', // This will be filled by user in the form
+        name: userName,
         street: deliveryLocation.title,
         unit: '',
         city: city,
         postalCode: postalCode,
-        phone: '+65 9123 4567', // This will be filled by user in the form
+        phone: userPhone,
         isDefault: false
       };
     }
     
     // Default address if no delivery location is set
     return {
-      name: 'John Doe',
+      name: userName,
       street: '123 Marina Bay Sands',
       unit: '#12-34',
       city: 'Singapore',
       postalCode: '018956',
-      phone: '+65 9123 4567',
+      phone: userPhone,
       isDefault: true
     };
   };
@@ -136,15 +130,31 @@ export default function CheckoutScreen() {
     paymentMethod: null
   });
   
+  // Update address when user data changes
+  useEffect(() => {
+    setCheckoutState(prev => ({
+      ...prev,
+      address: {
+        ...prev.address,
+        name: state.user?.name || 'Guest User',
+        phone: state.user?.phone || '+65 9123 4567',
+      }
+    }));
+  }, [state.user?.name, state.user?.phone]);
+  
   // Use actual cart items from context - redirect if empty
   const contextCartItems = state.cart;
   
-  // Redirect to cart if empty
+  // Redirect if no user or empty cart
   React.useEffect(() => {
+    if (!state.user) {
+      navigation.navigate('Auth', { screen: 'SignIn' });
+      return;
+    }
     if (contextCartItems.length === 0) {
       navigation.navigate('Main', { screen: 'Cart' });
     }
-  }, [contextCartItems.length, navigation]);
+  }, [contextCartItems.length, state.user, navigation]);
   
   // Transform context cart items to checkout format
   const cartItems = contextCartItems.map(item => ({
@@ -155,13 +165,24 @@ export default function CheckoutScreen() {
     quantity: item.quantity
   }));
   
-  // Calculate totals using centralized pricing utility
-  const orderTotals = calculateOrderTotal(
-    cartItems, 
-    state.user?.role || 'retail',
-    checkoutState.deliverySlot?.id === 'same_day' ? 'same_day' : 
-    checkoutState.deliverySlot?.id === 'express' ? 'express' : 'standard'
+  // State for order totals to handle dynamic recalculation
+  const [orderTotals, setOrderTotals] = useState(() => 
+    calculateOrderTotal(
+      cartItems, 
+      getUserRole(state.user),
+      checkoutState.deliverySlot?.id === 'express' ? 'express' : 'standard'
+    )
   );
+  
+  // Recalculate totals when user data or delivery slot changes
+  useEffect(() => {
+    const newTotals = calculateOrderTotal(
+      cartItems, 
+      getUserRole(state.user),
+      checkoutState.deliverySlot?.id === 'express' ? 'express' : 'standard'
+    );
+    setOrderTotals(newTotals);
+  }, [state.user?.role, state.user?.accountType, checkoutState.deliverySlot, cartItems.length]);
   
   const subtotal = orderTotals.subtotal;
   const gst = orderTotals.gst;
@@ -249,36 +270,78 @@ export default function CheckoutScreen() {
     changeStep('review', 'forward');
   };
   
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     changeStep('processing', 'forward');
     setIsProcessing(true);
     
-    // Simulate order processing
-    setTimeout(() => {
-      setIsProcessing(false);
+    try {
+      // Ensure user is authenticated
+      if (!state.user) {
+        console.error('❌ No authenticated user found - redirecting to login');
+        setIsProcessing(false);
+        // Navigate to login screen
+        navigation.navigate('Auth', { screen: 'SignIn' });
+        return;
+      }
       
-      const orderId = `ORD-${Math.floor(Math.random() * 10000)}`;
+      const currentUser = state.user;
       
-      // Complete purchase - this will clear cart, update stats, and show achievement
-      dispatch({ 
-        type: 'COMPLETE_PURCHASE', 
-        payload: { 
-          orderTotal: total, 
-          orderId 
-        } 
-      });
+      console.log('🛒 Creating order for user:', currentUser.name);
       
-      // Schedule order notifications
-      notificationService.simulateOrderProgress(orderId);
-      
-      // Navigate to order confirmation with proper params
-      navigation.navigate('OrderSuccess', {
-        orderId,
+      // Prepare order data
+      const orderData = {
+        userId: currentUser.id,
+        companyId: currentUser.accountType === 'company' ? currentUser.companyId : undefined,
+        items: cartItems,
+        deliveryAddress: `${checkoutState.address.street}${checkoutState.address.unit ? `, ${checkoutState.address.unit}` : ''}, ${checkoutState.address.city}, ${checkoutState.address.postalCode}`,
+        deliverySlot: checkoutState.deliverySlot,
+        paymentMethod: checkoutState.paymentMethod,
+        subtotal: subtotal,
+        gst: gst,
+        deliveryFee: deliveryFee,
         total: total,
-        deliveryDate: checkoutState.deliverySlot?.date || 'Tomorrow',
-        deliveryTime: checkoutState.deliverySlot?.timeSlot || '2-4 PM'
-      });
-    }, 2500);
+      };
+      
+      // Create order in database
+      const result = await supabaseService.createOrder(orderData);
+      
+      if (result) {
+        const { orderId, orderNumber } = result;
+        
+        // Complete purchase - this will clear cart, update stats, and show achievement
+        dispatch({ 
+          type: 'COMPLETE_PURCHASE', 
+          payload: { 
+            orderTotal: total, 
+            orderId: orderNumber 
+          } 
+        });
+        
+        // Schedule order notifications
+        notificationService.simulateOrderProgress(orderNumber);
+        
+        // Simulate order progression for real-time demo (after 3 seconds)
+        setTimeout(() => {
+          supabaseService.simulateOrderProgression(orderId);
+        }, 3000);
+        
+        // Navigate to order confirmation with proper params
+        navigation.navigate('OrderSuccess', {
+          orderId: orderNumber,
+          total: total,
+          deliveryDate: checkoutState.deliverySlot?.date || 'Tomorrow',
+          deliveryTime: checkoutState.deliverySlot?.timeSlot || '2-4 PM'
+        });
+      } else {
+        console.error('Failed to create order');
+        // Handle error - maybe show an error message
+      }
+    } catch (error) {
+      console.error('Error creating order:', error);
+      // Handle error - maybe show an error message
+    } finally {
+      setIsProcessing(false);
+    }
   };
   
   const handleGoBack = () => {
@@ -466,7 +529,15 @@ export default function CheckoutScreen() {
           
           {currentStep === 'review' && (
             <ReviewStep
-              cart={cartItems}
+              cart={cartItems.map(item => ({
+                product: {
+                  id: item.product.id,
+                  name: item.product.name,
+                  price: getUserRole(state.user) === 'trade' ? item.product.tradePrice : item.product.retailPrice,
+                  imageUrl: item.product.imageUrl
+                },
+                quantity: item.quantity
+              }))}
               address={checkoutState.address}
               deliverySlot={checkoutState.deliverySlot}
               paymentMethod={checkoutState.paymentMethod}
@@ -511,7 +582,7 @@ export default function CheckoutScreen() {
       {currentStep === 'review' && (
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           <AnimatedButton
-            label={`Place Order • ${formatPrice(total, false)}`}
+            label={`Place Order • ${formatPrice(total)}`}
             onPress={handlePlaceOrder}
             type="primary"
             icon="checkmark-circle"

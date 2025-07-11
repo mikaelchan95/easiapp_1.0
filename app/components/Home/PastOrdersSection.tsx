@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { 
   View, 
   Text, 
@@ -10,6 +10,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, SPACING, FONT_SIZES, FONT_WEIGHTS, TYPOGRAPHY } from '../../utils/theme';
 import { HapticFeedback } from '../../utils/haptics';
+import { supabaseService, Order } from '../../services/supabaseService';
+import { AppContext } from '../../context/AppContext';
+import { supabase } from '../../../utils/supabase';
 
 interface PastOrder {
   id: string;
@@ -19,7 +22,7 @@ interface PastOrder {
   total: number;
   itemCount: number;
   firstItemName: string;
-  firstItemImage?: any;
+  firstItemImage?: string;
 }
 
 const RECENT_ORDERS: PastOrder[] = [
@@ -31,7 +34,7 @@ const RECENT_ORDERS: PastOrder[] = [
     total: 145.99,
     itemCount: 1,
     firstItemName: 'Macallan 18 Year Old',
-    firstItemImage: require('../../assets/MAC-2024-18YO-Sherry-Cask-BottleBox-Front-REFLECTION-5000x5000-PNG-300dpi-2xl.webp')
+    firstItemImage: 'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-18-sherry-oak.webp'
   },
   {
     id: '2',
@@ -41,7 +44,7 @@ const RECENT_ORDERS: PastOrder[] = [
     total: 289.50,
     itemCount: 2,
     firstItemName: 'Dom Pérignon 2013',
-    firstItemImage: require('../../assets/Dom Perignon 2013 750ml.webp')
+    firstItemImage: 'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/dom-perignon-2013.webp'
   },
   {
     id: '3',
@@ -51,7 +54,7 @@ const RECENT_ORDERS: PastOrder[] = [
     total: 199.99,
     itemCount: 1,
     firstItemName: 'Macallan 25 Year Old',
-    firstItemImage: require('../../assets/MAC-2024-25YO-Sherry-Oak-BottleBox-Front-REFLECTION-5000x5000-PNG-300dpi-2xl.webp')
+    firstItemImage: 'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-25-sherry-oak.webp'
   }
 ];
 
@@ -62,6 +65,58 @@ interface PastOrdersSectionProps {
 }
 
 export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPress }: PastOrdersSectionProps) {
+  const { state } = useContext(AppContext);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load recent orders on component mount and set up real-time subscription
+  useEffect(() => {
+    loadRecentOrders();
+    
+    // Set up real-time subscription for order updates
+    let orderSubscription: any = null;
+    
+    if (state.user) {
+      console.log('🔔 Setting up real-time order subscription for past orders section');
+      orderSubscription = supabaseService.subscribeToUserOrders(
+        state.user.id,
+        (updatedOrders) => {
+          console.log('📦 Real-time order update in past orders:', updatedOrders.length, 'orders');
+          // Get the 3 most recent orders
+          const recentOrders = updatedOrders.slice(0, 3);
+          setRecentOrders(recentOrders);
+        }
+      );
+    }
+    
+    // Cleanup subscription on unmount
+    return () => {
+      if (orderSubscription) {
+        console.log('🧽 Cleaning up past orders subscription');
+        supabase.removeChannel(orderSubscription);
+      }
+    };
+  }, [state.user?.id]);
+
+  const loadRecentOrders = async () => {
+    try {
+      setLoading(true);
+      // Use context user (now live user) or try to get from Supabase
+      const currentUser = state.user || await supabaseService.getCurrentUser();
+      if (currentUser) {
+        console.log('📋 Loading recent orders for user:', currentUser.name);
+        const orders = await supabaseService.getRecentOrders(currentUser.id, 3);
+        setRecentOrders(orders);
+      } else {
+        console.log('⚠️ No user found for loading recent orders');
+      }
+    } catch (error) {
+      console.error('Error loading recent orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleOrderPress = (order: PastOrder) => {
     HapticFeedback.selection();
     onOrderPress(order);
@@ -116,7 +171,7 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
       {/* Product Image */}
       <View style={styles.orderImageContainer}>
         {order.firstItemImage ? (
-          <Image source={order.firstItemImage} style={styles.orderImage} />
+          <Image source={{ uri: order.firstItemImage }} style={styles.orderImage} />
         ) : (
           <View style={styles.placeholderImage}>
             <Ionicons name="wine" size={24} color={COLORS.textSecondary} />
@@ -181,7 +236,7 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
           <Ionicons name="receipt" size={20} color={COLORS.primary} style={styles.icon} />
           <Text style={styles.title}>Past Orders</Text>
           <View style={styles.countBadge}>
-            <Text style={styles.countText}>{RECENT_ORDERS.length}</Text>
+            <Text style={styles.countText}>{recentOrders.length}</Text>
           </View>
         </View>
         
@@ -205,7 +260,26 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
         contentContainerStyle={styles.ordersContainer}
         style={styles.ordersScrollView}
       >
-        {RECENT_ORDERS.map(renderOrderCard)}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading orders...</Text>
+          </View>
+        ) : recentOrders.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No recent orders</Text>
+          </View>
+        ) : (
+          recentOrders.map(order => renderOrderCard({
+            id: order.id,
+            orderNumber: order.orderNumber,
+            date: order.date,
+            status: order.status,
+            total: order.total,
+            itemCount: order.items.length,
+            firstItemName: order.items[0]?.name || 'Unknown Item',
+            firstItemImage: order.items[0]?.image || ''
+          }))
+        )}
       </ScrollView>
     </View>
   );
@@ -365,5 +439,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
+  },
+  
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SPACING.lg,
+  },
+  
+  loadingText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+  },
+  
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SPACING.lg,
+  },
+  
+  emptyText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
   },
 });

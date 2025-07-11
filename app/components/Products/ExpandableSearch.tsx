@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { products, Product } from '../../data/mockProducts';
+import { Product } from '../../utils/pricing';
 import { COLORS, SPACING, SHADOWS } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
 

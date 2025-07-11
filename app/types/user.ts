@@ -24,6 +24,7 @@ export interface User {
   role?: CompanyUserRole;    // For company users
   permissions?: UserPermissions;
   profileImage?: string;
+  walletBalance?: number;    // For individual users
   createdAt: string;
   lastLogin?: string;
 }

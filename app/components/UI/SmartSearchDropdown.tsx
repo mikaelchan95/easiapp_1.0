@@ -15,9 +15,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { products, Product } from '../../data/mockProducts';
+import { Product } from '../../utils/pricing';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
 import { HapticFeedback } from '../../utils/haptics';
+import { useAppContext } from '../../context/AppContext';
 
 interface SmartSearchDropdownProps {
   placeholder?: string;
@@ -47,6 +48,7 @@ const SmartSearchDropdown: React.FC<SmartSearchDropdownProps> = ({
   enableCaching = true,
 }) => {
   const navigation = useNavigation();
+  const { state } = useAppContext();
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
@@ -75,6 +77,7 @@ const SmartSearchDropdown: React.FC<SmartSearchDropdownProps> = ({
 
     const terms = searchText.toLowerCase().trim().split(/\s+/);
     const scoredResults: SearchSuggestion[] = [];
+    const products = state.products || [];
 
     products.forEach(product => {
       let score = 0;
@@ -149,7 +152,7 @@ const SmartSearchDropdown: React.FC<SmartSearchDropdownProps> = ({
     return scoredResults
       .sort((a, b) => b.score - a.score)
       .slice(0, maxSuggestions);
-  }, [maxSuggestions]);
+  }, [maxSuggestions, state.products]);
 
   // Debounced search with loading state
   const handleSearch = useCallback((searchText: string) => {

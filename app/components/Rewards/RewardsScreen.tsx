@@ -219,55 +219,6 @@ export default function RewardsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Enhanced User Stats with Better UX */}
-        {!isCompany && (
-          <View style={styles.userStatsSection}>
-            <View style={styles.statsSectionHeader}>
-              <Text style={styles.statsTitle}>Activity Overview</Text>
-            </View>
-            <View style={styles.modernStatsContainer}>
-              <TouchableOpacity 
-                style={styles.modernStatItem}
-                onPress={() => handleFeaturePress('Order History')}
-                activeOpacity={0.8}
-              >
-                <View style={styles.statIconContainer}>
-                  <Ionicons name="receipt-outline" size={20} color={COLORS.text} />
-                </View>
-                <Text style={styles.modernStatNumber}>
-                  {formatStatNumber((user as IndividualUser).totalOrders || 0)}
-                </Text>
-                <Text style={styles.modernStatLabel}>Orders</Text>
-              </TouchableOpacity>
-              <View style={styles.modernStatDivider} />
-              <TouchableOpacity 
-                style={styles.modernStatItem}
-                onPress={() => handleFeaturePress('Order History')}
-                activeOpacity={0.8}
-              >
-                <View style={styles.statIconContainer}>
-                  <Ionicons name="trending-up-outline" size={20} color={COLORS.text} />
-                </View>
-                <Text style={styles.modernStatNumber}>
-                  {formatStatCurrency((user as IndividualUser).totalSpent || 0)}
-                </Text>
-                <Text style={styles.modernStatLabel}>Spent</Text>
-              </TouchableOpacity>
-              <View style={styles.modernStatDivider} />
-              <TouchableOpacity 
-                style={styles.modernStatItem}
-                onPress={() => handleFeaturePress('Reviews')}
-                activeOpacity={0.8}
-              >
-                <View style={styles.statIconContainer}>
-                  <Ionicons name="star-outline" size={20} color={COLORS.text} />
-                </View>
-                <Text style={styles.modernStatNumber}>4.9</Text>
-                <Text style={styles.modernStatLabel}>Rating</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
       </View>
     );
   };
@@ -1273,52 +1224,4 @@ const styles = StyleSheet.create({
   },
 
   // User Stats Section
-  userStatsSection: {
-    marginBottom: SPACING.md,
-  },
-  statsSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-    paddingHorizontal: 4,
-  },
-  statsTitle: {
-    ...TYPOGRAPHY.h4,
-    marginBottom: 0,
-  },
-  modernStatsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingTop: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  modernStatItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  modernStatNumber: {
-    ...TYPOGRAPHY.h2,
-    marginBottom: 4,
-  },
-  modernStatLabel: {
-    ...TYPOGRAPHY.small,
-    color: COLORS.textSecondary,
-  },
-  modernStatDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: COLORS.border,
-  },
-  statIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
 }); 

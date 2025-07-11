@@ -15,7 +15,62 @@ npm run web     # Web browser
 
 # Deploy to web
 npm run deploy  # Export and deploy to EAS
+
+# Supabase CLI commands (always use CLI for database operations)
+# Reference: https://supabase.com/docs/reference/cli/introduction
+
+# Authentication & Setup
+npx supabase login                    # Connect CLI to Supabase account
+npx supabase init                     # Initialize local project
+npx supabase link --project-ref vqxnkxaeriizizfmqvua # Link to remote project
+npx supabase start                    # Start local development environment
+
+# Database Operations
+npx supabase db push                  # Apply migrations to remote database
+npx supabase db pull                  # Pull schema changes from remote
+npx supabase db diff                  # Check schema differences
+npx supabase db reset                 # Reset local database
+npx supabase migration new <name>     # Create new migration file
+npx supabase gen types typescript --local # Generate TypeScript types
+
+# Storage Management
+npx supabase storage list-buckets     # List storage buckets
+npx supabase storage create-bucket <name> # Create storage bucket
+
+# Functions & Deployment
+npx supabase functions deploy         # Deploy Edge Functions
+npx supabase functions new <name>     # Create new Edge Function
+
+# Secret Management
+npx supabase secrets list             # List environment secrets
+npx supabase secrets set KEY=value    # Set environment secret
 ```
+
+## Supabase Configuration
+
+**Project Details:**
+- Project URL: `https://vqxnkxaeriizizfmqvua.supabase.co`
+- Project Ref: `vqxnkxaeriizizfmqvua`
+- Database Password: `5Cptmjut1!5gg5ocw`
+- Service Role API Key: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeG5reGFlcmlpeml6Zm1xdnVhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjAwMzM4MiwiZXhwIjoyMDY3NTc5MzgyfQ.y7sQCIqVduJ7Le3IkEGR-wSoOhppjRjqsC6GvEJAZEw`
+
+**Storage Buckets:**
+- `profile-images` - For user profile pictures (automatically created via migrations)
+
+**Orders System:**
+- `orders` - Main orders table with user/company relationships and approval workflow
+- `order_items` - Order line items with product details and pricing
+- `order_approvals` - Multi-level approval tracking for company orders
+- `order_status_history` - Complete audit trail of order status changes
+- Automated order number generation: `ORD-YYYY-XXXXXX` format
+- Row-level security policies for user/company access control
+- Sample data seeded for Mikael (3 individual orders)
+
+**Important:** 
+- Always use Supabase CLI for database operations
+- Never do manual SQL operations - use migrations and CLI commands
+- All storage buckets and policies are created via migrations
+- All seeding is handled via Node.js scripts (never manual)
 
 ## Code Quality Rules
 
@@ -27,6 +82,14 @@ npm run deploy  # Export and deploy to EAS
   - Text: `hsl(0, 0%, 0%)` (black) and `hsl(0, 0%, 30%)` (dark gray)
   - Interactive: `hsl(0, 0%, 0%)` (black) backgrounds with white text
   - Shadows: Light `0 1px 3px rgba(0,0,0,0.04)`, Medium `0 4px 6px rgba(0,0,0,0.08)`
+
+### Project Organization
+- Root folder cleaned of development scripts and temporary files
+- Documentation consolidated under `docs/` directory
+- Clean separation between source code and build artifacts
+
+## Supabase Management
+- Always use CLI to update Supabase, and remember all the credentials
 
 ## Architecture Overview
 
@@ -128,8 +191,8 @@ app/
 
 ### Testing & Quality
 - No formal test framework configured - check README for testing approach
-- Manual validation through comprehensive UI/UX testing (see `docs/testing/`)
-- Location and checkout flow testing documented in `docs/testing/`
+- Manual validation through comprehensive UI/UX testing
+- Location and checkout flow testing completed
 
 ### Special Considerations
 - Google Maps API key configured for both iOS and Android in `app.json`
@@ -150,3 +213,4 @@ app/
 - Monochrome design system with strict HSL color values
 - Dual pricing system (retail/trade) with GST calculation
 - Role-based permissions with company hierarchy support
+```
