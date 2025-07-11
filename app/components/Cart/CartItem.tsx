@@ -15,10 +15,11 @@ import { RectButton } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
-import { COLORS, SHADOWS, SPACING } from '../../utils/theme';
+import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
 import { HapticFeedback, HapticPatterns } from '../../utils/haptics';
 import QuantitySelector from '../UI/QuantitySelector';
+import { formatFinancialAmount } from '../../utils/formatting';
 
 interface CartItemProps {
   item: {
@@ -53,6 +54,14 @@ const CartItem: React.FC<CartItemProps> = ({
 }) => {
   const navigation = useNavigation<ProductNavigationProp>();
   
+  // Debug logging for image URL
+  console.log(`🖼️ CartItem ${item.name} imageUrl:`, {
+    imageUrl: item.imageUrl,
+    imageUrlType: typeof item.imageUrl,
+    isString: typeof item.imageUrl === 'string',
+    isValidString: typeof item.imageUrl === 'string' && item.imageUrl.length > 0
+  });
+  
   // Animation values
   const itemScale = useRef(new Animated.Value(1)).current;
   const itemOpacity = useRef(new Animated.Value(1)).current;
@@ -71,8 +80,8 @@ const CartItem: React.FC<CartItemProps> = ({
   };
   
   // Format price with proper currency
-  const formattedPrice = `$${(item.price * item.quantity).toFixed(2)}`;
-  const formattedUnitPrice = `$${item.price.toFixed(2)}`;
+  const formattedPrice = formatFinancialAmount(item.price * item.quantity);
+  const formattedUnitPrice = formatFinancialAmount(item.price);
   
   // Quick delete confirmation with haptic
   const confirmQuickDelete = () => {
@@ -352,6 +361,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: SPACING.lg,
+    minHeight: 120,
     backgroundColor: COLORS.card,
     borderRadius: 20,
   },
@@ -360,13 +370,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: -2, height: 2 },
   },
   imageContainer: {
-    width: 85,
-    height: 85,
+    width: 88,
+    height: 88,
     borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: COLORS.background,
     flexShrink: 0,
-    marginRight: 18,
+    marginRight: SPACING.lg,
     position: 'relative',
     ...SHADOWS.light,
   },
@@ -389,18 +399,18 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    minHeight: 80,
+    justifyContent: 'space-between',
+    minHeight: 88,
+    paddingVertical: 2,
   },
   name: {
-    fontSize: 17,
+    ...TYPOGRAPHY.h5,
     fontWeight: '600',
     marginBottom: 6,
-    color: COLORS.text,
     lineHeight: 22,
   },
   unitPrice: {
-    fontSize: 13,
+    ...TYPOGRAPHY.label,
     color: COLORS.textSecondary,
     marginBottom: 12,
     fontWeight: '500',
@@ -409,16 +419,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: SPACING.sm,
   },
   priceContainer: {
     alignItems: 'flex-end',
     marginLeft: SPACING.md,
+    minWidth: 80,
   },
   price: {
-    fontSize: 20,
+    ...TYPOGRAPHY.h3,
     fontWeight: '700',
-    color: COLORS.text,
     letterSpacing: -0.5,
   },
   rightActionsContainer: {
@@ -434,17 +444,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   saveAction: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.text,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   favoriteAction: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: COLORS.textSecondary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   deleteAction: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: COLORS.text,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   actionText: {
-    color: '#FFFFFF',
-    fontSize: 12,
+    ...TYPOGRAPHY.tiny,
+    color: COLORS.card,
     fontWeight: '600',
     marginTop: 4,
   },
