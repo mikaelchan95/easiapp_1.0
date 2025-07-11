@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -16,25 +16,11 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
+import { supabaseService, Order } from '../../services/supabaseService';
+import { AppContext } from '../../context/AppContext';
+import { supabase } from '../../../utils/supabase';
 
 const { width } = Dimensions.get('window');
-
-interface Order {
-  id: string;
-  orderNumber: string;
-  date: string;
-  status: 'delivered' | 'processing' | 'shipped' | 'cancelled';
-  total: number;
-  items: {
-    id: string;
-    name: string;
-    quantity: number;
-    price: number;
-    image: string;
-  }[];
-  deliveryAddress: string;
-  estimatedDelivery?: string;
-}
 
 const MOCK_ORDERS: Order[] = [
   {
@@ -86,6 +72,7 @@ const FILTER_OPTIONS = [
 export default function OrderHistoryScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { state } = useContext(AppContext);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -95,8 +82,70 @@ export default function OrderHistoryScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [filteredOrders, setFilteredOrders] = useState(MOCK_ORDERS);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
   
+  // Load orders on component mount and set up real-time subscription
+  useEffect(() => {
+    loadOrders();
+    
+    // Set up real-time subscription for order updates
+    let orderSubscription: any = null;
+    
+    if (state.user) {
+      console.log('🔔 Setting up real-time order subscription for history screen');
+      orderSubscription = supabaseService.subscribeToUserOrders(
+        state.user.id,
+        (updatedOrders) => {
+          console.log('📦 Real-time order update in history:', updatedOrders.length, 'orders');
+          setOrders(updatedOrders);
+          // Apply current filters to the updated orders
+          let filtered = updatedOrders;
+          if (selectedFilter !== 'all') {
+            filtered = filtered.filter(order => order.status === selectedFilter);
+          }
+          if (searchQuery) {
+            filtered = filtered.filter(order => 
+              order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              order.items.some(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            );
+          }
+          setFilteredOrders(filtered);
+        }
+      );
+    }
+    
+    // Cleanup subscription on unmount
+    return () => {
+      if (orderSubscription) {
+        console.log('🧽 Cleaning up order history subscription');
+        supabase.removeChannel(orderSubscription);
+      }
+    };
+  }, [state.user?.id]);
+
+  // Load orders from database
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+      // Use context user (now live user) or try to get from Supabase
+      const currentUser = state.user || await supabaseService.getCurrentUser();
+      if (currentUser) {
+        console.log('📋 Loading orders for user:', currentUser.name);
+        const userOrders = await supabaseService.getUserOrders(currentUser.id);
+        setOrders(userOrders);
+        setFilteredOrders(userOrders);
+      } else {
+        console.log('⚠️ No user found for loading orders');
+      }
+    } catch (error) {
+      console.error('Error loading orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     // Initial animation
     Animated.parallel([
@@ -118,7 +167,7 @@ export default function OrderHistoryScreen() {
   
   useEffect(() => {
     // Filter orders based on search and filter
-    let filtered = MOCK_ORDERS;
+    let filtered = orders;
     
     if (selectedFilter !== 'all') {
       filtered = filtered.filter(order => order.status === selectedFilter);
@@ -132,7 +181,7 @@ export default function OrderHistoryScreen() {
     }
     
     setFilteredOrders(filtered);
-  }, [searchQuery, selectedFilter]);
+  }, [searchQuery, selectedFilter, orders]);
   
   const getStatusColor = (status: string) => {
     switch (status) {

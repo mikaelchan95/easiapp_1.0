@@ -8,12 +8,11 @@ import {
   Dimensions,
   StyleProp,
   ViewStyle,
-  ImageSourcePropType,
   Animated,
   Easing
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Product } from '../../data/mockProducts';
+import { Product } from '../../utils/pricing';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
 import { AppContext } from '../../context/AppContext';
@@ -153,8 +152,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   // Calculate discount logic
   const hasDiscount = originalPrice !== undefined && originalPrice > price;
   
-  // The imageUrl is already an ImageSourcePropType when using require()
-  const imageSource: ImageSourcePropType = imageUrl;
+  // Handle both string URLs (Supabase) and require() statements
+  const imageSource = typeof imageUrl === 'string' ? { uri: imageUrl } : imageUrl;
 
   // Get variant-specific styles
   const getVariantStyles = () => {

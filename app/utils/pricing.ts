@@ -12,6 +12,12 @@ export interface Product {
   description: string;
   sku: string;
   image: any;
+  rating?: number;
+  stock?: number;
+  inStock?: boolean;
+  imageUrl?: any;
+  originalPrice?: number;
+  price?: number; // For backward compatibility
 }
 
 export interface CartItem {

@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import EnhancedProductCard from './EnhancedProductCard';
-import { Product } from '../../data/mockProducts';
+import { Product } from '../../utils/pricing';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
 

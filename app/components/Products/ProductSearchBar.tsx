@@ -16,7 +16,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
-import { products, Product } from '../../data/mockProducts';
+import { Product } from '../../utils/pricing';
+import { useAppContext } from '../../context/AppContext';
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -46,6 +47,7 @@ const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const navigation = useNavigation();
+  const { state } = useAppContext();
   const animatedWidth = useRef(new Animated.Value(expanded ? 1 : 0)).current;
   const underlineWidth = useRef(new Animated.Value(0)).current;
 
@@ -75,6 +77,7 @@ const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
     const terms = searchText.toLowerCase().trim().split(/\s+/);
     
     // Create a scoring system for matches
+    const products = state.products || [];
     const scoredResults = products.map(product => {
       let score = 0;
       
@@ -136,7 +139,7 @@ const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
     }, 200);
 
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, state.products]);
 
   const handleClear = () => {
     setQuery('');

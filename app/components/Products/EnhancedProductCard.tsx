@@ -8,18 +8,18 @@ import {
   Dimensions,
   StyleProp,
   ViewStyle,
-  ImageSourcePropType,
   Animated,
   Easing
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Product } from '../../data/mockProducts';
+import { Product } from '../../utils/pricing';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
 import { AppContext } from '../../context/AppContext';
 import { CartNotificationContext } from '../../context/CartNotificationContext';
 import ProgressBar from '../UI/ProgressBar';
 import { HapticFeedback, HapticPatterns } from '../../utils/haptics';
+import { getProductImageSource, getProductFallbackImage } from '../../utils/imageUtils';
 
 interface EnhancedProductCardProps {
   product: Product;
@@ -168,13 +168,13 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
             product: {
               id: product.id,
               name: product.name,
-              price: product.price,
+              price: product.price || 0,
               image: product.imageUrl,
               category: product.category || '',
               description: product.description || '',
               sku: product.id,
-              retailPrice: product.price,
-              tradePrice: product.price * 0.9,
+              retailPrice: product.price || product.retailPrice || 0,
+              tradePrice: product.tradePrice || (product.price || 0) * 0.9,
             }, 
             quantity: 1 
           } 
@@ -192,17 +192,17 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
     });
   };
 
-  const formattedPrice = `$${price.toFixed(2)}`;
+  const formattedPrice = `$${(price || 0).toFixed(2)}`;
   const formattedOriginalPrice = originalPrice ? `$${originalPrice.toFixed(2)}` : null;
   
   // Calculate discount logic
-  const hasDiscount = originalPrice !== undefined && originalPrice > price;
+  const hasDiscount = originalPrice !== undefined && originalPrice > (price || 0);
   
   // Progress calculations
   const nextStreakProgress = purchaseCount % 3 / 3;
   
-  // The imageUrl is already an ImageSourcePropType when using require()
-  const imageSource: ImageSourcePropType = imageUrl;
+  // Handle both string URLs (Supabase) and require() statements
+  const imageSource = getProductImageSource(imageUrl) || getProductFallbackImage();
 
   return (
     <Animated.View
