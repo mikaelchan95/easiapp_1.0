@@ -38,25 +38,41 @@ export interface DatabaseProduct {
   updated_at: string;
 }
 
+// Helper function to generate Supabase Storage URL
+const getSupabaseStorageUrl = (bucket: string, path: string): string => {
+  return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/${bucket}/${path}`;
+};
+
 // Transform database product to app Product format
-const transformDatabaseProductToProduct = (dbProduct: DatabaseProduct): Product => ({
-  id: dbProduct.id,
-  name: dbProduct.name,
-  description: dbProduct.description,
-  price: dbProduct.retail_price,
-  originalPrice: dbProduct.original_price,
-  category: dbProduct.category,
-  imageUrl: dbProduct.image_url,
-  retailPrice: dbProduct.retail_price,
-  tradePrice: dbProduct.trade_price,
-  rating: dbProduct.rating,
-  volume: dbProduct.volume,
-  alcoholContent: dbProduct.alcohol_content,
-  countryOfOrigin: dbProduct.country_of_origin,
-  isLimited: dbProduct.is_limited,
-  isFeatured: dbProduct.is_featured,
-  sku: dbProduct.sku,
-});
+const transformDatabaseProductToProduct = (dbProduct: DatabaseProduct): Product => {
+  const finalImageUrl = dbProduct.image_url ? (dbProduct.image_url.startsWith('http') ? dbProduct.image_url : getSupabaseStorageUrl('product-images', dbProduct.image_url)) : null;
+  
+  // Debug logging for image URL transformation
+  console.log(`🔄 Transform product ${dbProduct.name}:`, {
+    originalImageUrl: dbProduct.image_url,
+    finalImageUrl: finalImageUrl,
+    isAlreadyFullUrl: dbProduct.image_url?.startsWith('http')
+  });
+  
+  return {
+    id: dbProduct.id,
+    name: dbProduct.name,
+    description: dbProduct.description,
+    price: dbProduct.retail_price,
+    originalPrice: dbProduct.original_price,
+    category: dbProduct.category,
+    imageUrl: finalImageUrl,
+    retailPrice: dbProduct.retail_price,
+    tradePrice: dbProduct.trade_price,
+    rating: dbProduct.rating,
+    volume: dbProduct.volume,
+    alcoholContent: dbProduct.alcohol_content,
+    countryOfOrigin: dbProduct.country_of_origin,
+    isLimited: dbProduct.is_limited,
+    isFeatured: dbProduct.is_featured,
+    sku: dbProduct.sku,
+  };
+};
 
 // Helper function to check if a column exists
 const checkColumnExists = async (tableName: string, columnName: string): Promise<boolean> => {

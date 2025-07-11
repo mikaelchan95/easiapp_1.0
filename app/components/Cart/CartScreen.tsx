@@ -23,7 +23,7 @@ import { CartNotificationContext } from '../../context/CartNotificationContext';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { useRewards } from '../../context/RewardsContext';
 import { isCompanyUser, CompanyUser, IndividualUser } from '../../types/user';
-import { formatStatCurrency, formatStatNumber } from '../../utils/formatting';
+import { formatStatCurrency, formatStatNumber, formatFinancialAmount, formatPoints } from '../../utils/formatting';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Animations from '../../utils/animations';
 import AnimatedButton from '../UI/AnimatedButton';
@@ -80,6 +80,7 @@ export default function CartScreen() {
             navigation.goBack();
           }}
           activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
@@ -122,18 +123,36 @@ export default function CartScreen() {
   // Calculate totals using centralized pricing utility
   const cartTotals = calculateCartTotals(state.cart, state.user?.role || 'retail');
   
-  // Calculate summary bar height dynamically: padding + content + bottom safe area + tab bar
-  const SUMMARY_BAR_HEIGHT = SPACING.md * 2 + 80 + insets.bottom + 80; // padding + content height + safe area + tab bar
+  // Calculate summary bar height dynamically: padding + content + safe area + tab bar
+  const SUMMARY_BAR_HEIGHT = SPACING.md * 2 + 140 + insets.bottom + 83; // padding + content height + safe area + tab bar
   
+  // Helper function to generate Supabase Storage URL
+  const getSupabaseStorageUrl = (bucket: string, path: string): string => {
+    return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/${bucket}/${path}`;
+  };
+
   // Improved product image lookup with fallback
   const getProductImageById = (productId: string) => {
     // Check if it's a live product from state with image_url
     const liveProduct = state.products.find(p => p.id === productId);
+    
+    // If product has an image path, convert it to full Supabase Storage URL
     if (liveProduct?.image) {
-      return liveProduct.image;
+      // Check if it's already a full URL
+      if (liveProduct.image.startsWith('http')) {
+        return liveProduct.image;
+      }
+      // Convert storage path to full URL
+      return getSupabaseStorageUrl('product-images', liveProduct.image);
     }
+    
     if (liveProduct?.imageUrl) {
-      return liveProduct.imageUrl;
+      // Check if it's already a full URL
+      if (liveProduct.imageUrl.startsWith('http')) {
+        return liveProduct.imageUrl;
+      }
+      // Convert storage path to full URL
+      return getSupabaseStorageUrl('product-images', liveProduct.imageUrl);
     }
     
     // Fallback to a placeholder image with proper wine bottle image
@@ -146,6 +165,15 @@ export default function CartScreen() {
     
     // Get proper image from products array with fallback
     const productImage = getProductImageById(item.product.id);
+    
+    // Debug logging for image URLs
+    console.log(`🖼️ Cart item ${item.product.name}:`, {
+      productId: item.product.id,
+      fromProductsState: productImage,
+      fromCartItem: item.product.image,
+      imageUrl: item.product.imageUrl,
+      finalUrl: productImage || item.product.image
+    });
     
     return {
       id: item.product.id,
@@ -361,26 +389,15 @@ export default function CartScreen() {
     });
   };
 
-  // Enhanced checkout handler
+  // Enhanced checkout handler with better animation
   const handleCheckout = () => {
     HapticFeedback.success();
     
-    // Animation for checkout button press
-    Animated.sequence([
-      Animated.timing(headerScaleAnim, {
-        toValue: 1.02,
-        duration: 100,
-        useNativeDriver: true
-      }),
-      Animated.timing(headerScaleAnim, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true
-      })
-    ]).start();
-    
-    // Navigate to checkout
-    navigation.navigate('Checkout');
+    // Use existing animation utility for better feedback
+    Animations.bounceAnimation(headerScaleAnim, () => {
+      // Navigate to checkout after animation completes
+      navigation.navigate('Checkout');
+    });
   };
 
   // Pull to refresh handler
@@ -452,7 +469,7 @@ export default function CartScreen() {
         renderItem={renderItem}
         contentContainerStyle={{
           ...styles.listContent,
-          paddingBottom: SUMMARY_BAR_HEIGHT + insets.bottom + 24, // 24 for extra breathing room
+          paddingBottom: SUMMARY_BAR_HEIGHT + 24, // 24 for extra breathing room
         }}
         style={styles.listContainer}
         ListFooterComponent={
@@ -479,23 +496,23 @@ export default function CartScreen() {
           { 
             transform: [{ translateY: summarySlideAnim }],
             opacity: fadeAnim,
-            paddingBottom: SPACING.md + insets.bottom + 80 // Dynamic bottom padding based on safe area + tab bar height
+            paddingBottom: insets.bottom + SPACING.md + 83 // Safe area + standard padding + tab bar height
           }
         ]}
       >
         <View style={styles.summaryContent}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Subtotal</Text>
-            <Text style={styles.summaryValue}>{formatPrice(cartTotals.subtotal)}</Text>
+            <Text style={styles.summaryValue}>{formatFinancialAmount(cartTotals.subtotal)}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>GST (9%)</Text>
-            <Text style={styles.summaryValue}>{formatPrice(cartTotals.gst)}</Text>
+            <Text style={styles.summaryValue}>{formatFinancialAmount(cartTotals.gst)}</Text>
           </View>
           <View style={[styles.summaryRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Total</Text>
             <Text style={styles.totalValue}>
-              {formatPrice(cartTotals.total)}
+              {formatFinancialAmount(cartTotals.total)}
             </Text>
           </View>
         </View>
@@ -504,6 +521,7 @@ export default function CartScreen() {
           label="Checkout"
           icon="arrow-forward"
           iconPosition="right"
+          iconColor={COLORS.card}
           onPress={handleCheckout}
           style={styles.checkoutButton}
           textStyle={styles.checkoutText}
@@ -555,6 +573,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
     ...SHADOWS.light,
   },
   headerTitleContainer: {
@@ -642,8 +662,7 @@ const styles = StyleSheet.create({
   },
   checkoutButton: {
     backgroundColor: COLORS.text,
-    marginTop: SPACING.sm,
-    paddingVertical: SPACING.md,
+    marginTop: SPACING.xs,
     borderRadius: 16,
     ...SHADOWS.medium,
     elevation: 6,
