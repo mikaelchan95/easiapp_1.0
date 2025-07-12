@@ -33,6 +33,29 @@ npx supabase db reset                 # Reset local database
 npx supabase migration new <name>     # Create new migration file
 npx supabase gen types typescript --local # Generate TypeScript types
 
+# Migration Workflow (Step-by-Step Process)
+# 1. Initialize and link project (one-time setup)
+npx supabase init                     # Initialize local project
+npx supabase link --project-ref vqxnkxaeriizizfmqvua # Link to remote project
+
+# 2. Check migration status
+npx supabase db push --dry-run        # See what migrations would be applied
+npx supabase migration list           # List all migrations
+
+# 3. Apply migrations with password
+SUPABASE_DB_PASSWORD="5Cptmjut1!5gg5ocw" npx supabase db push
+
+# 4. Handle conflicts in migrations
+# - Use "IF NOT EXISTS" for CREATE statements
+# - Use "ON CONFLICT ... DO NOTHING" for INSERT statements
+# - Fix user IDs to match actual database (e.g., 2a163380-6934-4f19-b2ff-f6a15081cfe2)
+# - Check valid constraint values (e.g., order status must be in allowed list)
+
+# 5. For complex migrations with conflicts, use manual SQL approach:
+# - Create consolidated SQL file with conflict handling
+# - Copy to Supabase Dashboard → SQL Editor
+# - Run manually to bypass CLI conflicts
+
 # Storage Management
 npx supabase storage list-buckets     # List storage buckets
 npx supabase storage create-bucket <name> # Create storage bucket
@@ -56,6 +79,7 @@ npx supabase secrets set KEY=value    # Set environment secret
 
 **Storage Buckets:**
 - `profile-images` - For user profile pictures (automatically created via migrations)
+- `product-images` - For product catalog images (contains existing product images)
 
 **Orders System:**
 - `orders` - Main orders table with user/company relationships and approval workflow
@@ -67,10 +91,44 @@ npx supabase secrets set KEY=value    # Set environment secret
 - Sample data seeded for Mikael (3 individual orders)
 
 **Important:** 
-- Always use Supabase CLI for database operations
-- Never do manual SQL operations - use migrations and CLI commands
+- Always use Supabase CLI for database operations when possible
+- For complex migrations with conflicts, use manual SQL approach via Supabase Dashboard
 - All storage buckets and policies are created via migrations
 - All seeding is handled via Node.js scripts (never manual)
+
+**Migration Troubleshooting:**
+- Project is linked to remote: `vqxnkxaeriizizfmqvua`
+- Database password: `5Cptmjut1!5gg5ocw`
+- Real user ID: `2a163380-6934-4f19-b2ff-f6a15081cfe2` (not 33333333-3333-3333-3333-333333333333)
+- Valid order statuses: 'pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'cancelled', 'returned'
+- When CLI fails due to conflicts, create manual SQL file and run in Supabase Dashboard
+
+**Common Issues Fixed:**
+- **Company RLS Policy**: Fixed faulty Row Level Security policy on companies table
+- **Audit System**: Applied manual migration for points logging and audit trails
+- **Points Persistence**: Rewards points now save to database and persist across app reloads
+- **Payment System**: Fixed payment types for company orders to use credit terms (NET30, NET60, etc.)
+- **Tier System**: Fixed tier upgrades to use lifetime points earned, not current balance or spending
+
+**Payment System:**
+- Company orders use credit terms (COD, NET7, NET30, NET60) as payment method
+- Individual orders use traditional payment methods (credit_card, debit_card, paypal, etc.)
+- Company orders are automatically marked as 'paid' since they use company credit
+- Database constraints ensure proper payment method validation
+- Migration `20250711180000_fix_payment_methods.sql` implements payment validation
+
+**Credit System:**
+- Company credit logic: `current_credit = credit_limit - credit_used`
+- `current_credit` represents available credit (can be negative if over limit)
+- Order creation automatically deducts from available credit
+- Credit balance shown in app represents available credit, not used credit
+
+**Tier System:**
+- Tiers based on **lifetime points earned** (total accumulated), not current balance
+- Tier thresholds: Bronze (0-49,999), Silver (50,000-199,999), Gold (200,000+)
+- Redemptions do NOT affect tier status (tier persists based on total earned)
+- Progress widget shows points needed to next tier, not dollars
+- Company at Gold tier with 291,119 lifetime points earned
 
 ## Code Quality Rules
 

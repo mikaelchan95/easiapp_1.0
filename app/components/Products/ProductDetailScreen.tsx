@@ -28,6 +28,7 @@ import {
   formatPrice,
   UserRole
 } from '../../utils/pricing';
+import { formatFinancialAmount } from '../../utils/formatting';
 
 const { width } = Dimensions.get('window');
 
@@ -234,7 +235,7 @@ export default function ProductDetailScreen() {
           
           {/* Price */}
           <View style={styles.priceSection}>
-            <Text style={styles.mainPrice}>{formatPrice(currentPrice, false)}</Text>
+            <Text style={styles.mainPrice}>{formatFinancialAmount(currentPrice)}</Text>
             <Text style={styles.priceSubtext}>
               {userRole === 'trade' ? 'Trade Price (excl. GST)' : 'Retail Price (excl. GST)'}
             </Text>
@@ -271,7 +272,7 @@ export default function ProductDetailScreen() {
                 <Ionicons name="pricetag-outline" size={18} color={COLORS.textSecondary} />
                 <Text style={styles.detailLabel}>Unit Price</Text>
               </View>
-              <Text style={styles.detailValue}>{formatPrice(currentPrice, false)}</Text>
+              <Text style={styles.detailValue}>{formatFinancialAmount(currentPrice)}</Text>
             </View>
           </View>
 
@@ -304,7 +305,7 @@ export default function ProductDetailScreen() {
                         selectedVolume?.size === option.size && styles.selectedVolumeText
                       ]}
                     >
-                      ${option.price.toFixed(0)}
+                      {formatFinancialAmount(option.price)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -406,7 +407,7 @@ export default function ProductDetailScreen() {
           <View style={styles.priceSummaryRow}>
             <View style={styles.totalPriceSection}>
               <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalPrice}>{formatPrice(currentPrice * quantity, false)}</Text>
+              <Text style={styles.totalPrice}>{formatFinancialAmount(currentPrice * quantity)}</Text>
             </View>
             
             {/* Quantity Selector */}
@@ -415,6 +416,8 @@ export default function ProductDetailScreen() {
                 style={[styles.qtyButton, quantity <= 1 && styles.qtyButtonDisabled]}
                 onPress={() => setQuantity(Math.max(1, quantity - 1))}
                 disabled={quantity <= 1}
+                activeOpacity={0.7}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
                 <Ionicons name="remove" size={20} color={quantity <= 1 ? COLORS.inactive : COLORS.text} />
               </TouchableOpacity>
@@ -424,6 +427,8 @@ export default function ProductDetailScreen() {
               <TouchableOpacity
                 style={styles.qtyButton}
                 onPress={() => setQuantity(quantity + 1)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
                 <Ionicons name="add" size={20} color={COLORS.text} />
               </TouchableOpacity>
@@ -801,13 +806,15 @@ const styles = StyleSheet.create({
     ...SHADOWS.light,
   },
   qtyButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44, // Increased for better touch target
+    height: 44, // Increased for better touch target
+    borderRadius: 22,
     backgroundColor: COLORS.card,
     justifyContent: 'center',
     alignItems: 'center',
     ...SHADOWS.light,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   qtyButtonDisabled: {
     backgroundColor: COLORS.background,
@@ -833,8 +840,9 @@ const styles = StyleSheet.create({
     flex: 2,
     backgroundColor: COLORS.primary,
     borderRadius: 16,
-    paddingVertical: 16,
+    paddingVertical: 18, // Increased for better touch target
     paddingHorizontal: SPACING.md,
+    minHeight: 56, // Ensure minimum touch target
     ...SHADOWS.medium,
     elevation: 3,
   },
@@ -842,8 +850,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
     borderRadius: 16,
-    paddingVertical: 16,
+    paddingVertical: 18, // Increased for better touch target
     paddingHorizontal: SPACING.md,
+    minHeight: 56, // Ensure minimum touch target
     borderWidth: 2,
     borderColor: COLORS.primary,
     ...SHADOWS.light,

@@ -17,6 +17,7 @@ import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
 import { AppContext } from '../../context/AppContext';
 import { CartNotificationContext } from '../../context/CartNotificationContext';
+import { formatFinancialAmount } from '../../utils/formatting';
 
 export interface ProductCardProps {
   product: Product;
@@ -92,28 +93,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
     ]).start();
   }, []);
   
-  // Handle press animation
+  // Handle press animation using existing animation utilities
   const handlePressIn = () => {
-    Animated.timing(scaleAnim, {
-      toValue: 0.97,
-      duration: 150,
-      useNativeDriver: true,
-      easing: Animations.TIMING.easeOut
-    }).start();
+    Animations.pressFeedback(scaleAnim).start();
   };
   
   const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      friction: 5,
-      tension: 40,
-      useNativeDriver: true
-    }).start();
+    Animations.releaseFeedback(scaleAnim).start();
   };
   
-  // Handle add button animation
+  // Handle add button animation with improved feedback
   const handleAddButtonPress = () => {
-    // Animate the button
+    if (!inStock || isAdding) return;
+    
+    // Animate the button with heartbeat effect
     Animations.heartbeatAnimation(addButtonScaleAnim);
     
     // Show adding state
@@ -143,17 +136,97 @@ const ProductCard: React.FC<ProductCardProps> = ({
       setIsAdding(false);
       // Show global cart notification with quantity
       showCartNotification(name, 1);
-    }, 500);
+    }, 600);
   };
 
-  const formattedPrice = `$${price.toFixed(2)}`;
-  const formattedOriginalPrice = originalPrice ? `$${originalPrice.toFixed(2)}` : null;
+  const formattedPrice = formatFinancialAmount(price);
+  const formattedOriginalPrice = originalPrice ? formatFinancialAmount(originalPrice) : null;
   
   // Calculate discount logic
   const hasDiscount = originalPrice !== undefined && originalPrice > price;
   
-  // Handle both string URLs (Supabase) and require() statements
-  const imageSource = typeof imageUrl === 'string' ? { uri: imageUrl } : imageUrl;
+  // Helper function to generate Supabase Storage URL
+  const getSupabaseStorageUrl = (path: string): string => {
+    // If it's just a filename (no slashes), add the full path
+    if (!path.includes('/')) {
+      return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${path}`;
+    }
+    // If path already includes product-images/, use as-is
+    if (path.includes('product-images/')) {
+      return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/${path}`;
+    }
+    // If path starts with products/, add the bucket name
+    if (path.startsWith('products/')) {
+      return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/${path}`;
+    }
+    // Fallback - assume it's a full relative path
+    return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${path}`;
+  };
+
+  // Helper to get image source using smart mapping
+  const getImageSourceByName = (productName: string): { uri: string } => {
+    const normalizedName = productName.toLowerCase().trim();
+    
+    // Product name to image filename mapping
+    const imageMapping: Record<string, string> = {
+      // Macallan products
+      'macallan 12': 'macallan-12-double-cask.webp',
+      'macallan 18': 'macallan-18-sherry-oak.webp',
+      'macallan 25': 'macallan-25-sherry-oak.webp',
+      'macallan 30': 'macallan-30-sherry-oak.webp',
+      
+      // Dom Pérignon
+      'dom pérignon': 'dom-perignon-2013.webp',
+      'dom perignon': 'dom-perignon-2013.webp',
+      
+      // Château Margaux
+      'château margaux': 'chateau-margaux-2015-1.png',
+      'chateau margaux': 'chateau-margaux-2015-1.png',
+      'margaux': 'margaux-919557.webp',
+      
+      // Hennessy
+      'hennessy': 'HENNESSY-PARADIS-70CL-CARAFE-2000x2000px.webp',
+      'hennessy paradis': 'HENNESSY-PARADIS-70CL-CARAFE-2000x2000px.webp',
+      
+      // Johnnie Walker
+      'johnnie walker': 'Johnnie-Walker-Blue-Label-750ml-600x600.webp',
+      'johnnie walker blue': 'Johnnie-Walker-Blue-Label-750ml-600x600.webp',
+      'blue label': 'Johnnie-Walker-Blue-Label-750ml-600x600.webp',
+    };
+    
+    // Check for exact matches first
+    if (imageMapping[normalizedName]) {
+      const filename = imageMapping[normalizedName];
+      return { uri: `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${filename}` };
+    }
+    
+    // Check for partial matches
+    for (const [key, filename] of Object.entries(imageMapping)) {
+      if (normalizedName.includes(key) || key.includes(normalizedName)) {
+        return { uri: `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${filename}` };
+      }
+    }
+    
+    // Default fallback
+    return { uri: `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/placeholder-product.webp` };
+  };
+
+  // Handle both string URLs (Supabase) and require() statements with better fallback
+  const getImageSource = () => {
+    console.log('🖼️ ProductCard Image Debug:', { 
+      productId: id,
+      productName: name,
+      imageUrl: imageUrl,
+      imageType: typeof imageUrl 
+    });
+
+    // Use smart mapping based on product name
+    const mappedSource = getImageSourceByName(name);
+    console.log('🎯 Using mapped URL for', name, ':', mappedSource.uri);
+    return mappedSource;
+  };
+
+  const imageSource = getImageSource();
 
   // Get variant-specific styles
   const getVariantStyles = () => {
@@ -213,6 +286,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
             source={imageSource}
             style={styles.image}
             resizeMode="contain"
+            onError={(error) => {
+              console.error('❌ Image load error for product:', name, error.nativeEvent.error);
+            }}
+            onLoad={() => {
+              console.log('✅ Image loaded successfully for product:', name);
+            }}
           />
           
           {/* Stock indicator dot */}
@@ -275,11 +354,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   !inStock && styles.addButtonDisabled
                 ]}
                 onPress={handleAddButtonPress}
-                disabled={!inStock}
+                disabled={!inStock || isAdding}
+                activeOpacity={0.7}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
                 <Ionicons 
                   name={isAdding ? "checkmark" : !inStock ? "close" : "add"} 
-                  size={18} 
+                  size={20} 
                   color={!inStock ? COLORS.inactive : COLORS.accent} 
                 />
               </TouchableOpacity>
@@ -300,7 +381,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderRadius: 16,
     overflow: 'hidden',
-    borderWidth: 0,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     ...SHADOWS.medium,
     marginBottom: SPACING.md,
     // Dynamic height based on content instead of fixed
@@ -452,9 +534,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44, // Increased for better touch target
+    height: 44, // Increased for better touch target
+    borderRadius: 22,
     backgroundColor: COLORS.buttonBg,
     justifyContent: 'center',
     alignItems: 'center',

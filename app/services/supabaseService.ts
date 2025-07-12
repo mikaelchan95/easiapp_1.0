@@ -72,7 +72,7 @@ export interface Order {
   id: string;
   orderNumber: string;
   date: string;
-  status: 'delivered' | 'processing' | 'shipped' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'out_for_delivery' | 'delivered' | 'cancelled' | 'returned';
   total: number;
   items: OrderItem[];
   deliveryAddress: string;
@@ -96,6 +96,7 @@ interface DatabaseUser {
   total_spent?: number;
   profile_image?: string;
   wallet_balance?: number;
+  points?: number;
   created_at: string;
   last_login?: string;
   updated_at: string;
@@ -113,6 +114,9 @@ interface DatabaseCompany {
   credit_limit?: number;
   current_credit?: number;
   payment_terms?: 'COD' | 'NET7' | 'NET30' | 'NET60';
+  total_points?: number;
+  points_earned_this_month?: number;
+  points_redeemed_this_month?: number;
   require_approval?: boolean;
   approval_threshold?: number;
   multi_level_approval?: boolean;
@@ -155,6 +159,7 @@ const transformDatabaseUserToUser = (
     accountType: dbUser.account_type,
     profileImage: dbUser.profile_image,
     walletBalance: dbUser.wallet_balance || 0,
+    points: dbUser.points || 0,
     createdAt: dbUser.created_at,
     lastLogin: dbUser.last_login,
   };
@@ -222,6 +227,9 @@ const transformDatabaseCompanyToCompany = (dbCompany: DatabaseCompany): Company 
   creditLimit: dbCompany.credit_limit,
   currentCredit: dbCompany.current_credit,
   paymentTerms: dbCompany.payment_terms,
+  totalPoints: dbCompany.total_points,
+  pointsEarnedThisMonth: dbCompany.points_earned_this_month,
+  pointsRedeemedThisMonth: dbCompany.points_redeemed_this_month,
   approvalSettings: {
     requireApproval: dbCompany.require_approval || false,
     approvalThreshold: dbCompany.approval_threshold,
@@ -236,6 +244,10 @@ const transformDatabaseCompanyToCompany = (dbCompany: DatabaseCompany): Company 
 
 // Service functions
 export const supabaseService = {
+  // Expose the supabase client for direct access
+  supabase,
+  supabaseAdmin,
+  
   // User operations
   async getCurrentUser(): Promise<User | null> {
     try {
@@ -283,13 +295,7 @@ export const supabaseService = {
 
   async getUserById(userId: string): Promise<User | null> {
     try {
-      console.log('🔍 Supabase getUserById called with:', userId);
-      
-      // Skip auth checks for now - they can be unreliable after sign-out
-      console.log('🔍 Skipping auth checks, proceeding directly to user query...');
-      
       // Try with admin client first (bypasses RLS issues)
-      console.log('🔍 Querying user with admin client...');
       try {
         const { data: adminUser, error: adminError } = await supabaseAdmin
           .from('users')
@@ -298,7 +304,6 @@ export const supabaseService = {
           .maybeSingle();
         
         if (!adminError && adminUser) {
-          console.log('✅ Found user via admin client:', adminUser.name);
           
           // Get permissions for company users
           let permissions: DatabaseUserPermissions | undefined;
@@ -317,11 +322,10 @@ export const supabaseService = {
           return transformDatabaseUserToUser(adminUser, permissions);
         }
       } catch (adminError) {
-        console.log('⚠️ Admin query failed:', adminError);
+        // Admin query failed, will fallback to regular query
       }
       
       // Fallback to regular client with generous timeout
-      console.log('🔍 Fallback: Querying user with RLS...');
       const queryPromise = supabase
         .from('users')
         .select('*')
@@ -333,18 +337,14 @@ export const supabaseService = {
       });
       
       let { data: dbUser, error: userError } = await Promise.race([queryPromise, timeoutPromise]) as any;
-      console.log('📊 RLS query result:', { dbUser, userError });
 
       if (userError) {
         console.error('❌ Supabase user query error:', userError);
         throw userError;
       }
       if (!dbUser) {
-        console.log('⚠️ No user found in Supabase for ID:', userId);
-        
         // Try to find by email if this is Mikael's ID
         if (userId === '654ae924-3d69-40e2-83dc-1141aa3e4081' || userId === '33333333-3333-3333-3333-333333333333') {
-          console.log('🔍 Trying to find Mikael by email...');
           const { data: emailUser, error: emailError } = await supabase
             .from('users')
             .select('*')
@@ -352,7 +352,6 @@ export const supabaseService = {
             .maybeSingle();
           
           if (!emailError && emailUser) {
-            console.log('✅ Found Mikael by email with ID:', emailUser.id);
             dbUser = emailUser;
           } else {
             return null;
@@ -362,30 +361,21 @@ export const supabaseService = {
         }
       }
 
-      console.log('✅ Found user in Supabase:', dbUser);
-
       // Get permissions if it's a company user
       let permissions: DatabaseUserPermissions | undefined;
       if (dbUser.account_type === 'company') {
-        console.log('🔍 Fetching permissions for company user...');
         const { data: dbPermissions, error: permissionsError } = await supabase
           .from('user_permissions')
           .select('*')
           .eq('user_id', dbUser.id)
           .maybeSingle();
 
-        console.log('📊 Permissions query result:', { dbPermissions, permissionsError });
-
         if (!permissionsError && dbPermissions) {
           permissions = dbPermissions;
-          console.log('✅ Found permissions:', permissions);
-        } else {
-          console.log('⚠️ No permissions found or error:', permissionsError);
         }
       }
 
       const transformedUser = transformDatabaseUserToUser(dbUser, permissions);
-      console.log('🔄 Transformed user:', transformedUser);
       
       return transformedUser;
     } catch (error) {
@@ -396,7 +386,6 @@ export const supabaseService = {
 
   async getUserByEmail(email: string): Promise<User | null> {
     try {
-      console.log('🔍 Supabase getUserByEmail called with:', email);
       
       // Add timeout to prevent hanging
       const queryPromise = supabase
@@ -410,41 +399,30 @@ export const supabaseService = {
       });
       
       const { data: dbUser, error: userError } = await Promise.race([queryPromise, timeoutPromise]) as any;
-      console.log('📊 Supabase email query result:', { dbUser, userError });
 
       if (userError) {
         console.error('❌ Supabase user email query error:', userError);
         throw userError;
       }
       if (!dbUser) {
-        console.log('⚠️ No user found in Supabase for email:', email);
         return null;
       }
-
-      console.log('✅ Found user by email in Supabase:', dbUser);
 
       // Get permissions if it's a company user
       let permissions: DatabaseUserPermissions | undefined;
       if (dbUser.account_type === 'company') {
-        console.log('🔍 Fetching permissions for company user...');
         const { data: dbPermissions, error: permissionsError } = await supabase
           .from('user_permissions')
           .select('*')
           .eq('user_id', dbUser.id)
           .maybeSingle();
 
-        console.log('📊 Permissions query result:', { dbPermissions, permissionsError });
-
         if (!permissionsError && dbPermissions) {
           permissions = dbPermissions;
-          console.log('✅ Found permissions:', permissions);
-        } else {
-          console.log('⚠️ No permissions found or error:', permissionsError);
         }
       }
 
       const transformedUser = transformDatabaseUserToUser(dbUser, permissions);
-      console.log('🔄 Transformed user by email:', transformedUser);
       
       return transformedUser;
     } catch (error) {
@@ -461,6 +439,7 @@ export const supabaseService = {
         email: updates.email,
         phone: updates.phone,
         profile_image: updates.profileImage,
+        points: updates.points,
         updated_at: new Date().toISOString(),
       };
 
@@ -526,7 +505,6 @@ export const supabaseService = {
 
   async getCompanyTeamMembers(companyId: string): Promise<CompanyUser[]> {
     try {
-      console.log('🔍 Fetching team members for company:', companyId);
       
       const { data, error } = await supabase
         .from('users')
@@ -542,7 +520,6 @@ export const supabaseService = {
         return [];
       }
 
-      console.log('📊 Team members query result:', data?.length || 0, 'members');
       
       if (!data || data.length === 0) {
         return [];
@@ -553,9 +530,7 @@ export const supabaseService = {
       for (const dbUser of data) {
         try {
           const permissions = dbUser.user_permissions?.[0];
-          console.log('🔄 Transforming user:', dbUser.name, 'with permissions:', !!permissions);
           const transformedUser = transformDatabaseUserToUser(dbUser, permissions);
-          console.log('✅ User transformed successfully:', transformedUser.name);
           if (transformedUser && transformedUser.accountType === 'company') {
             teamMembers.push(transformedUser as CompanyUser);
           }
@@ -565,7 +540,6 @@ export const supabaseService = {
         }
       }
 
-      console.log('✅ Successfully transformed', teamMembers.length, 'team members');
       return teamMembers;
     } catch (error) {
       console.error('Error in getCompanyTeamMembers:', error);
@@ -612,7 +586,6 @@ export const supabaseService = {
 
   async updateCompanyStats(companyId: string, stats: { totalOrders?: number; totalSpent?: number; pointsEarned?: number }): Promise<boolean> {
     try {
-      console.log('🏢 Updating company stats:', { companyId, stats });
       
       // Get current company data
       const { data: currentCompany, error: fetchError } = await supabase
@@ -630,11 +603,6 @@ export const supabaseService = {
       const currentCredit = currentCompany.current_credit || 0;
       const newCredit = currentCredit - (stats.totalSpent || 0);
       
-      console.log('💰 Company credit update:', { 
-        currentCredit, 
-        purchaseAmount: stats.totalSpent, 
-        newCredit 
-      });
 
       // Update company with new credit balance
       const { error: updateError } = await supabase
@@ -655,7 +623,6 @@ export const supabaseService = {
       // 2. Add a company_purchases table to track all staff purchases
       // 3. Update company tier based on total spending
       
-      console.log('✅ Company stats updated successfully');
       return true;
     } catch (error) {
       console.error('Error updating company stats:', error);
@@ -1096,7 +1063,7 @@ export const supabaseService = {
         price: p.retail_price,
         originalPrice: p.original_price,
         category: p.category,
-        imageUrl: p.image_url,
+        imageUrl: p.image_url ? (p.image_url.startsWith('http') ? p.image_url : getSupabaseStorageUrl('product-images', p.image_url)) : null,
         retailPrice: p.retail_price,
         tradePrice: p.trade_price,
         rating: p.rating,
@@ -1708,6 +1675,77 @@ export const supabaseService = {
     console.log('❌ Mock data seeding disabled - use live authentication only');
     return false;
   },
+  
+  // Award points for completed orders
+  async awardPointsForOrder(userId: string, orderTotal: number, orderId: string): Promise<void> {
+    try {
+      // Calculate points earned (2 points per dollar)
+      const pointsEarned = Math.floor(orderTotal * 2);
+      
+      console.log(`🎯 Awarding ${pointsEarned} points for order ${orderId}`);
+      
+      // Get current user points
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('points, lifetime_points')
+        .eq('id', userId)
+        .single();
+      
+      if (userError || !user) {
+        console.error('❌ Error fetching user for points update:', userError);
+        return;
+      }
+      
+      const newPoints = (user.points || 0) + pointsEarned;
+      const newLifetimePoints = (user.lifetime_points || 0) + pointsEarned;
+      
+      // Update user points
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ 
+          points: newPoints,
+          lifetime_points: newLifetimePoints,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+      
+      if (updateError) {
+        console.error('❌ Error updating user points:', updateError);
+        return;
+      }
+      
+      // Log the points transaction to audit trail
+      const { error: auditError } = await supabase
+        .from('points_audit')
+        .insert([{
+          id: crypto.randomUUID(),
+          user_id: userId,
+          company_id: null, // Individual order
+          transaction_type: 'earned_purchase',
+          points_amount: pointsEarned,
+          points_balance_before: user.points || 0,
+          points_balance_after: newPoints,
+          reference_id: orderId,
+          reference_type: 'order',
+          description: `Points earned from order purchase ($${orderTotal})`,
+          metadata: { 
+            order_total: orderTotal,
+            points_earned: pointsEarned,
+            rate: '2 points per dollar'
+          },
+          created_at: new Date().toISOString()
+        }]);
+      
+      if (auditError) {
+        console.error('❌ Error logging points audit:', auditError);
+      }
+      
+      console.log(`✅ Points awarded: ${pointsEarned} points (${user.points || 0} → ${newPoints})`);
+      
+    } catch (error) {
+      console.error('❌ Error awarding points:', error);
+    }
+  },
 
   // Order operations
   async createOrder(orderData: {
@@ -1738,6 +1776,35 @@ export const supabaseService = {
       const currentYear = new Date().getFullYear();
       const orderNumber = `ORD-${currentYear}-${String(Math.floor(Math.random() * 999999)).padStart(6, '0')}`;
       
+      // Determine payment method and status based on order type
+      let paymentMethod = 'credit_card';
+      let paymentStatus = 'pending';
+      let isCompanyCredit = false;
+      
+      // Check if this is a company credit order (company paying with credit terms)
+      if (orderData.companyId && orderData.paymentMethod && 
+          ['COD', 'NET7', 'NET30', 'NET60'].includes(orderData.paymentMethod.type)) {
+        // Company credit order - use company's payment terms
+        const { data: company, error: companyError } = await supabase
+          .from('companies')
+          .select('payment_terms')
+          .eq('id', orderData.companyId)
+          .single();
+        
+        if (company && !companyError) {
+          paymentMethod = orderData.paymentMethod.type || company.payment_terms || 'NET30';
+          paymentStatus = 'paid'; // Company orders are automatically "paid" via credit
+          isCompanyCredit = true;
+          console.log(`🏢 Company credit order - using payment terms: ${paymentMethod}`);
+        }
+      } else {
+        // Individual order or company user paying with personal payment method
+        paymentMethod = orderData.paymentMethod?.type || 'credit_card';
+        paymentStatus = 'pending';
+        isCompanyCredit = false;
+        console.log(`👤 Individual/personal payment - using payment method: ${paymentMethod}`);
+      }
+      
       // Create order
       const orderInsert = {
         user_id: orderData.userId,
@@ -1749,8 +1816,8 @@ export const supabaseService = {
         delivery_fee: orderData.deliveryFee,
         total: orderData.total,
         currency: 'SGD',
-        payment_method: orderData.paymentMethod?.type || 'credit_card',
-        payment_status: 'pending',
+        payment_method: paymentMethod,
+        payment_status: paymentStatus,
         delivery_address: JSON.stringify(orderData.deliveryAddress), // Store as JSONB
         delivery_date: orderData.deliverySlot?.date ? convertToISODate(orderData.deliverySlot.date) : null,
         delivery_time_slot: orderData.deliverySlot?.timeSlot || null,
@@ -1817,20 +1884,47 @@ export const supabaseService = {
 
       console.log('✅ Order items created');
 
-      // Create initial status history
-      const { error: statusError } = await supabase
-        .from('order_status_history')
-        .insert([{
-          order_id: order.id,
-          status: 'pending',
-          notes: 'Order created',
-          created_at: new Date().toISOString(),
-        }]);
-
-      if (statusError) {
-        console.error('❌ Error creating status history:', statusError);
-        throw statusError;
+      // For company credit orders, deduct the order amount from available credit
+      if (isCompanyCredit && paymentStatus === 'paid') {
+        console.log('💳 Deducting order amount from available company credit...');
+        
+        const { data: company, error: creditError } = await supabase
+          .from('companies')
+          .select('current_credit, credit_limit')
+          .eq('id', orderData.companyId)
+          .single();
+        
+        if (company && !creditError) {
+          // current_credit represents available credit (credit_limit - credit_used)
+          const newAvailableCredit = company.current_credit - orderData.total;
+          
+          const { error: updateError } = await supabase
+            .from('companies')
+            .update({ current_credit: newAvailableCredit })
+            .eq('id', orderData.companyId);
+          
+          if (updateError) {
+            console.error('❌ Error updating company credit:', updateError);
+          } else {
+            console.log(`💰 Company available credit updated: $${company.current_credit} → $${newAvailableCredit}`);
+            
+            // Warn if credit limit is exceeded
+            if (newAvailableCredit < 0) {
+              console.log(`⚠️  Company is over credit limit by $${Math.abs(newAvailableCredit)}`);
+            }
+          }
+        }
       }
+
+      // Award points for individual orders when payment is confirmed
+      if (!isCompanyCredit && paymentStatus === 'pending') {
+        // For individual orders, award points immediately (simulating instant payment processing)
+        console.log('🎯 Awarding points for individual order...');
+        await this.awardPointsForOrder(orderData.userId, orderData.total, order.id);
+      }
+
+      // Status history is automatically created by database trigger
+      // No need to manually create it here
 
       console.log('✅ Order created successfully:', orderNumber);
       return { orderId: order.id, orderNumber };
@@ -1899,6 +1993,9 @@ export const supabaseService = {
     try {
       console.log('📋 Fetching order:', orderId);
       
+      // Check if orderId is a UUID or order number
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
+      
       const { data: order, error } = await supabase
         .from('orders')
         .select(`
@@ -1912,7 +2009,7 @@ export const supabaseService = {
             product_image_url
           )
         `)
-        .eq('id', orderId)
+        .eq(isUuid ? 'id' : 'order_number', orderId)
         .single();
 
       if (error) {
@@ -2045,7 +2142,7 @@ export const supabaseService = {
   },
 
   // Utility function to update order status (for testing real-time updates)
-  async updateOrderStatus(orderId: string, newStatus: 'processing' | 'shipped' | 'delivered' | 'cancelled'): Promise<boolean> {
+  async updateOrderStatus(orderId: string, newStatus: 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled'): Promise<boolean> {
     try {
       console.log('📦 Updating order status:', orderId, 'to', newStatus);
       
@@ -2062,15 +2159,8 @@ export const supabaseService = {
         return false;
       }
 
-      // Also add to status history
-      await supabase
-        .from('order_status_history')
-        .insert([{
-          order_id: orderId,
-          status: newStatus,
-          notes: `Status updated to ${newStatus}`,
-          created_at: new Date().toISOString(),
-        }]);
+      // Status history is automatically created by database trigger
+      // No need to manually create it here
 
       console.log('✅ Order status updated successfully');
       return true;
@@ -2084,8 +2174,79 @@ export const supabaseService = {
   async simulateOrderProgression(orderId: string): Promise<void> {
     console.log('🎭 Simulating order progression for:', orderId);
     
-    setTimeout(() => this.updateOrderStatus(orderId, 'shipped'), 5000);
-    setTimeout(() => this.updateOrderStatus(orderId, 'delivered'), 10000);
+    // Get the order details to check delivery slot
+    const { data: order, error } = await supabase
+      .from('orders')
+      .select('delivery_date, delivery_time_slot, created_at')
+      .eq('id', orderId)
+      .single();
+    
+    if (error || !order) {
+      console.error('❌ Could not get order details for progression:', error);
+      return;
+    }
+    
+    const now = new Date();
+    const deliveryDate = new Date(order.delivery_date);
+    const isToday = deliveryDate.toDateString() === now.toDateString();
+    
+    // Parse delivery time slot (e.g., "12pm - 3pm")
+    const timeSlot = order.delivery_time_slot;
+    const [startTime, endTime] = timeSlot.split(' - ');
+    
+    // Calculate realistic timing based on delivery slot
+    let preparingDelay, outForDeliveryDelay, deliveredDelay;
+    
+    if (isToday) {
+      // For same-day delivery, use realistic timing
+      preparingDelay = 2 * 60 * 1000; // 2 minutes to start preparing
+      outForDeliveryDelay = 15 * 60 * 1000; // 15 minutes before delivery window
+      
+      // Calculate when the delivery window starts
+      const deliveryWindowStart = this.parseTimeSlot(startTime);
+      const deliveryWindowEnd = this.parseTimeSlot(endTime);
+      
+      // Schedule delivery for middle of the window
+      const deliveryTime = new Date(deliveryDate);
+      deliveryTime.setHours(
+        Math.floor((deliveryWindowStart.getHours() + deliveryWindowEnd.getHours()) / 2)
+      );
+      
+      const timeToDelivery = deliveryTime.getTime() - now.getTime();
+      deliveredDelay = Math.max(timeToDelivery, 20 * 60 * 1000); // At least 20 minutes
+    } else {
+      // For next-day delivery, use demo timing
+      preparingDelay = 5 * 60 * 1000; // 5 minutes
+      outForDeliveryDelay = 30 * 60 * 1000; // 30 minutes 
+      deliveredDelay = 60 * 60 * 1000; // 1 hour (for demo)
+    }
+    
+    console.log(`📅 Order ${orderId} scheduled for delivery on ${deliveryDate.toDateString()} at ${timeSlot}`);
+    console.log(`⏰ Preparing in ${preparingDelay / 1000}s, Out for delivery in ${outForDeliveryDelay / 1000}s, Delivered in ${deliveredDelay / 1000}s`);
+    
+    // Schedule status updates
+    setTimeout(() => this.updateOrderStatus(orderId, 'preparing'), preparingDelay);
+    setTimeout(() => this.updateOrderStatus(orderId, 'out_for_delivery'), outForDeliveryDelay);
+    setTimeout(() => this.updateOrderStatus(orderId, 'delivered'), deliveredDelay);
+  },
+  
+  // Helper function to parse time slot
+  parseTimeSlot(timeStr: string): Date {
+    const today = new Date();
+    const time = timeStr.toLowerCase();
+    
+    let hours = 0;
+    if (time.includes('am')) {
+      hours = parseInt(time.replace('am', ''));
+      if (hours === 12) hours = 0; // 12am = 0 hours
+    } else if (time.includes('pm')) {
+      hours = parseInt(time.replace('pm', ''));
+      if (hours !== 12) hours += 12; // Convert to 24-hour format
+    }
+    
+    const result = new Date(today);
+    result.setHours(hours, 0, 0, 0);
+    return result;
   },
 
   // Test functions for real-time data updates
@@ -2512,4 +2673,39 @@ export const supabaseService = {
       return false;
     }
   },
-}; 
+
+  // Subscribe to order updates for real-time tracking
+  subscribeToOrderUpdates(orderId: string, callback: (order: any) => void) {
+    try {
+      const subscription = supabase
+        .channel('order-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'orders',
+            filter: `id=eq.${orderId}`,
+          },
+          (payload) => {
+            console.log('📦 Order update received:', payload);
+            // Fetch the complete order data and call callback
+            this.getOrderById(orderId).then((order) => {
+              if (order) {
+                callback(order);
+              }
+            });
+          }
+        )
+        .subscribe();
+
+      return subscription;
+    } catch (error) {
+      console.error('Error subscribing to order updates:', error);
+      return null;
+    }
+  },
+};
+
+export { supabaseService };
+export default supabaseService; 

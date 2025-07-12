@@ -15,13 +15,15 @@ interface TimeSlotsProps {
   selectedTimeSlot: string | null;
   onSelectTimeSlot: (timeSlotId: string, timeSlot: string, queueCount: number) => void;
   isSameDay: boolean;
+  isSpecialLocation?: boolean;
 }
 
 // Using memo to prevent unnecessary re-renders
 const TimeSlots: React.FC<TimeSlotsProps> = memo(({
   selectedTimeSlot,
   onSelectTimeSlot,
-  isSameDay
+  isSameDay,
+  isSpecialLocation = false
 }) => {
   // Get current hour only once per render
   const currentHour = useMemo(() => new Date().getHours(), []);
@@ -57,20 +59,28 @@ const TimeSlots: React.FC<TimeSlotsProps> = memo(({
           disabled={isDisabled}
         >
           <View style={styles.timeInfo}>
-            <Text 
-              style={[
-                styles.timeText,
-                isSelected && styles.selectedTimeText,
-                isDisabled && styles.disabledTimeText
-              ]}
-            >
-              {slot.time}
-            </Text>
+            <View style={styles.timeHeader}>
+              <Text 
+                style={[
+                  styles.timeText,
+                  isSelected && styles.selectedTimeText,
+                  isDisabled && styles.disabledTimeText
+                ]}
+              >
+                {slot.time}
+              </Text>
+              {isSpecialLocation && (
+                <View style={styles.priorityBadge}>
+                  <Ionicons name="flash" size={12} color="#FF9500" />
+                  <Text style={styles.priorityText}>Priority</Text>
+                </View>
+              )}
+            </View>
             <View style={styles.queueContainer}>
               <Ionicons 
                 name="people-outline" 
                 size={14} 
-                color={isSelected ? COLORS.accent : COLORS.inactive} 
+                color={isSelected ? COLORS.card : COLORS.textSecondary} 
               />
               <Text 
                 style={[
@@ -78,8 +88,20 @@ const TimeSlots: React.FC<TimeSlotsProps> = memo(({
                   isSelected && styles.selectedTimeText
                 ]}
               >
-                {slot.queueCount} {slot.queueCount === 1 ? 'order' : 'orders'} in queue
+                {slot.queueCount} {slot.queueCount === 1 ? 'order' : 'orders'} ahead
               </Text>
+              {!isDisabled && (
+                <View style={styles.estimatedTime}>
+                  <Text 
+                    style={[
+                      styles.estimatedTimeText,
+                      isSelected && styles.selectedTimeText
+                    ]}
+                  >
+                    ~{Math.ceil(slot.queueCount * 15)} min wait
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
           {isSelected && (
@@ -102,8 +124,11 @@ const TimeSlots: React.FC<TimeSlotsProps> = memo(({
       
       {isSameDay && (
         <View style={styles.sameDayInfo}>
-          <Ionicons name="flash" size={16} color="#FF9800" />
-          <Text style={styles.sameDayText}>Same-day delivery selected</Text>
+          <View style={styles.sameDayBadge}>
+            <Ionicons name="flash" size={16} color="#FF9500" />
+            <Text style={styles.sameDayText}>Same-day delivery</Text>
+          </View>
+          <Text style={styles.sameDaySubtext}>Premium delivery option - arrives today</Text>
         </View>
       )}
     </View>
@@ -149,6 +174,12 @@ const styles = StyleSheet.create({
   timeInfo: {
     flex: 1,
   },
+  timeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
   timeText: {
     ...TYPOGRAPHY.body,
     fontWeight: '700',
@@ -164,29 +195,66 @@ const styles = StyleSheet.create({
   queueContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 12,
   },
   queueText: {
     ...TYPOGRAPHY.small,
-    color: COLORS.inactive,
+    color: COLORS.textSecondary,
     marginLeft: 4,
+    fontWeight: '600',
   },
   checkmark: {
     marginLeft: 8,
   },
   sameDayInfo: {
+    backgroundColor: '#FFF8E1',
+    borderRadius: 16,
+    padding: SPACING.md,
+    marginTop: SPACING.md,
+    borderWidth: 1,
+    borderColor: '#FFE0B2',
+  },
+  sameDayBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF8E1',
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 8,
-    marginHorizontal: 16,
+    marginBottom: 4,
   },
   sameDayText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.body,
     color: COLORS.text,
-    marginLeft: 8,
+    marginLeft: 6,
+    fontWeight: '700',
+  },
+  sameDaySubtext: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  priorityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: '#FFE0B2',
+  },
+  priorityText: {
+    ...TYPOGRAPHY.caption,
+    color: '#FF9500',
+    marginLeft: 2,
+    fontWeight: '700',
+  },
+  estimatedTime: {
+    marginLeft: 'auto',
+  },
+  estimatedTimeText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
     fontWeight: '600',
+    fontStyle: 'italic',
   },
 });
 
