@@ -38,7 +38,7 @@ export default function HomeScreen() {
   const [currentBanner, setCurrentBanner] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
-  const { state, testSupabaseIntegration } = useAppContext();
+  const { state, dispatch, testSupabaseIntegration } = useAppContext();
   const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
   const scrollViewRef = useRef<ScrollView>(null);
   
@@ -50,15 +50,15 @@ export default function HomeScreen() {
   useEffect(() => {
     const testIntegration = async () => {
       try {
-        console.log('🏠 Home: Testing Supabase integration in background...');
+        console.log('Home: Testing Supabase integration in background...');
         const success = await testSupabaseIntegration();
         if (success) {
-          console.log('🏠 Home: Background Supabase test completed successfully');
+          console.log('Home: Background Supabase test completed successfully');
         } else {
-          console.log('🏠 Home: Background Supabase test failed, using mock data');
+          console.log('Home: Background Supabase test failed, using mock data');
         }
       } catch (error) {
-        console.log('🏠 Home: Background Supabase test error:', error);
+        console.log('Home: Background Supabase test error:', error);
       }
     };
 
@@ -84,7 +84,7 @@ export default function HomeScreen() {
     try {
       await testSupabaseIntegration();
     } catch (error) {
-      console.log('🏠 Home: Error during refresh:', error);
+      console.log('Home: Error during refresh:', error);
     }
     
     // Simulate additional data refresh
@@ -204,11 +204,40 @@ export default function HomeScreen() {
 
   // Handle reorder
   const handleReorder = useCallback((order: any) => {
-    // In a real app, this would add the order items back to cart
+    // Clear current cart and add order items back to cart
     console.log('Reordering:', order.orderNumber);
+    
+    // Clear current cart first
+    dispatch({ type: 'CLEAR_CART' });
+    
+    // Add each item from the order to the cart
+    order.items.forEach(item => {
+      dispatch({
+        type: 'ADD_TO_CART',
+        payload: {
+          product: {
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            image: item.image,
+            retailPrice: item.price,
+            tradePrice: item.price * 0.9, // Assume 10% trade discount
+            stockQuantity: 999, // Assume in stock
+            description: `Reordered: ${item.name}`,
+            category: 'Reorder',
+            isAvailable: true
+          },
+          quantity: item.quantity
+        }
+      });
+    });
+    
+    // Navigate to cart to show the recreated cart
+    navigation.navigate('Cart');
+    
     // Show success feedback
     HapticFeedback.success();
-  }, []);
+  }, [dispatch, navigation]);
   
   return (
     <View style={styles.container}>

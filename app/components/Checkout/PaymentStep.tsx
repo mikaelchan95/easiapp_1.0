@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { PaymentMethod } from './CheckoutScreen';
+import { PaymentMethod } from '../../types/checkout';
 import { TYPOGRAPHY, COLORS, SPACING, SHADOWS } from '../../utils/theme';
 
 // Payment method options
@@ -61,7 +61,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   const isCreditApproved = true;
   
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <View style={styles.container}>
       <Text style={styles.title}>Payment Method</Text>
       <Text style={styles.subtitle}>Choose how you want to pay</Text>
       
@@ -210,18 +210,15 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
           All transactions are secure and encrypted
         </Text>
       </View>
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  contentContainer: {
-    padding: 16,
-    paddingBottom: 100,
+    backgroundColor: COLORS.background,
+    padding: SPACING.lg,
   },
   title: {
     ...TYPOGRAPHY.h2,

@@ -20,6 +20,7 @@ import * as Animations from '../../utils/animations';
 import { HapticFeedback, HapticPatterns } from '../../utils/haptics';
 import QuantitySelector from '../UI/QuantitySelector';
 import { formatFinancialAmount } from '../../utils/formatting';
+import { getProductImageSource } from '../../utils/imageUtils';
 
 interface CartItemProps {
   item: {
@@ -314,7 +315,7 @@ const CartItem: React.FC<CartItemProps> = ({
             activeOpacity={0.8}
           >
             <Image 
-              source={typeof item.imageUrl === 'string' ? { uri: item.imageUrl } : item.imageUrl} 
+              source={getProductImageSource(item.imageUrl, item.name) || { uri: 'https://images.unsplash.com/photo-1568213816046-0ee1c42bd559?w=400&h=400&fit=crop' }} 
               style={styles.image}
               resizeMode="cover"
             />

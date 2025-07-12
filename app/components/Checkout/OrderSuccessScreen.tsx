@@ -1,205 +1,415 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Animated, SafeAreaView, StatusBar } from 'react-native';
+import React, { useEffect, useState, useRef, useContext } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  ScrollView, 
+  Animated, 
+  StatusBar,
+  Dimensions,
+  Image
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../types/navigation';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
+import { formatFinancialAmount } from '../../utils/formatting';
+import { AppContext } from '../../context/AppContext';
+import { HapticFeedback } from '../../utils/haptics';
+import * as Animations from '../../utils/animations';
 
 type OrderSuccessRouteProp = RouteProp<RootStackParamList, 'OrderSuccess'>;
+
+const { width } = Dimensions.get('window');
 
 const OrderSuccessScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<OrderSuccessRouteProp>();
   const insets = useSafeAreaInsets();
+  const { state } = useContext(AppContext);
   const { orderId, deliveryDate, deliveryTime, total } = route.params || {};
-  const [countdown, setCountdown] = useState(5);
-  const [autoRedirect, setAutoRedirect] = useState(true);
   
   // Animation values
-  const fadeAnim = useState(new Animated.Value(0))[0];
-  const slideAnim = useState(new Animated.Value(30))[0];
-  const scaleAnim = useState(new Animated.Value(0.8))[0];
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const checkmarkAnim = useRef(new Animated.Value(0)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const cardAnimations = useRef([
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0)
+  ]).current;
   
-  // Mount animation
+  // State
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  
+  // Order tracking steps
+  const orderSteps = [
+    { id: 'confirmed', title: 'Order Confirmed', icon: 'checkmark-circle', completed: true },
+    { id: 'processing', title: 'Processing', icon: 'hourglass', completed: false },
+    { id: 'shipped', title: 'Shipped', icon: 'airplane', completed: false },
+    { id: 'delivered', title: 'Delivered', icon: 'home', completed: false }
+  ];
+  
+  // Get recent order items from context (last few items that were in cart)
+  const recentOrderItems = state.cart.slice(0, 3); // Show max 3 items
+  
+  // Mount animations
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
+    HapticFeedback.success();
+    
+    // Staggered entrance animation
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.delay(200),
       Animated.spring(scaleAnim, {
         toValue: 1,
         useNativeDriver: true,
-        tension: 100,
-        friction: 6,
+        tension: 120,
+        friction: 8,
+      }),
+      Animated.delay(300),
+      Animated.timing(checkmarkAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.delay(400),
+      Animated.timing(progressAnim, {
+        toValue: 0.25, // First step completed
+        duration: 1000,
+        useNativeDriver: false,
       }),
     ]).start();
+    
+    // Stagger card animations
+    const cardAnimSequence = cardAnimations.map((anim, index) => 
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 400,
+        delay: index * 150,
+        useNativeDriver: true,
+      })
+    );
+    
+    setTimeout(() => {
+      Animated.parallel(cardAnimSequence).start();
+    }, 1000);
+    
+    // Show confetti effect
+    setTimeout(() => {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3000);
+    }, 500);
   }, []);
   
-  // Auto-redirect countdown with actual navigation (only if enabled)
-  useEffect(() => {
-    if (autoRedirect && countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (autoRedirect && countdown === 0) {
-      // Auto redirect to home when countdown reaches 0
-      handleContinueShopping();
-    }
-  }, [countdown, autoRedirect]);
-  
   const handleTrackOrder = () => {
-    // Navigate to order tracking screen
+    HapticFeedback.medium();
     navigation.navigate('OrderTracking', { orderId });
   };
   
   const handleContinueShopping = () => {
-    // Navigate back to home
+    HapticFeedback.light();
     navigation.navigate('Main', { screen: 'Home' });
   };
   
+  const handleViewOrderHistory = () => {
+    HapticFeedback.light();
+    navigation.navigate('OrderHistory');
+  };
   
-  // Estimated delivery time for email receipt
-  const estimatedDelivery = `${deliveryDate}, ${deliveryTime}`;
-  
-  return (
-    <View style={styles.container}>
-      <View style={[styles.statusBarBackground, { height: insets.top }]} />
-      <StatusBar barStyle="dark-content" />
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
-        <Animated.View
-          style={{
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
-          }}
-        >
-        {/* Success Animation */}
+  const renderOrderProgress = () => (
+    <Animated.View 
+      style={[
+        styles.progressCard,
+        {
+          opacity: cardAnimations[1],
+          transform: [{
+            translateY: cardAnimations[1].interpolate({
+              inputRange: [0, 1],
+              outputRange: [20, 0]
+            })
+          }]
+        }
+      ]}
+    >
+      <View style={styles.progressHeader}>
+        <Ionicons name="timeline" size={24} color={COLORS.text} />
+        <Text style={styles.progressTitle}>Order Progress</Text>
+      </View>
+      
+      <View style={styles.progressTrack}>
         <Animated.View 
           style={[
-            styles.successAnimation,
+            styles.progressBar,
             {
-              transform: [{ scale: scaleAnim }]
+              width: progressAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0%', '100%']
+              })
             }
           ]}
-        >
-          <View style={styles.checkCircle}>
-            <Ionicons name="checkmark" size={64} color={COLORS.card} />
-          </View>
-        </Animated.View>
-        
-        <Text style={styles.title}>Order Confirmed!</Text>
-        <Text style={styles.subtitle}>Your order has been placed successfully</Text>
+        />
+      </View>
       
-      <View style={styles.orderDetails}>
+      <View style={styles.progressSteps}>
+        {orderSteps.map((step, index) => (
+          <View key={step.id} style={styles.progressStep}>
+            <View style={[
+              styles.stepIndicator,
+              step.completed && styles.stepIndicatorCompleted
+            ]}>
+              {step.completed ? (
+                <Ionicons name="checkmark" size={16} color={COLORS.accent} />
+              ) : (
+                <Ionicons name={step.icon as any} size={16} color={COLORS.inactive} />
+              )}
+            </View>
+            <Text style={[
+              styles.stepText,
+              step.completed && styles.stepTextCompleted
+            ]}>
+              {step.title}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </Animated.View>
+  );
+  
+  const renderOrderSummary = () => (
+    <Animated.View 
+      style={[
+        styles.summaryCard,
+        {
+          opacity: cardAnimations[2],
+          transform: [{
+            translateY: cardAnimations[2].interpolate({
+              inputRange: [0, 1],
+              outputRange: [20, 0]
+            })
+          }]
+        }
+      ]}
+    >
+      <View style={styles.summaryHeader}>
+        <Ionicons name="receipt" size={24} color={COLORS.text} />
+        <Text style={styles.summaryTitle}>Order Summary</Text>
+      </View>
+      
+      <View style={styles.orderInfo}>
         <View style={styles.orderRow}>
           <Text style={styles.orderLabel}>Order Number</Text>
-          <Text style={styles.orderId}>{orderId}</Text>
+          <Text style={styles.orderValue}>{orderId}</Text>
+        </View>
+        
+        <View style={styles.orderRow}>
+          <Text style={styles.orderLabel}>Total Amount</Text>
+          <Text style={styles.orderTotal}>{formatFinancialAmount(total || 0)}</Text>
         </View>
         
         <View style={styles.orderRow}>
           <Text style={styles.orderLabel}>Estimated Delivery</Text>
-          <Text style={styles.orderValue}>{estimatedDelivery}</Text>
+          <Text style={styles.orderValue}>{deliveryDate}, {deliveryTime}</Text>
         </View>
       </View>
       
-      {/* Delivery Status Card */}
-      <View style={styles.statusCard}>
-        <View style={styles.statusHeader}>
-          <Ionicons name="time-outline" size={20} color="#1a1a1a" />
-          <Text style={styles.statusHeaderText}>Order Status</Text>
+      {recentOrderItems.length > 0 && (
+        <View style={styles.itemsSection}>
+          <Text style={styles.itemsTitle}>Items Ordered</Text>
+          {recentOrderItems.map((item, index) => (
+            <View key={item.product.id} style={styles.orderItem}>
+              <Image 
+                source={typeof item.product.image === 'string' ? { uri: item.product.image } : item.product.image}
+                style={styles.itemImage}
+              />
+              <View style={styles.itemInfo}>
+                <Text style={styles.itemName} numberOfLines={1}>{item.product.name}</Text>
+                <Text style={styles.itemQuantity}>Qty: {item.quantity}</Text>
+              </View>
+              <Text style={styles.itemPrice}>
+                {formatFinancialAmount(item.product.retailPrice * item.quantity)}
+              </Text>
+            </View>
+          ))}
         </View>
-        
-        <View style={styles.stepRow}>
-          <View style={[styles.stepCircle, styles.activeStep]}>
-            <Ionicons name="checkmark" size={14} color="#fff" />
-          </View>
-          <View style={styles.stepInfo}>
-            <Text style={styles.stepTitle}>Order Received</Text>
-            <Text style={styles.stepTime}>Just now</Text>
-          </View>
-        </View>
-        
-        <View style={styles.stepConnector} />
-        
-        <View style={styles.stepRow}>
-          <View style={styles.stepCircle}>
-            <View style={styles.stepDot} />
-          </View>
-          <View style={styles.stepInfo}>
-            <Text style={styles.stepTitle}>Being Prepared</Text>
-            <Text style={styles.stepTime}>Upcoming</Text>
-          </View>
-        </View>
-        
-        <View style={styles.stepConnector} />
-        
-        <View style={styles.stepRow}>
-          <View style={styles.stepCircle}>
-            <View style={styles.stepDot} />
-          </View>
-          <View style={styles.stepInfo}>
-            <Text style={styles.stepTitle}>Out for Delivery</Text>
-            <Text style={styles.stepTime}>Upcoming</Text>
-          </View>
-        </View>
-        
-        <View style={styles.stepConnector} />
-        
-        <View style={styles.stepRow}>
-          <View style={styles.stepCircle}>
-            <View style={styles.stepDot} />
-          </View>
-          <View style={styles.stepInfo}>
-            <Text style={styles.stepTitle}>Delivered</Text>
-            <Text style={styles.stepTime}>Upcoming</Text>
-          </View>
-        </View>
+      )}
+    </Animated.View>
+  );
+  
+  const renderNextSteps = () => (
+    <Animated.View 
+      style={[
+        styles.nextStepsCard,
+        {
+          opacity: cardAnimations[3],
+          transform: [{
+            translateY: cardAnimations[3].interpolate({
+              inputRange: [0, 1],
+              outputRange: [20, 0]
+            })
+          }]
+        }
+      ]}
+    >
+      <View style={styles.nextStepsHeader}>
+        <Ionicons name="bulb" size={24} color="#FF9800" />
+        <Text style={styles.nextStepsTitle}>What's Next?</Text>
       </View>
       
-      {/* Notification Info */}
-      <View style={styles.notificationCard}>
-        <View style={styles.notificationIconContainer}>
-          <Ionicons name="notifications" size={24} color="#1a1a1a" />
+      <View style={styles.nextStepsList}>
+        <View style={styles.nextStepItem}>
+          <Ionicons name="mail" size={20} color={COLORS.primary} />
+          <Text style={styles.nextStepText}>You'll receive an email confirmation shortly</Text>
         </View>
-        <View style={styles.notificationContent}>
-          <Text style={styles.notificationTitle}>Stay Updated</Text>
-          <Text style={styles.notificationText}>
-            We'll send you notifications about your order status. A confirmation email has been sent to your email address.
-          </Text>
+        
+        <View style={styles.nextStepItem}>
+          <Ionicons name="notifications" size={20} color={COLORS.primary} />
+          <Text style={styles.nextStepText}>We'll send push notifications for order updates</Text>
+        </View>
+        
+        <View style={styles.nextStepItem}>
+          <Ionicons name="location" size={20} color={COLORS.primary} />
+          <Text style={styles.nextStepText}>Track your order in real-time once it ships</Text>
         </View>
       </View>
+    </Animated.View>
+  );
+  
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.success} />
       
-        {/* Actions */}
-        <View style={styles.actions}>
-          <TouchableOpacity style={styles.trackButton} onPress={handleTrackOrder}>
-            <Ionicons name="navigate" size={20} color={COLORS.card} style={styles.buttonIcon} />
-            <Text style={styles.trackButtonText}>Track Order</Text>
+      {/* Enhanced Header with Gradient */}
+      <View style={[styles.header, { paddingTop: insets.top }]}>
+        <View style={styles.headerContent}>
+          <Animated.View 
+            style={[
+              styles.successIcon,
+              {
+                opacity: fadeAnim,
+                transform: [
+                  { scale: scaleAnim },
+                  { 
+                    rotate: checkmarkAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '360deg']
+                    })
+                  }
+                ]
+              }
+            ]}
+          >
+            <Ionicons name="checkmark-circle" size={80} color={COLORS.accent} />
+          </Animated.View>
+          
+          <Animated.View 
+            style={{
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }]
+            }}
+          >
+            <Text style={styles.headerTitle}>Order Confirmed!</Text>
+            <Text style={styles.headerSubtitle}>
+              Thank you for your order. We're preparing it for delivery.
+            </Text>
+          </Animated.View>
+        </View>
+        
+        {/* Confetti Effect */}
+        {showConfetti && (
+          <View style={styles.confettiContainer}>
+            {[...Array(20)].map((_, i) => (
+              <Animated.View 
+                key={i}
+                style={[
+                  styles.confettiPiece,
+                  {
+                    left: Math.random() * width,
+                    backgroundColor: [COLORS.success, COLORS.primary, '#FF9800', '#E91E63'][i % 4],
+                    transform: [{
+                      translateY: fadeAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-20, 400]
+                      })
+                    }]
+                  }
+                ]}
+              />
+            ))}
+          </View>
+        )}
+      </View>
+      
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {renderOrderProgress()}
+        {renderOrderSummary()}
+        {renderNextSteps()}
+        
+        {/* Action Buttons */}
+        <Animated.View 
+          style={[
+            styles.actionContainer,
+            {
+              opacity: cardAnimations[3],
+              transform: [{
+                translateY: cardAnimations[3].interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0]
+                })
+              }]
+            }
+          ]}
+        >
+          <TouchableOpacity 
+            style={styles.primaryButton} 
+            onPress={handleTrackOrder}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="navigate" size={24} color={COLORS.accent} />
+            <Text style={styles.primaryButtonText}>Track Your Order</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.shopButton} onPress={handleContinueShopping}>
-            <Ionicons name="storefront" size={20} color={COLORS.text} style={styles.buttonIcon} />
-            <Text style={styles.shopButtonText}>Continue Shopping</Text>
-            {autoRedirect && (
-              <TouchableOpacity 
-                onPress={() => setAutoRedirect(false)} 
-                style={styles.cancelAutoRedirect}
-                accessibilityLabel="Cancel auto-redirect"
-                accessibilityHint="Tap to stay on this page"
-              >
-                <Text style={styles.redirectText}>
-                  Auto-redirect in {countdown}s • <Text style={styles.cancelText}>Cancel</Text>
-                </Text>
-              </TouchableOpacity>
-            )}
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
+          <View style={styles.secondaryActions}>
+            <TouchableOpacity 
+              style={styles.secondaryButton} 
+              onPress={handleViewOrderHistory}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="time" size={20} color={COLORS.text} />
+              <Text style={styles.secondaryButtonText}>Order History</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.secondaryButton} 
+              onPress={handleContinueShopping}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="storefront" size={20} color={COLORS.text} />
+              <Text style={styles.secondaryButtonText}>Continue Shopping</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
       </ScrollView>
     </View>
   );
@@ -210,225 +420,294 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  statusBarBackground: {
-    backgroundColor: COLORS.background, // Match main background for success screen
+  header: {
+    backgroundColor: COLORS.success,
+    paddingBottom: SPACING.xl,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  headerContent: {
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.lg,
+  },
+  successIcon: {
+    marginBottom: SPACING.lg,
+    shadowColor: 'rgba(0,0,0,0.2)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  headerTitle: {
+    ...TYPOGRAPHY.h1,
+    fontSize: 32,
+    fontWeight: '800',
+    color: COLORS.accent,
+    textAlign: 'center',
+    marginBottom: SPACING.sm,
+  },
+  headerSubtitle: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.accent,
+    textAlign: 'center',
+    fontWeight: '500',
+    opacity: 0.9,
+  },
+  confettiContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    pointerEvents: 'none',
+  },
+  confettiPiece: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   scrollView: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
   contentContainer: {
     padding: SPACING.lg,
-    paddingTop: SPACING.xl * 2,
-    alignItems: 'center',
+    paddingBottom: SPACING.xl * 2,
   },
-  successAnimation: {
-    marginBottom: SPACING.xl,
-  },
-  checkCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#4CAF50',
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...SHADOWS.large,
-    elevation: 12,
-  },
-  title: {
-    ...TYPOGRAPHY.h1,
-    fontWeight: '800',
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-    textAlign: 'center',
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xl,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  orderDetails: {
+  
+  // Progress Card
+  progressCard: {
     backgroundColor: COLORS.card,
     borderRadius: 20,
     padding: SPACING.lg,
-    width: '100%',
-    marginBottom: SPACING.xl,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    marginBottom: SPACING.lg,
     ...SHADOWS.medium,
     elevation: 6,
   },
+  progressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  progressTitle: {
+    ...TYPOGRAPHY.h3,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginLeft: SPACING.md,
+  },
+  progressTrack: {
+    height: 4,
+    backgroundColor: COLORS.border,
+    borderRadius: 2,
+    marginBottom: SPACING.lg,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: COLORS.success,
+    borderRadius: 2,
+  },
+  progressSteps: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  progressStep: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  stepIndicator: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.background,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
+  stepIndicatorCompleted: {
+    backgroundColor: COLORS.success,
+    borderColor: COLORS.success,
+  },
+  stepText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  stepTextCompleted: {
+    color: COLORS.success,
+    fontWeight: '700',
+  },
+  
+  // Summary Card
+  summaryCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
+    ...SHADOWS.medium,
+    elevation: 6,
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  summaryTitle: {
+    ...TYPOGRAPHY.h3,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginLeft: SPACING.md,
+  },
+  orderInfo: {
+    marginBottom: SPACING.md,
+  },
   orderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: SPACING.md,
   },
   orderLabel: {
-    ...TYPOGRAPHY.small,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
-    marginBottom: 4,
-    fontWeight: '600',
-  },
-  orderId: {
-    ...TYPOGRAPHY.h3,
-    fontWeight: '800',
-    color: COLORS.text,
-    letterSpacing: 1,
+    fontWeight: '500',
   },
   orderValue: {
     ...TYPOGRAPHY.body,
     color: COLORS.text,
     fontWeight: '700',
   },
-  statusCard: {
-    backgroundColor: COLORS.card,
+  orderTotal: {
+    ...TYPOGRAPHY.h4,
+    color: COLORS.success,
+    fontWeight: '800',
+  },
+  itemsSection: {
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    paddingTop: SPACING.md,
+  },
+  itemsTitle: {
+    ...TYPOGRAPHY.h4,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: SPACING.md,
+  },
+  orderItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  itemImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    marginRight: SPACING.md,
+  },
+  itemInfo: {
+    flex: 1,
+  },
+  itemName: {
+    ...TYPOGRAPHY.body,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  itemQuantity: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+  },
+  itemPrice: {
+    ...TYPOGRAPHY.body,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  
+  // Next Steps Card
+  nextStepsCard: {
+    backgroundColor: '#FFF8E1',
     borderRadius: 20,
     padding: SPACING.lg,
-    width: '100%',
-    marginBottom: SPACING.xl,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    ...SHADOWS.medium,
-    elevation: 6,
-  },
-  statusHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: SPACING.lg,
-  },
-  statusHeaderText: {
-    ...TYPOGRAPHY.h4,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginLeft: SPACING.sm,
-  },
-  stepRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  stepCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.md,
-  },
-  activeStep: {
-    backgroundColor: '#4CAF50',
-  },
-  stepDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: COLORS.textSecondary,
-  },
-  stepInfo: {
-    flex: 1,
-    paddingBottom: SPACING.lg,
-  },
-  stepTitle: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 4,
-  },
-  stepTime: {
-    ...TYPOGRAPHY.small,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-  },
-  stepConnector: {
-    width: 3,
-    height: 24,
-    backgroundColor: COLORS.border,
-    marginLeft: 14.5,
-    borderRadius: 1.5,
-  },
-  notificationCard: {
-    flexDirection: 'row',
-    backgroundColor: '#E8F5E9',
-    borderRadius: 16,
-    padding: SPACING.lg,
-    width: '100%',
-    marginBottom: SPACING.xl,
     borderWidth: 1,
-    borderColor: '#C8E6C9',
+    borderColor: '#FFE082',
   },
-  notificationIconContainer: {
-    marginRight: SPACING.md,
+  nextStepsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
   },
-  notificationContent: {
-    flex: 1,
-  },
-  notificationTitle: {
-    ...TYPOGRAPHY.h4,
+  nextStepsTitle: {
+    ...TYPOGRAPHY.h3,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 4,
+    marginLeft: SPACING.md,
   },
-  notificationText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    lineHeight: 24,
-    fontWeight: '500',
-  },
-  actions: {
-    width: '100%',
+  nextStepsList: {
     gap: SPACING.md,
   },
-  trackButton: {
+  nextStepItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  nextStepText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    marginLeft: SPACING.md,
+    flex: 1,
+    fontWeight: '500',
+  },
+  
+  // Action Buttons
+  actionContainer: {
+    gap: SPACING.lg,
+  },
+  primaryButton: {
     backgroundColor: COLORS.text,
     borderRadius: 16,
     paddingVertical: SPACING.lg,
     paddingHorizontal: SPACING.xl,
-    alignItems: 'center',
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
     ...SHADOWS.medium,
     elevation: 6,
   },
-  trackButtonText: {
+  primaryButtonText: {
     ...TYPOGRAPHY.h4,
-    color: COLORS.card,
+    color: COLORS.accent,
     fontWeight: '700',
+    marginLeft: SPACING.sm,
   },
-  shopButton: {
+  secondaryActions: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+  },
+  secondaryButton: {
+    flex: 1,
     backgroundColor: COLORS.card,
     borderRadius: 16,
-    paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.xl,
-    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
     ...SHADOWS.light,
     elevation: 3,
   },
-  shopButtonText: {
-    ...TYPOGRAPHY.h4,
+  secondaryButtonText: {
+    ...TYPOGRAPHY.body,
     color: COLORS.text,
-    fontWeight: '700',
-  },
-  buttonIcon: {
-    marginRight: SPACING.sm,
-  },
-  redirectText: {
-    ...TYPOGRAPHY.small,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  cancelAutoRedirect: {
-    marginTop: 4,
-    paddingVertical: 4,
-  },
-  cancelText: {
-    color: '#007AFF',
     fontWeight: '600',
-    textDecorationLine: 'underline',
+    marginLeft: SPACING.xs,
   },
 });
 
-export default OrderSuccessScreen; 
+export default OrderSuccessScreen;

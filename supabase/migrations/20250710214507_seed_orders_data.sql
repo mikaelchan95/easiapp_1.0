@@ -14,7 +14,7 @@ INSERT INTO orders (
 (
   gen_random_uuid(),
   'ORD-2024-001',
-  '33333333-3333-3333-3333-333333333333', -- Mikael's ID
+  '2a163380-6934-4f19-b2ff-f6a15081cfe2', -- Mikael's ID
   NULL, -- Individual order
   'delivered',
   'standard',
@@ -28,14 +28,14 @@ INSERT INTO orders (
   '2024-01-15 15:30:00+08',
   false,
   'not_required',
-  '33333333-3333-3333-3333-333333333333',
+  '2a163380-6934-4f19-b2ff-f6a15081cfe2',
   '2024-01-15 10:00:00+08',
   '2024-01-15 15:30:00+08'
 ),
 (
   gen_random_uuid(),
   'ORD-2024-002',
-  '33333333-3333-3333-3333-333333333333',
+  '2a163380-6934-4f19-b2ff-f6a15081cfe2',
   NULL,
   'out_for_delivery',
   'standard',
@@ -49,16 +49,16 @@ INSERT INTO orders (
   NULL,
   false,
   'not_required',
-  '33333333-3333-3333-3333-333333333333',
+  '2a163380-6934-4f19-b2ff-f6a15081cfe2',
   '2024-01-18 14:30:00+08',
   '2024-01-20 09:00:00+08'
 ),
 (
   gen_random_uuid(),
   'ORD-2024-003',
-  '33333333-3333-3333-3333-333333333333',
+  '2a163380-6934-4f19-b2ff-f6a15081cfe2',
   NULL,
-  'processing',
+  'preparing',
   'standard',
   186.00, 13.02, 5.00, 199.02, 'SGD',
   'paypal', 'paid',
@@ -70,7 +70,7 @@ INSERT INTO orders (
   NULL,
   false,
   'not_required',
-  '33333333-3333-3333-3333-333333333333',
+  '2a163380-6934-4f19-b2ff-f6a15081cfe2',
   '2024-01-22 11:15:00+08',
   '2024-01-22 11:15:00+08'
-);
+) ON CONFLICT (order_number) DO NOTHING;

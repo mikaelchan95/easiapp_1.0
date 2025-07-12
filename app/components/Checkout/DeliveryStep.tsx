@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CalendarView from './CalendarView';
 import TimeSlots from './TimeSlots';
-import { DeliveryAddress, DeliverySlot } from './CheckoutScreen';
+import { DeliveryAddress, DeliverySlot } from '../../types/checkout';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
 import { GoogleMapsService } from '../../services/googleMapsService';
 import { GOOGLE_MAPS_CONFIG } from '../../config/googleMaps';
@@ -173,50 +173,34 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
       >
         <View style={styles.addressHeader}>
           <View style={styles.addressIconContainer}>
-            <Ionicons name="location" size={20} color={COLORS.card} />
+            <Ionicons name="location" size={18} color={COLORS.card} />
           </View>
           <View style={styles.addressHeaderContent}>
             <View style={styles.titleRow}>
               <Text style={styles.addressTitle}>Delivering to</Text>
-              {isSpecialLocation && zoneName && (
-                <View style={styles.specialLocationBadge}>
-                  <Ionicons name="star" size={12} color="#FF9500" />
-                  <Text style={styles.specialLocationText}>{zoneName}</Text>
-                </View>
-              )}
+              <TouchableOpacity style={styles.editButton}>
+                <Ionicons name="pencil" size={14} color={COLORS.text} />
+                <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.addressSubtitle}>Delivery address for this order</Text>
+            {isSpecialLocation && zoneName && (
+              <View style={styles.specialLocationBadge}>
+                <Ionicons name="star" size={10} color="#FF9500" />
+                <Text style={styles.specialLocationText}>{zoneName}</Text>
+              </View>
+            )}
           </View>
         </View>
         
         <View style={styles.addressContent}>
-          <View style={styles.addressRow}>
-            <View style={styles.addressDetailIcon}>
-              <Ionicons name="person" size={16} color={COLORS.text} />
-            </View>
-            <Text style={styles.addressName}>{address.name}</Text>
-          </View>
-          
-          <View style={styles.addressRow}>
-            <View style={styles.addressDetailIcon}>
-              <Ionicons name="home" size={16} color={COLORS.text} />
-            </View>
-            <View style={styles.addressTextContainer}>
-              <Text style={styles.addressText}>
-                {address.street}{address.unit ? `, ${address.unit}` : ''}
-              </Text>
-              <Text style={styles.addressText}>
-                {address.city}, {address.postalCode}
-              </Text>
-            </View>
-          </View>
-          
-          <View style={styles.addressRow}>
-            <View style={styles.addressDetailIcon}>
-              <Ionicons name="call" size={16} color={COLORS.text} />
-            </View>
-            <Text style={styles.addressPhone}>{address.phone}</Text>
-          </View>
+          <Text style={styles.addressName}>{address.name}</Text>
+          <Text style={styles.addressText}>
+            {address.street}{address.unit ? `, ${address.unit}` : ''}
+          </Text>
+          <Text style={styles.addressText}>
+            {address.city}, {address.postalCode}
+          </Text>
+          <Text style={styles.addressPhone}>{address.phone}</Text>
         </View>
       </Animated.View>
     );
@@ -297,16 +281,13 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
   }, [deliveryFeeData, isSameDay]);
   
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <View style={styles.container}>
       <Animated.View
         style={{
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }]
         }}
       >
-        <Text style={styles.title}>Select Delivery Time</Text>
-        <Text style={styles.subtitle}>Choose your preferred delivery date and time slot</Text>
-        
         {/* Address Summary */}
         {addressDisplay}
         
@@ -335,6 +316,23 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
               )}
             </View>
             <Text style={styles.sectionSubtitle}>Select your preferred delivery window</Text>
+            
+            {/* Delivery Time Estimate */}
+            <View style={styles.deliveryEstimate}>
+              <View style={styles.estimateHeader}>
+                <Ionicons name="time-outline" size={20} color={COLORS.text} />
+                <Text style={styles.estimateTitle}>Estimated Delivery Time</Text>
+              </View>
+              <Text style={styles.estimateText}>
+                {isSameDay ? 'Today' : 'Tomorrow'} • {selectedTimeText || 'Select time slot'}
+              </Text>
+              {selectedTimeSlot && (
+                <Text style={styles.estimateSubtext}>
+                  Your order will be delivered within the selected time window
+                </Text>
+              )}
+            </View>
+            
             <TimeSlots 
               selectedTimeSlot={selectedTimeSlot}
               onSelectTimeSlot={handleSelectTimeSlot}
@@ -347,7 +345,7 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
         {/* Delivery Fee Info */}
         {deliveryFeeDisplay}
       </Animated.View>
-    </ScrollView>
+    </View>
   );
 };
 
@@ -355,10 +353,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  contentContainer: {
     padding: SPACING.lg,
-    paddingBottom: SPACING.xl + 80,
   },
   title: {
     ...TYPOGRAPHY.h1,
@@ -408,32 +403,27 @@ const styles = StyleSheet.create({
   },
   addressCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 20,
-    padding: SPACING.lg,
+    borderRadius: 16,
+    padding: SPACING.md,
     marginBottom: SPACING.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
-    ...SHADOWS.medium,
-    elevation: 6,
+    ...SHADOWS.light,
+    elevation: 3,
   },
   addressHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: SPACING.lg,
-    paddingBottom: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    alignItems: 'center',
+    marginBottom: SPACING.md,
   },
   addressIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: COLORS.text,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.md,
-    ...SHADOWS.light,
-    elevation: 3,
   },
   addressHeaderContent: {
     flex: 1,
@@ -445,53 +435,30 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   addressTitle: {
-    ...TYPOGRAPHY.h3,
+    ...TYPOGRAPHY.body,
     fontWeight: '700',
     color: COLORS.text,
   },
-  addressSubtitle: {
-    ...TYPOGRAPHY.small,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-  },
   addressContent: {
-    gap: SPACING.md,
-  },
-  addressRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  addressDetailIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  addressTextContainer: {
-    flex: 1,
+    gap: 2,
   },
   addressName: {
     ...TYPOGRAPHY.body,
     fontWeight: '700',
     color: COLORS.text,
-    flex: 1,
+    marginBottom: 2,
   },
   addressText: {
-    ...TYPOGRAPHY.body,
+    ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
-    lineHeight: 22,
+    lineHeight: 18,
     fontWeight: '500',
   },
   addressPhone: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text,
-    fontWeight: '600',
-    flex: 1,
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+    marginTop: 2,
   },
   feeContainer: {
     backgroundColor: COLORS.card,
@@ -577,19 +544,37 @@ const styles = StyleSheet.create({
   },
   specialLocationBadge: {
     backgroundColor: '#FFF3E0',
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: SPACING.sm,
-    paddingVertical: 4,
+    paddingVertical: 2,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#FFE0B2',
+    marginTop: 2,
+    alignSelf: 'flex-start',
   },
   specialLocationText: {
-    ...TYPOGRAPHY.small,
+    ...TYPOGRAPHY.caption,
     fontWeight: '700',
     color: '#FF9500',
-    marginLeft: 4,
+    marginLeft: 2,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  editButtonText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.text,
+    fontWeight: '600',
+    marginLeft: 2,
   },
   specialNotice: {
     flexDirection: 'row',
@@ -610,6 +595,37 @@ const styles = StyleSheet.create({
   },
   calendarContainer: {
     marginHorizontal: 0, // Keep normal padding for consistency
+  },
+  deliveryEstimate: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: SPACING.md,
+    marginBottom: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.light,
+  },
+  estimateHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
+  estimateTitle: {
+    ...TYPOGRAPHY.body,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginLeft: SPACING.sm,
+  },
+  estimateText: {
+    ...TYPOGRAPHY.h4,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  estimateSubtext: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
   },
 });
 

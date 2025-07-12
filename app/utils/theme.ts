@@ -26,6 +26,15 @@ export const COLORS = {
   // Status colors
   success: '#4CAF50',
   error: '#F44336',
+  warning: '#FF9800',
+  info: '#2196F3',
+  
+  // Status background colors
+  successBackground: '#E8F5E8',
+  errorBackground: '#FFEBEE',
+  warningBackground: '#FFF3E0',
+  infoBackground: '#E3F2FD',
+  primaryBackground: '#F5F5F5',
   
   // Legacy support
   secondary: '#333333',
@@ -210,4 +219,35 @@ export const TYPOGRAPHY = {
     color: COLORS.textSecondary,
     lineHeight: FONT_SIZES.label * 1.3,
   },
+};
+
+/**
+ * Complete theme object for easy import and use
+ */
+export const theme = {
+  colors: {
+    canvas: COLORS.card,
+    frame: COLORS.background,
+    background: COLORS.background,
+    surface: COLORS.card,
+    primary: COLORS.primary,
+    text: COLORS.text,
+    textSecondary: COLORS.textSecondary,
+    border: COLORS.border,
+    success: COLORS.success,
+    error: COLORS.error,
+    warning: COLORS.warning,
+    info: COLORS.info,
+    successBackground: COLORS.successBackground,
+    errorBackground: COLORS.errorBackground,
+    warningBackground: COLORS.warningBackground,
+    infoBackground: COLORS.infoBackground,
+    primaryBackground: COLORS.primaryBackground,
+    interactive: COLORS.buttonBg,
+  },
+  shadows: SHADOWS,
+  spacing: SPACING,
+  typography: TYPOGRAPHY,
+  fontSizes: FONT_SIZES,
+  fontWeights: FONT_WEIGHTS,
 }; 

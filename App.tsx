@@ -22,6 +22,12 @@ import { AppProvider, AppContext } from './app/context/AppContext';
 import { TransitionProvider } from './app/context/TransitionContext';
 import CartNotificationProvider, { CartNotificationContext } from './app/context/CartNotificationContext';
 import { RewardsProvider } from './app/context/RewardsContext';
+import { CheckoutProvider } from './app/context/CheckoutContext';
+
+// Import error handling and network components
+import GlobalErrorBoundary from './app/components/ErrorHandling/GlobalErrorBoundary';
+import { NetworkStatusProvider } from './app/components/NetworkStatus/NetworkStatusProvider';
+import OfflineIndicator from './app/components/NetworkStatus/OfflineIndicator';
 
 // Import achievement notification
 import PurchaseAchievementNotification from './app/components/UI/PurchaseAchievementNotification';
@@ -37,6 +43,11 @@ import CartScreen from './app/components/Cart/CartScreen';
 import ProfileScreen from './app/components/Profile/ProfileScreen';
 import RewardsScreen from './app/components/Rewards/RewardsScreen';
 import CheckoutScreen from './app/components/Checkout/CheckoutScreen';
+import CheckoutAddressScreen from './app/components/Checkout/CheckoutAddressScreen';
+import CheckoutDeliveryScreen from './app/components/Checkout/CheckoutDeliveryScreen';
+import CheckoutPaymentScreen from './app/components/Checkout/CheckoutPaymentScreen';
+import CheckoutReviewScreen from './app/components/Checkout/CheckoutReviewScreen';
+import CheckoutProcessingScreen from './app/components/Checkout/CheckoutProcessingScreen';
 import OrderSuccessScreen from './app/components/Checkout/OrderSuccessScreen';
 import OrderTrackingScreen from './app/components/Checkout/OrderTrackingScreen';
 import MomentumShowcase from './app/components/UI/MomentumShowcase';
@@ -61,6 +72,23 @@ import CompanyProfileScreen from './app/components/Profile/CompanyProfileScreen'
 import TeamManagementScreen from './app/components/Profile/TeamManagementScreen';
 import SettingsScreen from './app/components/Profile/SettingsScreen';
 
+// Import Admin screens
+import AdminBillingDashboard from './app/components/Admin/AdminBillingDashboard';
+import NotificationCenter from './app/components/Notifications/NotificationCenter';
+import OrderApprovalList from './app/components/Approvals/OrderApprovalList';
+
+// Import additional Company screens
+import CompanyReports from './app/components/Company/CompanyReports';
+import EditCompanyInfo from './app/components/Company/EditCompanyInfo';
+import PendingApprovals from './app/components/Company/PendingApprovals';
+
+// Import Billing screens
+import BillingDashboardScreen from './app/components/Billing/BillingDashboardScreen';
+import CreditPaymentScreen from './app/components/Billing/CreditPaymentScreen';
+import BillingSettingsScreen from './app/components/Billing/BillingSettingsScreen';
+import InvoiceGeneration from './app/components/Billing/InvoiceGeneration';
+import InvoiceViewer from './app/components/Billing/InvoiceViewer';
+
 // Import Rewards screens
 import VoucherTrackingScreen from './app/components/Rewards/VoucherTrackingScreen';
 import RewardsFAQScreen from './app/components/Rewards/RewardsFAQScreen';
@@ -70,6 +98,7 @@ import InviteFriendsScreen from './app/components/Rewards/InviteFriendsScreen';
 import AchievementsScreen from './app/components/Rewards/AchievementsScreen';
 import MilestonesScreen from './app/components/Rewards/MilestonesScreen';
 import RewardsAnalyticsScreen from './app/components/Rewards/RewardsAnalyticsScreen';
+import TierBenefitsScreen from './app/components/Rewards/TierBenefitsScreen';
 
 // Import types and theme
 import { RootStackParamList, MainTabParamList } from './app/types/navigation';
@@ -559,6 +588,10 @@ function AuthNavigator() {
         component={RewardsAnalyticsScreen}
       />
       <Stack.Screen 
+        name="TierBenefitsScreen" 
+        component={TierBenefitsScreen}
+      />
+      <Stack.Screen 
         name="Referrals" 
         component={ActivitiesScreen}
       />
@@ -593,6 +626,178 @@ function AuthNavigator() {
       <Stack.Screen 
         name="Settings" 
         component={SettingsScreen}
+      />
+      <Stack.Screen 
+        name="CheckoutAddress" 
+        component={CheckoutAddressScreen}
+        options={{
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: COLORS.card,
+          },
+          headerTintColor: COLORS.text,
+          headerTitleStyle: {
+            ...TYPOGRAPHY.h3,
+            fontWeight: '700',
+          },
+        }}
+      />
+      <Stack.Screen 
+        name="CheckoutDelivery" 
+        component={CheckoutDeliveryScreen}
+        options={{
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: COLORS.card,
+          },
+          headerTintColor: COLORS.text,
+          headerTitleStyle: {
+            ...TYPOGRAPHY.h3,
+            fontWeight: '700',
+          },
+        }}
+      />
+      <Stack.Screen 
+        name="CheckoutPayment" 
+        component={CheckoutPaymentScreen}
+        options={{
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: COLORS.card,
+          },
+          headerTintColor: COLORS.text,
+          headerTitleStyle: {
+            ...TYPOGRAPHY.h3,
+            fontWeight: '700',
+          },
+        }}
+      />
+      <Stack.Screen 
+        name="CheckoutReview" 
+        component={CheckoutReviewScreen}
+        options={{
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: COLORS.card,
+          },
+          headerTintColor: COLORS.text,
+          headerTitleStyle: {
+            ...TYPOGRAPHY.h3,
+            fontWeight: '700',
+          },
+        }}
+      />
+      <Stack.Screen 
+        name="CheckoutProcessing" 
+        component={CheckoutProcessingScreen}
+        options={{
+          headerShown: false,
+          gestureEnabled: false, // Prevent swipe back during processing
+        }}
+      />
+      <Stack.Screen 
+        name="AdminBillingDashboard" 
+        component={AdminBillingDashboard}
+        options={{
+          headerShown: true,
+          title: 'Billing Dashboard',
+          headerStyle: {
+            backgroundColor: COLORS.card,
+          },
+          headerTintColor: COLORS.text,
+          headerTitleStyle: {
+            ...TYPOGRAPHY.h3,
+            fontWeight: '700',
+          },
+        }}
+      />
+      <Stack.Screen 
+        name="NotificationCenter" 
+        component={NotificationCenter}
+        options={{
+          headerShown: true,
+          title: 'Notifications',
+          headerStyle: {
+            backgroundColor: COLORS.card,
+          },
+          headerTintColor: COLORS.text,
+          headerTitleStyle: {
+            ...TYPOGRAPHY.h3,
+            fontWeight: '700',
+          },
+        }}
+      />
+      <Stack.Screen 
+        name="OrderApprovalList" 
+        component={OrderApprovalList}
+        options={{
+          headerShown: true,
+          title: 'Pending Approvals',
+          headerStyle: {
+            backgroundColor: COLORS.card,
+          },
+          headerTintColor: COLORS.text,
+          headerTitleStyle: {
+            ...TYPOGRAPHY.h3,
+            fontWeight: '700',
+          },
+        }}
+      />
+      <Stack.Screen 
+        name="CompanyReports" 
+        component={CompanyReports}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="EditCompanyInfo" 
+        component={EditCompanyInfo}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="BillingDashboard" 
+        component={BillingDashboardScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="CreditPayment" 
+        component={CreditPaymentScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="BillingSettings" 
+        component={BillingSettingsScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="InvoiceGeneration" 
+        component={InvoiceGeneration}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="InvoiceViewer" 
+        component={InvoiceViewer}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="PendingApprovals" 
+        component={PendingApprovals}
+        options={{
+          headerShown: false,
+        }}
       />
     </Stack.Navigator>
   );
@@ -637,7 +842,7 @@ const GlobalAchievementWrapper: React.FC<{
   );
 };
 
-export default function App() {
+function AppContent() {
   const navigationRef = useNavigationContainerRef();
   
   // Initialize notifications
@@ -723,27 +928,29 @@ export default function App() {
       <SafeAreaProvider>
         <AppProvider>
           <RewardsProvider>
-            <CartNotificationProvider>
-              <TransitionProvider>
-              <StatusBar style="dark" />
-              <GlobalAchievementWrapper navigationRef={navigationRef}>
-                <NavigationContainer ref={navigationRef} theme={MyTheme}>
-                  <AuthNavigator />
-                  
-                  {/* Global cart notification with navigation ref */}
-                  <CartNotificationConsumer navigateToCart={navigateToCart} />
-                </NavigationContainer>
-              </GlobalAchievementWrapper>
-              
-              {/* Global feedback component */}
-              <AnimatedFeedback
-                type={feedbackState.type}
-                message={feedbackState.message}
-                visible={feedbackState.visible}
-                onHide={hideFeedback}
-              />
-              </TransitionProvider>
-            </CartNotificationProvider>
+            <CheckoutProvider>
+              <CartNotificationProvider>
+                <TransitionProvider>
+                <StatusBar style="dark" />
+                <GlobalAchievementWrapper navigationRef={navigationRef}>
+                  <NavigationContainer ref={navigationRef} theme={MyTheme}>
+                    <AuthNavigator />
+                    
+                    {/* Global cart notification with navigation ref */}
+                    <CartNotificationConsumer navigateToCart={navigateToCart} />
+                  </NavigationContainer>
+                </GlobalAchievementWrapper>
+                
+                {/* Global feedback component */}
+                <AnimatedFeedback
+                  type={feedbackState.type}
+                  message={feedbackState.message}
+                  visible={feedbackState.visible}
+                  onHide={hideFeedback}
+                />
+                </TransitionProvider>
+              </CartNotificationProvider>
+            </CheckoutProvider>
           </RewardsProvider>
         </AppProvider>
       </SafeAreaProvider>
@@ -906,4 +1113,31 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.card,
   },
-}); 
+});
+
+export default function App() {
+  return (
+    <GlobalErrorBoundary level="app">
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <NetworkStatusProvider>
+          <AppProvider>
+            <RewardsProvider>
+              <CheckoutProvider>
+                <CartNotificationProvider>
+                  <TransitionProvider>
+                    <AppContent />
+                    <OfflineIndicator 
+                      onRetry={() => console.log('Retrying connection...')}
+                      showDetails={true}
+                      position="top"
+                    />
+                  </TransitionProvider>
+                </CartNotificationProvider>
+              </CheckoutProvider>
+            </RewardsProvider>
+          </AppProvider>
+        </NetworkStatusProvider>
+      </GestureHandlerRootView>
+    </GlobalErrorBoundary>
+  );
+} 

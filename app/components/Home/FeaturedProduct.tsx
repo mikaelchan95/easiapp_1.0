@@ -17,6 +17,7 @@ import { AppContext } from '../../context/AppContext';
 import { CartNotificationContext } from '../../context/CartNotificationContext';
 import { HapticFeedback } from '../../utils/haptics';
 import * as Animations from '../../utils/animations';
+import { formatFinancialAmount } from '../../utils/formatting';
 
 interface FeaturedProductProps {
   product: Product;
@@ -124,8 +125,8 @@ const FeaturedProduct: React.FC<FeaturedProductProps> = ({ product, onPress }) =
     }).start();
   };
 
-  const formattedPrice = `$${price.toFixed(2)}`;
-  const formattedOriginalPrice = originalPrice ? `$${originalPrice.toFixed(2)}` : null;
+  const formattedPrice = formatFinancialAmount(price);
+  const formattedOriginalPrice = originalPrice ? formatFinancialAmount(originalPrice) : null;
   const hasDiscount = originalPrice !== undefined && originalPrice > price;
   const discountPercentage = hasDiscount ? Math.round(((originalPrice! - price) / originalPrice!) * 100) : 0;
   

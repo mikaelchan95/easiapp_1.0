@@ -20,6 +20,7 @@ import { CartNotificationContext } from '../../context/CartNotificationContext';
 import ProgressBar from '../UI/ProgressBar';
 import { HapticFeedback, HapticPatterns } from '../../utils/haptics';
 import { getProductImageSource, getProductFallbackImage } from '../../utils/imageUtils';
+import { formatFinancialAmount } from '../../utils/formatting';
 
 interface EnhancedProductCardProps {
   product: Product;
@@ -192,8 +193,8 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
     });
   };
 
-  const formattedPrice = `$${(price || 0).toFixed(2)}`;
-  const formattedOriginalPrice = originalPrice ? `$${originalPrice.toFixed(2)}` : null;
+  const formattedPrice = formatFinancialAmount(price || 0);
+  const formattedOriginalPrice = originalPrice ? formatFinancialAmount(originalPrice) : null;
   
   // Calculate discount logic
   const hasDiscount = originalPrice !== undefined && originalPrice > (price || 0);
@@ -202,7 +203,7 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
   const nextStreakProgress = purchaseCount % 3 / 3;
   
   // Handle both string URLs (Supabase) and require() statements
-  const imageSource = getProductImageSource(imageUrl) || getProductFallbackImage();
+  const imageSource = getProductImageSource(imageUrl, name) || getProductFallbackImage();
 
   return (
     <Animated.View

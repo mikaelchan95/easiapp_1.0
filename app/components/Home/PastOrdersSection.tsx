@@ -18,7 +18,7 @@ interface PastOrder {
   id: string;
   orderNumber: string;
   date: string;
-  status: 'delivered' | 'processing' | 'shipped';
+  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'out_for_delivery' | 'delivered' | 'cancelled' | 'returned';
   total: number;
   itemCount: number;
   firstItemName: string;
@@ -50,7 +50,7 @@ const RECENT_ORDERS: PastOrder[] = [
     id: '3',
     orderNumber: 'ORD-2024-003',
     date: '2024-01-22',
-    status: 'shipped',
+    status: 'out_for_delivery',
     total: 199.99,
     itemCount: 1,
     firstItemName: 'Macallan 25 Year Old',
@@ -77,7 +77,7 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
     let orderSubscription: any = null;
     
     if (state.user) {
-      console.log('🔔 Setting up real-time order subscription for past orders section');
+      console.log('Setting up real-time order subscription for past orders section');
       orderSubscription = supabaseService.subscribeToUserOrders(
         state.user.id,
         (updatedOrders) => {
@@ -92,7 +92,7 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
     // Cleanup subscription on unmount
     return () => {
       if (orderSubscription) {
-        console.log('🧽 Cleaning up past orders subscription');
+        console.log('Cleaning up past orders subscription');
         supabase.removeChannel(orderSubscription);
       }
     };
@@ -104,11 +104,11 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
       // Use context user (now live user) or try to get from Supabase
       const currentUser = state.user || await supabaseService.getCurrentUser();
       if (currentUser) {
-        console.log('📋 Loading recent orders for user:', currentUser.name);
+        console.log('Loading recent orders for user:', currentUser.name);
         const orders = await supabaseService.getRecentOrders(currentUser.id, 3);
         setRecentOrders(orders);
       } else {
-        console.log('⚠️ No user found for loading recent orders');
+        console.log('No user found for loading recent orders');
       }
     } catch (error) {
       console.error('Error loading recent orders:', error);
@@ -135,8 +135,12 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'delivered': return COLORS.success;
-      case 'shipped': return '#2196F3';
-      case 'processing': return '#FF9800';
+      case 'out_for_delivery': return '#2196F3';
+      case 'preparing': return '#FF9800';
+      case 'confirmed': return '#4CAF50';
+      case 'ready': return '#9C27B0';
+      case 'pending': return '#795548';
+      case 'returned': return '#607D8B';
       default: return COLORS.textSecondary;
     }
   };
@@ -144,8 +148,12 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'delivered': return 'checkmark-circle';
-      case 'shipped': return 'airplane';
-      case 'processing': return 'time';
+      case 'out_for_delivery': return 'airplane';
+      case 'preparing': return 'time';
+      case 'confirmed': return 'checkmark-circle';
+      case 'ready': return 'cube';
+      case 'pending': return 'hourglass';
+      case 'returned': return 'return-up-back';
       default: return 'help-circle';
     }
   };

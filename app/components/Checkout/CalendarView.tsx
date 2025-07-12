@@ -266,6 +266,29 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           <Text style={styles.legendText}>Available</Text>
         </View>
       </View>
+      
+      {/* Quick Selection */}
+      <View style={styles.quickSelection}>
+        <Text style={styles.quickSelectionTitle}>Quick Select</Text>
+        <View style={styles.quickButtons}>
+          <TouchableOpacity 
+            style={styles.quickButton}
+            onPress={() => onSelectDate(todayString)}
+          >
+            <Text style={styles.quickButtonText}>Today</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.quickButton}
+            onPress={() => {
+              const tomorrow = new Date();
+              tomorrow.setDate(tomorrow.getDate() + 1);
+              onSelectDate(formatDateString(tomorrow));
+            }}
+          >
+            <Text style={styles.quickButtonText}>Tomorrow</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 };
@@ -406,6 +429,37 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.small,
     color: COLORS.text,
     fontWeight: '500',
+  },
+  quickSelection: {
+    marginTop: SPACING.lg,
+    paddingTop: SPACING.lg,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  quickSelectionTitle: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.text,
+    fontWeight: '700',
+    marginBottom: SPACING.sm,
+  },
+  quickButtons: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  quickButton: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+  },
+  quickButtonText: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.text,
+    fontWeight: '600',
   },
 });
 

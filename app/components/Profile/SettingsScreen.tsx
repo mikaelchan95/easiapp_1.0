@@ -19,6 +19,7 @@ import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { AppContext } from '../../context/AppContext';
 import { HapticFeedback } from '../../utils/haptics';
 import { biometricService } from '../../services/biometricService';
+import BiometricSettings from '../Settings/BiometricSettings';
 
 interface UserSettings {
   // Personal Information
@@ -538,13 +539,12 @@ export default function SettingsScreen() {
                 (value) => handleSettingChange('twoFactorAuth', value),
                 'switch'
               )}
-              {biometricAvailable && renderSettingItem(
-                biometricTypeName,
-                settings.biometricAuth,
-                handleBiometricToggle,
-                'switch',
-                `Enable ${biometricTypeName} for secure and convenient sign-in`
-              )}
+              <View style={styles.biometricContainer}>
+                <BiometricSettings
+                  userEmail={state.user?.email}
+                  onBiometricEnabledChange={(enabled) => handleSettingChange('biometricAuth', enabled)}
+                />
+              </View>
             </>
           )}
 
@@ -752,5 +752,9 @@ const styles = StyleSheet.create({
     color: COLORS.accent,
     marginLeft: SPACING.sm,
     fontWeight: '600',
+  },
+  biometricContainer: {
+    marginVertical: SPACING.md,
+    paddingHorizontal: 0,
   },
 });

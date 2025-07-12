@@ -44,9 +44,12 @@ EASI represents a comprehensive digital transformation initiative for premium sp
 #### **🏢 B2B Enterprise Features**
 - **Corporate Account Management**: Complete company profile system with UEN integration
 - **Team Collaboration**: Multi-user access with granular permission controls
-- **Financial Management**: Credit limits, payment terms, and approval workflows
+- **Advanced Credit Payment System**: Partial payment processing with flexible allocation strategies
+- **Real-time Balance Monitoring**: WebSocket-based credit balance and payment updates
+- **Financial Management**: Credit limits, payment terms, and multi-level approval workflows
 - **Bulk Operations**: Enterprise-grade ordering with volume discounts
-- **Compliance**: Full audit trails and regulatory reporting capabilities
+- **Comprehensive Billing Dashboard**: Admin billing management with analytics and reporting
+- **Compliance**: Full audit trails, payment tracking, and regulatory reporting capabilities
 
 #### **🛍️ B2C Consumer Experience**
 - **Premium Product Catalog**: Rich media, advanced search, and intelligent filtering
@@ -166,20 +169,34 @@ ANALYTICS_KEY=your_analytics_key
 
 ## 📚 **Documentation & Resources**
 
-### **Strategic Documentation**
-- **[Business Requirements](docs/business/)** - Market analysis, user stories, and success metrics
-- **[Technical Architecture](docs/technical/)** - System design, API specifications, and integrations
-- **[Operations Manual](docs/operations/)** - Deployment procedures and maintenance protocols
+### **User Documentation**
+- **[User Guides](docs/user-guides/)** - Complete user documentation for credit payment system
+- **[Quick Start Guide](docs/user-guides/quick-start-guide.md)** - Get started with credit payments in 5 minutes
+- **[FAQ](docs/user-guides/faq.md)** - Frequently asked questions and answers
+- **[Troubleshooting](docs/troubleshooting/user-issues.md)** - Common issues and resolution steps
 
-### **Development Resources**
-- **[API Documentation](docs/api/)** - Complete API reference and examples
-- **[Component Library](docs/components/)** - Reusable UI components and patterns
-- **[Testing Guides](docs/testing/)** - Quality assurance procedures and test cases
+### **Administrative Documentation**
+- **[Admin Guides](docs/admin-guides/)** - System administration and billing management
+- **[System Administration](docs/admin-guides/system-administration-guide.md)** - Complete administrative procedures
+- **[Credit Management](docs/admin-guides/credit-limit-management.md)** - Managing company credit limits and adjustments
 
-### **Business Continuity**
-- **[Disaster Recovery](docs/operations/disaster-recovery.md)** - Backup and recovery procedures
-- **[Scaling Guidelines](docs/operations/scaling.md)** - Performance optimization strategies
-- **[Security Protocols](docs/operations/security.md)** - Security best practices and compliance
+### **Developer Documentation**
+- **[Developer Guides](docs/developer-guides/)** - Technical implementation guides
+- **[API Reference](docs/api-reference/)** - Complete API documentation for Edge Functions
+- **[Database Schema](docs/developer-guides/database-schema-reference.md)** - Database structure and relationships
+- **[Integration Examples](docs/developer-guides/integration-examples.md)** - Code samples and implementation patterns
+
+### **Credit Payment System Features**
+- **[Partial Payment Processing](docs/user-guides/partial-payment-guide.md)** - Process payments with flexible allocation strategies
+- **[Real-time Balance Monitoring](docs/user-guides/real-time-balance-guide.md)** - Monitor credit balances and payments in real-time
+- **[Payment Allocation Strategies](docs/user-guides/payment-allocation-guide.md)** - Understanding payment allocation methods
+- **[Billing Dashboard](docs/user-guides/billing-dashboard-guide.md)** - Using the comprehensive billing interface
+
+### **Technical Architecture**
+- **[Edge Functions](docs/api-reference/credit-payment-processor.md)** - Serverless payment processing functions
+- **[WebSocket Protocol](docs/api-reference/real-time-balance-updater.md)** - Real-time communication specifications
+- **[Database Design](docs/developer-guides/database-design.md)** - Payment system database architecture
+- **[Security Model](docs/admin-guides/security-compliance.md)** - Security policies and compliance procedures
 
 ---
 
