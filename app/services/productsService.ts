@@ -39,20 +39,35 @@ export interface DatabaseProduct {
 }
 
 // Helper function to generate Supabase Storage URL
-const getSupabaseStorageUrl = (bucket: string, path: string): string => {
-  return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/${bucket}/${path}`;
+const getSupabaseStorageUrl = (path: string): string => {
+  // If it's just a filename (no slashes), add the full path
+  if (!path.includes('/')) {
+    return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${path}`;
+  }
+  // If path already includes product-images/, use as-is
+  if (path.includes('product-images/')) {
+    return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/${path}`;
+  }
+  // If path starts with products/, add the bucket name
+  if (path.startsWith('products/')) {
+    return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/${path}`;
+  }
+  // Fallback - assume it's a full relative path
+  return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${path}`;
 };
 
 // Transform database product to app Product format
 const transformDatabaseProductToProduct = (dbProduct: DatabaseProduct): Product => {
-  const finalImageUrl = dbProduct.image_url ? (dbProduct.image_url.startsWith('http') ? dbProduct.image_url : getSupabaseStorageUrl('product-images', dbProduct.image_url)) : null;
+  const finalImageUrl = dbProduct.image_url ? (dbProduct.image_url.startsWith('http') ? dbProduct.image_url : getSupabaseStorageUrl(dbProduct.image_url)) : null;
   
-  // Debug logging for image URL transformation
-  console.log(`🔄 Transform product ${dbProduct.name}:`, {
-    originalImageUrl: dbProduct.image_url,
-    finalImageUrl: finalImageUrl,
-    isAlreadyFullUrl: dbProduct.image_url?.startsWith('http')
-  });
+  // Debug logging for image URL transformation (dev only)
+  if (__DEV__) {
+    console.log(`Transform product ${dbProduct.name}:`, {
+      originalImageUrl: dbProduct.image_url,
+      finalImageUrl: finalImageUrl,
+      isAlreadyFullUrl: dbProduct.image_url?.startsWith('http')
+    });
+  }
   
   return {
     id: dbProduct.id,
@@ -140,13 +155,11 @@ export const productsService = {
       const { data: products, error } = await query;
       
       if (error) {
-        console.error('Error fetching products:', error);
         throw error;
       }
       
       return products ? products.map(transformDatabaseProductToProduct) : [];
     } catch (error) {
-      console.error('Error in getProducts:', error);
       throw error;
     }
   },
@@ -165,13 +178,11 @@ export const productsService = {
       const { data: product, error } = await query.maybeSingle();
 
       if (error) {
-        console.error('Error fetching product:', error);
         throw error;
       }
 
       return product ? transformDatabaseProductToProduct(product) : null;
     } catch (error) {
-      console.error('Error in getProductById:', error);
       return null;
     }
   },
@@ -218,7 +229,6 @@ export const productsService = {
       const { data: categories, error } = await query;
 
       if (error) {
-        console.error('Error fetching categories:', error);
         throw error;
       }
 
@@ -226,7 +236,6 @@ export const productsService = {
       const uniqueCategories = [...new Set(categories?.map(item => item.category) || [])];
       return uniqueCategories;
     } catch (error) {
-      console.error('Error in getProductCategories:', error);
       // Return default categories on error
       return ['Scotch', 'Champagne', 'Cognac', 'Japanese Whisky'];
     }
@@ -246,13 +255,11 @@ export const productsService = {
       const { data: product, error } = await query.maybeSingle();
 
       if (error) {
-        console.error('Error checking product availability:', error);
         return false;
       }
 
       return product ? product.stock_quantity >= quantity : false;
     } catch (error) {
-      console.error('Error in checkProductAvailability:', error);
       return false;
     }
   },
@@ -271,7 +278,6 @@ export const productsService = {
       const { data: product, error } = await query.maybeSingle();
 
       if (error) {
-        console.error('Error fetching product stock:', error);
         return null;
       }
 
@@ -283,7 +289,6 @@ export const productsService = {
         lowStock: product.stock_quantity <= product.low_stock_threshold,
       };
     } catch (error) {
-      console.error('Error in getProductStock:', error);
       return null;
     }
   },
@@ -300,9 +305,9 @@ export const productsService = {
           table: 'products',
         },
         (payload) => {
-          // Only log significant changes, not heartbeats
-          if (payload.eventType && ['INSERT', 'UPDATE', 'DELETE'].includes(payload.eventType)) {
-            console.log('🛍️ Product change:', payload.eventType, payload.new?.name || payload.old?.name);
+          // Only log significant changes in development
+          if (__DEV__ && payload.eventType && ['INSERT', 'UPDATE', 'DELETE'].includes(payload.eventType)) {
+            console.log('Product change:', payload.eventType, payload.new?.name || payload.old?.name);
           }
           callback(payload);
         }

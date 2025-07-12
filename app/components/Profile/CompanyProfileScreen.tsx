@@ -19,6 +19,7 @@ import MobileHeader from '../Layout/MobileHeader';
 import { isCompanyUser } from '../../types/user';
 import { formatStatCurrency, formatPercentage } from '../../utils/formatting';
 import { HapticFeedback } from '../../utils/haptics';
+import BreadcrumbNavigation, { createBreadcrumbs } from '../Navigation/BreadcrumbNavigation';
 
 export default function CompanyProfileScreen() {
   const navigation = useNavigation();
@@ -107,6 +108,12 @@ export default function CompanyProfileScreen() {
           <Text style={styles.headerTitle}>Company Profile</Text>
           <View style={styles.headerRight} />
         </View>
+        
+        {/* Breadcrumb Navigation */}
+        <BreadcrumbNavigation
+          items={createBreadcrumbs('CompanyProfile')}
+          showBackButton={false}
+        />
         
         {/* Company Header Card - Now in header like ProfileScreen */}
         <View style={styles.headerCard}>
@@ -205,6 +212,37 @@ export default function CompanyProfileScreen() {
               {formatPercentage(creditUtilization)} credit utilization
             </Text>
           </View>
+
+          {/* Credit Payment Actions */}
+          {usedCredit > 0 && (
+            <View style={styles.creditActions}>
+              <TouchableOpacity 
+                style={styles.paymentButton}
+                onPress={() => {
+                  HapticFeedback.medium();
+                  navigation.navigate('CreditPayment');
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="card" size={20} color={COLORS.accent} />
+                <Text style={styles.paymentButtonText}>
+                  Pay Credit Balance ({formatStatCurrency(usedCredit)})
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.billingButton}
+                onPress={() => {
+                  HapticFeedback.light();
+                  navigation.navigate('BillingDashboard');
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="receipt" size={16} color={COLORS.textSecondary} />
+                <Text style={styles.billingButtonText}>View Billing</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Enhanced Contact Information */}
@@ -338,7 +376,7 @@ export default function CompanyProfileScreen() {
                 style={styles.actionCard}
                 onPress={() => {
                   HapticFeedback.medium();
-                  Alert.alert('Edit Company', 'Feature coming soon');
+                  navigation.navigate('EditCompanyInfo');
                 }}
                 activeOpacity={0.8}
               >
@@ -368,7 +406,7 @@ export default function CompanyProfileScreen() {
                 style={styles.actionCard}
                 onPress={() => {
                   HapticFeedback.medium();
-                  Alert.alert('Reports', 'Feature coming soon');
+                  navigation.navigate('CompanyReports');
                 }}
                 activeOpacity={0.8}
               >
@@ -378,6 +416,24 @@ export default function CompanyProfileScreen() {
                 <Text style={styles.actionText}>Reports</Text>
                 <Text style={styles.actionDescription}>View analytics</Text>
               </TouchableOpacity>
+
+              {/* Admin Billing Dashboard - Only for users with billing permissions */}
+              {user?.permissions?.canManageBilling && (
+                <TouchableOpacity 
+                  style={[styles.actionCard, styles.adminActionCard]}
+                  onPress={() => {
+                    HapticFeedback.medium();
+                    navigation.navigate('AdminBillingDashboard');
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.actionIconContainer, styles.adminActionIcon]}>
+                    <Ionicons name="card-outline" size={24} color={COLORS.accent} />
+                  </View>
+                  <Text style={[styles.actionText, styles.adminActionText]}>Admin Billing</Text>
+                  <Text style={[styles.actionDescription, styles.adminActionDescription]}>Manage billing & invoices</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         )}
@@ -768,7 +824,62 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
+  // Admin-specific styles
+  adminActionCard: {
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.card,
+  },
+  adminActionIcon: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  adminActionText: {
+    color: COLORS.primary,
+  },
+  adminActionDescription: {
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+
   bottomPadding: {
     height: 100,
+  },
+
+  // Credit Payment Actions
+  creditActions: {
+    marginTop: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  paymentButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    padding: SPACING.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    ...SHADOWS.medium,
+  },
+  paymentButtonText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.accent,
+    fontWeight: '600',
+  },
+  billingButton: {
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    padding: SPACING.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.xs,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  billingButtonText: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
   },
 });

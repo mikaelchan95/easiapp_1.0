@@ -48,7 +48,7 @@ const handleContactPress = async (type: 'email' | 'phone', value: string) => {
     } else {
       Alert.alert('Email', value, [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Copy', onPress: () => console.log('Email copied') }
+        { text: 'Copy', onPress: () => { /* Copy email to clipboard */ } }
       ]);
     }
   } else if (type === 'phone') {
@@ -59,7 +59,7 @@ const handleContactPress = async (type: 'email' | 'phone', value: string) => {
     } else {
       Alert.alert('Phone', value, [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Copy', onPress: () => console.log('Phone copied') }
+        { text: 'Copy', onPress: () => { /* Copy phone to clipboard */ } }
       ]);
     }
   }
@@ -79,15 +79,15 @@ export default function ProfileScreen() {
   // Function to manually refresh company data
   const refreshCompanyData = async () => {
     if (user?.accountType === 'company' && user?.companyId) {
-      console.log('🔄 Manually refreshing company data...');
+      if (__DEV__) console.log('🔄 Manually refreshing company data...');
       try {
         const { supabaseService } = await import('../../services/supabaseService');
         const company = await supabaseService.getCompanyById(user.companyId);
         if (company) {
-          console.log('✅ Company refreshed:', company.name);
+          if (__DEV__) console.log('✅ Company refreshed:', company.name);
           dispatch({ type: 'SET_COMPANY', payload: company });
         } else {
-          console.log('❌ No company found for ID:', user.companyId);
+          if (__DEV__) console.log('❌ No company found for ID:', user.companyId);
         }
       } catch (error) {
         console.error('❌ Error refreshing company data:', error);
@@ -106,7 +106,7 @@ export default function ProfileScreen() {
         const { supabaseService } = await import('../../services/supabaseService');
         const members = await supabaseService.getCompanyTeamMembers(company.id);
         setTeamMembers(members || []);
-        console.log('✅ Loaded team members:', members?.length || 0);
+        if (__DEV__) console.log('✅ Loaded team members:', members?.length || 0);
       } catch (error) {
         console.error('❌ Error loading team members:', error);
         setTeamMembers([]);
@@ -120,7 +120,7 @@ export default function ProfileScreen() {
       try {
         // For now, just set empty array - can implement real approvals later
         setPendingApprovals([]);
-        console.log('✅ Loaded pending approvals: 0 (not implemented yet)');
+        if (__DEV__) console.log('✅ Loaded pending approvals: 0 (not implemented yet)');
       } catch (error) {
         console.error('❌ Error loading pending approvals:', error);
         setPendingApprovals([]);
@@ -138,12 +138,12 @@ export default function ProfileScreen() {
   useEffect(() => {
     const testIntegration = async () => {
       try {
-        console.log('🔄 Testing Supabase integration in background...');
+        if (__DEV__) console.log('🔄 Testing Supabase integration in background...');
         const success = await testSupabaseIntegration();
         if (success) {
-          console.log('✅ Background Supabase test completed successfully');
+          if (__DEV__) console.log('✅ Background Supabase test completed successfully');
         } else {
-          console.log('⚠️ Background Supabase test failed, using mock data');
+          if (__DEV__) console.log('⚠️ Background Supabase test failed, using mock data');
         }
       } catch (error) {
         console.log('⚠️ Background Supabase test error:', error);
@@ -326,9 +326,7 @@ export default function ProfileScreen() {
         navigation.navigate('TeamManagement');
         break;
       case 'Pending Approvals':
-        // TODO: Implement PendingApprovals screen
-        // navigation.navigate('PendingApprovals');
-        console.log('Navigate to Pending Approvals - not implemented yet');
+        navigation.navigate('PendingApprovals');
         break;
       case 'Order History':
         navigation.navigate('OrderHistory');

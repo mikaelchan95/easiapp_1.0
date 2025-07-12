@@ -19,7 +19,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.epico.easi",
       "config": {
-        "googleMapsApiKey": "AIzaSyCNpWjIoH986AQx2ea2AaiqzsqUcwaqX9I"
+        "googleMapsApiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
       },
       "infoPlist": {
         "NSFaceIDUsageDescription": "Allow EASI to use Face ID for secure and convenient login authentication."
@@ -33,7 +33,7 @@
       "package": "com.epico.easi",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyCNpWjIoH986AQx2ea2AaiqzsqUcwaqX9I"
+          "apiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
         }
       },
       "permissions": [

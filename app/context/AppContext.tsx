@@ -13,6 +13,7 @@ import { PurchaseAchievementData } from '../hooks/usePurchaseAchievement';
 import { LocationSuggestion } from '../types/location';
 import { User, Company, isCompanyUser, CompanyUser, IndividualUser } from '../types/user';
 import { supabaseService } from '../services/supabaseService';
+import { auditService } from '../services/auditService';
 
 interface UserSettings {
   // Personal Information
@@ -89,6 +90,7 @@ type AppAction =
   | { type: 'HIDE_PURCHASE_ACHIEVEMENT' }
   | { type: 'UPDATE_USER_STATS'; payload: Partial<AppState['userStats']> }
   | { type: 'COMPLETE_PURCHASE'; payload: { orderTotal: number; orderId: string } }
+  | { type: 'CALCULATE_INITIAL_POINTS'; payload: { userId: string } }
   | { type: 'SAVE_USER_SETTINGS'; payload: UserSettings }
   | { type: 'LOAD_USER_SETTINGS' }
   | { type: 'UPDATE_USER_SETTINGS'; payload: Partial<UserSettings> };
@@ -153,7 +155,14 @@ const initialState: AppState = {
 const appReducer = (state: AppState, action: AppAction): AppState => {
   switch (action.type) {
     case 'SET_USER':
-      console.log('📝 SET_USER action dispatched:', action.payload?.name);
+      console.log('SET_USER action dispatched:', action.payload?.name);
+      
+      // If user doesn't have points set, they need to be calculated from order history
+      if (action.payload && (action.payload.points === undefined || action.payload.points === null)) {
+        console.log('User has no points set, will calculate from order history');
+        // This will be handled in the provider via useEffect
+      }
+      
       return { ...state, user: action.payload };
     case 'SET_COMPANY':
       return { ...state, company: action.payload };
@@ -240,12 +249,17 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       const pointsEarned = Math.floor(orderTotal * 2); // 2 points per dollar
       const savingsAmount = orderTotal * 0.15; // 15% savings
       
-      // Update user stats in database if possible
+      // NOTE: Points are NOT awarded immediately upon order completion
+      // Points will be awarded when payment status changes to 'paid'
+      // This is handled by the payment processor webhook or RewardsContext
+      
+      // Update user stats in database (orders count, total spent, but not points yet)
       if (state.user && state.user.accountType === 'individual') {
         const updatedUser = {
           ...state.user,
           totalOrders: (state.user as IndividualUser).totalOrders + 1,
           totalSpent: (state.user as IndividualUser).totalSpent + orderTotal,
+          // points: NOT updated here - only when payment is confirmed
         };
         // Async update to database (fire and forget)
         supabaseService.updateUser(state.user.id, updatedUser).catch(error => 
@@ -253,21 +267,21 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         );
       }
       
-      // For company users, update company stats instead of individual stats
+      // For company users, update company stats (but not points until payment)
       if (state.user && state.user.accountType === 'company' && state.company) {
-        console.log('🏢 Updating company stats for purchase:', { orderTotal, orderId, companyId: state.company.id });
+        console.log('Updating company stats for purchase:', { orderTotal, orderId, companyId: state.company.id });
         
         // Update company stats in database (fire and forget)
         supabaseService.updateCompanyStats(state.company.id, {
           totalOrders: 1, // Increment order count
           totalSpent: orderTotal, // This will be deducted from company credit
-          pointsEarned: pointsEarned // Company earns points, not individual
+          // pointsEarned: NOT updated here - only when payment is confirmed
         }).then(() => {
           // Refresh company data to show updated credit balance
           if (state.company) {
             supabaseService.getCompanyById(state.company.id).then(updatedCompany => {
               if (updatedCompany) {
-                console.log('💰 Company credit updated:', updatedCompany.currentCredit);
+                console.log('Company credit updated:', updatedCompany.currentCredit);
                 dispatch({ type: 'SET_COMPANY', payload: updatedCompany });
               }
             });
@@ -277,26 +291,33 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         );
       }
       
+      // NOTE: Audit trail for points will be logged when payment is confirmed
+      // This prevents awarding points for unpaid orders
+      
       return {
         ...state,
         cart: [], // Clear cart
+        // NOTE: User points are NOT updated here - only when payment is confirmed
         userStats: {
           ...state.userStats,
-          totalPoints: state.userStats.totalPoints + pointsEarned,
-          currentLevel: Math.floor((state.userStats.totalPoints + pointsEarned) / 100) + 1,
+          // totalPoints: NOT updated here - only when payment is confirmed
           totalSavings: state.userStats.totalSavings + savingsAmount,
           orderCount: state.userStats.orderCount + 1,
         },
         purchaseAchievement: {
-          visible: true,
+          visible: false, // Disable achievement notification until payment is confirmed
           data: {
             orderTotal,
-            pointsEarned,
+            pointsEarned, // This will be used when payment is confirmed
             savingsAmount,
             orderId,
           },
         },
       };
+    case 'CALCULATE_INITIAL_POINTS':
+      // This action will calculate initial points based on order history
+      // Implementation will be done in the provider
+      return state;
     case 'SAVE_USER_SETTINGS':
       // Save to AsyncStorage and update state
       AsyncStorage.setItem('userSettings', JSON.stringify(action.payload));
@@ -378,6 +399,30 @@ const getUserRole = (user: User | null): UserRole => {
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
+  // Calculate initial points based on order history
+  const calculateInitialPoints = async (userId: string): Promise<number> => {
+    try {
+      console.log('Calculating initial points for user:', userId);
+      
+      // Get all orders for this user
+      const orders = await supabaseService.getUserOrders(userId);
+      
+      // Calculate total points (2 points per dollar)
+      let totalPoints = 0;
+      orders.forEach(order => {
+        const pointsForOrder = Math.floor(order.total * 2);
+        totalPoints += pointsForOrder;
+        console.log(`  ${order.orderNumber}: $${order.total} → ${pointsForOrder} points`);
+      });
+      
+      console.log(`Total points calculated: ${totalPoints} (from ${orders.length} orders)`);
+      return totalPoints;
+    } catch (error) {
+      console.error('❌ Error calculating initial points:', error);
+      return 0;
+    }
+  };
+
   // Supabase integration methods
   const updateUserProfile = async (updates: Partial<User>): Promise<boolean> => {
     if (!state.user) return false;
@@ -386,7 +431,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       // First check if user exists in Supabase, if not, try to sync them
       const existingUser = await supabaseService.getUserById(state.user.id);
       if (!existingUser) {
-        console.log('🔄 User not found in Supabase, attempting to sync...');
+        console.log('User not found in Supabase, attempting to sync...');
         await syncUserToSupabase(state.user);
       }
       
@@ -394,22 +439,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const updatedUser = await supabaseService.updateUser(state.user.id, updates);
       if (updatedUser) {
         dispatch({ type: 'UPDATE_USER_PROFILE', payload: updates });
-        console.log('✅ Profile updated successfully via Supabase');
+        console.log('Profile updated successfully via Supabase');
         return true;
       }
     } catch (error) {
-      console.log('ℹ️ Supabase update failed, updating local state only:', error);
+      console.log('Supabase update failed, updating local state only:', error);
     }
     
     // If Supabase fails, update local state anyway (for demo mode)
     dispatch({ type: 'UPDATE_USER_PROFILE', payload: updates });
-    console.log('✅ Profile updated successfully in local state');
+    console.log('Profile updated successfully in local state');
     return true;
   };
 
   const syncUserToSupabase = async (user: User): Promise<boolean> => {
     try {
-      console.log('🔄 Syncing user to Supabase:', user.id);
+      console.log('Syncing user to Supabase:', user.id);
       
       // First check if user already exists
       const { data: existingUser, error: checkError } = await supabase
@@ -419,7 +464,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         .single();
       
       if (existingUser) {
-        console.log('✅ User already exists in Supabase, skipping sync');
+        console.log('User already exists in Supabase, skipping sync');
         return true;
       }
       
@@ -456,7 +501,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
       
-      console.log('✅ User synced to Supabase successfully');
+      console.log('User synced to Supabase successfully');
       return true;
     } catch (error) {
       console.error('❌ Error syncing user to Supabase:', error);
@@ -488,11 +533,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const user = await supabaseService.signIn(email, password);
       
       if (user) {
-        console.log('✅ SignIn successful, auth state listener will handle user loading');
+        console.log('SignIn successful, auth state listener will handle user loading');
         return user;
       }
       
-      console.log('❌ Authentication failed');
+      console.log('Authentication failed');
       dispatch({ type: 'SET_LOADING', payload: false });
       return null;
     } catch (error) {
@@ -510,7 +555,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const user = await supabaseService.signUp(email, password, userData);
       
       if (user) {
-        console.log('✅ SignUp successful, auth state listener will handle user loading');
+        console.log('SignUp successful, auth state listener will handle user loading');
         return user;
       }
       
@@ -525,22 +570,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async (): Promise<boolean> => {
     try {
-      console.log('🔄 SignOut method called');
+      console.log('SignOut method called');
       
       // Set loading state briefly
       dispatch({ type: 'SET_LOADING', payload: true });
       
       // Force cleanup of all subscriptions first to prevent hanging
-      console.log('🧽 Force cleaning up all Supabase channels before signOut...');
+      console.log('Force cleaning up all Supabase channels before signOut...');
       try {
         supabase.removeAllChannels();
       } catch (cleanupError) {
-        console.log('⚠️ Error cleaning up channels:', cleanupError);
+        console.log('Error cleaning up channels:', cleanupError);
       }
       
       // Clear session from AsyncStorage manually first
       try {
-        console.log('🧹 Clearing session from AsyncStorage...');
+        console.log('Clearing session from AsyncStorage...');
         await AsyncStorage.removeItem('sb-vqxnkxaeriizizfmqvua-auth-token');
         
         // Also clear any other potential session keys
@@ -548,16 +593,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         const authKeys = keys.filter(key => key.includes('auth-token') || key.includes('supabase'));
         if (authKeys.length > 0) {
           await AsyncStorage.multiRemove(authKeys);
-          console.log('🧹 Cleared additional auth keys:', authKeys);
+          console.log('Cleared additional auth keys:', authKeys);
         }
       } catch (storageError) {
-        console.log('⚠️ Error clearing AsyncStorage:', storageError);
+        console.log('Error clearing AsyncStorage:', storageError);
       }
       
       // Call Supabase signOut with proper scope
       let success = false;
       try {
-        console.log('🔄 Calling Supabase signOut...');
+        console.log('Calling Supabase signOut...');
         // Use global scope to ensure complete sign out
         const { error } = await supabase.auth.signOut({ scope: 'global' });
         if (error) {
@@ -565,13 +610,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           throw error;
         }
         success = true;
-        console.log('✅ Supabase signOut successful');
+        console.log('Supabase signOut successful');
       } catch (signOutError) {
         console.error('❌ SignOut error:', signOutError);
         
         // If signOut fails, force a local sign out
         try {
-          console.log('🔄 Forcing local sign out...');
+          console.log('Forcing local sign out...');
           await supabase.auth.signOut({ scope: 'local' });
           success = true;
         } catch (forceError) {
@@ -582,9 +627,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
       
       if (success) {
-        console.log('✅ SignOut successful, auth state listener will handle cleanup');
+        console.log('SignOut successful, auth state listener will handle cleanup');
       } else {
-        console.log('❌ SignOut failed');
+        console.log('SignOut failed');
         dispatch({ type: 'SET_LOADING', payload: false });
       }
       
@@ -616,7 +661,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const loadProducts = async (filters?: ProductFilters): Promise<void> => {
     try {
-      console.log('🛍️ Loading products from Supabase...');
+      console.log('Loading products from Supabase...');
       
       const products = await productsService.getProducts(filters);
       
@@ -644,14 +689,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         };
       });
       
-      console.log(`✅ Loaded ${mappedProducts.length} products from Supabase`);
+      console.log(`Loaded ${mappedProducts.length} products from Supabase`);
       dispatch({ type: 'SET_PRODUCTS', payload: mappedProducts });
     } catch (error) {
       console.error('Error loading products from Supabase:', error);
-      console.log('📋 Falling back to mock data...');
+      console.log('Falling back to mock data...');
       
       // No fallback - all data must come from database
-      console.log('❌ Failed to load products from database, no fallback available');
+      console.log('Failed to load products from database, no fallback available');
       dispatch({ type: 'SET_PRODUCTS', payload: [] });
     }
   };
@@ -755,7 +800,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const loadUserFromSupabase = async (userId: string): Promise<User | null> => {
     try {
-      console.log('🔍 Loading user from Supabase:', userId);
+      console.log('Loading user from Supabase:', userId);
       const user = await supabaseService.getUserById(userId);
       if (user) {
         dispatch({ type: 'SET_USER', payload: user });
@@ -767,9 +812,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             dispatch({ type: 'SET_COMPANY', payload: company });
           }
         }
-        console.log('✅ Successfully loaded user from Supabase');
+        console.log('Successfully loaded user from Supabase');
       } else {
-        console.log('⚠️ User not found in Supabase');
+        console.log('User not found in Supabase');
       }
       return user;
     } catch (error) {
@@ -780,14 +825,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const testSupabaseIntegration = async (): Promise<boolean> => {
     try {
-      console.log('🧪 Testing Supabase integration...');
+      console.log('Testing Supabase integration...');
       
       // Test 1: Check if Supabase client is configured
       if (!supabase) {
         console.error('❌ Supabase client not configured');
         return false;
       }
-      console.log('✅ Supabase client configured');
+      console.log('Supabase client configured');
       
       // Test 2: Check auth session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -795,7 +840,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         console.error('❌ Auth session error:', sessionError);
         // Don't return false here - user might not be authenticated
       }
-      console.log('✅ Auth session checked:', session ? 'Active' : 'No active session');
+      console.log('Auth session checked:', session ? 'Active' : 'No active session');
       
       // Test 3: Test database connection by fetching products
       try {
@@ -808,7 +853,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           console.error('❌ Products query error:', productsError);
           return false;
         }
-        console.log('✅ Database connection successful, products count:', products?.length || 0);
+        console.log('Database connection successful, products count:', products?.length || 0);
       } catch (dbError) {
         console.error('❌ Database connection failed:', dbError);
         return false;
@@ -817,7 +862,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       // Test 4: Test products service integration
       try {
         const testProducts = await productsService.getProducts({ limit: 1 });
-        console.log('✅ Products service integration successful, loaded:', testProducts.length, 'products');
+        console.log('Products service integration successful, loaded:', testProducts.length, 'products');
       } catch (serviceError) {
         console.error('❌ Products service integration failed:', serviceError);
         return false;
@@ -1294,8 +1339,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
               const realUser = await loadUserWithTimeout();
               
               if (realUser) {
-                console.log('✅ Real user data loaded from database:', realUser.name);
-                console.log('🔍 User company_id from database:', realUser.companyId);
+                if (__DEV__) {
+                  console.log('✅ User loaded:', realUser.name);
+                }
                 dispatch({ type: 'SET_USER', payload: realUser });
                 
                 // Load company data if user is a company user (with timeout)

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -20,7 +20,8 @@ import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import MobileHeader from '../Layout/MobileHeader';
 import { useAppContext } from '../../context/AppContext';
 import { isCompanyUser, CompanyUser, IndividualUser } from '../../types/user';
-import { formatStatCurrency, formatStatNumber } from '../../utils/formatting';
+import { formatStatCurrency, formatStatNumber, formatPoints, formatFinancialAmount, formatLargeNumber } from '../../utils/formatting';
+import { auditService, PointsAuditEntry } from '../../services/auditService';
 
 // Mock rewards data
 const mockRewards = [
@@ -103,6 +104,86 @@ const TierBadge = ({ tier, size = 'large' }: { tier: TierLevel; size?: 'small' |
 // Points History Modal
 const PointsHistoryModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
   const { state } = useRewards();
+  const { state: appState } = useAppContext();
+  const [pointsAudit, setPointsAudit] = useState<PointsAuditEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  // Load audit trail when modal opens
+  React.useEffect(() => {
+    const loadPointsAudit = async () => {
+      if (visible && appState.user) {
+        setLoading(true);
+        try {
+          let auditData: PointsAuditEntry[] = [];
+          
+          // Load user's points audit (individual users)
+          if (appState.user.accountType === 'individual') {
+            auditData = await auditService.getUserPointsAudit(appState.user.id);
+          }
+          // Load company's points audit (company users can see all company activity)
+          else if (appState.user.accountType === 'company' && appState.user.companyId) {
+            auditData = await auditService.getCompanyPointsAudit(appState.user.companyId);
+          }
+          
+          setPointsAudit(auditData);
+        } catch (error) {
+          console.error('Error loading points audit:', error);
+          // Fallback to RewardsContext data
+          setPointsAudit([]);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    
+    loadPointsAudit();
+  }, [visible, appState.user?.id, appState.user?.companyId]);
+  
+  const formatTransactionType = (type: string) => {
+    switch (type) {
+      case 'earned_purchase': return 'Purchase';
+      case 'earned_bonus': return 'Bonus';
+      case 'earned_referral': return 'Referral';
+      case 'earned_milestone': return 'Milestone';
+      case 'redeemed_voucher': return 'Voucher';
+      case 'redeemed_reward': return 'Reward';
+      case 'expired': return 'Expired';
+      case 'adjusted': return 'Adjusted';
+      case 'restored': return 'Restored';
+      default: return type;
+    }
+  };
+  
+  const renderAuditItem = ({ item }: { item: PointsAuditEntry }) => (
+    <View style={styles.historyItem}>
+      <View style={styles.historyContent}>
+        <Text style={styles.historyDescription}>{item.description}</Text>
+        <Text style={styles.historyDate}>
+          {new Date(item.created_at).toLocaleDateString()} • {formatTransactionType(item.transaction_type)}
+        </Text>
+        {item.reference_id && (
+          <Text style={styles.historyOrderId}>
+            {item.reference_type === 'order' ? 'Order: ' : 'Ref: '}{item.reference_id}
+          </Text>
+        )}
+        {/* Show user name for company users viewing company-wide audit */}
+        {appState.user?.accountType === 'company' && item.user && item.user_id !== appState.user.id && (
+          <Text style={styles.historyUser}>By: {item.user.name}</Text>
+        )}
+      </View>
+      <View style={styles.historyPointsContainer}>
+        <Text style={[
+          styles.historyPoints,
+          item.points_amount > 0 ? styles.pointsEarned : styles.pointsRedeemed
+        ]}>
+          {item.points_amount > 0 ? '+' : ''}{formatPoints(Math.abs(item.points_amount))}
+        </Text>
+        <Text style={styles.historyBalance}>
+          Balance: {formatPoints(item.points_balance_after)}
+        </Text>
+      </View>
+    </View>
+  );
   
   return (
     <Modal
@@ -113,34 +194,39 @@ const PointsHistoryModal = ({ visible, onClose }: { visible: boolean; onClose: (
     >
       <SafeAreaView style={styles.modalContainer}>
         <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Points History</Text>
+          <Text style={styles.modalTitle}>
+            Points History
+            {appState.user?.accountType === 'company' && (
+              <Text style={styles.modalSubtitle}> • Company-wide</Text>
+            )}
+          </Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color={COLORS.text} />
           </TouchableOpacity>
         </View>
         
-        <FlatList
-          data={state.userRewards.pointsHistory}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.historyList}
-          renderItem={({ item }) => (
-            <View style={styles.historyItem}>
-              <View style={styles.historyContent}>
-                <Text style={styles.historyDescription}>{item.description}</Text>
-                <Text style={styles.historyDate}>{item.date}</Text>
-                {item.orderId && (
-                  <Text style={styles.historyOrderId}>Order: {item.orderId}</Text>
-                )}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={styles.loadingText}>Loading points history...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={pointsAudit}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.historyList}
+            renderItem={renderAuditItem}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Ionicons name="receipt-outline" size={48} color={COLORS.inactive} />
+                <Text style={styles.emptyText}>No points history yet</Text>
+                <Text style={styles.emptySubtext}>
+                  Start making purchases to earn points and build your history
+                </Text>
               </View>
-              <Text style={[
-                styles.historyPoints,
-                item.type === 'earned' ? styles.pointsEarned : styles.pointsRedeemed
-              ]}>
-                {item.type === 'earned' ? '+' : ''}{item.points.toLocaleString()}
-              </Text>
-            </View>
-          )}
-        />
+            }
+          />
+        )}
       </SafeAreaView>
     </Modal>
   );
@@ -157,6 +243,36 @@ export default function RewardsScreen() {
   const insets = useSafeAreaInsets();
   
   const user = appState.user;
+  
+  // Show loading state if user is authenticated but rewards haven't loaded yet
+  if (user && !state.userRewards) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading rewards...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
+  // Show auth required state if no user
+  if (!user || !state.userRewards) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.authRequiredContainer}>
+          <Ionicons name="log-in-outline" size={48} color={COLORS.textSecondary} />
+          <Text style={styles.authRequiredText}>Please sign in to view rewards</Text>
+          <TouchableOpacity 
+            style={styles.signInButton}
+            onPress={() => navigation.navigate('Profile' as never)}
+          >
+            <Text style={styles.signInButtonText}>Sign In</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
   
   const handleFeaturePress = (feature: string) => {
     console.log(`Pressed: ${feature}`);
@@ -205,7 +321,7 @@ export default function RewardsScreen() {
                 <Text style={styles.accountType}>
                   {isCompany ? 'Business Account' : 'Personal Account'}
                 </Text>
-                <Text style={styles.rewardTier}>{state.userRewards.tier} Tier</Text>
+                <Text style={styles.rewardTier}>{state.userRewards?.tier || 'Bronze'} Tier</Text>
               </View>
             </View>
           </View>
@@ -253,7 +369,7 @@ export default function RewardsScreen() {
     animateProgressBar();
     const interval = setInterval(animateProgressBar, 5000);
     return () => clearInterval(interval);
-  }, [state.userRewards.yearlySpend]);
+  }, [state.userRewards?.lifetimePoints]);
 
   // Carousel animation - alternate between progress and expiring points every 5 seconds
   React.useEffect(() => {
@@ -279,13 +395,15 @@ export default function RewardsScreen() {
     const pointsToNext = getPointsToNextTier();
     if (pointsToNext === 0) return 100; // Already Gold
     
-    const currentTierMin = state.userRewards.tier === 'Bronze' ? 0 : 50001;
-    const nextTierMin = state.userRewards.tier === 'Bronze' ? 50001 : 200001;
+    if (!state.userRewards) return 0;
+    
+    const currentTierMin = state.userRewards.tier === 'Bronze' ? 0 : 50000;
+    const nextTierMin = state.userRewards.tier === 'Bronze' ? 50000 : 200000;
     const range = nextTierMin - currentTierMin;
-    const progress = ((state.userRewards.yearlySpend - currentTierMin) / range) * 100;
+    const progress = ((state.userRewards.lifetimePoints - currentTierMin) / range) * 100;
     
     return Math.min(Math.max(progress, 0), 100);
-  }, [state.userRewards.yearlySpend, state.userRewards.tier]);
+  }, [state.userRewards?.lifetimePoints, state.userRewards?.tier]);
   
   const handleRedeem = async (rewardId: string) => {
     setRedeeming(rewardId);
@@ -310,7 +428,7 @@ export default function RewardsScreen() {
   ];
   
   const renderRewardItem = ({ item }: { item: typeof state.rewardsCatalog[0] }) => {
-    const canRedeem = state.userRewards.points >= item.points;
+    const canRedeem = (state.userRewards?.points || 0) >= item.points;
     const isRedeeming = redeeming === item.id;
     
     const getRewardIcon = () => {
@@ -398,7 +516,7 @@ export default function RewardsScreen() {
                 </View>
               </View>
               <View style={styles.amountContainer}>
-                <Text style={styles.pointsAmount}>{state.userRewards.points.toLocaleString()}</Text>
+                <Text style={styles.pointsAmount}>{(state.userRewards?.points || 0).toLocaleString()}</Text>
               </View>
               <Text style={styles.cardSubtext}>Available to use</Text>
             </View>
@@ -413,7 +531,7 @@ export default function RewardsScreen() {
             <View style={styles.cardContent}>
               <View style={styles.cardHeader}>
                 <View style={styles.tierIconContainer}>
-                  <TierBadge tier={state.userRewards.tier} size="small" />
+                  <TierBadge tier={state.userRewards?.tier || 'Bronze'} size="small" />
                 </View>
                 <Text style={styles.cardLabel}>Tier</Text>
                 <View style={styles.actionIndicator}>
@@ -421,7 +539,7 @@ export default function RewardsScreen() {
                 </View>
               </View>
               <View style={styles.amountContainer}>
-                <Text style={styles.tierAmount}>{state.userRewards.tier}</Text>
+                <Text style={styles.tierAmount}>{state.userRewards?.tier || 'Bronze'}</Text>
               </View>
               <Text style={styles.cardSubtext}>Member status</Text>
             </View>
@@ -450,8 +568,8 @@ export default function RewardsScreen() {
                   <View style={styles.progressHeader}>
                     <Ionicons name="trending-up" size={16} color={COLORS.primary} />
                     <Text style={styles.progressTitle}>
-                      S${getPointsToNextTier().toLocaleString()} to {
-                        state.userRewards.tier === 'Bronze' ? 'Silver' : 'Gold'
+                      {formatLargeNumber(getPointsToNextTier())} points to {
+                        (state.userRewards?.tier || 'Bronze') === 'Bronze' ? 'Silver' : 'Gold'
                       }
                     </Text>
                   </View>
@@ -1224,4 +1342,40 @@ const styles = StyleSheet.create({
   },
 
   // User Stats Section
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+  },
+  loadingText: {
+    ...TYPOGRAPHY.bodyLarge,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.md,
+  },
+  authRequiredContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+  },
+  authRequiredText: {
+    ...TYPOGRAPHY.bodyLarge,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.lg,
+    textAlign: 'center',
+  },
+  signInButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderRadius: 12,
+    ...SHADOWS.light,
+  },
+  signInButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.accent,
+    fontWeight: '600',
+  },
 }); 

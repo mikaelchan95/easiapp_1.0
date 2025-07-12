@@ -19,6 +19,8 @@ import * as Animations from '../../utils/animations';
 import { supabaseService, Order } from '../../services/supabaseService';
 import { AppContext } from '../../context/AppContext';
 import { supabase } from '../../../utils/supabase';
+import { HapticFeedback } from '../../utils/haptics';
+import { formatFinancialAmount } from '../../utils/formatting';
 
 const { width } = Dimensions.get('window');
 
@@ -38,7 +40,7 @@ const MOCK_ORDERS: Order[] = [
     id: '2',
     orderNumber: 'ORD-2024-002',
     date: '2024-01-20',
-    status: 'shipped',
+    status: 'out_for_delivery',
     total: 289.50,
     items: [
       { id: '2', name: 'Dom Pérignon 2013', quantity: 1, price: 189.50, image: 'bottle2' },
@@ -51,7 +53,7 @@ const MOCK_ORDERS: Order[] = [
     id: '3',
     orderNumber: 'ORD-2024-003',
     date: '2024-01-22',
-    status: 'processing',
+    status: 'preparing',
     total: 199.99,
     items: [
       { id: '4', name: 'Macallan 25 Year Old', quantity: 1, price: 199.99, image: 'bottle3' }
@@ -64,15 +66,15 @@ const MOCK_ORDERS: Order[] = [
 const FILTER_OPTIONS = [
   { id: 'all', label: 'All Orders', icon: 'list-outline' },
   { id: 'delivered', label: 'Delivered', icon: 'checkmark-circle-outline' },
-  { id: 'shipped', label: 'Shipped', icon: 'airplane-outline' },
-  { id: 'processing', label: 'Processing', icon: 'time-outline' },
+  { id: 'out_for_delivery', label: 'Out for Delivery', icon: 'airplane-outline' },
+  { id: 'preparing', label: 'Preparing', icon: 'time-outline' },
   { id: 'cancelled', label: 'Cancelled', icon: 'close-circle-outline' }
 ];
 
 export default function OrderHistoryScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { state } = useContext(AppContext);
+  const { state, dispatch } = useContext(AppContext);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -186,9 +188,13 @@ export default function OrderHistoryScreen() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'delivered': return '#4CAF50';
-      case 'shipped': return '#2196F3';
-      case 'processing': return '#FF9800';
+      case 'out_for_delivery': return '#2196F3';
+      case 'preparing': return '#FF9800';
+      case 'confirmed': return '#4CAF50';
+      case 'ready': return '#9C27B0';
+      case 'pending': return '#795548';
       case 'cancelled': return '#F44336';
+      case 'returned': return '#607D8B';
       default: return COLORS.inactive;
     }
   };
@@ -196,9 +202,13 @@ export default function OrderHistoryScreen() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'delivered': return 'checkmark-circle';
-      case 'shipped': return 'airplane';
-      case 'processing': return 'time';
+      case 'out_for_delivery': return 'airplane';
+      case 'preparing': return 'time';
+      case 'confirmed': return 'checkmark-circle';
+      case 'ready': return 'cube';
+      case 'pending': return 'hourglass';
       case 'cancelled': return 'close-circle';
+      case 'returned': return 'return-up-back';
       default: return 'help-circle';
     }
   };
@@ -208,8 +218,39 @@ export default function OrderHistoryScreen() {
   };
   
   const handleReorder = (order: Order) => {
-    // Add items back to cart
+    // Clear current cart and add order items back to cart
     console.log('Reordering:', order.orderNumber);
+    
+    // Clear current cart first
+    dispatch({ type: 'CLEAR_CART' });
+    
+    // Add each item from the order to the cart
+    order.items.forEach(item => {
+      dispatch({
+        type: 'ADD_TO_CART',
+        payload: {
+          product: {
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            image: item.image,
+            retailPrice: item.price,
+            tradePrice: item.price * 0.9, // Assume 10% trade discount
+            stockQuantity: 999, // Assume in stock
+            description: `Reordered: ${item.name}`,
+            category: 'Reorder',
+            isAvailable: true
+          },
+          quantity: item.quantity
+        }
+      });
+    });
+    
+    // Navigate to cart to show the recreated cart
+    navigation.navigate('Main', { screen: 'Cart' });
+    
+    // Show success feedback
+    HapticFeedback.success();
   };
   
   const handleTrackOrder = (order: Order) => {
@@ -311,7 +352,7 @@ export default function OrderHistoryScreen() {
           <View style={styles.orderFooter}>
             <View style={styles.totalSection}>
               <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalAmount}>${order.total.toFixed(2)}</Text>
+              <Text style={styles.totalAmount}>{formatFinancialAmount(order.total)}</Text>
             </View>
             
             <View style={styles.actionButtons}>

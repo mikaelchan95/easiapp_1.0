@@ -5,13 +5,12 @@ INSERT INTO public.users (
   email,
   phone,
   account_type,
-  member_since,
   total_orders,
   total_spent,
   created_at,
   updated_at
 ) VALUES (
-  '33333333-3333-3333-3333-333333333333',
+  '2a163380-6934-4f19-b2ff-f6a15081cfe2',
   'Mikael Chan',
   'mikael@thewinery.com.sg',
   '+65 9123 4567',

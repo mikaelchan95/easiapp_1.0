@@ -4,14 +4,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../types/navigation';
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
+import { supabaseService } from '../../services/supabaseService';
 
 type OrderTrackingRouteProp = RouteProp<RootStackParamList, 'OrderTracking'>;
 
-// Mock order statuses
+// Order status mapping
 const ORDER_STATUSES = [
-  { id: 'received', label: 'Order Received', icon: 'receipt-outline', description: 'Your order has been confirmed and is being processed.' },
+  { id: 'pending', label: 'Order Received', icon: 'receipt-outline', description: 'Your order has been confirmed and is being processed.' },
   { id: 'preparing', label: 'Being Prepared', icon: 'cube-outline', description: 'We are preparing your items for delivery.' },
-  { id: 'outForDelivery', label: 'Out for Delivery', icon: 'car-outline', description: 'Your order is on its way to you.' },
+  { id: 'out_for_delivery', label: 'Out for Delivery', icon: 'car-outline', description: 'Your order is on its way to you.' },
   { id: 'delivered', label: 'Delivered', icon: 'checkmark-circle-outline', description: 'Your order has been delivered. Enjoy!' },
 ];
 
@@ -22,41 +24,39 @@ const OrderTrackingScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   
   // Mock order details - in a real app, this would come from an API
-  const [order, setOrder] = useState({
-    id: orderId,
-    status: 'received',
-    driverName: 'Alex Johnson',
-    driverPhone: '+65 9123 4567',
-    estimatedDelivery: 'Wednesday, 10 July',
-    timeSlot: '3pm - 6pm',
-    items: [
-      { id: '1', name: 'Macallan 12 Year Old Sherry Oak', quantity: 1 },
-      { id: '2', name: 'Macallan 18 Year Old Sherry Cask', quantity: 1 },
-    ],
-    address: {
-      street: '123 Marina Bay Sands',
-      unit: '#12-34',
-      city: 'Singapore',
-      postalCode: '018956',
-    }
-  });
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
   
-  // Auto-progress the order status for demo purposes
+  // Fetch real order data from Supabase
   useEffect(() => {
-    const progressStatuses = ['received', 'preparing', 'outForDelivery', 'delivered'];
-    const currentIndex = progressStatuses.indexOf(order.status);
+    const fetchOrder = async () => {
+      try {
+        const orderData = await supabaseService.getOrderById(orderId);
+        if (orderData) {
+          setOrder(orderData);
+        }
+      } catch (error) {
+        console.error('Error fetching order:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    if (currentIndex < progressStatuses.length - 1) {
-      const timer = setTimeout(() => {
-        setOrder(prev => ({
-          ...prev,
-          status: progressStatuses[currentIndex + 1]
-        }));
-      }, 10000); // Progress every 10 seconds
-      
-      return () => clearTimeout(timer);
-    }
-  }, [order.status]);
+    fetchOrder();
+  }, [orderId]);
+  
+  // Set up real-time order updates
+  useEffect(() => {
+    if (!order) return;
+    
+    const subscription = supabaseService.subscribeToOrderUpdates(orderId, (updatedOrder) => {
+      setOrder(updatedOrder);
+    });
+    
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [orderId, order]);
   
   const handleBack = () => {
     navigation.goBack();
@@ -64,24 +64,52 @@ const OrderTrackingScreen: React.FC = () => {
   
   const handleContactDriver = () => {
     // In a real app, this would initiate a call
-    console.log('Contacting driver:', order.driverPhone);
+    console.log('Contacting driver for order:', orderId);
   };
   
   const getCurrentStatusIndex = () => {
+    if (!order) return 0;
     return ORDER_STATUSES.findIndex(status => status.id === order.status);
   };
   
   const currentStatusIndex = getCurrentStatusIndex();
   
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
+        <View style={[styles.statusBarSpacer, { height: insets.top }]} />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading order details...</Text>
+        </View>
+      </View>
+    );
+  }
+  
+  if (!order) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
+        <View style={[styles.statusBarSpacer, { height: insets.top }]} />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Order not found</Text>
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+            <Text style={styles.backButtonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+  
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
       <View style={[styles.statusBarSpacer, { height: insets.top }]} />
       
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+          <Ionicons name="chevron-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Track Order</Text>
         <View style={styles.placeholder} />
@@ -91,7 +119,7 @@ const OrderTrackingScreen: React.FC = () => {
         {/* Order ID */}
         <View style={styles.orderIdContainer}>
           <Text style={styles.orderIdLabel}>Order Number</Text>
-          <Text style={styles.orderId}>{order.id}</Text>
+          <Text style={styles.orderId}>{order.orderNumber}</Text>
         </View>
         
         {/* Status Timeline */}
@@ -133,7 +161,7 @@ const OrderTrackingScreen: React.FC = () => {
                     {status.description}
                   </Text>
                   
-                  {isCurrent && status.id === 'outForDelivery' && (
+                  {isCurrent && status.id === 'out_for_delivery' && (
                     <TouchableOpacity 
                       style={styles.contactButton}
                       onPress={handleContactDriver}
@@ -153,35 +181,48 @@ const OrderTrackingScreen: React.FC = () => {
           <Text style={styles.detailsTitle}>Delivery Details</Text>
           
           <View style={styles.detailRow}>
-            <Ionicons name="time-outline" size={20} color="#666" />
+            <Ionicons name="time-outline" size={20} color={COLORS.textSecondary} />
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Estimated Delivery</Text>
-              <Text style={styles.detailValue}>{order.estimatedDelivery}, {order.timeSlot}</Text>
+              <View style={styles.deliveryTimeContainer}>
+                <Text style={styles.deliveryTimeText}>{order.estimatedDelivery || 'Processing'}</Text>
+                {order.estimatedDelivery && (
+                  <View style={styles.deliveryTimeBadge}>
+                    <Ionicons name="flash" size={12} color="#4CAF50" />
+                    <Text style={styles.deliveryTimeBadgeText}>On Time</Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
           
           <View style={styles.detailRow}>
-            <Ionicons name="location-outline" size={20} color="#666" />
+            <Ionicons name="location-outline" size={20} color={COLORS.textSecondary} />
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Delivery Address</Text>
               <Text style={styles.detailValue}>
-                {order.address.street}{order.address.unit ? `, ${order.address.unit}` : ''}
-              </Text>
-              <Text style={styles.detailValue}>
-                {order.address.city}, {order.address.postalCode}
+                {order.deliveryAddress}
               </Text>
             </View>
           </View>
           
           <View style={styles.detailRow}>
-            <Ionicons name="cube-outline" size={20} color="#666" />
+            <Ionicons name="cube-outline" size={20} color={COLORS.textSecondary} />
             <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Items</Text>
+              <Text style={styles.detailLabel}>Items ({order.items.length})</Text>
               {order.items.map(item => (
                 <Text key={item.id} style={styles.detailValue}>
                   {item.quantity}x {item.name}
                 </Text>
               ))}
+            </View>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <Ionicons name="card-outline" size={20} color={COLORS.textSecondary} />
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Order Total</Text>
+              <Text style={styles.detailValue}>${order.total.toFixed(2)}</Text>
             </View>
           </View>
         </View>
@@ -193,84 +234,122 @@ const OrderTrackingScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: COLORS.background,
   },
   statusBarSpacer: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.card,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
+  },
+  errorText: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.lg,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.lg,
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: COLORS.border,
+    ...SHADOWS.medium,
+    elevation: 6,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.light,
+  },
+  backButtonText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    fontWeight: '600',
   },
   headerTitle: {
-    fontSize: 18,
+    ...TYPOGRAPHY.h2,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: COLORS.text,
   },
   placeholder: {
-    width: 40,
+    width: 44,
   },
   content: {
     flex: 1,
   },
   contentContainer: {
-    padding: 16,
+    padding: SPACING.lg,
   },
   orderIdContainer: {
-    marginBottom: 24,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    marginBottom: SPACING.xl,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: SPACING.lg,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
+    elevation: 6,
   },
   orderIdLabel: {
-    fontSize: 14,
-    color: '#666',
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
     marginBottom: 4,
+    fontWeight: '600',
   },
   orderId: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1a1a1a',
+    ...TYPOGRAPHY.h3,
+    fontWeight: '800',
+    color: COLORS.text,
     letterSpacing: 1,
   },
   timelineContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: SPACING.lg,
+    marginBottom: SPACING.xl,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
+    elevation: 6,
   },
   timelineItem: {
     flexDirection: 'row',
   },
   iconColumn: {
     alignItems: 'center',
-    width: 40,
+    width: 44,
   },
   statusIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: COLORS.border,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: SPACING.sm,
+    borderWidth: 2,
+    borderColor: COLORS.card,
   },
   activeStatusIcon: {
     backgroundColor: '#4CAF50',
@@ -280,81 +359,114 @@ const styles = StyleSheet.create({
     borderColor: '#4CAF50',
   },
   connector: {
-    width: 2,
-    height: 40,
-    backgroundColor: '#f0f0f0',
+    width: 3,
+    height: 32,
+    backgroundColor: COLORS.border,
     marginVertical: 4,
+    borderRadius: 1.5,
   },
   activeConnector: {
     backgroundColor: '#4CAF50',
   },
   statusContent: {
     flex: 1,
-    paddingLeft: 16,
-    paddingBottom: 24,
+    paddingLeft: SPACING.md,
+    paddingBottom: SPACING.xl,
   },
   statusLabel: {
-    fontSize: 16,
+    ...TYPOGRAPHY.body,
     fontWeight: '700',
-    color: '#666',
+    color: COLORS.textSecondary,
     marginBottom: 4,
   },
   activeStatusLabel: {
-    color: '#1a1a1a',
+    color: COLORS.text,
   },
   statusDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.md,
+    fontWeight: '500',
   },
   contactButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    backgroundColor: COLORS.text,
+    borderRadius: 12,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
     alignSelf: 'flex-start',
-    marginTop: 8,
+    marginTop: SPACING.sm,
+    ...SHADOWS.light,
   },
   contactButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
+    color: COLORS.card,
+    ...TYPOGRAPHY.small,
+    fontWeight: '700',
+    marginLeft: SPACING.sm,
   },
   detailsCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: SPACING.lg,
+    marginBottom: SPACING.xl,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
+    elevation: 6,
   },
   detailsTitle: {
-    fontSize: 16,
+    ...TYPOGRAPHY.h4,
     fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 16,
+    color: COLORS.text,
+    marginBottom: SPACING.lg,
   },
   detailRow: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: SPACING.md,
+    alignItems: 'flex-start',
   },
   detailContent: {
     flex: 1,
-    paddingLeft: 12,
+    paddingLeft: SPACING.md,
   },
   detailLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    ...TYPOGRAPHY.small,
+    fontWeight: '700',
+    color: COLORS.text,
     marginBottom: 4,
   },
   detailValue: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    lineHeight: 22,
+    fontWeight: '500',
+  },
+  deliveryTimeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  deliveryTimeText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    fontWeight: '700',
+    flex: 1,
+  },
+  deliveryTimeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: SPACING.sm,
+  },
+  deliveryTimeBadgeText: {
+    ...TYPOGRAPHY.caption,
+    color: '#4CAF50',
+    fontWeight: '700',
+    marginLeft: 2,
   },
 });
 

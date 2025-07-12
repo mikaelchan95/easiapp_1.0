@@ -2,6 +2,33 @@
 
 export type AccountType = 'individual' | 'company';
 
+// Points-related types
+export interface UserCompanyPoints {
+  id: string;
+  userId: string;
+  companyId: string;
+  pointsBalance: number;
+  lifetimePoints: number;
+  pointsEarned: number;
+  pointsRedeemed: number;
+  pointsRank: number;
+  lifetimeRank: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PointsTransaction {
+  id: string;
+  userId: string;
+  companyId: string | null;
+  transactionType: 'earned_purchase' | 'redeemed_voucher' | 'points_transfer_in' | 'points_transfer_out' | 'earned_bonus' | 'expired' | 'adjusted';
+  pointsAmount: number;
+  pointsBalanceBefore: number;
+  pointsBalanceAfter: number;
+  metadata: Record<string, any>;
+  createdAt: string;
+}
+
 export type CompanyUserRole = 
   | 'superadmin'    // Full access, can manage company settings and users
   | 'manager'       // Can approve orders, manage team members
@@ -25,6 +52,7 @@ export interface User {
   permissions?: UserPermissions;
   profileImage?: string;
   walletBalance?: number;    // For individual users
+  points?: number;          // Reward points for both individual and company users
   createdAt: string;
   lastLogin?: string;
 }
@@ -43,6 +71,11 @@ export interface Company {
   creditLimit?: number;
   currentCredit?: number;
   paymentTerms?: 'COD' | 'NET7' | 'NET30' | 'NET60';
+  
+  // Points & Rewards
+  totalPoints?: number;
+  pointsEarnedThisMonth?: number;
+  pointsRedeemedThisMonth?: number;
   
   // Order Settings
   approvalSettings: {

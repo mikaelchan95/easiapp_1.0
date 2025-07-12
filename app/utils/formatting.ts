@@ -153,4 +153,72 @@ export const formatQuantity = (quantity: number): string => {
     return formatNumberShort(quantity, 0);
   }
   return quantity.toString();
+};
+
+/**
+ * Format number with comma separators (e.g., 100,000.00)
+ * @param num - Number to format
+ * @param decimals - Number of decimal places (default: 0)
+ * @param forceDecimals - Force showing decimals even for whole numbers
+ */
+export const formatNumberWithCommas = (
+  num: number, 
+  decimals: number = 0, 
+  forceDecimals: boolean = false
+): string => {
+  if (num === 0) return forceDecimals ? '0.00' : '0';
+  
+  const options: Intl.NumberFormatOptions = {
+    minimumFractionDigits: forceDecimals ? decimals : 0,
+    maximumFractionDigits: decimals,
+    useGrouping: true,
+  };
+  
+  return new Intl.NumberFormat('en-US', options).format(num);
+};
+
+/**
+ * Format currency with comma separators (e.g., $100,000.00)
+ * @param amount - Amount to format
+ * @param currency - Currency symbol (default: '$')
+ * @param showCents - Show cents (default: true)
+ */
+export const formatCurrencyWithCommas = (
+  amount: number, 
+  currency: string = '$', 
+  showCents: boolean = true
+): string => {
+  if (amount === 0) return showCents ? `${currency}0.00` : `${currency}0`;
+  
+  const formatted = formatNumberWithCommas(amount, showCents ? 2 : 0, showCents);
+  return `${currency}${formatted}`;
+};
+
+/**
+ * Format large numbers for display with commas (e.g., 1,234,567 points)
+ * @param num - Number to format
+ * @param suffix - Optional suffix (e.g., 'points', 'items')
+ */
+export const formatLargeNumber = (num: number, suffix?: string): string => {
+  const formatted = formatNumberWithCommas(num);
+  return suffix ? `${formatted} ${suffix}` : formatted;
+};
+
+/**
+ * Format currency for financial displays (always show cents with commas)
+ * @param amount - Amount to format
+ * @param currency - Currency symbol (default: '$')
+ */
+export const formatFinancialAmount = (amount: number, currency: string = '$'): string => {
+  return formatCurrencyWithCommas(amount, currency, true);
+};
+
+/**
+ * Format points with commas (e.g., 101,461 points)
+ * @param points - Points to format
+ * @param includeLabel - Whether to include 'points' label
+ */
+export const formatPoints = (points: number, includeLabel: boolean = false): string => {
+  const formatted = formatNumberWithCommas(points);
+  return includeLabel ? `${formatted} points` : formatted;
 }; 

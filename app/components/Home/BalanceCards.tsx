@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
-import { formatStatCurrency, formatStatNumber, cleanText } from '../../utils/formatting';
+import { formatStatCurrency, formatStatNumber, formatFinancialAmount, formatPoints, cleanText } from '../../utils/formatting';
 import { useRewards } from '../../context/RewardsContext';
 import { useAppContext } from '../../context/AppContext';
 import { isCompanyUser } from '../../types/user';
@@ -62,7 +62,7 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
   
   // Use real data from contexts
   const accountBalance = getAccountBalance();
-  const rewardPoints = rewardsState.userRewards.points; // Actual points from rewards context
+  const rewardPoints = rewardsState.userRewards?.points || 0; // Actual points from rewards context
   
   // Log user data for debugging (behind the scenes)
   useEffect(() => {

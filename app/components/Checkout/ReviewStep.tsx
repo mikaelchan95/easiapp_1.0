@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Animated } from 'react-native';
+import { View, Text, StyleSheet, Image, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { DeliveryAddress, DeliverySlot, PaymentMethod } from './CheckoutScreen';
+import { DeliveryAddress, DeliverySlot, PaymentMethod } from '../../types/checkout';
 import { TYPOGRAPHY, COLORS, SPACING, SHADOWS } from '../../utils/theme';
+import { formatFinancialAmount } from '../../utils/formatting';
+import { getProductImageSource } from '../../utils/imageUtils';
 
 interface CartItem {
   product: {
@@ -75,7 +77,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
   }
   
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <View style={styles.container}>
       <Animated.View
         style={{
           opacity: fadeAnim,
@@ -104,16 +106,22 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             </View>
           </View>
           
-          {cart.map((item, index) => (
-            <View key={item.product.id} style={styles.itemRow}>
-              <Image source={typeof item.product.imageUrl === 'string' ? { uri: item.product.imageUrl } : item.product.imageUrl} style={styles.itemImage} />
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName}>{item.product.name}</Text>
-                <Text style={styles.itemMeta}>Quantity: {item.quantity}</Text>
+          {cart.map((item, index) => {
+            const imageSource = getProductImageSource(item.product.imageUrl, item.product.name);
+            return (
+              <View key={item.product.id} style={[styles.itemRow, index === cart.length - 1 && styles.lastItemRow]}>
+                <Image 
+                  source={imageSource || { uri: 'https://images.unsplash.com/photo-1568213816046-0ee1c42bd559?w=400&h=400&fit=crop' }} 
+                  style={styles.itemImage} 
+                />
+                <View style={styles.itemInfo}>
+                  <Text style={styles.itemName}>{item.product.name}</Text>
+                  <Text style={styles.itemMeta}>Qty: {item.quantity}</Text>
+                </View>
+                <Text style={styles.itemPrice}>{formatFinancialAmount(item.product.price * item.quantity)}</Text>
               </View>
-              <Text style={styles.itemPrice}>${(item.product.price * item.quantity).toFixed(0)}</Text>
-            </View>
-          ))}
+            );
+          })}
         </Animated.View>
         
         {/* Delivery Details */}
@@ -179,7 +187,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             <Text style={styles.detailLabel}>Time Slot</Text>
             <Text style={styles.detailText}>{deliverySlot.timeSlot}</Text>
             <Text style={styles.queueText}>
-              {deliverySlot.queueCount} {deliverySlot.queueCount === 1 ? 'order' : 'orders'} in queue
+              {deliverySlot.queueCount} {deliverySlot.queueCount === 1 ? 'order' : 'orders'} ahead
             </Text>
           </View>
         </View>
@@ -247,19 +255,19 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
         
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Subtotal</Text>
-          <Text style={styles.summaryValue}>${subtotal.toFixed(2)}</Text>
+          <Text style={styles.summaryValue}>{formatFinancialAmount(subtotal)}</Text>
         </View>
         
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Delivery Fee</Text>
           <Text style={styles.summaryValue}>
-            {deliveryFee === 0 ? 'FREE' : `$${deliveryFee.toFixed(2)}`}
+            {deliveryFee === 0 ? 'FREE' : formatFinancialAmount(deliveryFee)}
           </Text>
         </View>
         
         <View style={[styles.summaryRow, styles.totalRow]}>
           <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+          <Text style={styles.totalValue}>{formatFinancialAmount(total)}</Text>
         </View>
         </Animated.View>
         
@@ -270,7 +278,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
           </Text>
         </View>
       </Animated.View>
-    </ScrollView>
+    </View>
   );
 };
 
@@ -278,10 +286,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  contentContainer: {
     padding: SPACING.lg,
-    paddingBottom: SPACING.xl + 80,
   },
   title: {
     ...TYPOGRAPHY.h1,
@@ -340,17 +345,21 @@ const styles = StyleSheet.create({
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
+  lastItemRow: {
+    borderBottomWidth: 0,
+  },
   itemImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 12,
+    width: 60,
+    height: 60,
+    borderRadius: 8,
     marginRight: SPACING.md,
-    resizeMode: 'contain',
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   itemInfo: {
     flex: 1,
@@ -358,34 +367,39 @@ const styles = StyleSheet.create({
   },
   itemName: {
     ...TYPOGRAPHY.body,
-    fontWeight: '700',
+    fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   itemMeta: {
-    ...TYPOGRAPHY.small,
+    ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
     fontWeight: '500',
   },
   itemPrice: {
-    ...TYPOGRAPHY.h4,
+    ...TYPOGRAPHY.body,
     fontWeight: '700',
     color: COLORS.text,
-    minWidth: 60,
+    minWidth: 80,
     textAlign: 'right',
   },
   detailRow: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: SPACING.md,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: SPACING.sm,
   },
   detailIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#f0f0f0',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.card,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   detailContent: {
     flex: 1,
@@ -457,7 +471,8 @@ const styles = StyleSheet.create({
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: SPACING.sm,
+    paddingVertical: SPACING.xs,
   },
   summaryLabel: {
     ...TYPOGRAPHY.caption,

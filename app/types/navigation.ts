@@ -17,6 +17,37 @@ export type RootStackParamList = {
   Products: undefined;
   Cart: undefined;
   Checkout: undefined;
+  
+  // New individual checkout screens
+  CheckoutAddress: undefined;
+  CheckoutDelivery: undefined;
+  CheckoutPayment: undefined;
+  CheckoutReview: undefined;
+  CheckoutProcessing: undefined;
+  
+  // Enhanced checkout screens
+  CheckoutValidation: {
+    cartItems: Array<{ product: any; quantity: number }>;
+    address: any;
+    deliverySlot: any;
+    paymentMethod: any;
+  };
+  PaymentProcessing: {
+    orderId: string;
+    orderNumber: string;
+    paymentMethod: any;
+    totalAmount: number;
+  };
+  OrderApprovalStatus: {
+    orderId: string;
+  };
+  
+  // Notification screens
+  NotificationCenter: undefined;
+  NotificationDetail: {
+    notificationId: string;
+  };
+  
   Profile: { highlightRecentOrder?: boolean };
   Rewards: undefined;
   Activities: undefined;
@@ -29,7 +60,12 @@ export type RootStackParamList = {
   ProductDetail: { id: string };
   SmartSearch: { category?: string };
   Main: { screen: string };
-  OrderSuccess: { orderId: string; deliveryDate: string; deliveryTime: string; total?: number };
+  OrderSuccess: {
+    orderId: string;
+    total: number;
+    deliveryDate: string;
+    deliveryTime: string;
+  };
   OrderTracking: { orderId: string };
   MomentumShowcase: undefined;
   OrderHistory: undefined;
@@ -48,6 +84,7 @@ export type RootStackParamList = {
   AchievementsScreen: undefined;
   MilestonesScreen: undefined;
   RewardsAnalytics: undefined;
+  TierBenefitsScreen: undefined;
   // Company-related screens
   CompanyProfile: undefined;
   TeamManagement: undefined;
@@ -56,6 +93,74 @@ export type RootStackParamList = {
   EditCompanyInfo: undefined;
   EditTeamMember: { userId: string };
   BillingInvoices: undefined;
+  BillingDashboard: undefined;
+  CreditPayment: undefined;
+  // Approval workflow screens
+  OrderApprovalList: {
+    filter?: 'pending' | 'history' | 'all';
+  };
+  OrderApprovalDetail: { 
+    orderId: string;
+    approvalId?: string;
+  };
+  ApprovalWorkflow: {
+    orderId: string;
+    workflowId?: string;
+  };
+  ApprovalHistory: {
+    filter?: 'approved' | 'rejected' | 'all';
+  };
+  
+  // Billing-related screens
+  BillingDashboard: { 
+    companyId?: string; 
+    companyName?: string; 
+  };
+  BillingSettings: { 
+    companyId?: string; 
+    companyName?: string; 
+  };
+  InvoicesList: {
+    companyId?: string;
+    status?: 'pending' | 'paid' | 'overdue' | 'all';
+  };
+  InvoiceDetail: { 
+    invoiceId: string; 
+  };
+  PaymentHistory: {
+    companyId?: string;
+  };
+  PaymentDetail: { 
+    paymentId: string; 
+  };
+  CompanyCreditOverview: {
+    companyId?: string;
+  };
+  PartialPayment: {
+    companyId: string;
+    companyName: string;
+  };
+  RealTimeBalance: {
+    companyId: string;
+    companyName: string;
+  };
+  PaymentAllocation: {
+    companyId: string;
+    paymentAmount: number;
+    allocationStrategy: 'oldest_first' | 'largest_first' | 'manual';
+  };
+  
+  // Admin screens
+  AdminBillingDashboard: undefined;
+  CompanyBillingManager: {
+    companyId: string;
+  };
+  BillingAnalytics: {
+    companyId?: string;
+    dateRange?: string;
+  };
+  BulkBillingProcessor: undefined;
+  PaymentReconciliation: undefined;
   // Settings screen
   Settings: undefined;
   // Auth screen
@@ -99,6 +204,7 @@ export type AppStackParamList = {
   AchievementsScreen: undefined;
   MilestonesScreen: undefined;
   RewardsAnalytics: undefined;
+  TierBenefitsScreen: undefined;
   // Company-related screens
   CompanyProfile: undefined;
   TeamManagement: undefined;
@@ -107,6 +213,74 @@ export type AppStackParamList = {
   EditCompanyInfo: undefined;
   EditTeamMember: { userId: string };
   BillingInvoices: undefined;
+  BillingDashboard: undefined;
+  CreditPayment: undefined;
+  // Approval workflow screens
+  OrderApprovalList: {
+    filter?: 'pending' | 'history' | 'all';
+  };
+  OrderApprovalDetail: { 
+    orderId: string;
+    approvalId?: string;
+  };
+  ApprovalWorkflow: {
+    orderId: string;
+    workflowId?: string;
+  };
+  ApprovalHistory: {
+    filter?: 'approved' | 'rejected' | 'all';
+  };
+  
+  // Billing-related screens
+  BillingDashboard: { 
+    companyId?: string; 
+    companyName?: string; 
+  };
+  BillingSettings: { 
+    companyId?: string; 
+    companyName?: string; 
+  };
+  InvoicesList: {
+    companyId?: string;
+    status?: 'pending' | 'paid' | 'overdue' | 'all';
+  };
+  InvoiceDetail: { 
+    invoiceId: string; 
+  };
+  PaymentHistory: {
+    companyId?: string;
+  };
+  PaymentDetail: { 
+    paymentId: string; 
+  };
+  CompanyCreditOverview: {
+    companyId?: string;
+  };
+  PartialPayment: {
+    companyId: string;
+    companyName: string;
+  };
+  RealTimeBalance: {
+    companyId: string;
+    companyName: string;
+  };
+  PaymentAllocation: {
+    companyId: string;
+    paymentAmount: number;
+    allocationStrategy: 'oldest_first' | 'largest_first' | 'manual';
+  };
+  
+  // Admin screens
+  AdminBillingDashboard: undefined;
+  CompanyBillingManager: {
+    companyId: string;
+  };
+  BillingAnalytics: {
+    companyId?: string;
+    dateRange?: string;
+  };
+  BulkBillingProcessor: undefined;
+  PaymentReconciliation: undefined;
   // Settings screen
   Settings: undefined;
   // Auth screen

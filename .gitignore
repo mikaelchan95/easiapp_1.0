@@ -30,9 +30,69 @@ yarn-error.*
 *.pem
 
 # local env files
+.env.local
 .env*.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # typescript
 *.tsbuildinfo
 
 app-example
+
+# Coverage reports
+/coverage/
+coverage.json
+.nyc_output/
+
+# Build artifacts
+/android/build/
+/ios/build/
+/platforms/
+
+# Temporary scripts
+/*.js
+!/babel.config.js
+!/jest.*.js
+!/metro.config.js
+
+# Downloaded assets
+/downloaded_images/
+
+# Applied migrations (if tracked elsewhere)
+/applied_migrations/
+
+# Temporary SQL files
+/fix_infinite_recursion_policy.sql
+/update_product_images.sql
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Log files
+*.log
+logs/
+
+# Test artifacts
+/test-results/
+/screenshots/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Python bytecode (if any Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class

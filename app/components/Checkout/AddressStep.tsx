@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { DeliveryAddress } from './CheckoutScreen';
+import { DeliveryAddress } from '../../types/checkout';
 import { LocationSuggestion } from '../../types/location';
 import { GoogleMapsService } from '../../services/googleMapsService';
 import { HapticFeedback } from '../../utils/haptics';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
 import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
+import { validateField, validateAddress } from '../../utils/checkoutValidation';
 
 interface AddressStepProps {
   address: DeliveryAddress;
@@ -20,21 +21,58 @@ const AddressStep: React.FC<AddressStepProps> = ({ address: initialAddress, onCo
   const [address, setAddress] = useState<DeliveryAddress>(initialAddress);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saveAsDefault, setSaveAsDefault] = useState(initialAddress.isDefault || false);
+  const [hasValidated, setHasValidated] = useState(false);
 
-  // Update address when form fields change
+  // Validate address on mount and when address changes
+  useEffect(() => {
+    if (hasValidated) {
+      const validation = validateAddress(address);
+      setErrors(validation.errors);
+    }
+  }, [address, hasValidated]);
+
+  // Notify parent of initial address on mount
+  useEffect(() => {
+    onContinue(initialAddress);
+  }, []);
+
+  // Update address when form fields change with real-time validation
   const handleChange = (field: keyof DeliveryAddress, value: string) => {
-    setAddress(prev => ({
-      ...prev,
+    const updatedAddress = {
+      ...address,
       [field]: value
-    }));
+    };
+    setAddress(updatedAddress);
     
-    // Clear error when field is edited
-    if (errors[field]) {
+    // Real-time field validation
+    if (hasValidated && field !== 'isDefault') {
+      const fieldValidation = validateField(field as any, value);
       setErrors(prev => {
         const newErrors = { ...prev };
-        delete newErrors[field];
+        if (fieldValidation.isValid) {
+          delete newErrors[field];
+        } else {
+          newErrors[field] = fieldValidation.error || '';
+        }
         return newErrors;
       });
+    }
+    
+    // Notify parent of address change
+    onContinue(updatedAddress);
+  };
+
+  // Validate all fields when user tries to continue
+  const handleContinue = () => {
+    setHasValidated(true);
+    const validation = validateAddress(address);
+    setErrors(validation.errors);
+    
+    if (validation.canContinue) {
+      HapticFeedback.success();
+      onContinue(address);
+    } else {
+      HapticFeedback.error();
     }
   };
 
@@ -42,10 +80,14 @@ const AddressStep: React.FC<AddressStepProps> = ({ address: initialAddress, onCo
   const toggleSaveAsDefault = () => {
     const newValue = !saveAsDefault;
     setSaveAsDefault(newValue);
-    setAddress(prev => ({
-      ...prev,
+    const updatedAddress = {
+      ...address,
       isDefault: newValue
-    }));
+    };
+    setAddress(updatedAddress);
+    
+    // Notify parent of address change
+    onContinue(updatedAddress);
   };
 
   // Handle location selection from picker with validation
@@ -80,6 +122,15 @@ const AddressStep: React.FC<AddressStepProps> = ({ address: initialAddress, onCo
         setErrors(prev => ({ ...prev, street: '' }));
       }
       
+      // Trigger validation if user has already attempted to continue
+      if (hasValidated) {
+        const validation = validateAddress(updatedAddress);
+        setErrors(validation.errors);
+      }
+      
+      // Notify parent of address change
+      onContinue(updatedAddress);
+      
       HapticFeedback.success();
     } catch (error) {
       console.error('Error validating location:', error);
@@ -112,46 +163,13 @@ const AddressStep: React.FC<AddressStepProps> = ({ address: initialAddress, onCo
   // Navigate to location picker
   const openLocationPicker = () => {
     HapticFeedback.selection();
-    navigation.navigate('DeliveryLocationScreen');
-  };
-  
-  const validateAddress = () => {
-    const newErrors: Record<string, string> = {};
-    
-    if (!address.name.trim()) {
-      newErrors.name = 'Name is required';
-    }
-    
-    if (!address.street.trim()) {
-      newErrors.street = 'Please select a delivery address';
-    }
-    
-    if (!address.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // Check if form is valid without setting errors
-  const isFormValid = () => {
-    return address.name.trim() && address.street.trim() && address.phone.trim();
-  };
-  
-  const handleContinue = () => {
-    if (validateAddress()) {
-      HapticFeedback.success();
-      onContinue(address);
-    } else {
-      HapticFeedback.error();
-    }
+    navigation.navigate('DeliveryLocationScreen', {
+      returnToScreen: 'Checkout'
+    });
   };
   
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <Text style={styles.title}>Delivery Address</Text>
-      <Text style={styles.subtitle}>Where should we deliver your order?</Text>
+    <View style={styles.container}>
       
       <View style={styles.form}>
         {/* Location Picker Button */}
@@ -257,54 +275,42 @@ const AddressStep: React.FC<AddressStepProps> = ({ address: initialAddress, onCo
           We deliver to most areas in Singapore. Your address will be verified in the next step.
         </Text>
       </View>
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: COLORS.background,
-  },
-  contentContainer: {
-    padding: SPACING.md,
-    paddingBottom: 100,
-  },
-  title: {
-    ...TYPOGRAPHY.h1,
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.lg,
+    padding: SPACING.lg,
   },
   form: {
     backgroundColor: COLORS.card,
     borderRadius: 20,
     padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.sm,
     borderWidth: 1,
     borderColor: COLORS.border,
     ...SHADOWS.medium,
     elevation: 6,
   },
   formGroup: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
   },
   label: {
     ...TYPOGRAPHY.caption,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
   locationButton: {
     backgroundColor: COLORS.background,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 8,
-    padding: SPACING.sm,
+    borderRadius: 12,
+    padding: SPACING.md,
+    ...SHADOWS.light,
+    elevation: 3,
   },
   locationButtonError: {
     borderColor: COLORS.error,
@@ -335,10 +341,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 8,
-    padding: SPACING.sm,
+    borderRadius: 12,
+    padding: SPACING.md,
     ...TYPOGRAPHY.body,
     color: COLORS.text,
+    fontSize: 16,
+    ...SHADOWS.light,
+    elevation: 2,
   },
   inputError: {
     borderColor: COLORS.error,
@@ -350,7 +359,8 @@ const styles = StyleSheet.create({
   },
   formRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: SPACING.md,
   },
   unitInput: {
     flex: 1,
@@ -361,15 +371,20 @@ const styles = StyleSheet.create({
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: SPACING.xs,
+    marginTop: SPACING.md,
+    padding: SPACING.sm,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    ...SHADOWS.light,
+    elevation: 2,
   },
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 4,
+    borderRadius: 6,
     borderWidth: 2,
     borderColor: COLORS.primary,
-    marginRight: SPACING.sm,
+    marginRight: SPACING.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -390,13 +405,15 @@ const styles = StyleSheet.create({
   },
   deliveryInfo: {
     flexDirection: 'row',
-    backgroundColor: COLORS.card,
-    borderRadius: 12,
+    backgroundColor: '#E8F5E9',
+    borderRadius: 16,
     padding: SPACING.md,
     alignItems: 'flex-start',
     borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: SPACING.lg,
+    borderColor: '#C8E6C9',
+    marginTop: SPACING.sm,
+    ...SHADOWS.light,
+    elevation: 3,
   },
   infoIcon: {
     marginRight: SPACING.sm,
@@ -404,9 +421,10 @@ const styles = StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text,
-    lineHeight: 20,
+    ...TYPOGRAPHY.body,
+    color: '#2E7D32',
+    lineHeight: 22,
+    fontWeight: '500',
   },
 });
 

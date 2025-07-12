@@ -127,8 +127,21 @@ export default function CartScreen() {
   const SUMMARY_BAR_HEIGHT = SPACING.md * 2 + 140 + insets.bottom + 83; // padding + content height + safe area + tab bar
   
   // Helper function to generate Supabase Storage URL
-  const getSupabaseStorageUrl = (bucket: string, path: string): string => {
-    return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/${bucket}/${path}`;
+  const getSupabaseStorageUrl = (path: string): string => {
+    // If it's just a filename (no slashes), add the full path
+    if (!path.includes('/')) {
+      return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${path}`;
+    }
+    // If path already includes product-images/, use as-is
+    if (path.includes('product-images/')) {
+      return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/${path}`;
+    }
+    // If path starts with products/, add the bucket name
+    if (path.startsWith('products/')) {
+      return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/${path}`;
+    }
+    // Fallback - assume it's a full relative path
+    return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${path}`;
   };
 
   // Improved product image lookup with fallback
@@ -143,7 +156,7 @@ export default function CartScreen() {
         return liveProduct.image;
       }
       // Convert storage path to full URL
-      return getSupabaseStorageUrl('product-images', liveProduct.image);
+      return getSupabaseStorageUrl(liveProduct.image);
     }
     
     if (liveProduct?.imageUrl) {
@@ -152,7 +165,7 @@ export default function CartScreen() {
         return liveProduct.imageUrl;
       }
       // Convert storage path to full URL
-      return getSupabaseStorageUrl('product-images', liveProduct.imageUrl);
+      return getSupabaseStorageUrl(liveProduct.imageUrl);
     }
     
     // Fallback to a placeholder image with proper wine bottle image
@@ -391,13 +404,19 @@ export default function CartScreen() {
 
   // Enhanced checkout handler with better animation
   const handleCheckout = () => {
-    HapticFeedback.success();
+    if (state.cart.length === 0) {
+      HapticFeedback.error();
+      return;
+    }
     
-    // Use existing animation utility for better feedback
-    Animations.bounceAnimation(headerScaleAnim, () => {
-      // Navigate to checkout after animation completes
-      navigation.navigate('Checkout');
-    });
+    if (!state.user) {
+      HapticFeedback.warning();
+      navigation.navigate('Main', { screen: 'Profile' });
+      return;
+    }
+    
+    HapticFeedback.medium();
+    navigation.navigate('CheckoutAddress'); // Changed from 'Checkout' to 'CheckoutAddress'
   };
 
   // Pull to refresh handler

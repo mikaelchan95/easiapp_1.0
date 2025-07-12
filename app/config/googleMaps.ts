@@ -1,5 +1,5 @@
 export const GOOGLE_MAPS_CONFIG = {
-  apiKey: 'AIzaSyCNpWjIoH986AQx2ea2AaiqzsqUcwaqX9I',
+  apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '',
   
   // Singapore region settings
   defaultRegion: {

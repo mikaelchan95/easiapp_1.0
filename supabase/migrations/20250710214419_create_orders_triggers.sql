@@ -28,7 +28,7 @@ END;
 $$ language 'plpgsql';
 
 -- Create sequence for order numbers
-CREATE SEQUENCE order_number_seq START 1;
+CREATE SEQUENCE IF NOT EXISTS order_number_seq START 1;
 
 -- Create trigger for order number generation
 CREATE TRIGGER generate_order_number_trigger

@@ -27,7 +27,7 @@ interface AnimatedButtonProps {
   loadingText?: string;
   success?: boolean;
   successText?: string;
-  type?: 'primary' | 'secondary' | 'outline' | 'danger';
+  type?: 'primary' | 'secondary' | 'outline' | 'danger' | 'success';
   fullWidth?: boolean;
 }
 
@@ -132,6 +132,8 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
         return styles.outlineButton;
       case 'danger':
         return styles.dangerButton;
+      case 'success':
+        return styles.successButton;
       default:
         return styles.primaryButton;
     }
@@ -148,6 +150,8 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
         return styles.outlineText;
       case 'danger':
         return styles.dangerText;
+      case 'success':
+        return styles.successText;
       default:
         return styles.primaryText;
     }
@@ -165,6 +169,8 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
       case 'outline':
         return COLORS.primary;
       case 'danger':
+        return COLORS.accent;
+      case 'success':
         return COLORS.accent;
       default:
         return COLORS.accent;
@@ -215,7 +221,7 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
         {icon && iconPosition === 'left' && (
           <Ionicons name={icon as any} size={iconSize} color={getIconColor()} style={styles.iconLeft} />
         )}
-        <Text style={[getTextStyle(), textStyle]}>{label}</Text>
+        <Text style={[getTextStyle(), textStyle]} numberOfLines={1}>{label}</Text>
         {icon && iconPosition === 'right' && (
           <Ionicons name={icon as any} size={iconSize} color={getIconColor()} style={styles.iconRight} />
         )}
@@ -275,6 +281,9 @@ const styles = StyleSheet.create({
   dangerButton: {
     backgroundColor: '#D32F2F',
   },
+  successButton: {
+    backgroundColor: '#4CAF50',
+  },
   disabledButton: {
     backgroundColor: '#ccc',
   },
@@ -294,6 +303,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   dangerText: {
+    color: COLORS.accent,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  successText: {
     color: COLORS.accent,
     fontSize: 16,
     fontWeight: '700',
