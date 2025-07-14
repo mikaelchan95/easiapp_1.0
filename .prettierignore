@@ -1,0 +1,13 @@
+node_modules/
+.expo/
+dist/
+web-build/
+coverage/
+*.config.js
+*.lock
+*.log
+.git/
+.DS_Store
+SuperClaude/
+ios/
+android/
