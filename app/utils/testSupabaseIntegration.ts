@@ -41,4 +41,228 @@ export const testSupabaseIntegration = {
       console.log('Current user:', currentUser?.name || 'None');
       
       return true;
-    } catch (error) {\n      console.error('❌ Authentication test failed:', error);\n      return false;\n    }\n  },\n\n  // Test product operations\n  async testProducts(): Promise<boolean> {\n    try {\n      console.log('🛍️ Testing product operations...');\n      \n      // Test get all products\n      const allProducts = await productsService.getProducts();\n      console.log(`✅ Loaded ${allProducts.length} products`);\n      \n      // Test get featured products\n      const featuredProducts = await productsService.getFeaturedProducts(3);\n      console.log(`✅ Loaded ${featuredProducts.length} featured products`);\n      \n      // Test get categories\n      const categories = await productsService.getProductCategories();\n      console.log(`✅ Loaded ${categories.length} categories:`, categories);\n      \n      // Test search\n      const searchResults = await productsService.searchProducts('Macallan');\n      console.log(`✅ Search returned ${searchResults.length} results`);\n      \n      // Test get by category\n      const scotchProducts = await productsService.getProductsByCategory('Scotch');\n      console.log(`✅ Found ${scotchProducts.length} Scotch products`);\n      \n      // Test single product\n      if (allProducts.length > 0) {\n        const product = await productsService.getProductById(allProducts[0].id);\n        console.log(`✅ Single product:`, product?.name);\n      }\n      \n      return true;\n    } catch (error) {\n      console.error('❌ Product test failed:', error);\n      return false;\n    }\n  },\n\n  // Test user operations\n  async testUserOperations(): Promise<boolean> {\n    try {\n      console.log('👤 Testing user operations...');\n      \n      const currentUser = await supabaseService.getCurrentUser();\n      if (!currentUser) {\n        console.log('ℹ️ No user authenticated, skipping user tests');\n        return true;\n      }\n      \n      console.log('Current user:', currentUser.name, currentUser.accountType);\n      \n      // Test get user by ID\n      const userById = await supabaseService.getUserById(currentUser.id);\n      console.log('✅ Get user by ID:', userById?.name);\n      \n      // Test company operations if user is company user\n      if (currentUser.accountType === 'company' && currentUser.companyId) {\n        const company = await supabaseService.getCompanyById(currentUser.companyId);\n        console.log('✅ Company loaded:', company?.name);\n        \n        const teamMembers = await supabaseService.getTeamMembersByCompany(currentUser.companyId);\n        console.log(`✅ Team members: ${teamMembers.length}`);\n      }\n      \n      return true;\n    } catch (error) {\n      console.error('❌ User operations test failed:', error);\n      return false;\n    }\n  },\n\n  // Test real-time subscriptions\n  async testRealTimeSubscriptions(): Promise<boolean> {\n    try {\n      console.log('⚡ Testing real-time subscriptions...');\n      \n      // Test product subscription\n      let productUpdateReceived = false;\n      const productSub = productsService.subscribeToProductChanges((payload) => {\n        console.log('✅ Product update received:', payload.eventType);\n        productUpdateReceived = true;\n      });\n      \n      // Test user subscription if authenticated\n      let userUpdateReceived = false;\n      let userSub: any = null;\n      const currentUser = await supabaseService.getCurrentUser();\n      if (currentUser) {\n        userSub = supabaseService.subscribeToUserChanges(currentUser.id, (user) => {\n          console.log('✅ User update received:', user?.name);\n          userUpdateReceived = true;\n        });\n      }\n      \n      // Clean up after a short delay\n      setTimeout(() => {\n        if (productSub) {\n          productsService.unsubscribeFromProductChanges(productSub);\n        }\n        if (userSub) {\n          supabase.removeChannel(userSub);\n        }\n        console.log('✅ Subscriptions cleaned up');\n      }, 5000);\n      \n      console.log('✅ Real-time subscriptions set up successfully');\n      return true;\n    } catch (error) {\n      console.error('❌ Real-time subscription test failed:', error);\n      return false;\n    }\n  },\n\n  // Test data security (RLS)\n  async testDataSecurity(): Promise<boolean> {\n    try {\n      console.log('🔒 Testing data security (RLS)...');\n      \n      const currentUser = await supabaseService.getCurrentUser();\n      if (!currentUser) {\n        console.log('ℹ️ No user authenticated, skipping security tests');\n        return true;\n      }\n      \n      // Test that user can only access their own data\n      const userProfile = await supabaseService.getUserById(currentUser.id);\n      console.log('✅ Can access own profile:', userProfile?.name);\n      \n      // Test company data access if applicable\n      if (currentUser.accountType === 'company' && currentUser.companyId) {\n        const companyData = await supabaseService.getCompanyById(currentUser.companyId);\n        console.log('✅ Can access own company data:', companyData?.name);\n      }\n      \n      console.log('✅ Data security tests passed');\n      return true;\n    } catch (error) {\n      console.error('❌ Data security test failed:', error);\n      return false;\n    }\n  },\n\n  // Run all tests\n  async runAllTests(): Promise<{ passed: number; failed: number; results: any[] }> {\n    console.log('🧪 Running comprehensive Supabase integration tests...');\n    console.log('='.repeat(50));\n    \n    const tests = [\n      { name: 'Connection', test: this.testConnection },\n      { name: 'Authentication', test: this.testAuthentication },\n      { name: 'Products', test: this.testProducts },\n      { name: 'User Operations', test: this.testUserOperations },\n      { name: 'Real-time Subscriptions', test: this.testRealTimeSubscriptions },\n      { name: 'Data Security', test: this.testDataSecurity },\n    ];\n    \n    const results = [];\n    let passed = 0;\n    let failed = 0;\n    \n    for (const { name, test } of tests) {\n      try {\n        console.log(`\\n📋 Running ${name} test...`);\n        const result = await test();\n        \n        if (result) {\n          console.log(`✅ ${name} test PASSED`);\n          passed++;\n          results.push({ name, status: 'PASSED', error: null });\n        } else {\n          console.log(`❌ ${name} test FAILED`);\n          failed++;\n          results.push({ name, status: 'FAILED', error: 'Test returned false' });\n        }\n      } catch (error) {\n        console.log(`❌ ${name} test FAILED with error:`, error);\n        failed++;\n        results.push({ name, status: 'FAILED', error: error.message });\n      }\n    }\n    \n    console.log('\\n' + '='.repeat(50));\n    console.log(`🧪 Test Results: ${passed} passed, ${failed} failed`);\n    console.log('='.repeat(50));\n    \n    return { passed, failed, results };\n  },\n\n  // Quick health check\n  async quickHealthCheck(): Promise<boolean> {\n    try {\n      console.log('⚡ Running quick health check...');\n      \n      const connectionOk = await this.testConnection();\n      const authOk = await this.testAuthentication();\n      const productsOk = await this.testProducts();\n      \n      const allOk = connectionOk && authOk && productsOk;\n      \n      console.log(allOk ? '✅ Health check PASSED' : '❌ Health check FAILED');\n      return allOk;\n    } catch (error) {\n      console.error('❌ Health check failed:', error);\n      return false;\n    }\n  },\n};\n\n// Export individual test functions for use in components\nexport const {\n  testConnection,\n  testAuthentication,\n  testProducts,\n  testUserOperations,\n  testRealTimeSubscriptions,\n  testDataSecurity,\n  runAllTests,\n  quickHealthCheck,\n} = testSupabaseIntegration;
+    } catch (error) {
+      console.error('❌ Authentication test failed:', error);
+      return false;
+    }
+  },
+
+  // Test product operations
+  async testProducts(): Promise<boolean> {
+    try {
+      console.log('🛍️ Testing product operations...');
+      
+      // Test get all products
+      const allProducts = await productsService.getProducts();
+      console.log(`✅ Loaded ${allProducts.length} products`);
+      
+      // Test get featured products
+      const featuredProducts = await productsService.getFeaturedProducts(3);
+      console.log(`✅ Loaded ${featuredProducts.length} featured products`);
+      
+      // Test get categories
+      const categories = await productsService.getProductCategories();
+      console.log(`✅ Loaded ${categories.length} categories:`, categories);
+      
+      // Test search
+      const searchResults = await productsService.searchProducts('Macallan');
+      console.log(`✅ Search returned ${searchResults.length} results`);
+      
+      // Test get by category
+      const scotchProducts = await productsService.getProductsByCategory('Scotch');
+      console.log(`✅ Found ${scotchProducts.length} Scotch products`);
+      
+      // Test single product
+      if (allProducts.length > 0) {
+        const product = await productsService.getProductById(allProducts[0].id);
+        console.log(`✅ Single product:`, product?.name);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Product test failed:', error);
+      return false;
+    }
+  },
+
+  // Test user operations
+  async testUserOperations(): Promise<boolean> {
+    try {
+      console.log('👤 Testing user operations...');
+      
+      const currentUser = await supabaseService.getCurrentUser();
+      if (!currentUser) {
+        console.log('ℹ️ No user authenticated, skipping user tests');
+        return true;
+      }
+      
+      console.log('Current user:', currentUser.name, currentUser.accountType);
+      
+      // Test get user by ID
+      const userById = await supabaseService.getUserById(currentUser.id);
+      console.log('✅ Get user by ID:', userById?.name);
+      
+      // Test company operations if user is company user
+      if (currentUser.accountType === 'company' && currentUser.companyId) {
+        const company = await supabaseService.getCompanyById(currentUser.companyId);
+        console.log('✅ Company loaded:', company?.name);
+        
+        const teamMembers = await supabaseService.getTeamMembersByCompany(currentUser.companyId);
+        console.log(`✅ Team members: ${teamMembers.length}`);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('❌ User operations test failed:', error);
+      return false;
+    }
+  },
+
+  // Test real-time subscriptions
+  async testRealTimeSubscriptions(): Promise<boolean> {
+    try {
+      console.log('⚡ Testing real-time subscriptions...');
+      
+      // Test product subscription
+      let productUpdateReceived = false;
+      const productSub = productsService.subscribeToProductChanges((payload) => {
+        console.log('✅ Product update received:', payload.eventType);
+        productUpdateReceived = true;
+      });
+      
+      // Test user subscription if authenticated
+      let userUpdateReceived = false;
+      let userSub: any = null;
+      const currentUser = await supabaseService.getCurrentUser();
+      if (currentUser) {
+        userSub = supabaseService.subscribeToUserChanges(currentUser.id, (user) => {
+          console.log('✅ User update received:', user?.name);
+          userUpdateReceived = true;
+        });
+      }
+      
+      // Clean up after a short delay
+      setTimeout(() => {
+        if (productSub) {
+          productsService.unsubscribeFromProductChanges(productSub);
+        }
+        if (userSub) {
+          supabase.removeChannel(userSub);
+        }
+        console.log('✅ Subscriptions cleaned up');
+      }, 5000);
+      
+      console.log('✅ Real-time subscriptions set up successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Real-time subscription test failed:', error);
+      return false;
+    }
+  },
+
+  // Test data security (RLS)
+  async testDataSecurity(): Promise<boolean> {
+    try {
+      console.log('🔒 Testing data security (RLS)...');
+      
+      const currentUser = await supabaseService.getCurrentUser();
+      if (!currentUser) {
+        console.log('ℹ️ No user authenticated, skipping security tests');
+        return true;
+      }
+      
+      // Test that user can only access their own data
+      const userProfile = await supabaseService.getUserById(currentUser.id);
+      console.log('✅ Can access own profile:', userProfile?.name);
+      
+      // Test company data access if applicable
+      if (currentUser.accountType === 'company' && currentUser.companyId) {
+        const companyData = await supabaseService.getCompanyById(currentUser.companyId);
+        console.log('✅ Can access own company data:', companyData?.name);
+      }
+      
+      console.log('✅ Data security tests passed');
+      return true;
+    } catch (error) {
+      console.error('❌ Data security test failed:', error);
+      return false;
+    }
+  },
+
+  // Run all tests
+  async runAllTests(): Promise<{ passed: number; failed: number; results: any[] }> {
+    console.log('🧪 Running comprehensive Supabase integration tests...');
+    console.log('='.repeat(50));
+    
+    const tests = [
+      { name: 'Connection', test: this.testConnection },
+      { name: 'Authentication', test: this.testAuthentication },
+      { name: 'Products', test: this.testProducts },
+      { name: 'User Operations', test: this.testUserOperations },
+      { name: 'Real-time Subscriptions', test: this.testRealTimeSubscriptions },
+      { name: 'Data Security', test: this.testDataSecurity },
+    ];
+    
+    const results = [];
+    let passed = 0;
+    let failed = 0;
+    
+    for (const { name, test } of tests) {
+      try {
+        console.log(`\n📋 Running ${name} test...`);
+        const result = await test();
+        
+        if (result) {
+          console.log(`✅ ${name} test PASSED`);
+          passed++;
+          results.push({ name, status: 'PASSED', error: null });
+        } else {
+          console.log(`❌ ${name} test FAILED`);
+          failed++;
+          results.push({ name, status: 'FAILED', error: 'Test returned false' });
+        }
+      } catch (error) {
+        console.log(`❌ ${name} test FAILED with error:`, error);
+        failed++;
+        results.push({ name, status: 'FAILED', error: error.message });
+      }
+    }
+    
+    console.log('\n' + '='.repeat(50));
+    console.log(`🧪 Test Results: ${passed} passed, ${failed} failed`);
+    console.log('='.repeat(50));
+    
+    return { passed, failed, results };
+  },
+
+  // Quick health check
+  async quickHealthCheck(): Promise<boolean> {
+    try {
+      console.log('⚡ Running quick health check...');
+      
+      const connectionOk = await this.testConnection();
+      const authOk = await this.testAuthentication();
+      const productsOk = await this.testProducts();
+      
+      const allOk = connectionOk && authOk && productsOk;
+      
+      console.log(allOk ? '✅ Health check PASSED' : '❌ Health check FAILED');
+      return allOk;
+    } catch (error) {
+      console.error('❌ Health check failed:', error);
+      return false;
+    }
+  },
+};
+
+// Export individual test functions for use in components
+export const {
+  testConnection,
+  testAuthentication,
+  testProducts,
+  testUserOperations,
+  testRealTimeSubscriptions,
+  testDataSecurity,
+  runAllTests,
+  quickHealthCheck,
+} = testSupabaseIntegration;

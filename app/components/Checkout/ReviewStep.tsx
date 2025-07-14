@@ -84,9 +84,6 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
           transform: [{ translateY: slideAnim }]
         }}
       >
-        <Text style={styles.title}>Review Your Order</Text>
-        <Text style={styles.subtitle}>Please confirm all details before placing your order</Text>
-        
         {/* Items */}
         <Animated.View 
           style={[
@@ -153,10 +150,10 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
               {address.name}
             </Text>
             <Text style={styles.detailText}>
-              {address.street}{address.unit ? `, ${address.unit}` : ''}
+              {address.address}{address.unitNumber ? `, ${address.unitNumber}` : ''}
             </Text>
             <Text style={styles.detailText}>
-              {address.city}, {address.postalCode}
+              Singapore {address.postalCode}
             </Text>
             <Text style={styles.detailText}>{address.phone}</Text>
           </View>
@@ -286,31 +283,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    padding: SPACING.lg,
-  },
-  title: {
-    ...TYPOGRAPHY.h1,
-    fontWeight: '800',
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-    textAlign: 'center',
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xl,
-    textAlign: 'center',
-    fontWeight: '500',
   },
   section: {
     backgroundColor: COLORS.card,
-    borderRadius: 20,
+    borderRadius: 16,
     padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.border,
-    ...SHADOWS.medium,
-    elevation: 6,
+    ...SHADOWS.light,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -318,9 +299,9 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   sectionIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
@@ -333,19 +314,21 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...TYPOGRAPHY.h4,
-    fontWeight: '700',
+    fontWeight: '800',
     color: COLORS.text,
     marginBottom: 2,
+    letterSpacing: -0.3,
   },
   sectionSubtitle: {
     ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
-    fontWeight: '500',
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -353,8 +336,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   itemImage: {
-    width: 60,
-    height: 60,
+    width: 56,
+    height: 56,
     borderRadius: 8,
     marginRight: SPACING.md,
     backgroundColor: COLORS.background,
@@ -367,37 +350,40 @@ const styles = StyleSheet.create({
   },
   itemName: {
     ...TYPOGRAPHY.body,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.text,
     marginBottom: 4,
+    letterSpacing: -0.2,
   },
   itemMeta: {
-    ...TYPOGRAPHY.caption,
+    ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
-    fontWeight: '500',
+    fontWeight: '600',
+    letterSpacing: 0.1,
   },
   itemPrice: {
     ...TYPOGRAPHY.body,
-    fontWeight: '700',
+    fontWeight: '800',
     color: COLORS.text,
     minWidth: 80,
     textAlign: 'right',
+    letterSpacing: -0.3,
   },
   detailRow: {
     flexDirection: 'row',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
     backgroundColor: COLORS.background,
     borderRadius: 12,
-    padding: SPACING.sm,
+    padding: SPACING.md,
   },
   detailIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: COLORS.card,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.sm,
+    marginRight: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -405,13 +391,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailLabel: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '700',
+    ...TYPOGRAPHY.small,
+    fontWeight: '800',
     marginBottom: 4,
+    color: COLORS.text,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   detailText: {
-    ...TYPOGRAPHY.caption,
-    color: '#666',
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+    lineHeight: 22,
+    letterSpacing: -0.1,
   },
   badgeContainer: {
     flexDirection: 'row',
@@ -424,14 +416,17 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   sameDayText: {
-    ...TYPOGRAPHY.label,
-    fontWeight: '600',
+    ...TYPOGRAPHY.small,
+    fontWeight: '800',
     color: '#FF9800',
+    letterSpacing: 0.3,
   },
   queueText: {
-    ...TYPOGRAPHY.caption,
-    color: '#666',
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
     marginTop: 4,
+    fontWeight: '600',
+    letterSpacing: 0.1,
   },
   paymentRow: {
     flexDirection: 'row',
@@ -441,32 +436,35 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.text,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: SPACING.md,
   },
   paymentInfo: {
     flex: 1,
   },
   paymentName: {
-    ...TYPOGRAPHY.h6,
-    fontWeight: '600',
+    ...TYPOGRAPHY.body,
+    fontWeight: '800',
     marginBottom: 4,
+    color: COLORS.text,
+    letterSpacing: -0.2,
   },
   paymentDescription: {
-    ...TYPOGRAPHY.caption,
-    color: '#666',
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+    letterSpacing: 0.1,
   },
   summarySection: {
     backgroundColor: COLORS.card,
-    borderRadius: 20,
+    borderRadius: 16,
     padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.border,
-    ...SHADOWS.medium,
-    elevation: 6,
+    ...SHADOWS.light,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -475,34 +473,46 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xs,
   },
   summaryLabel: {
-    ...TYPOGRAPHY.caption,
-    color: '#666',
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+    letterSpacing: 0.1,
   },
   summaryValue: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '600',
+    ...TYPOGRAPHY.body,
+    fontWeight: '800',
+    color: COLORS.text,
+    letterSpacing: -0.2,
   },
   totalRow: {
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingTop: 12,
-    marginTop: 4,
+    borderTopColor: COLORS.border,
+    paddingTop: SPACING.md,
+    marginTop: SPACING.xs,
   },
   totalLabel: {
-    ...TYPOGRAPHY.h5,
-    fontWeight: '700',
+    ...TYPOGRAPHY.h4,
+    fontWeight: '800',
+    color: COLORS.text,
+    letterSpacing: -0.3,
   },
   totalValue: {
-    ...TYPOGRAPHY.h4,
-    fontWeight: '700',
+    ...TYPOGRAPHY.h2,
+    fontWeight: '800',
+    color: COLORS.text,
+    letterSpacing: -0.5,
   },
   policyNote: {
-    marginBottom: 16,
+    marginBottom: SPACING.lg,
+    marginTop: SPACING.sm,
   },
   policyText: {
-    ...TYPOGRAPHY.caption,
-    color: '#666',
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
     textAlign: 'center',
+    fontWeight: '500',
+    lineHeight: 22,
+    letterSpacing: 0.1,
   },
   errorContainer: {
     flex: 1,

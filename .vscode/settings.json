@@ -20,5 +20,9 @@
   ],
   "[typescript]": {
     "editor.defaultFormatter": "denoland.vscode-deno"
-  }
+  },
+  "npm.enableRunFromFolder": true,
+  "npm.scriptExplorerAction": "run",
+  "explorer.fileNesting.enabled": true,
+  "npm.exclude": ""
 }

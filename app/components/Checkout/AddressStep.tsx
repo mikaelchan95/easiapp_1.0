@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -9,6 +9,7 @@ import { HapticFeedback } from '../../utils/haptics';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
 import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 import { validateField, validateAddress } from '../../utils/checkoutValidation';
+import { AppContext } from '../../context/AppContext';
 
 interface AddressStepProps {
   address: DeliveryAddress;
@@ -17,10 +18,11 @@ interface AddressStepProps {
 
 const AddressStep: React.FC<AddressStepProps> = ({ address: initialAddress, onContinue }) => {
   const navigation = useNavigation();
+  const { state } = useContext(AppContext);
   const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
   const [address, setAddress] = useState<DeliveryAddress>(initialAddress);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [saveAsDefault, setSaveAsDefault] = useState(initialAddress.isDefault || false);
+  const [saveAsDefault, setSaveAsDefault] = useState(initialAddress?.isDefault || false);
   const [hasValidated, setHasValidated] = useState(false);
 
   // Validate address on mount and when address changes
@@ -31,16 +33,36 @@ const AddressStep: React.FC<AddressStepProps> = ({ address: initialAddress, onCo
     }
   }, [address, hasValidated]);
 
-  // Notify parent of initial address on mount
+  // Auto-populate from delivery location and notify parent on mount
   useEffect(() => {
-    onContinue(initialAddress);
-  }, []);
+    if (deliveryLocation && (!address.address || address.address === '')) {
+      // Auto-populate address from delivery location and user account
+      const autoFilledAddress = {
+        ...address,
+        id: deliveryLocation.id || `address_${Date.now()}`,
+        name: state.user?.full_name || state.user?.email || deliveryLocation.title || address.name,
+        address: deliveryLocation.address || deliveryLocation.subtitle || deliveryLocation.title,
+        postalCode: deliveryLocation.postalCode || extractPostalCodeFromSubtitle(deliveryLocation.subtitle || ''),
+        unitNumber: deliveryLocation.unitNumber || address.unitNumber,
+        phone: state.user?.phone || address.phone,
+      };
+      setAddress(autoFilledAddress);
+      
+      // If we have name and address (minimum required fields), notify parent
+      if (autoFilledAddress.name && autoFilledAddress.address) {
+        onContinue(autoFilledAddress);
+      }
+    } else if (initialAddress && initialAddress.name && initialAddress.address) {
+      onContinue(initialAddress);
+    }
+  }, [deliveryLocation, state.user]);  // Re-run when delivery location or user changes
 
   // Update address when form fields change with real-time validation
   const handleChange = (field: keyof DeliveryAddress, value: string) => {
     const updatedAddress = {
       ...address,
-      [field]: value
+      [field]: value,
+      id: address.id || `address_${Date.now()}` // Ensure ID is set
     };
     setAddress(updatedAddress);
     
@@ -58,7 +80,7 @@ const AddressStep: React.FC<AddressStepProps> = ({ address: initialAddress, onCo
       });
     }
     
-    // Notify parent of address change
+    // Always notify parent of address changes, let the parent decide validation
     onContinue(updatedAddress);
   };
 
@@ -86,7 +108,7 @@ const AddressStep: React.FC<AddressStepProps> = ({ address: initialAddress, onCo
     };
     setAddress(updatedAddress);
     
-    // Notify parent of address change
+    // Always notify parent of address changes
     onContinue(updatedAddress);
   };
 
@@ -110,16 +132,15 @@ const AddressStep: React.FC<AddressStepProps> = ({ address: initialAddress, onCo
       // Update address fields from location
       const updatedAddress = {
         ...address,
-        street: location.title,
-        city: extractCityFromSubtitle(location.subtitle || ''),
+        address: location.title,
         postalCode: extractPostalCodeFromSubtitle(location.subtitle || ''),
       };
       
       setAddress(updatedAddress);
       
-      // Clear street error if it exists
-      if (errors.street) {
-        setErrors(prev => ({ ...prev, street: '' }));
+      // Clear address error if it exists
+      if (errors.address) {
+        setErrors(prev => ({ ...prev, address: '' }));
       }
       
       // Trigger validation if user has already attempted to continue
@@ -176,7 +197,7 @@ const AddressStep: React.FC<AddressStepProps> = ({ address: initialAddress, onCo
         <View style={styles.formGroup}>
           <Text style={styles.label}>Delivery Address</Text>
           <TouchableOpacity
-            style={[styles.locationButton, errors.street && styles.locationButtonError]}
+            style={[styles.locationButton, errors.address && styles.locationButtonError]}
             onPress={openLocationPicker}
             accessible={true}
             accessibilityLabel={deliveryLocation ? `Current address: ${deliveryLocation.title}` : "Select delivery address"}
@@ -206,7 +227,7 @@ const AddressStep: React.FC<AddressStepProps> = ({ address: initialAddress, onCo
               <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
             </View>
           </TouchableOpacity>
-          {errors.street ? <Text style={styles.errorText}>{errors.street}</Text> : null}
+          {errors.address ? <Text style={styles.errorText}>{errors.address}</Text> : null}
         </View>
 
         {/* Contact Details */}
@@ -228,8 +249,8 @@ const AddressStep: React.FC<AddressStepProps> = ({ address: initialAddress, onCo
             <Text style={styles.label}>Unit / Floor</Text>
             <TextInput
               style={styles.input}
-              value={address.unit}
-              onChangeText={(value) => handleChange('unit', value)}
+              value={address.unitNumber || ''}
+              onChangeText={(value) => handleChange('unitNumber', value)}
               placeholder="#01-23"
               placeholderTextColor={COLORS.placeholder}
             />
@@ -282,15 +303,13 @@ const AddressStep: React.FC<AddressStepProps> = ({ address: initialAddress, onCo
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.background,
-    padding: SPACING.lg,
   },
   form: {
     backgroundColor: COLORS.card,
     borderRadius: 20,
     padding: SPACING.lg,
+    marginHorizontal: SPACING.md,
     marginBottom: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
     ...SHADOWS.medium,
     elevation: 6,
   },
@@ -408,6 +427,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8F5E9',
     borderRadius: 16,
     padding: SPACING.md,
+    marginHorizontal: SPACING.md,
     alignItems: 'flex-start',
     borderWidth: 1,
     borderColor: '#C8E6C9',

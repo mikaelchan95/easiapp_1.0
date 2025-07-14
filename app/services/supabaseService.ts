@@ -1807,7 +1807,7 @@ export const supabaseService = {
       
       // Create order
       const orderInsert = {
-        user_id: orderData.userId,
+        user_id: session.user.id, // Use authenticated user's ID instead of passed userId
         company_id: orderData.companyId || null,
         order_number: orderNumber,
         status: 'pending',
@@ -1920,7 +1920,7 @@ export const supabaseService = {
       if (!isCompanyCredit && paymentStatus === 'pending') {
         // For individual orders, award points immediately (simulating instant payment processing)
         console.log('🎯 Awarding points for individual order...');
-        await this.awardPointsForOrder(orderData.userId, orderData.total, order.id);
+        await this.awardPointsForOrder(session.user.id, orderData.total, order.id);
       }
 
       // Status history is automatically created by database trigger
@@ -2707,5 +2707,4 @@ export const supabaseService = {
   },
 };
 
-export { supabaseService };
 export default supabaseService; 

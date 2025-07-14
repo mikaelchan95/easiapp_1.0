@@ -45,9 +45,13 @@ export class GoogleMapsService {
       console.log('🔍 Starting autocomplete search for:', query);
       console.log('🔑 API Key check:', this.apiKey ? 'API key present' : 'API key missing');
       
-      // Check if API key is valid
-      if (!this.apiKey || this.apiKey === 'your_google_maps_api_key_here') {
-        console.error('❌ Invalid or missing Google Maps API key:', this.apiKey);
+      // Check if API key is valid or in development mode
+      if (!this.apiKey || this.apiKey === 'your_google_maps_api_key_here' || this.apiKey === 'DEVELOPMENT_MODE') {
+        if (this.apiKey === 'DEVELOPMENT_MODE') {
+          console.log('🔧 Google Maps in development mode - using mock data');
+        } else {
+          console.error('❌ Invalid or missing Google Maps API key:', this.apiKey);
+        }
         console.log('🔍 GoogleMapsService fallback autocomplete for:', query);
         console.log('🔄 Returning mock Singapore locations...');
         return this.getMockSuggestions(query);

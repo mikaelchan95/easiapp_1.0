@@ -221,4 +221,12 @@ export const formatFinancialAmount = (amount: number, currency: string = '$'): s
 export const formatPoints = (points: number, includeLabel: boolean = false): string => {
   const formatted = formatNumberWithCommas(points);
   return includeLabel ? `${formatted} points` : formatted;
+};
+
+/**
+ * Generic number formatter with commas (alias for formatNumberWithCommas)
+ * @param num - Number to format
+ */
+export const formatNumber = (num: number): string => {
+  return formatNumberWithCommas(num);
 }; 

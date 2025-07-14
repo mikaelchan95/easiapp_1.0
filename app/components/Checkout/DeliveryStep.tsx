@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CalendarView from './CalendarView';
@@ -13,12 +13,14 @@ interface DeliveryStepProps {
   address: DeliveryAddress;
   onSelectSlot: (slot: DeliverySlot) => void;
   subtotal: number;
+  onEditAddress?: () => void;
 }
 
 const DeliveryStep: React.FC<DeliveryStepProps> = ({
   address,
   onSelectSlot,
-  subtotal
+  subtotal,
+  onEditAddress
 }) => {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
@@ -26,52 +28,32 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
   const [queueCount, setQueueCount] = useState<number>(0);
   const [isSameDay, setIsSameDay] = useState<boolean>(false);
   
+  // Use ref to store the callback to prevent infinite re-renders
+  const onSelectSlotRef = useRef(onSelectSlot);
+  onSelectSlotRef.current = onSelectSlot;
+  
   // Animation values
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(30))[0];
   const cardScaleAnim = useState(new Animated.Value(0.95))[0];
   
-  // Check if the address is in a special location using Google Maps service
+  // Singapore-wide delivery - no special zones
   const deliveryZoneInfo = useMemo(() => {
-    // Try to create a coordinate from the address for checking
-    // In a real implementation, you might geocode the address first
-    // For now, we'll check if it's a known Marina Bay area location
-    const marinaBayKeywords = ['Marina Bay', 'Marina', 'Gardens by the Bay', 'Raffles', 'Downtown Core'];
-    const isMarinaBayArea = marinaBayKeywords.some(keyword => 
-      address.street?.includes(keyword) || address.city?.includes(keyword)
-    );
-
-    if (isMarinaBayArea) {
-      // Find the Marina Bay zone from config
-      const marinaBayZone = GOOGLE_MAPS_CONFIG.deliveryZones.find(zone => 
-        zone.name === 'Marina Bay' || zone.specialPricing
-      );
-      
-      return {
-        isSpecialLocation: true,
-        zone: marinaBayZone,
-        zoneName: 'Marina Bay'
-      };
-    }
-
     return {
       isSpecialLocation: false,
       zone: null,
       zoneName: null
     };
-  }, [address]);
+  }, []);
   
-  // Delivery fee calculation - memoized to prevent recalculation
+  // Delivery fee calculation - standard Singapore pricing
   const deliveryFeeData = useMemo(() => {
-    const { isSpecialLocation, zone } = deliveryZoneInfo;
-    
-    // Use zone-specific pricing if available
-    const FREE_DELIVERY_THRESHOLD = isSpecialLocation ? 200 : 250;
+    const FREE_DELIVERY_THRESHOLD = 250;
     const isFreeDelivery = subtotal >= FREE_DELIVERY_THRESHOLD;
     
-    // Special pricing for Marina Bay and other special zones
-    const standardDeliveryFee = isSpecialLocation ? 7.99 : 9.99;
-    const sameDayDeliveryFee = isSpecialLocation ? 14.99 : 19.99;
+    // Standard Singapore delivery pricing
+    const standardDeliveryFee = 9.99;
+    const sameDayDeliveryFee = 19.99;
     const deliveryFee = isFreeDelivery ? 0 : (isSameDay ? sameDayDeliveryFee : standardDeliveryFee);
     
     return {
@@ -80,10 +62,10 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
       sameDayDeliveryFee,
       deliveryFee,
       thresholdAmount: FREE_DELIVERY_THRESHOLD,
-      isSpecialLocation,
-      zoneName: deliveryZoneInfo.zoneName
+      isSpecialLocation: false,
+      zoneName: null
     };
-  }, [subtotal, isSameDay, deliveryZoneInfo]);
+  }, [subtotal, isSameDay]);
   
   // Check if the selected date is today (same day delivery)
   useEffect(() => {
@@ -125,15 +107,18 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
         id: `${selectedDate}-${selectedTimeSlot}`,
         date: formattedDate,
         timeSlot: selectedTimeText,
+        fee: deliveryFeeData.deliveryFee,
+        price: deliveryFeeData.deliveryFee,
         queueCount: queueCount,
         sameDayAvailable: isSameDay,
-        price: deliveryFeeData.deliveryFee,
-        isSpecialLocation: deliveryFeeData.isSpecialLocation
+        isSpecialLocation: deliveryFeeData.isSpecialLocation,
+        available: true,
+        isFree: deliveryFeeData.isFreeDelivery
       };
       
-      onSelectSlot(slot);
+      onSelectSlotRef.current(slot);
     }
-  }, [selectedDate, selectedTimeSlot, selectedTimeText, queueCount, isSameDay, deliveryFeeData.deliveryFee, deliveryFeeData.isSpecialLocation, onSelectSlot]);
+  }, [selectedDate, selectedTimeSlot, selectedTimeText, queueCount, isSameDay, deliveryFeeData.deliveryFee, deliveryFeeData.isSpecialLocation, deliveryFeeData.isFreeDelivery]);
   
   // Mount animation
   useEffect(() => {
@@ -157,9 +142,49 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
     ]).start();
   }, []);
   
+  // Check if address is empty/default
+  const isAddressEmpty = useMemo(() => {
+    // Check if it's truly empty or just default empty strings
+    // Less strict validation - only require name and address, postal code is optional
+    const isEmpty = !address || 
+                   !address.address || 
+                   address.address.trim() === '' || 
+                   !address.name || 
+                   address.name.trim() === '';
+    
+    return isEmpty;
+  }, [address]);
+
   // Memoize the address display to prevent unnecessary re-renders
   const addressDisplay = useMemo(() => {
     const { isSpecialLocation, zoneName } = deliveryFeeData;
+    
+    if (isAddressEmpty) {
+      return (
+        <Animated.View 
+          style={[
+            styles.addressCard,
+            styles.emptyAddressCard,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: cardScaleAnim }]
+            }
+          ]}
+        >
+          <View style={styles.emptyAddressContent}>
+            <Ionicons name="location-outline" size={48} color={COLORS.textSecondary} />
+            <Text style={styles.emptyAddressTitle}>No delivery address set</Text>
+            <Text style={styles.emptyAddressText}>Please select a delivery address to continue</Text>
+            <TouchableOpacity 
+              style={styles.selectAddressButton}
+              onPress={onEditAddress}
+            >
+              <Text style={styles.selectAddressButtonText}>Select Address</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      );
+    }
     
     return (
       <Animated.View 
@@ -178,33 +203,32 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
           <View style={styles.addressHeaderContent}>
             <View style={styles.titleRow}>
               <Text style={styles.addressTitle}>Delivering to</Text>
-              <TouchableOpacity style={styles.editButton}>
+              <TouchableOpacity 
+                style={styles.editButton}
+                onPress={onEditAddress}
+              >
                 <Ionicons name="pencil" size={14} color={COLORS.text} />
                 <Text style={styles.editButtonText}>Edit</Text>
               </TouchableOpacity>
             </View>
-            {isSpecialLocation && zoneName && (
-              <View style={styles.specialLocationBadge}>
-                <Ionicons name="star" size={10} color="#FF9500" />
-                <Text style={styles.specialLocationText}>{zoneName}</Text>
-              </View>
-            )}
           </View>
         </View>
         
         <View style={styles.addressContent}>
           <Text style={styles.addressName}>{address.name}</Text>
           <Text style={styles.addressText}>
-            {address.street}{address.unit ? `, ${address.unit}` : ''}
+            {address.address}{address.unitNumber ? `, ${address.unitNumber}` : ''}
           </Text>
           <Text style={styles.addressText}>
-            {address.city}, {address.postalCode}
+            Singapore {address.postalCode}
           </Text>
-          <Text style={styles.addressPhone}>{address.phone}</Text>
+          {address.phone && (
+            <Text style={styles.addressPhone}>{address.phone}</Text>
+          )}
         </View>
       </Animated.View>
     );
-  }, [address, deliveryFeeData]);
+  }, [address, deliveryFeeData, isAddressEmpty, fadeAnim, cardScaleAnim, onEditAddress]);
   
   // Memoize the delivery fee display to prevent unnecessary re-renders
   const deliveryFeeDisplay = useMemo(() => {
@@ -268,14 +292,6 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
           </View>
         </View>
         
-        {isSpecialLocation && zoneName && (
-          <View style={styles.specialNotice}>
-            <Ionicons name="star" size={16} color="#FFD700" style={styles.noticeIcon} />
-            <Text style={styles.noticeText}>
-              {zoneName} area receives priority delivery with special pricing.
-            </Text>
-          </View>
-        )}
       </Animated.View>
     );
   }, [deliveryFeeData, isSameDay]);
@@ -291,23 +307,25 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
         {/* Address Summary */}
         {addressDisplay}
         
-        {/* Calendar Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Date</Text>
-          <Text style={styles.sectionSubtitle}>Choose your preferred delivery date</Text>
-          <View style={styles.calendarContainer}>
-            <CalendarView 
-              onSelectDate={handleSelectDate}
-              selectedDate={selectedDate}
-            />
+        {/* Calendar Section - only show if address is set */}
+        {!isAddressEmpty && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Select Date</Text>
+            <Text style={styles.sectionSubtitle}>Choose your preferred delivery date</Text>
+            <View style={styles.calendarContainer}>
+              <CalendarView 
+                onSelectDate={handleSelectDate}
+                selectedDate={selectedDate}
+              />
+            </View>
           </View>
-        </View>
+        )}
         
-        {/* Time Slots - only show if date is selected */}
-        {selectedDate && (
+        {/* Time Slots - only show if date is selected and address is set */}
+        {!isAddressEmpty && selectedDate && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Available Time Slots</Text>
+              <Text style={styles.sectionTitle}>Select Delivery Time</Text>
               {isSameDay && (
                 <View style={styles.sameDayBadge}>
                   <Ionicons name="flash" size={14} color={COLORS.card} />
@@ -315,23 +333,23 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
                 </View>
               )}
             </View>
-            <Text style={styles.sectionSubtitle}>Select your preferred delivery window</Text>
+            <Text style={styles.sectionSubtitle}>Choose your preferred delivery window</Text>
             
             {/* Delivery Time Estimate */}
-            <View style={styles.deliveryEstimate}>
-              <View style={styles.estimateHeader}>
-                <Ionicons name="time-outline" size={20} color={COLORS.text} />
-                <Text style={styles.estimateTitle}>Estimated Delivery Time</Text>
-              </View>
-              <Text style={styles.estimateText}>
-                {isSameDay ? 'Today' : 'Tomorrow'} • {selectedTimeText || 'Select time slot'}
-              </Text>
-              {selectedTimeSlot && (
+            {selectedTimeSlot && (
+              <View style={styles.deliveryEstimate}>
+                <View style={styles.estimateHeader}>
+                  <Ionicons name="time-outline" size={20} color={COLORS.text} />
+                  <Text style={styles.estimateTitle}>Scheduled Delivery</Text>
+                </View>
+                <Text style={styles.estimateText}>
+                  {isSameDay ? 'Today' : 'Tomorrow'} • {selectedTimeText}
+                </Text>
                 <Text style={styles.estimateSubtext}>
                   Your order will be delivered within the selected time window
                 </Text>
-              )}
-            </View>
+              </View>
+            )}
             
             <TimeSlots 
               selectedTimeSlot={selectedTimeSlot}
@@ -351,9 +369,7 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: COLORS.background,
-    padding: SPACING.lg,
   },
   title: {
     ...TYPOGRAPHY.h1,
@@ -368,7 +384,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   section: {
-    marginBottom: SPACING.xl,
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.lg,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -403,13 +420,12 @@ const styles = StyleSheet.create({
   },
   addressCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: SPACING.md,
-    marginBottom: SPACING.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    ...SHADOWS.light,
-    elevation: 3,
+    borderRadius: 20,
+    padding: SPACING.lg,
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.sm,
+    ...SHADOWS.medium,
+    elevation: 6,
   },
   addressHeader: {
     flexDirection: 'row',
@@ -460,13 +476,47 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: 2,
   },
+  emptyAddressCard: {
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+  },
+  emptyAddressContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.xl,
+  },
+  emptyAddressTitle: {
+    ...TYPOGRAPHY.h4,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.xs,
+  },
+  emptyAddressText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: SPACING.lg,
+  },
+  selectAddressButton: {
+    backgroundColor: COLORS.text,
+    borderRadius: 12,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    ...SHADOWS.medium,
+  },
+  selectAddressButtonText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.card,
+    fontWeight: '700',
+  },
   feeContainer: {
     backgroundColor: COLORS.card,
     borderRadius: 20,
     padding: SPACING.lg,
-    marginTop: SPACING.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    marginHorizontal: SPACING.md,
+    marginTop: SPACING.sm,
     ...SHADOWS.medium,
     elevation: 6,
   },
@@ -542,24 +592,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#4CAF50',
   },
-  specialLocationBadge: {
-    backgroundColor: '#FFF3E0',
-    borderRadius: 10,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#FFE0B2',
-    marginTop: 2,
-    alignSelf: 'flex-start',
-  },
-  specialLocationText: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '700',
-    color: '#FF9500',
-    marginLeft: 2,
-  },
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -576,34 +608,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 2,
   },
-  specialNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: SPACING.md,
-    padding: SPACING.sm,
-    backgroundColor: '#FFF9C4',
-    borderRadius: 12,
-  },
-  noticeIcon: {
-    marginRight: SPACING.sm,
-  },
-  noticeText: {
-    ...TYPOGRAPHY.small,
-    color: '#F57C00',
-    fontWeight: '600',
-    flex: 1,
-  },
   calendarContainer: {
-    marginHorizontal: 0, // Keep normal padding for consistency
+    marginHorizontal: 0, // Remove negative margin for better consistency
   },
   deliveryEstimate: {
     backgroundColor: COLORS.card,
     borderRadius: 16,
-    padding: SPACING.md,
+    padding: SPACING.lg,
     marginBottom: SPACING.lg,
+    ...SHADOWS.light,
     borderWidth: 1,
     borderColor: COLORS.border,
-    ...SHADOWS.light,
   },
   estimateHeader: {
     flexDirection: 'row',
