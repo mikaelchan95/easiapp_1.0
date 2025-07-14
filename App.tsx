@@ -1,3 +1,4 @@
+import 'structured-clone-polyfill';
 import React, { useRef, useEffect, useMemo } from 'react';
 import {
   NavigationContainer,
