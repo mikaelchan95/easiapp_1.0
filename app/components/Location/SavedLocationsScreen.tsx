@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Animated,
-  Dimensions
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,7 +19,11 @@ import * as Haptics from 'expo-haptics';
 import { useNavigation } from '@react-navigation/native';
 
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
-import { SavedAddress, LocationSuggestion, DeliveryDetails } from '../../types/location';
+import {
+  SavedAddress,
+  LocationSuggestion,
+  DeliveryDetails,
+} from '../../types/location';
 import { GoogleMapsService } from '../../services/googleMapsService';
 import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 import SwipeableListItem from '../UI/SwipeableListItem';
@@ -35,16 +39,19 @@ const { width } = Dimensions.get('window');
 export default function SavedLocationsScreen() {
   const navigation = useNavigation();
   const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
-  
+
   // State management
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLocationPickerVisible, setLocationPickerVisible] = useState(false);
   const [isAddressFormVisible, setAddressFormVisible] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<LocationSuggestion | null>(null);
+  const [selectedLocation, setSelectedLocation] =
+    useState<LocationSuggestion | null>(null);
   const [isManageMode, setIsManageMode] = useState(false);
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
+    null
+  );
 
   // Animation values
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -55,7 +62,7 @@ export default function SavedLocationsScreen() {
     try {
       const addresses = await GoogleMapsService.getSavedAddresses();
       setSavedAddresses(addresses);
-      
+
       // Animate in content
       Animated.parallel([
         Animated.timing(fadeAnim, {
@@ -96,12 +103,15 @@ export default function SavedLocationsScreen() {
   };
 
   // Handle location selection with details from address form
-  const handleLocationSelected = async (locationSuggestion: LocationSuggestion, details: DeliveryDetails & {label: string; icon?: string; color?: string}) => {
+  const handleLocationSelected = async (
+    locationSuggestion: LocationSuggestion,
+    details: DeliveryDetails & { label: string; icon?: string; color?: string }
+  ) => {
     try {
       if (Platform.OS === 'ios') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      
+
       const newAddress: SavedAddress = {
         id: Date.now().toString(),
         label: details.label,
@@ -121,7 +131,7 @@ export default function SavedLocationsScreen() {
       await GoogleMapsService.saveAddress(newAddress);
       await loadSavedAddresses();
       setLocationPickerVisible(false);
-      
+
       Alert.alert('Location Saved', 'Added successfully.');
     } catch (error) {
       console.error('Error saving address:', error);
@@ -132,7 +142,9 @@ export default function SavedLocationsScreen() {
   // Handle address selection
   const handleAddressSelect = async (address: SavedAddress) => {
     if (isManageMode) {
-      setSelectedAddressId(address.id === selectedAddressId ? null : address.id);
+      setSelectedAddressId(
+        address.id === selectedAddressId ? null : address.id
+      );
       return;
     }
 
@@ -140,7 +152,7 @@ export default function SavedLocationsScreen() {
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-      
+
       setDeliveryLocation(address.location);
       navigation.goBack();
     } catch (error) {
@@ -153,7 +165,7 @@ export default function SavedLocationsScreen() {
   const handleAddressDelete = async (addressId: string) => {
     const addressToDelete = savedAddresses.find(addr => addr.id === addressId);
     const addressLabel = addressToDelete?.label || 'this location';
-    
+
     Alert.alert(
       'Delete Location',
       `Remove "${addressLabel}" from your saved locations?`,
@@ -165,27 +177,31 @@ export default function SavedLocationsScreen() {
           onPress: async () => {
             try {
               if (Platform.OS === 'ios') {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                Haptics.notificationAsync(
+                  Haptics.NotificationFeedbackType.Warning
+                );
               }
-              
+
               await GoogleMapsService.deleteAddress(addressId);
               await loadSavedAddresses();
-              
+
               if (savedAddresses.length <= 1) {
                 setIsManageMode(false);
               }
-              
+
               setSelectedAddressId(null);
-              
+
               if (Platform.OS === 'ios') {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                Haptics.notificationAsync(
+                  Haptics.NotificationFeedbackType.Success
+                );
               }
             } catch (error) {
               console.error('Error deleting address:', error);
               Alert.alert('Delete Failed', 'Please try again.');
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
@@ -196,13 +212,13 @@ export default function SavedLocationsScreen() {
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
-      
+
       const addresses = await GoogleMapsService.getSavedAddresses();
       for (const addr of addresses) {
         const updatedAddr = { ...addr, isDefault: addr.id === addressId };
         await GoogleMapsService.saveAddress(updatedAddr);
       }
-      
+
       await loadSavedAddresses();
     } catch (error) {
       console.error('Error setting default address:', error);
@@ -222,22 +238,22 @@ export default function SavedLocationsScreen() {
   // Get address icon with semantic mapping
   const getAddressIcon = (iconName: string): keyof typeof Ionicons.glyphMap => {
     const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
-      'home': 'home',
-      'business': 'business',
-      'school': 'school',
+      home: 'home',
+      business: 'business',
+      school: 'school',
       'fitness-center': 'fitness',
       'local-hospital': 'medical',
       'shopping-cart': 'storefront',
-      'restaurant': 'restaurant',
+      restaurant: 'restaurant',
       'location-on': 'location',
     };
     return iconMap[iconName] || 'location';
   };
 
-    // Navigation header with back button
+  // Navigation header with back button
   const renderNavigationHeader = () => (
     <View style={styles.navigationHeader}>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigation.goBack()}
         accessibilityLabel="Go back"
@@ -246,18 +262,20 @@ export default function SavedLocationsScreen() {
       </TouchableOpacity>
       <Text style={styles.navigationTitle}>Saved Locations</Text>
       {savedAddresses.length > 0 && (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
             styles.manageButton,
-            isManageMode && styles.manageButtonActive
+            isManageMode && styles.manageButtonActive,
           ]}
           onPress={toggleManageMode}
-          accessibilityLabel={isManageMode ? "Done editing" : "Edit locations"}
+          accessibilityLabel={isManageMode ? 'Done editing' : 'Edit locations'}
         >
-          <Text style={[
-            styles.manageButtonText,
-            isManageMode && styles.manageButtonTextActive
-          ]}>
+          <Text
+            style={[
+              styles.manageButtonText,
+              isManageMode && styles.manageButtonTextActive,
+            ]}
+          >
             {isManageMode ? 'Done' : 'Manage'}
           </Text>
         </TouchableOpacity>
@@ -269,20 +287,21 @@ export default function SavedLocationsScreen() {
   // Header widget with location count (only show when there are locations)
   const renderHeaderWidget = () => {
     if (savedAddresses.length === 0) return null;
-    
+
     return (
-      <Animated.View 
+      <Animated.View
         style={[
           styles.headerWidget,
           {
             opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
-          }
+            transform: [{ translateY: slideAnim }],
+          },
         ]}
       >
         <View style={styles.headerContent}>
           <Text style={styles.headerSubtitle}>
-            {savedAddresses.length} {savedAddresses.length === 1 ? 'location' : 'locations'} saved
+            {savedAddresses.length}{' '}
+            {savedAddresses.length === 1 ? 'location' : 'locations'} saved
           </Text>
         </View>
       </Animated.View>
@@ -291,47 +310,59 @@ export default function SavedLocationsScreen() {
 
   // Quick action widget for adding new location
   const renderQuickActionWidget = () => (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.quickActionWidget,
         {
           opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }]
-        }
+          transform: [{ translateY: slideAnim }],
+        },
       ]}
     >
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.addLocationCard}
-                 onPress={() => setLocationPickerVisible(true)}
-         accessibilityLabel="Add location"
+        onPress={() => setLocationPickerVisible(true)}
+        accessibilityLabel="Add location"
       >
         <View style={styles.addLocationIconContainer}>
           <Ionicons name="add" size={24} color={COLORS.buttonText} />
         </View>
-                 <View style={styles.addLocationContent}>
-           <Text style={styles.addLocationTitle}>Add Location</Text>
-           <Text style={styles.addLocationSubtitle}>Quick access for deliveries</Text>
-         </View>
-        <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+        <View style={styles.addLocationContent}>
+          <Text style={styles.addLocationTitle}>Add Location</Text>
+          <Text style={styles.addLocationSubtitle}>
+            Quick access for deliveries
+          </Text>
+        </View>
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={COLORS.textSecondary}
+        />
       </TouchableOpacity>
     </Animated.View>
   );
 
   // Modern address card with improved visual hierarchy
-  const renderAddressCard = ({ item, index }: { item: SavedAddress; index: number }) => {
+  const renderAddressCard = ({
+    item,
+    index,
+  }: {
+    item: SavedAddress;
+    index: number;
+  }) => {
     const isSelected = selectedAddressId === item.id;
     const iconName = getAddressIcon(item.icon || 'home');
-    
+
     const animatedStyle = {
       opacity: fadeAnim,
       transform: [
-        { 
+        {
           translateY: slideAnim.interpolate({
             inputRange: [0, 50],
-            outputRange: [0, 50 + (index * 10)],
-          })
-        }
-      ]
+            outputRange: [0, 50 + index * 10],
+          }),
+        },
+      ],
     };
 
     if (isManageMode) {
@@ -341,16 +372,20 @@ export default function SavedLocationsScreen() {
             style={[
               styles.addressCard,
               styles.manageCard,
-              isSelected && styles.selectedCard
+              isSelected && styles.selectedCard,
             ]}
-                         onPress={() => handleAddressSelect(item)}
-             accessibilityLabel={item.label}
-             accessibilityState={{ selected: isSelected }}
+            onPress={() => handleAddressSelect(item)}
+            accessibilityLabel={item.label}
+            accessibilityState={{ selected: isSelected }}
           >
             <View style={styles.cardContent}>
               <View style={styles.cardHeader}>
                 <View style={styles.addressIconContainer}>
-                  <Ionicons name={iconName} size={20} color={COLORS.buttonText} />
+                  <Ionicons
+                    name={iconName}
+                    size={20}
+                    color={COLORS.buttonText}
+                  />
                 </View>
                 <View style={styles.addressDetails}>
                   <View style={styles.labelRow}>
@@ -372,37 +407,55 @@ export default function SavedLocationsScreen() {
                   )}
                 </View>
                 <View style={styles.selectionIndicator}>
-                  <View style={[
-                    styles.checkboxContainer,
-                    isSelected && styles.checkboxSelected
-                  ]}>
+                  <View
+                    style={[
+                      styles.checkboxContainer,
+                      isSelected && styles.checkboxSelected,
+                    ]}
+                  >
                     {isSelected && (
-                      <Ionicons name="checkmark" size={16} color={COLORS.buttonText} />
+                      <Ionicons
+                        name="checkmark"
+                        size={16}
+                        color={COLORS.buttonText}
+                      />
                     )}
                   </View>
                 </View>
               </View>
-              
+
               {/* Management actions */}
               {isSelected && (
                 <View style={styles.actionButtons}>
                   {!item.isDefault && (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.actionButton}
-                                           onPress={() => handleSetAsDefault(item.id)}
-                     accessibilityLabel="Make default"
+                      onPress={() => handleSetAsDefault(item.id)}
+                      accessibilityLabel="Make default"
                     >
-                      <Ionicons name="star-outline" size={16} color={COLORS.text} />
+                      <Ionicons
+                        name="star-outline"
+                        size={16}
+                        color={COLORS.text}
+                      />
                       <Text style={styles.actionButtonText}>Set Default</Text>
                     </TouchableOpacity>
                   )}
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.actionButton, styles.deleteAction]}
-                                         onPress={() => handleAddressDelete(item.id)}
-                     accessibilityLabel="Delete"
+                    onPress={() => handleAddressDelete(item.id)}
+                    accessibilityLabel="Delete"
                   >
-                    <Ionicons name="trash-outline" size={16} color={COLORS.error} />
-                    <Text style={[styles.actionButtonText, styles.deleteActionText]}>Delete</Text>
+                    <Ionicons
+                      name="trash-outline"
+                      size={16}
+                      color={COLORS.error}
+                    />
+                    <Text
+                      style={[styles.actionButtonText, styles.deleteActionText]}
+                    >
+                      Delete
+                    </Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -417,13 +470,17 @@ export default function SavedLocationsScreen() {
         <SwipeableListItem onDelete={() => handleAddressDelete(item.id)}>
           <TouchableOpacity
             style={styles.addressCard}
-                         onPress={() => handleAddressSelect(item)}
-             accessibilityLabel={`Select ${item.label}`}
+            onPress={() => handleAddressSelect(item)}
+            accessibilityLabel={`Select ${item.label}`}
           >
             <View style={styles.cardContent}>
               <View style={styles.cardHeader}>
                 <View style={styles.addressIconContainer}>
-                  <Ionicons name={iconName} size={20} color={COLORS.buttonText} />
+                  <Ionicons
+                    name={iconName}
+                    size={20}
+                    color={COLORS.buttonText}
+                  />
                 </View>
                 <View style={styles.addressDetails}>
                   <View style={styles.labelRow}>
@@ -444,7 +501,11 @@ export default function SavedLocationsScreen() {
                     </Text>
                   )}
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={COLORS.textSecondary}
+                />
               </View>
             </View>
           </TouchableOpacity>
@@ -453,69 +514,74 @@ export default function SavedLocationsScreen() {
     );
   };
 
-     // Enhanced empty state with improved visual design
-   const renderEmptyState = () => (
-     <Animated.View 
-       style={[
-         styles.emptyStateContainer,
-         {
-           opacity: fadeAnim,
-           transform: [{ translateY: slideAnim }]
-         }
-       ]}
-     >
-       <View style={styles.emptyStateContent}>
-         {/* Improved visual hierarchy with multiple elements */}
-         <View style={styles.emptyIllustration}>
-           <View style={styles.emptyIconBackground}>
-             <Ionicons name="location" size={32} color={COLORS.buttonText} />
-           </View>
-           <View style={styles.emptyIconAccent}>
-             <Ionicons name="add-circle" size={20} color={COLORS.text} />
-           </View>
-         </View>
-         
-         <View style={styles.emptyTextContent}>
-           <Text style={styles.emptyTitle}>Add Your First Location</Text>
-           <Text style={styles.emptySubtitle}>
-             Save home, work, or any place you order from regularly
-           </Text>
-         </View>
+  // Enhanced empty state with improved visual design
+  const renderEmptyState = () => (
+    <Animated.View
+      style={[
+        styles.emptyStateContainer,
+        {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        },
+      ]}
+    >
+      <View style={styles.emptyStateContent}>
+        {/* Improved visual hierarchy with multiple elements */}
+        <View style={styles.emptyIllustration}>
+          <View style={styles.emptyIconBackground}>
+            <Ionicons name="location" size={32} color={COLORS.buttonText} />
+          </View>
+          <View style={styles.emptyIconAccent}>
+            <Ionicons name="add-circle" size={20} color={COLORS.text} />
+          </View>
+        </View>
 
-         {/* Quick suggestions */}
-         <View style={styles.emptySuggestions}>
-           <View style={styles.suggestionItem}>
-             <Ionicons name="home" size={16} color={COLORS.textSecondary} />
-             <Text style={styles.suggestionText}>Home</Text>
-           </View>
-           <View style={styles.suggestionItem}>
-             <Ionicons name="business" size={16} color={COLORS.textSecondary} />
-             <Text style={styles.suggestionText}>Work</Text>
-           </View>
-           <View style={styles.suggestionItem}>
-             <Ionicons name="heart" size={16} color={COLORS.textSecondary} />
-             <Text style={styles.suggestionText}>Favorites</Text>
-           </View>
-         </View>
-         
-         <TouchableOpacity 
-           style={styles.emptyActionButton}
-           onPress={() => setLocationPickerVisible(true)}
-           accessibilityLabel="Add location"
-         >
-           <Ionicons name="add" size={20} color={COLORS.buttonText} style={styles.buttonIcon} />
-           <Text style={styles.emptyActionButtonText}>Add Location</Text>
-         </TouchableOpacity>
-       </View>
-     </Animated.View>
-   );
+        <View style={styles.emptyTextContent}>
+          <Text style={styles.emptyTitle}>Add Your First Location</Text>
+          <Text style={styles.emptySubtitle}>
+            Save home, work, or any place you order from regularly
+          </Text>
+        </View>
+
+        {/* Quick suggestions */}
+        <View style={styles.emptySuggestions}>
+          <View style={styles.suggestionItem}>
+            <Ionicons name="home" size={16} color={COLORS.textSecondary} />
+            <Text style={styles.suggestionText}>Home</Text>
+          </View>
+          <View style={styles.suggestionItem}>
+            <Ionicons name="business" size={16} color={COLORS.textSecondary} />
+            <Text style={styles.suggestionText}>Work</Text>
+          </View>
+          <View style={styles.suggestionItem}>
+            <Ionicons name="heart" size={16} color={COLORS.textSecondary} />
+            <Text style={styles.suggestionText}>Favorites</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={styles.emptyActionButton}
+          onPress={() => setLocationPickerVisible(true)}
+          accessibilityLabel="Add location"
+        >
+          <Ionicons
+            name="add"
+            size={20}
+            color={COLORS.buttonText}
+            style={styles.buttonIcon}
+          />
+          <Text style={styles.emptyActionButtonText}>Add Location</Text>
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
+  );
 
   // Loading state with better UX
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.text} />
-                 <Text style={styles.loadingText}>Loading locations...</Text>
+        <Text style={styles.loadingText}>Loading locations...</Text>
       </View>
     );
   }
@@ -525,21 +591,21 @@ export default function SavedLocationsScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         {/* Navigation Header */}
         {renderNavigationHeader()}
-        
+
         {/* Header Widget */}
         {renderHeaderWidget()}
-        
+
         {/* Quick Action Widget - Only show when there are saved locations */}
         {savedAddresses.length > 0 && renderQuickActionWidget()}
-        
+
         {/* Address List */}
         <FlatList
           data={savedAddresses}
           renderItem={renderAddressCard}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           contentContainerStyle={[
             styles.listContainer,
-            savedAddresses.length === 0 && styles.emptyListContainer
+            savedAddresses.length === 0 && styles.emptyListContainer,
           ]}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -570,11 +636,11 @@ export default function SavedLocationsScreen() {
           >
             <AddressDetailsForm
               location={selectedLocation}
-              onSubmit={(details) => {
+              onSubmit={details => {
                 setAddressFormVisible(false);
                 setSelectedLocation(null);
               }}
-              onSave={async (details) => {
+              onSave={async details => {
                 await handleLocationSelected(selectedLocation, details);
                 setAddressFormVisible(false);
                 setSelectedLocation(null);
@@ -601,7 +667,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background, // Content area background
   },
-  
+
   // Loading state
   loadingContainer: {
     flex: 1,
@@ -865,96 +931,96 @@ const styles = StyleSheet.create({
     color: COLORS.error,
   },
 
-     // Enhanced empty state with improved visual design
-   emptyStateContainer: {
-     flex: 1,
-     justifyContent: 'center',
-     alignItems: 'center',
-     paddingHorizontal: SPACING.xl,
-   },
-   emptyStateContent: {
-     alignItems: 'center',
-     maxWidth: 320,
-   },
-   emptyIllustration: {
-     position: 'relative',
-     marginBottom: SPACING.xl,
-   },
-   emptyIconBackground: {
-     width: 80,
-     height: 80,
-     borderRadius: 40,
-     backgroundColor: COLORS.buttonBg,
-     justifyContent: 'center',
-     alignItems: 'center',
-     ...SHADOWS.medium,
-   },
-   emptyIconAccent: {
-     position: 'absolute',
-     bottom: -4,
-     right: -4,
-     width: 28,
-     height: 28,
-     borderRadius: 14,
-     backgroundColor: COLORS.card,
-     justifyContent: 'center',
-     alignItems: 'center',
-     borderWidth: 2,
-     borderColor: COLORS.background,
-     ...SHADOWS.light,
-   },
-   emptyTextContent: {
-     alignItems: 'center',
-     marginBottom: SPACING.xl,
-   },
-   emptyTitle: {
-     ...TYPOGRAPHY.h3,
-     color: COLORS.text,
-     fontWeight: '600',
-     marginBottom: SPACING.sm,
-     textAlign: 'center',
-   },
-   emptySubtitle: {
-     ...TYPOGRAPHY.body,
-     color: COLORS.textSecondary,
-     textAlign: 'center',
-     lineHeight: 24,
-   },
-   emptySuggestions: {
-     flexDirection: 'row',
-     justifyContent: 'center',
-     alignItems: 'center',
-     marginBottom: SPACING.xl,
-     gap: SPACING.lg,
-   },
-   suggestionItem: {
-     alignItems: 'center',
-     gap: SPACING.xs,
-   },
-   suggestionText: {
-     ...TYPOGRAPHY.caption,
-     color: COLORS.textSecondary,
-     fontWeight: '500',
-     fontSize: 12,
-   },
-   emptyActionButton: {
-     backgroundColor: COLORS.buttonBg,
-     paddingHorizontal: SPACING.xl,
-     paddingVertical: SPACING.lg,
-     borderRadius: 16,
-     minWidth: 200,
-     alignItems: 'center',
-     flexDirection: 'row',
-     justifyContent: 'center',
-     gap: SPACING.sm,
-     ...SHADOWS.light,
-   },
-   buttonIcon: {
-     marginRight: 0,
-   },
-   emptyActionButtonText: {
-     ...TYPOGRAPHY.button,
-     color: COLORS.buttonText,
-     fontWeight: '600',
-   },
-}); 
+  // Enhanced empty state with improved visual design
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.xl,
+  },
+  emptyStateContent: {
+    alignItems: 'center',
+    maxWidth: 320,
+  },
+  emptyIllustration: {
+    position: 'relative',
+    marginBottom: SPACING.xl,
+  },
+  emptyIconBackground: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.buttonBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOWS.medium,
+  },
+  emptyIconAccent: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.background,
+    ...SHADOWS.light,
+  },
+  emptyTextContent: {
+    alignItems: 'center',
+    marginBottom: SPACING.xl,
+  },
+  emptyTitle: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.text,
+    fontWeight: '600',
+    marginBottom: SPACING.sm,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  emptySuggestions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.xl,
+    gap: SPACING.lg,
+  },
+  suggestionItem: {
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  suggestionText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+    fontSize: 12,
+  },
+  emptyActionButton: {
+    backgroundColor: COLORS.buttonBg,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
+    borderRadius: 16,
+    minWidth: 200,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    ...SHADOWS.light,
+  },
+  buttonIcon: {
+    marginRight: 0,
+  },
+  emptyActionButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.buttonText,
+    fontWeight: '600',
+  },
+});

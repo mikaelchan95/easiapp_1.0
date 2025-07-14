@@ -1,13 +1,13 @@
 import React, { useState, useCallback, useContext } from 'react';
-import { 
-  View, 
+import {
+  View,
   Text,
-  StyleSheet, 
+  StyleSheet,
   SafeAreaView,
   StatusBar,
   TouchableOpacity,
   Platform,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -21,26 +21,29 @@ interface LocationPickerEnhancedProps {
   onClose?: () => void;
 }
 
-const LocationPickerEnhanced: React.FC<LocationPickerEnhancedProps> = ({ 
-  onClose 
+const LocationPickerEnhanced: React.FC<LocationPickerEnhancedProps> = ({
+  onClose,
 }) => {
   const { state, dispatch } = useContext(AppContext);
   const navigation = useNavigation();
-  
-  const handleLocationSelect = useCallback((location: LocationSuggestion) => {
-    // Provide haptic feedback
-    HapticFeedback.success();
-    
-    // Update global state
-    dispatch({ type: 'SET_SELECTED_LOCATION', payload: location });
-    
-    // Close the screen
-    if (onClose) {
-      onClose();
-    } else {
-      navigation.goBack();
-    }
-  }, [dispatch, onClose, navigation]);
+
+  const handleLocationSelect = useCallback(
+    (location: LocationSuggestion) => {
+      // Provide haptic feedback
+      HapticFeedback.success();
+
+      // Update global state
+      dispatch({ type: 'SET_SELECTED_LOCATION', payload: location });
+
+      // Close the screen
+      if (onClose) {
+        onClose();
+      } else {
+        navigation.goBack();
+      }
+    },
+    [dispatch, onClose, navigation]
+  );
 
   const handleClose = useCallback(() => {
     HapticFeedback.light();
@@ -53,31 +56,28 @@ const LocationPickerEnhanced: React.FC<LocationPickerEnhancedProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor={COLORS.background}
-      />
-      
-      <KeyboardAvoidingView 
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+
+      <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.closeButton}
             onPress={handleClose}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="close" size={24} color={COLORS.text} />
           </TouchableOpacity>
-          
+
           <Text style={styles.headerTitle}>Select Delivery Location</Text>
-          
+
           {/* Placeholder for balance */}
           <View style={styles.closeButton} />
         </View>
-        
+
         {/* Current Location Display */}
         {state.selectedLocation && (
           <View style={styles.currentLocationCard}>
@@ -85,7 +85,9 @@ const LocationPickerEnhanced: React.FC<LocationPickerEnhancedProps> = ({
               <Ionicons name="location" size={20} color={COLORS.primary} />
             </View>
             <View style={styles.currentLocationInfo}>
-              <Text style={styles.currentLocationLabel}>Current delivery location</Text>
+              <Text style={styles.currentLocationLabel}>
+                Current delivery location
+              </Text>
               <Text style={styles.currentLocationText}>
                 {state.selectedLocation.title}
               </Text>
@@ -97,38 +99,29 @@ const LocationPickerEnhanced: React.FC<LocationPickerEnhancedProps> = ({
             </View>
           </View>
         )}
-        
+
         {/* Features List */}
         <View style={styles.featuresSection}>
           <Text style={styles.featuresTitle}>What's available:</Text>
           <View style={styles.featuresList}>
-            <FeatureItem 
-              icon="search" 
-              text="Search by address, landmark, or postal code" 
+            <FeatureItem
+              icon="search"
+              text="Search by address, landmark, or postal code"
             />
-            <FeatureItem 
-              icon="location" 
-              text="Use current GPS location" 
+            <FeatureItem icon="location" text="Use current GPS location" />
+            <FeatureItem
+              icon="bookmark"
+              text="Save favorite addresses with nicknames"
             />
-            <FeatureItem 
-              icon="bookmark" 
-              text="Save favorite addresses with nicknames" 
-            />
-            <FeatureItem 
-              icon="time" 
-              text="Quick access to recent locations" 
-            />
-            <FeatureItem 
-              icon="map" 
-              text="Interactive map with pin drop" 
-            />
-            <FeatureItem 
-              icon="home" 
-              text="Add delivery instructions and unit details" 
+            <FeatureItem icon="time" text="Quick access to recent locations" />
+            <FeatureItem icon="map" text="Interactive map with pin drop" />
+            <FeatureItem
+              icon="home"
+              text="Add delivery instructions and unit details"
             />
           </View>
         </View>
-        
+
         {/* Location Screen Component */}
         <View style={styles.locationScreenContainer}>
           <LocationScreen onLocationSelect={handleLocationSelect} />
@@ -138,7 +131,10 @@ const LocationPickerEnhanced: React.FC<LocationPickerEnhancedProps> = ({
   );
 };
 
-const FeatureItem: React.FC<{ icon: string; text: string }> = ({ icon, text }) => (
+const FeatureItem: React.FC<{ icon: string; text: string }> = ({
+  icon,
+  text,
+}) => (
   <View style={styles.featureItem}>
     <View style={styles.featureIcon}>
       <Ionicons name={icon as any} size={16} color={COLORS.primary} />

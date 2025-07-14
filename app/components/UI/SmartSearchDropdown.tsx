@@ -55,7 +55,7 @@ const SmartSearchDropdown: React.FC<SmartSearchDropdownProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  
+
   const inputRef = useRef<TextInput>(null);
   const dropdownAnim = useRef(new Animated.Value(0)).current;
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -72,133 +72,145 @@ const SmartSearchDropdown: React.FC<SmartSearchDropdownProps> = ({
   }, []);
 
   // Smart search algorithm with scoring
-  const searchProducts = useCallback((searchText: string): SearchSuggestion[] => {
-    if (!searchText.trim()) return [];
+  const searchProducts = useCallback(
+    (searchText: string): SearchSuggestion[] => {
+      if (!searchText.trim()) return [];
 
-    const terms = searchText.toLowerCase().trim().split(/\s+/);
-    const scoredResults: SearchSuggestion[] = [];
-    const products = state.products || [];
+      const terms = searchText.toLowerCase().trim().split(/\s+/);
+      const scoredResults: SearchSuggestion[] = [];
+      const products = state.products || [];
 
-    products.forEach(product => {
-      let score = 0;
-      let matchType: 'name' | 'sku' | 'category' = 'name';
+      products.forEach(product => {
+        let score = 0;
+        let matchType: 'name' | 'sku' | 'category' = 'name';
 
-      // Exact name match (highest priority)
-      if (product.name.toLowerCase() === searchText.toLowerCase()) {
-        score += 1000;
-        matchType = 'name';
-      }
-      // Name starts with search term
-      else if (product.name.toLowerCase().startsWith(searchText.toLowerCase())) {
-        score += 500;
-        matchType = 'name';
-      }
-      // Name contains search term
-      else if (product.name.toLowerCase().includes(searchText.toLowerCase())) {
-        score += 300;
-        matchType = 'name';
-      }
+        // Exact name match (highest priority)
+        if (product.name.toLowerCase() === searchText.toLowerCase()) {
+          score += 1000;
+          matchType = 'name';
+        }
+        // Name starts with search term
+        else if (
+          product.name.toLowerCase().startsWith(searchText.toLowerCase())
+        ) {
+          score += 500;
+          matchType = 'name';
+        }
+        // Name contains search term
+        else if (
+          product.name.toLowerCase().includes(searchText.toLowerCase())
+        ) {
+          score += 300;
+          matchType = 'name';
+        }
 
-      // SKU exact match
-      if (product.id.toLowerCase() === searchText.toLowerCase()) {
-        score += 800;
-        matchType = 'sku';
-      }
-      // SKU contains search term
-      else if (product.id.toLowerCase().includes(searchText.toLowerCase())) {
-        score += 200;
-        matchType = 'sku';
-      }
+        // SKU exact match
+        if (product.id.toLowerCase() === searchText.toLowerCase()) {
+          score += 800;
+          matchType = 'sku';
+        }
+        // SKU contains search term
+        else if (product.id.toLowerCase().includes(searchText.toLowerCase())) {
+          score += 200;
+          matchType = 'sku';
+        }
 
-      // Category exact match
-      if (product.category.toLowerCase() === searchText.toLowerCase()) {
-        score += 400;
-        matchType = 'category';
-      }
-      // Category contains search term
-      else if (product.category.toLowerCase().includes(searchText.toLowerCase())) {
-        score += 150;
-        matchType = 'category';
-      }
+        // Category exact match
+        if (product.category.toLowerCase() === searchText.toLowerCase()) {
+          score += 400;
+          matchType = 'category';
+        }
+        // Category contains search term
+        else if (
+          product.category.toLowerCase().includes(searchText.toLowerCase())
+        ) {
+          score += 150;
+          matchType = 'category';
+        }
 
-      // Multi-term matching
-      let termMatches = 0;
-      terms.forEach(term => {
-        if (product.name.toLowerCase().includes(term)) termMatches++;
-        if (product.category.toLowerCase().includes(term)) termMatches++;
-        if (product.id.toLowerCase().includes(term)) termMatches++;
+        // Multi-term matching
+        let termMatches = 0;
+        terms.forEach(term => {
+          if (product.name.toLowerCase().includes(term)) termMatches++;
+          if (product.category.toLowerCase().includes(term)) termMatches++;
+          if (product.id.toLowerCase().includes(term)) termMatches++;
+        });
+
+        if (termMatches > 0) {
+          score += termMatches * 50;
+        }
+
+        // Boost for in-stock items
+        if (product.inStock) {
+          score += 10;
+        }
+
+        // Boost for highly rated items
+        if (product.rating && product.rating >= 4.5) {
+          score += 5;
+        }
+
+        if (score > 0) {
+          scoredResults.push({ product, score, matchType });
+        }
       });
-      
-      if (termMatches > 0) {
-        score += termMatches * 50;
-      }
 
-      // Boost for in-stock items
-      if (product.inStock) {
-        score += 10;
-      }
-
-      // Boost for highly rated items
-      if (product.rating && product.rating >= 4.5) {
-        score += 5;
-      }
-
-      if (score > 0) {
-        scoredResults.push({ product, score, matchType });
-      }
-    });
-
-    // Sort by score and return top results
-    return scoredResults
-      .sort((a, b) => b.score - a.score)
-      .slice(0, maxSuggestions);
-  }, [maxSuggestions, state.products]);
+      // Sort by score and return top results
+      return scoredResults
+        .sort((a, b) => b.score - a.score)
+        .slice(0, maxSuggestions);
+    },
+    [maxSuggestions, state.products]
+  );
 
   // Debounced search with loading state
-  const handleSearch = useCallback((searchText: string) => {
-    if (!mountedRef.current) return;
-
-    setQuery(searchText);
-
-    // Clear previous timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    // Show loading for non-empty queries
-    if (searchText.trim()) {
-      setIsLoading(true);
-    } else {
-      setIsLoading(false);
-      setSuggestions([]);
-      return;
-    }
-
-    // Debounce search for 100ms for instant feel
-    searchTimeoutRef.current = setTimeout(() => {
+  const handleSearch = useCallback(
+    (searchText: string) => {
       if (!mountedRef.current) return;
 
-      try {
-        const results = searchProducts(searchText);
-        setSuggestions(results);
-        setIsLoading(false);
-        setIsOffline(false);
-      } catch (error) {
-        // Simulate offline/cached results
-        console.log('Search error, showing cached results:', error);
-        const results = searchProducts(searchText);
-        setSuggestions(results);
-        setIsLoading(false);
-        setIsOffline(true);
+      setQuery(searchText);
+
+      // Clear previous timeout
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
       }
-    }, 100);
-  }, [searchProducts]);
+
+      // Show loading for non-empty queries
+      if (searchText.trim()) {
+        setIsLoading(true);
+      } else {
+        setIsLoading(false);
+        setSuggestions([]);
+        return;
+      }
+
+      // Debounce search for 100ms for instant feel
+      searchTimeoutRef.current = setTimeout(() => {
+        if (!mountedRef.current) return;
+
+        try {
+          const results = searchProducts(searchText);
+          setSuggestions(results);
+          setIsLoading(false);
+          setIsOffline(false);
+        } catch (error) {
+          // Simulate offline/cached results
+          console.log('Search error, showing cached results:', error);
+          const results = searchProducts(searchText);
+          setSuggestions(results);
+          setIsLoading(false);
+          setIsOffline(true);
+        }
+      }, 100);
+    },
+    [searchProducts]
+  );
 
   // Handle input focus
   const handleFocus = () => {
     HapticFeedback.selection();
     setIsFocused(true);
-    
+
     if (showDropdownOnFocus) {
       setShowDropdown(true);
       animateDropdown(true);
@@ -229,7 +241,7 @@ const SmartSearchDropdown: React.FC<SmartSearchDropdownProps> = ({
   // Handle suggestion selection
   const handleSuggestionPress = (suggestion: SearchSuggestion) => {
     HapticFeedback.selection();
-    
+
     setQuery(suggestion.product.name);
     setShowDropdown(false);
     animateDropdown(false);
@@ -264,7 +276,7 @@ const SmartSearchDropdown: React.FC<SmartSearchDropdownProps> = ({
   // Render suggestion item
   const renderSuggestion = ({ item }: { item: SearchSuggestion }) => {
     const { product, matchType } = item;
-    
+
     return (
       <TouchableOpacity
         style={styles.suggestionItem}
@@ -272,15 +284,19 @@ const SmartSearchDropdown: React.FC<SmartSearchDropdownProps> = ({
         activeOpacity={0.7}
       >
         <View style={styles.suggestionIconContainer}>
-          <Ionicons 
-            name={matchType === 'sku' ? 'barcode-outline' : 
-                  matchType === 'category' ? 'folder-outline' : 
-                  'search-outline'} 
-            size={18} 
-            color={COLORS.textSecondary} 
+          <Ionicons
+            name={
+              matchType === 'sku'
+                ? 'barcode-outline'
+                : matchType === 'category'
+                  ? 'folder-outline'
+                  : 'search-outline'
+            }
+            size={18}
+            color={COLORS.textSecondary}
           />
         </View>
-        
+
         <View style={styles.suggestionContent}>
           <Text style={styles.suggestionTitle} numberOfLines={1}>
             {product.name}
@@ -292,11 +308,9 @@ const SmartSearchDropdown: React.FC<SmartSearchDropdownProps> = ({
             )}
           </View>
         </View>
-        
-        <Text style={styles.suggestionPrice}>
-          ${product.price.toFixed(0)}
-        </Text>
-        
+
+        <Text style={styles.suggestionPrice}>${product.price.toFixed(0)}</Text>
+
         <View style={styles.suggestionArrow}>
           <Ionicons name="chevron-forward" size={16} color={COLORS.inactive} />
         </View>
@@ -325,14 +339,21 @@ const SmartSearchDropdown: React.FC<SmartSearchDropdownProps> = ({
   );
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={[styles.container, style]}
     >
       {/* Search Input */}
-      <View style={[styles.searchInput, isFocused && styles.searchInputFocused]}>
-        <Ionicons name="search" size={20} color={COLORS.textSecondary} style={styles.searchIcon} />
-        
+      <View
+        style={[styles.searchInput, isFocused && styles.searchInputFocused]}
+      >
+        <Ionicons
+          name="search"
+          size={20}
+          color={COLORS.textSecondary}
+          style={styles.searchIcon}
+        />
+
         <TextInput
           ref={inputRef}
           style={styles.input}
@@ -349,9 +370,12 @@ const SmartSearchDropdown: React.FC<SmartSearchDropdownProps> = ({
           returnKeyType="search"
           clearButtonMode="never"
         />
-        
+
         {query.length > 0 && (
-          <TouchableOpacity style={styles.clearIconButton} onPress={handleClear}>
+          <TouchableOpacity
+            style={styles.clearIconButton}
+            onPress={handleClear}
+          >
             <Ionicons name="close-circle" size={18} color={COLORS.inactive} />
           </TouchableOpacity>
         )}
@@ -359,24 +383,30 @@ const SmartSearchDropdown: React.FC<SmartSearchDropdownProps> = ({
 
       {/* Dropdown */}
       {showDropdown && (
-        <Animated.View 
+        <Animated.View
           style={[
             styles.dropdown,
             {
               opacity: dropdownAnim,
-              transform: [{
-                translateY: dropdownAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [-10, 0],
-                })
-              }]
-            }
+              transform: [
+                {
+                  translateY: dropdownAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-10, 0],
+                  }),
+                },
+              ],
+            },
           ]}
         >
           {/* Offline indicator */}
           {isOffline && (
             <View style={styles.offlineIndicator}>
-              <Ionicons name="cloud-offline-outline" size={16} color={COLORS.textSecondary} />
+              <Ionicons
+                name="cloud-offline-outline"
+                size={16}
+                color={COLORS.textSecondary}
+              />
               <Text style={styles.offlineText}>Showing cached results</Text>
             </View>
           )}
@@ -388,7 +418,7 @@ const SmartSearchDropdown: React.FC<SmartSearchDropdownProps> = ({
             <FlatList
               data={suggestions}
               renderItem={renderSuggestion}
-              keyExtractor={(item) => item.product.id}
+              keyExtractor={item => item.product.id}
               style={styles.suggestionsList}
               keyboardShouldPersistTaps="always"
               showsVerticalScrollIndicator={false}
@@ -400,7 +430,9 @@ const SmartSearchDropdown: React.FC<SmartSearchDropdownProps> = ({
           ) : (
             <View style={styles.initialState}>
               <Ionicons name="search" size={32} color={COLORS.inactive} />
-              <Text style={styles.initialStateText}>Start typing to search</Text>
+              <Text style={styles.initialStateText}>
+                Start typing to search
+              </Text>
             </View>
           )}
         </Animated.View>
@@ -566,4 +598,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SmartSearchDropdown; 
+export default SmartSearchDropdown;

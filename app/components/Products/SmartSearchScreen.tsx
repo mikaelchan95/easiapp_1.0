@@ -8,13 +8,13 @@ type SmartSearchRouteProp = RouteProp<RootStackParamList, 'SmartSearch'>;
 
 const SmartSearchScreen: React.FC = () => {
   const route = useRoute<SmartSearchRouteProp>();
-  
+
   const initialQuery = route.params?.query || '';
   const initialCategory = route.params?.category || '';
-  
+
   return (
     <View style={styles.container}>
-      <SmartSearchView 
+      <SmartSearchView
         initialQuery={initialQuery}
         initialCategory={initialCategory}
       />
@@ -25,7 +25,7 @@ const SmartSearchScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  }
+  },
 });
 
-export default SmartSearchScreen; 
+export default SmartSearchScreen;

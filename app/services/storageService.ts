@@ -11,15 +11,15 @@ export interface UploadResult {
 export const storageService = {
   // Upload image to Supabase Storage
   async uploadProductImage(
-    imageFile: string | Blob, 
+    imageFile: string | Blob,
     fileName: string,
     contentType: string = 'image/webp'
   ): Promise<UploadResult> {
     try {
       console.log(`📤 Uploading image: ${fileName}`);
-      
+
       let fileData: ArrayBuffer;
-      
+
       if (typeof imageFile === 'string') {
         // Handle file path or base64 string
         if (imageFile.startsWith('data:')) {
@@ -54,7 +54,9 @@ export const storageService = {
       }
 
       // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      const {
+        data: { publicUrl },
+      } = supabase.storage
         .from('product-images')
         .getPublicUrl(`products/${fileName}`);
 
@@ -73,11 +75,11 @@ export const storageService = {
   ): Promise<UploadResult> {
     try {
       console.log(`📤 Uploading asset: ${assetPath} as ${fileName}`);
-      
+
       // For React Native assets, we need to copy to document directory first
       const documentDirectory = FileSystem.documentDirectory;
       const localPath = `${documentDirectory}${fileName}`;
-      
+
       // Copy asset to local file system
       await FileSystem.copyAsync({
         from: assetPath,
@@ -106,7 +108,9 @@ export const storageService = {
       }
 
       // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      const {
+        data: { publicUrl },
+      } = supabase.storage
         .from('product-images')
         .getPublicUrl(`products/${fileName}`);
 
@@ -125,28 +129,34 @@ export const storageService = {
   async createProductImagesBucket(): Promise<boolean> {
     try {
       console.log('🪣 Creating product-images bucket...');
-      
+
       // Check if bucket exists
-      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-      
+      const { data: buckets, error: listError } =
+        await supabase.storage.listBuckets();
+
       if (listError) {
         console.error('❌ Error listing buckets:', listError);
         return false;
       }
 
-      const bucketExists = buckets?.some(bucket => bucket.name === 'product-images');
-      
+      const bucketExists = buckets?.some(
+        bucket => bucket.name === 'product-images'
+      );
+
       if (bucketExists) {
         console.log('✅ Bucket already exists');
         return true;
       }
 
       // Create bucket
-      const { data, error } = await supabase.storage.createBucket('product-images', {
-        public: true,
-        allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
-        fileSizeLimit: 10485760, // 10MB
-      });
+      const { data, error } = await supabase.storage.createBucket(
+        'product-images',
+        {
+          public: true,
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+          fileSizeLimit: 10485760, // 10MB
+        }
+      );
 
       if (error) {
         console.error('❌ Error creating bucket:', error);
@@ -163,10 +173,12 @@ export const storageService = {
 
   // Get public URL for existing image
   getPublicUrl(fileName: string): string {
-    const { data: { publicUrl } } = supabase.storage
+    const {
+      data: { publicUrl },
+    } = supabase.storage
       .from('product-images')
       .getPublicUrl(`products/${fileName}`);
-    
+
     return publicUrl;
   },
 

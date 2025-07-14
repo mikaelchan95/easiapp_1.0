@@ -28,7 +28,7 @@ const StatusFeedback: React.FC<StatusFeedbackProps> = ({
   duration = 3000,
   onDismiss,
   showIcon = true,
-  compact = false
+  compact = false,
 }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(-50)).current;
@@ -54,7 +54,7 @@ const StatusFeedback: React.FC<StatusFeedbackProps> = ({
           tension: 300,
           friction: 20,
           useNativeDriver: true,
-        })
+        }),
       ]).start();
 
       // Auto-hide after duration (except for loading)
@@ -85,7 +85,7 @@ const StatusFeedback: React.FC<StatusFeedbackProps> = ({
         toValue: 0.9,
         duration: 150,
         useNativeDriver: true,
-      })
+      }),
     ]).start(() => {
       onDismiss?.();
     });
@@ -152,11 +152,8 @@ const StatusFeedback: React.FC<StatusFeedbackProps> = ({
         {
           backgroundColor: config.backgroundColor,
           opacity: fadeAnim,
-          transform: [
-            { translateY: slideAnim },
-            { scale: scaleAnim }
-          ]
-        }
+          transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+        },
       ]}
     >
       <View style={styles.content}>
@@ -165,19 +162,19 @@ const StatusFeedback: React.FC<StatusFeedbackProps> = ({
             {type === 'loading' ? (
               <ActivityIndicator size="small" color={config.iconColor} />
             ) : (
-              <Ionicons 
-                name={config.icon as any} 
-                size={compact ? 16 : 20} 
-                color={config.iconColor} 
+              <Ionicons
+                name={config.icon as any}
+                size={compact ? 16 : 20}
+                color={config.iconColor}
               />
             )}
           </View>
         )}
-        
-        <Text 
+
+        <Text
           style={[
             compact ? styles.compactText : styles.text,
-            { color: config.textColor }
+            { color: config.textColor },
           ]}
           numberOfLines={compact ? 1 : 2}
         >
@@ -227,4 +224,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default StatusFeedback; 
+export default StatusFeedback;

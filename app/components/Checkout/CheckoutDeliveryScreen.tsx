@@ -1,14 +1,17 @@
 import React, { useContext } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
-  StatusBar 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  StatusBar,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { AppContext } from '../../context/AppContext';
@@ -24,7 +27,7 @@ const DEFAULT_ADDRESS = {
   unitNumber: '',
   postalCode: '',
   phone: '',
-  isDefault: false
+  isDefault: false,
 };
 
 export default function CheckoutDeliveryScreen() {
@@ -32,8 +35,6 @@ export default function CheckoutDeliveryScreen() {
   const insets = useSafeAreaInsets();
   const { state } = useContext(AppContext);
   const { state: checkoutState, dispatch: checkoutDispatch } = useCheckout();
-  
-
 
   const handleContinue = () => {
     if (checkoutState.deliverySlot) {
@@ -52,7 +53,7 @@ export default function CheckoutDeliveryScreen() {
       {/* Header Container */}
       <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
         <View style={styles.simpleHeader}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={handleBack}
             activeOpacity={0.7}
@@ -60,64 +61,73 @@ export default function CheckoutDeliveryScreen() {
           >
             <Ionicons name="chevron-back" size={24} color={COLORS.text} />
           </TouchableOpacity>
-          
+
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>Delivery Schedule</Text>
           </View>
-          
+
           <View style={styles.headerSpacer} />
         </View>
       </View>
-      
-      <ScrollView 
+
+      <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <DeliveryStep 
+        <DeliveryStep
           key={checkoutState.deliveryAddress?.id || 'default'}
-          address={checkoutState.deliveryAddress || {
-            id: 'default',
-            name: '',
-            address: '',
-            unitNumber: '',
-            postalCode: '',
-            phone: '',
-            isDefault: false
-          }}
-          onSelectSlot={(slot) => {
+          address={
+            checkoutState.deliveryAddress || {
+              id: 'default',
+              name: '',
+              address: '',
+              unitNumber: '',
+              postalCode: '',
+              phone: '',
+              isDefault: false,
+            }
+          }
+          onSelectSlot={slot => {
             checkoutDispatch({ type: 'SET_DELIVERY_SLOT', payload: slot });
           }}
           onEditAddress={() => {
             navigation.navigate('CheckoutAddress' as never);
           }}
-          subtotal={state.cart.reduce((sum, item) => sum + (item.product.trade_price || item.product.retail_price) * item.quantity, 0)}
+          subtotal={state.cart.reduce(
+            (sum, item) =>
+              sum +
+              (item.product.trade_price || item.product.retail_price) *
+                item.quantity,
+            0
+          )}
         />
       </ScrollView>
 
       {/* Step Indicator */}
-      <CheckoutStepIndicator 
-        currentStep={2}
-        totalSteps={4}
-      />
+      <CheckoutStepIndicator currentStep={2} totalSteps={4} />
 
       {/* Bottom Button */}
-      <View style={[
-        styles.bottomContainer,
-        { paddingBottom: insets.bottom + SPACING.sm } // Just safe area + small padding
-      ]}>
-        <TouchableOpacity 
+      <View
+        style={[
+          styles.bottomContainer,
+          { paddingBottom: insets.bottom + SPACING.sm }, // Just safe area + small padding
+        ]}
+      >
+        <TouchableOpacity
           style={[
             styles.continueButton,
-            !isValid && styles.continueButtonDisabled
+            !isValid && styles.continueButtonDisabled,
           ]}
           onPress={handleContinue}
           disabled={!isValid}
         >
-          <Text style={[
-            styles.continueButtonText,
-            !isValid && styles.continueButtonTextDisabled
-          ]}>
+          <Text
+            style={[
+              styles.continueButtonText,
+              !isValid && styles.continueButtonTextDisabled,
+            ]}
+          >
             Continue to Payment
           </Text>
         </TouchableOpacity>

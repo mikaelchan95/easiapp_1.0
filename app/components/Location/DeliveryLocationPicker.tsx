@@ -43,30 +43,33 @@ interface DeliveryLocationPickerProps {
 const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   onLocationSelect,
   initialLocation,
-  placeholder = "Enter delivery address"
+  placeholder = 'Enter delivery address',
 }) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  
+
   // Use delivery location hook
-  const { 
-    savedAddresses, 
+  const {
+    savedAddresses,
     loadSavedAddresses,
     saveCurrentLocation,
-    locationPreferences 
+    locationPreferences,
   } = useDeliveryLocation();
-  
+
   // State
   const [searchText, setSearchText] = useState(initialLocation?.title || '');
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [recentLocations, setRecentLocations] = useState<LocationSuggestion[]>([]);
-  const [currentLocation, setCurrentLocation] = useState<LocationSuggestion | null>(null);
+  const [recentLocations, setRecentLocations] = useState<LocationSuggestion[]>(
+    []
+  );
+  const [currentLocation, setCurrentLocation] =
+    useState<LocationSuggestion | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
-  
+
   // Animation values
   const searchBarFocused = useRef(new Animated.Value(0)).current;
   const suggestionListHeight = useRef(new Animated.Value(0)).current;
@@ -75,7 +78,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   const searchBarScale = useRef(new Animated.Value(1)).current;
   const currentLocationScale = useRef(new Animated.Value(1)).current;
   const quickSelectAnimations = useRef<Animated.Value[]>([]).current;
-  
+
   // Refs
   const searchInputRef = useRef<TextInput>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -111,11 +114,23 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
     let showSubscription, hideSubscription;
 
     if (Platform.OS === 'ios') {
-      showSubscription = Keyboard.addListener('keyboardWillShow', keyboardWillShow);
-      hideSubscription = Keyboard.addListener('keyboardWillHide', keyboardWillHide);
+      showSubscription = Keyboard.addListener(
+        'keyboardWillShow',
+        keyboardWillShow
+      );
+      hideSubscription = Keyboard.addListener(
+        'keyboardWillHide',
+        keyboardWillHide
+      );
     } else {
-      showSubscription = Keyboard.addListener('keyboardDidShow', keyboardDidShow);
-      hideSubscription = Keyboard.addListener('keyboardDidHide', keyboardDidHide);
+      showSubscription = Keyboard.addListener(
+        'keyboardDidShow',
+        keyboardDidShow
+      );
+      hideSubscription = Keyboard.addListener(
+        'keyboardDidHide',
+        keyboardDidHide
+      );
     }
 
     return () => {
@@ -139,10 +154,10 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   const loadInitialData = useCallback(async () => {
     try {
       const recent = await GoogleMapsService.getRecentLocations();
-      
+
       if (mountedRef.current) {
         setRecentLocations(recent.slice(0, 3)); // Show max 3 recent
-        
+
         // Animate in content with staggered effects
         Animated.parallel([
           Animated.timing(fadeAnim, {
@@ -155,21 +170,23 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
             duration: 600,
             delay: 100,
             useNativeDriver: true,
-          })
+          }),
         ]).start();
       }
-      
+
       // Only load current location if preferences allow it
-      const storedPreferences = await AsyncStorage.getItem('@easiapp:location_preferences');
+      const storedPreferences = await AsyncStorage.getItem(
+        '@easiapp:location_preferences'
+      );
       let shouldLoadCurrent = false;
-      
+
       if (storedPreferences) {
         const preferences = JSON.parse(storedPreferences);
         shouldLoadCurrent = preferences.autoSuggestCurrent !== false; // Default to true if not set
       } else {
         shouldLoadCurrent = false; // Default to false for new users
       }
-      
+
       if (shouldLoadCurrent) {
         const current = await GoogleMapsService.getCurrentLocation();
         if (mountedRef.current) {
@@ -192,27 +209,28 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   // Handle search input changes with proper cleanup
   const handleSearchChange = useCallback((text: string) => {
     setSearchText(text);
-    
+
     // Clear previous timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
       searchTimeoutRef.current = null;
     }
-    
+
     if (text.length > 2) {
       setIsLoading(true);
-      
+
       // Debounce search with memory leak protection
       searchTimeoutRef.current = setTimeout(async () => {
         try {
           // Check if component is still mounted
           if (!mountedRef.current) return;
-          
-          const results = await GoogleMapsService.getAutocompleteSuggestions(text);
-          
+
+          const results =
+            await GoogleMapsService.getAutocompleteSuggestions(text);
+
           // Double-check mounting status after async operation
           if (!mountedRef.current) return;
-          
+
           setSuggestions(results);
         } catch (error) {
           console.error('Search error:', error);
@@ -238,12 +256,12 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-      
+
       setCurrentLocation(location);
-      
+
       // Add to recent locations
       await GoogleMapsService.addToRecentLocations(location);
-      
+
       // Show success animation
       Animated.sequence([
         Animated.timing(successAnimation, {
@@ -260,10 +278,10 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
 
       setSearchText(location.title);
       setShowSuggestions(false);
-      
+
       // Dismiss keyboard
       Keyboard.dismiss();
-      
+
       // Call parent callback
       if (onLocationSelect) {
         onLocationSelect(location);
@@ -271,11 +289,9 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
     } catch (error) {
       console.error('Error selecting location:', error);
       HapticFeedback.error();
-      Alert.alert(
-        'Selection Failed',
-        'Please try again.',
-        [{ text: 'OK', style: 'default' }]
-      );
+      Alert.alert('Selection Failed', 'Please try again.', [
+        { text: 'OK', style: 'default' },
+      ]);
     }
   };
 
@@ -283,7 +299,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   const handleInputFocus = () => {
     setShowSuggestions(true);
     HapticFeedback.light();
-    
+
     Animated.parallel([
       Animated.timing(searchBarFocused, {
         toValue: 1,
@@ -307,10 +323,10 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   // Handle input blur
   const handleInputBlur = () => {
     if (!showSuggestions) return;
-    
+
     setTimeout(() => {
       setShowSuggestions(false);
-      
+
       Animated.parallel([
         Animated.timing(searchBarFocused, {
           toValue: 0,
@@ -346,7 +362,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   // Handle use current location with micro animation
   const handleUseCurrentLocation = () => {
     HapticFeedback.selection();
-    
+
     // Animate button press
     Animated.sequence([
       Animated.timing(currentLocationScale, {
@@ -360,7 +376,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
         useNativeDriver: true,
       }),
     ]).start();
-    
+
     if (currentLocation) {
       handleLocationSelect(currentLocation);
     } else {
@@ -376,7 +392,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   // Calculate keyboard offset for iOS modals
   const getKeyboardOffset = () => {
     if (!isKeyboardVisible || keyboardHeight === 0) return 0;
-    
+
     if (Platform.OS === 'ios') {
       // For iOS modals, calculate proper offset by subtracting modal's top offset from bottom inset
       const modalTopOffset = insets.top;
@@ -398,15 +414,17 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   };
 
   // Get icon for saved location with consistent styling
-  const getSavedLocationIcon = (iconName: string): keyof typeof Ionicons.glyphMap => {
+  const getSavedLocationIcon = (
+    iconName: string
+  ): keyof typeof Ionicons.glyphMap => {
     const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
-      'home': 'home',
-      'business': 'business',
-      'school': 'school',
+      home: 'home',
+      business: 'business',
+      school: 'school',
       'fitness-center': 'fitness',
       'local-hospital': 'medical',
       'shopping-cart': 'storefront',
-      'restaurant': 'restaurant',
+      restaurant: 'restaurant',
       'location-on': 'location',
     };
     return iconMap[iconName] || 'location';
@@ -415,7 +433,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   // Render suggestion item with accessibility and micro animations
   const renderSuggestionItem = (item: LocationSuggestion, index: number) => {
     const itemScale = useRef(new Animated.Value(1)).current;
-    
+
     const handlePressIn = () => {
       Animated.spring(itemScale, {
         toValue: 0.98,
@@ -424,7 +442,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
         friction: 10,
       }).start();
     };
-    
+
     const handlePressOut = () => {
       Animated.spring(itemScale, {
         toValue: 1,
@@ -433,7 +451,7 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
         friction: 10,
       }).start();
     };
-    
+
     return (
       <Animated.View style={{ transform: [{ scale: itemScale }] }}>
         <TouchableOpacity
@@ -452,10 +470,10 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
           accessibilityHint="Tap to select this location for delivery"
         >
           <View style={styles.suggestionIcon}>
-            <Ionicons 
-              name={item.type === 'current' ? 'location' : 'location-outline'} 
-              size={20} 
-              color={COLORS.buttonText} 
+            <Ionicons
+              name={item.type === 'current' ? 'location' : 'location-outline'}
+              size={20}
+              color={COLORS.buttonText}
             />
           </View>
           <View style={styles.suggestionContent}>
@@ -468,7 +486,11 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
               </Text>
             )}
           </View>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={COLORS.textSecondary}
+          />
         </TouchableOpacity>
       </Animated.View>
     );
@@ -477,296 +499,364 @@ const DeliveryLocationPicker: React.FC<DeliveryLocationPickerProps> = ({
   return (
     <View style={styles.container}>
       <View style={[styles.statusBarBackground, { height: insets.top }]} />
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} translucent />
-        
-        {/* Success Animation Overlay */}
-        <Animated.View
-          style={[
-            styles.successOverlay,
-            {
-              opacity: successAnimation,
-              transform: [
-                {
-                  scale: successAnimation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.8, 1.1],
-                  }),
-                },
-              ],
-            },
-          ]}
-          pointerEvents="none"
-        >
-          <View style={styles.successIndicator}>
-            <Ionicons name="checkmark-circle" size={48} color={COLORS.success} />
-            <Text style={styles.successText}>Location Selected!</Text>
-          </View>
-        </Animated.View>
-        
-        {/* Header */}
-        <Animated.View 
-          style={[
-            styles.header,
-            {
-              opacity: headerAnimation,
-              transform: [{
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.card}
+        translucent
+      />
+
+      {/* Success Animation Overlay */}
+      <Animated.View
+        style={[
+          styles.successOverlay,
+          {
+            opacity: successAnimation,
+            transform: [
+              {
+                scale: successAnimation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.8, 1.1],
+                }),
+              },
+            ],
+          },
+        ]}
+        pointerEvents="none"
+      >
+        <View style={styles.successIndicator}>
+          <Ionicons name="checkmark-circle" size={48} color={COLORS.success} />
+          <Text style={styles.successText}>Location Selected!</Text>
+        </View>
+      </Animated.View>
+
+      {/* Header */}
+      <Animated.View
+        style={[
+          styles.header,
+          {
+            opacity: headerAnimation,
+            transform: [
+              {
                 translateY: headerAnimation.interpolate({
                   inputRange: [0, 1],
                   outputRange: [-20, 0],
-                })
-              }]
-            }
-          ]}
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={handleBackPress}
+          accessible={true}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+          activeOpacity={0.8}
         >
-          <TouchableOpacity 
-            style={styles.backButton} 
-            onPress={handleBackPress}
-            accessible={true}
-            accessibilityLabel="Go back"
-            accessibilityRole="button"
-            activeOpacity={0.8}
-          >
-            <Ionicons name="chevron-back" size={24} color={COLORS.text} />
-          </TouchableOpacity>
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Delivery Address</Text>
-            <Text style={styles.headerSubtitle}>Where should we deliver your order?</Text>
-          </View>
-          <View style={styles.headerSpacer} />
-        </Animated.View>
-        
-        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-          <KeyboardAvoidingView 
-            style={[styles.keyboardView, { marginBottom: getKeyboardOffset() }]}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={getKeyboardVerticalOffset()}
-          >
-            {/* Current Location Widget */}
-            {!showSuggestions && (
-              <View style={styles.currentLocationWidget}>
-                <Animated.View style={{ transform: [{ scale: currentLocationScale }] }}>
-                  <TouchableOpacity
-                    style={styles.currentLocationButton}
-                    onPress={handleUseCurrentLocation}
-                    activeOpacity={0.8}
-                    accessibilityLabel="Use current location"
-                  >
-                    <View style={styles.currentLocationIconContainer}>
-                      <Ionicons name="locate" size={24} color={COLORS.buttonText} />
-                    </View>
-                    <View style={styles.currentLocationContent}>
-                      <Text style={styles.currentLocationTitle}>Use my current location</Text>
-                      <Text style={styles.currentLocationSubtitle}>Automatically detect your location</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color={COLORS.buttonText + 'CC'} />
-                  </TouchableOpacity>
-                </Animated.View>
-              </View>
-            )}
+          <Ionicons name="chevron-back" size={24} color={COLORS.text} />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Delivery Address</Text>
+          <Text style={styles.headerSubtitle}>
+            Where should we deliver your order?
+          </Text>
+        </View>
+        <View style={styles.headerSpacer} />
+      </Animated.View>
 
-            {/* OR Divider */}
-            {!showSuggestions && (
-              <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>OR</Text>
-                <View style={styles.dividerLine} />
-              </View>
-            )}
+      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+        <KeyboardAvoidingView
+          style={[styles.keyboardView, { marginBottom: getKeyboardOffset() }]}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={getKeyboardVerticalOffset()}
+        >
+          {/* Current Location Widget */}
+          {!showSuggestions && (
+            <View style={styles.currentLocationWidget}>
+              <Animated.View
+                style={{ transform: [{ scale: currentLocationScale }] }}
+              >
+                <TouchableOpacity
+                  style={styles.currentLocationButton}
+                  onPress={handleUseCurrentLocation}
+                  activeOpacity={0.8}
+                  accessibilityLabel="Use current location"
+                >
+                  <View style={styles.currentLocationIconContainer}>
+                    <Ionicons
+                      name="locate"
+                      size={24}
+                      color={COLORS.buttonText}
+                    />
+                  </View>
+                  <View style={styles.currentLocationContent}>
+                    <Text style={styles.currentLocationTitle}>
+                      Use my current location
+                    </Text>
+                    <Text style={styles.currentLocationSubtitle}>
+                      Automatically detect your location
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={COLORS.buttonText + 'CC'}
+                  />
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
+          )}
 
-            {/* Search Section */}
-            <View style={styles.searchSection}>
-              <Text style={styles.searchSectionTitle}>Search for an address</Text>
-              <View style={styles.searchContainer}>
-                <Animated.View style={[
+          {/* OR Divider */}
+          {!showSuggestions && (
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>OR</Text>
+              <View style={styles.dividerLine} />
+            </View>
+          )}
+
+          {/* Search Section */}
+          <View style={styles.searchSection}>
+            <Text style={styles.searchSectionTitle}>Search for an address</Text>
+            <View style={styles.searchContainer}>
+              <Animated.View
+                style={[
                   styles.searchBar,
                   showSuggestions && styles.searchBarFocused,
                   isKeyboardVisible && styles.searchBarKeyboard,
-                  { transform: [{ scale: searchBarScale }] }
-                ]}>
-                  <View style={styles.searchIconContainer}>
-                    <Ionicons name="search" size={20} color={COLORS.textSecondary} />
-                  </View>
-                  <TextInput
-                    ref={searchInputRef}
-                    style={styles.searchInput}
-                    placeholder={placeholder}
-                    placeholderTextColor={COLORS.textSecondary}
-                    value={searchText}
-                    onChangeText={handleSearchChange}
-                    onFocus={handleInputFocus}
-                    onBlur={handleInputBlur}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    returnKeyType="search"
-                    onSubmitEditing={() => Keyboard.dismiss()}
+                  { transform: [{ scale: searchBarScale }] },
+                ]}
+              >
+                <View style={styles.searchIconContainer}>
+                  <Ionicons
+                    name="search"
+                    size={20}
+                    color={COLORS.textSecondary}
                   />
-                  {searchText.length > 0 && (
-                    <TouchableOpacity
-                      style={styles.clearButton}
-                      onPress={() => {
-                        setSearchText('');
-                        setSuggestions([]);
-                        HapticFeedback.selection();
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
-                    </TouchableOpacity>
-                  )}
-                </Animated.View>
-              </View>
-            </View>
-
-            {/* Saved Locations Section */}
-            {!showSuggestions && savedAddresses.length > 0 && (
-              <View style={styles.savedLocationsSection}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Saved Locations</Text>
-                  <TouchableOpacity 
-                    style={styles.manageButton}
-                    onPress={() => {
-                      // Navigate to saved locations management
-                      navigation.navigate('SavedLocations' as never);
-                    }}
-                  >
-                    <Text style={styles.manageButtonText}>Manage</Text>
-                  </TouchableOpacity>
                 </View>
-                
-                {/* Quick Select Cards */}
-                <View style={styles.quickSelectContainer}>
-                  {savedAddresses.slice(0, 2).map((item) => {
-                    const iconName = getSavedLocationIcon(item.icon || 'home');
-                    return (
-                      <TouchableOpacity
-                        key={item.id}
-                        style={styles.quickSelectCard}
-                        onPress={() => handleLocationSelect(item.location)}
-                        activeOpacity={0.7}
-                        accessibilityLabel={`Select ${item.label}`}
-                      >
-                        <View style={styles.quickSelectIcon}>
-                          <Ionicons 
-                            name={iconName} 
-                            size={24} 
-                            color={COLORS.buttonText} 
-                          />
-                        </View>
-                        <Text style={styles.quickSelectLabel} numberOfLines={1}>
-                          {item.label}
-                        </Text>
-                        <Text style={styles.quickSelectAddress} numberOfLines={2}>
-                          {item.location.title}
-                        </Text>
-                        {item.isDefault && (
-                          <View style={styles.quickSelectBadge}>
-                            <Text style={styles.quickSelectBadgeText}>Default</Text>
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-                {/* Show More Button if there are more than 2 locations */}
-                {savedAddresses.length > 2 && (
-                  <TouchableOpacity 
-                    style={styles.showMoreButton}
+                <TextInput
+                  ref={searchInputRef}
+                  style={styles.searchInput}
+                  placeholder={placeholder}
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={searchText}
+                  onChangeText={handleSearchChange}
+                  onFocus={handleInputFocus}
+                  onBlur={handleInputBlur}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="search"
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                />
+                {searchText.length > 0 && (
+                  <TouchableOpacity
+                    style={styles.clearButton}
                     onPress={() => {
-                      navigation.navigate('SavedLocations' as never);
+                      setSearchText('');
+                      setSuggestions([]);
+                      HapticFeedback.selection();
                     }}
-                    accessibilityLabel="View all saved locations"
+                    activeOpacity={0.7}
                   >
-                    <View style={styles.showMoreContent}>
-                      <Ionicons name="location" size={20} color={COLORS.text} />
-                      <Text style={styles.showMoreText}>
-                        View all {savedAddresses.length} saved locations
-                      </Text>
-                      <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
-                    </View>
+                    <Ionicons
+                      name="close-circle"
+                      size={20}
+                      color={COLORS.textSecondary}
+                    />
                   </TouchableOpacity>
                 )}
-              </View>
-            )}
-
-            {/* Suggestions List */}
-            <Animated.View
-              style={[
-                styles.suggestionsContainer,
-                {
-                  height: suggestionListHeight,
-                  opacity: showSuggestions ? 1 : 0,
-                }
-              ]}
-              pointerEvents={showSuggestions ? 'auto' : 'none'}
-            >
-              <FlatList
-                data={[
-                  ...(isLoading ? [{ id: 'loading', type: 'loading' }] : []),
-                  ...(suggestions.length > 0 ? [
-                    { id: 'search-header', type: 'header', title: 'Search Results' },
-                    ...suggestions.map(sug => ({ ...sug, type: 'suggestion' as const }))
-                  ] : []),
-                  ...(searchText.length <= 2 && recentLocations.length > 0 ? [
-                    { id: 'recent-header', type: 'header', title: 'Recent' },
-                    ...recentLocations.map(loc => ({ ...loc, type: 'recent' as const }))
-                  ] : []),
-                  ...(searchText.length <= 2 && currentLocation ? [
-                    { id: 'current-header', type: 'header', title: 'Current Location' },
-                    { ...currentLocation, type: 'current' as const }
-                  ] : []),
-                  ...(searchText.length > 2 && suggestions.length === 0 && !isLoading ? [
-                    { id: 'no-results', type: 'no-results' }
-                  ] : [])
-                ]}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => {
-                  if (item.type === 'loading') {
-                    return (
-                      <View style={styles.loadingContainer}>
-                        <Text style={styles.loadingText}>Searching...</Text>
-                      </View>
-                    );
-                  }
-                  
-                  if (item.type === 'header') {
-                    return <Text style={styles.suggestionsHeader}>{(item as any).title}</Text>;
-                  }
-                  
-                  if (item.type === 'no-results') {
-                    return (
-                      <View style={styles.noResultsContainer}>
-                        <View style={styles.noResultsIcon}>
-                          <Ionicons name="search-outline" size={32} color={COLORS.textSecondary} />
-                        </View>
-                        <Text style={styles.noResultsTitle}>No Results</Text>
-                        <Text style={styles.noResultsText}>
-                          Try a different search term
-                        </Text>
-                      </View>
-                    );
-                  }
-                  
-                  return renderSuggestionItem(item as LocationSuggestion, 0);
-                }}
-                style={styles.suggestionsList}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={styles.suggestionsScrollContent}
-              />
-            </Animated.View>
-          </KeyboardAvoidingView>
-        </Animated.View>
-
-        {/* Save Prompt Overlay */}
-        {showSavePrompt && (
-          <View style={styles.savePromptOverlay}>
-            <View style={styles.savePromptContent}>
-              <Ionicons name="checkmark-circle" size={24} color={COLORS.text} />
-              <Text style={styles.savePromptText}>Location saved!</Text>
+              </Animated.View>
             </View>
           </View>
-        )}
+
+          {/* Saved Locations Section */}
+          {!showSuggestions && savedAddresses.length > 0 && (
+            <View style={styles.savedLocationsSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Saved Locations</Text>
+                <TouchableOpacity
+                  style={styles.manageButton}
+                  onPress={() => {
+                    // Navigate to saved locations management
+                    navigation.navigate('SavedLocations' as never);
+                  }}
+                >
+                  <Text style={styles.manageButtonText}>Manage</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Quick Select Cards */}
+              <View style={styles.quickSelectContainer}>
+                {savedAddresses.slice(0, 2).map(item => {
+                  const iconName = getSavedLocationIcon(item.icon || 'home');
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.quickSelectCard}
+                      onPress={() => handleLocationSelect(item.location)}
+                      activeOpacity={0.7}
+                      accessibilityLabel={`Select ${item.label}`}
+                    >
+                      <View style={styles.quickSelectIcon}>
+                        <Ionicons
+                          name={iconName}
+                          size={24}
+                          color={COLORS.buttonText}
+                        />
+                      </View>
+                      <Text style={styles.quickSelectLabel} numberOfLines={1}>
+                        {item.label}
+                      </Text>
+                      <Text style={styles.quickSelectAddress} numberOfLines={2}>
+                        {item.location.title}
+                      </Text>
+                      {item.isDefault && (
+                        <View style={styles.quickSelectBadge}>
+                          <Text style={styles.quickSelectBadgeText}>
+                            Default
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Show More Button if there are more than 2 locations */}
+              {savedAddresses.length > 2 && (
+                <TouchableOpacity
+                  style={styles.showMoreButton}
+                  onPress={() => {
+                    navigation.navigate('SavedLocations' as never);
+                  }}
+                  accessibilityLabel="View all saved locations"
+                >
+                  <View style={styles.showMoreContent}>
+                    <Ionicons name="location" size={20} color={COLORS.text} />
+                    <Text style={styles.showMoreText}>
+                      View all {savedAddresses.length} saved locations
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={COLORS.textSecondary}
+                    />
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* Suggestions List */}
+          <Animated.View
+            style={[
+              styles.suggestionsContainer,
+              {
+                height: suggestionListHeight,
+                opacity: showSuggestions ? 1 : 0,
+              },
+            ]}
+            pointerEvents={showSuggestions ? 'auto' : 'none'}
+          >
+            <FlatList
+              data={[
+                ...(isLoading ? [{ id: 'loading', type: 'loading' }] : []),
+                ...(suggestions.length > 0
+                  ? [
+                      {
+                        id: 'search-header',
+                        type: 'header',
+                        title: 'Search Results',
+                      },
+                      ...suggestions.map(sug => ({
+                        ...sug,
+                        type: 'suggestion' as const,
+                      })),
+                    ]
+                  : []),
+                ...(searchText.length <= 2 && recentLocations.length > 0
+                  ? [
+                      { id: 'recent-header', type: 'header', title: 'Recent' },
+                      ...recentLocations.map(loc => ({
+                        ...loc,
+                        type: 'recent' as const,
+                      })),
+                    ]
+                  : []),
+                ...(searchText.length <= 2 && currentLocation
+                  ? [
+                      {
+                        id: 'current-header',
+                        type: 'header',
+                        title: 'Current Location',
+                      },
+                      { ...currentLocation, type: 'current' as const },
+                    ]
+                  : []),
+                ...(searchText.length > 2 &&
+                suggestions.length === 0 &&
+                !isLoading
+                  ? [{ id: 'no-results', type: 'no-results' }]
+                  : []),
+              ]}
+              keyExtractor={item => item.id}
+              renderItem={({ item }) => {
+                if (item.type === 'loading') {
+                  return (
+                    <View style={styles.loadingContainer}>
+                      <Text style={styles.loadingText}>Searching...</Text>
+                    </View>
+                  );
+                }
+
+                if (item.type === 'header') {
+                  return (
+                    <Text style={styles.suggestionsHeader}>
+                      {(item as any).title}
+                    </Text>
+                  );
+                }
+
+                if (item.type === 'no-results') {
+                  return (
+                    <View style={styles.noResultsContainer}>
+                      <View style={styles.noResultsIcon}>
+                        <Ionicons
+                          name="search-outline"
+                          size={32}
+                          color={COLORS.textSecondary}
+                        />
+                      </View>
+                      <Text style={styles.noResultsTitle}>No Results</Text>
+                      <Text style={styles.noResultsText}>
+                        Try a different search term
+                      </Text>
+                    </View>
+                  );
+                }
+
+                return renderSuggestionItem(item as LocationSuggestion, 0);
+              }}
+              style={styles.suggestionsList}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.suggestionsScrollContent}
+            />
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </Animated.View>
+
+      {/* Save Prompt Overlay */}
+      {showSavePrompt && (
+        <View style={styles.savePromptOverlay}>
+          <View style={styles.savePromptContent}>
+            <Ionicons name="checkmark-circle" size={24} color={COLORS.text} />
+            <Text style={styles.savePromptText}>Location saved!</Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -803,7 +893,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginTop: SPACING.sm,
   },
-  
+
   // Header with improved design
   header: {
     flexDirection: 'row',
@@ -851,7 +941,7 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 40,
   },
-  
+
   // Content area
   content: {
     flex: 1,
@@ -1125,7 +1215,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     lineHeight: 18,
   },
-  
+
   // Loading and empty states
   loadingContainer: {
     padding: SPACING.lg,
@@ -1162,7 +1252,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
-  
+
   // Save prompt
   savePromptOverlay: {
     position: 'absolute',

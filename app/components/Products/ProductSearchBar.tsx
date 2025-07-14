@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  TextInput, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Text, 
-  ActivityIndicator, 
-  Animated, 
+import {
+  View,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  ActivityIndicator,
+  Animated,
   FlatList,
   Keyboard,
   LayoutAnimation,
   Platform,
-  UIManager 
+  UIManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -20,7 +20,10 @@ import { Product } from '../../utils/pricing';
 import { useAppContext } from '../../context/AppContext';
 
 // Enable LayoutAnimation for Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
@@ -75,38 +78,38 @@ const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
     }
 
     const terms = searchText.toLowerCase().trim().split(/\s+/);
-    
+
     // Create a scoring system for matches
     const products = state.products || [];
     const scoredResults = products.map(product => {
       let score = 0;
-      
+
       // Check for exact matches in name (highest priority)
       if (product.name.toLowerCase().includes(searchText.toLowerCase())) {
         score += 100;
       }
-      
+
       // Check for SKU match (high priority)
       if (product.id.toLowerCase().includes(searchText.toLowerCase())) {
         score += 80;
       }
-      
+
       // Check for category match
       if (product.category.toLowerCase().includes(searchText.toLowerCase())) {
         score += 60;
       }
-      
+
       // Check for individual terms
       terms.forEach(term => {
         // Allow fuzzy matching - even partial matches count
         if (product.name.toLowerCase().includes(term)) {
           score += 40;
         }
-        
+
         if (product.category.toLowerCase().includes(term)) {
           score += 20;
         }
-        
+
         // Check for number matches (years, etc.)
         if (/^\d+$/.test(term)) {
           // If search is numeric and product name contains that number
@@ -115,17 +118,17 @@ const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
           }
         }
       });
-      
+
       return { product, score };
     });
-    
+
     // Filter out zero scores and sort by score
     const results = scoredResults
       .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score)
       .map(item => item.product)
       .slice(0, 5); // Limit to 5 suggestions
-    
+
     setSuggestions(results);
   };
 
@@ -164,7 +167,7 @@ const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
     setQuery(product.name);
     setShowSuggestions(false);
     Keyboard.dismiss();
-    
+
     if (onSelectProduct) {
       onSelectProduct(product);
     } else {
@@ -181,16 +184,23 @@ const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 
   return (
     <View style={styles.container}>
-      <Animated.View style={[
-        styles.searchBar,
-        {
-          width: animatedWidth.interpolate({
-            inputRange: [0, 1],
-            outputRange: ['92%', '100%'],
-          })
-        }
-      ]}>
-        <Ionicons name="search" size={20} color={COLORS.textSecondary} style={styles.searchIcon} />
+      <Animated.View
+        style={[
+          styles.searchBar,
+          {
+            width: animatedWidth.interpolate({
+              inputRange: [0, 1],
+              outputRange: ['92%', '100%'],
+            }),
+          },
+        ]}
+      >
+        <Ionicons
+          name="search"
+          size={20}
+          color={COLORS.textSecondary}
+          style={styles.searchIcon}
+        />
         <TextInput
           ref={inputRef}
           style={styles.input}
@@ -206,16 +216,24 @@ const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
           onSubmitEditing={handleSearch}
         />
         {loading ? (
-          <ActivityIndicator size="small" color={COLORS.primary} style={styles.iconRight} />
+          <ActivityIndicator
+            size="small"
+            color={COLORS.primary}
+            style={styles.iconRight}
+          />
         ) : query.length > 0 ? (
           <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
-            <Ionicons name="close-circle" size={18} color={COLORS.placeholder} />
+            <Ionicons
+              name="close-circle"
+              size={18}
+              color={COLORS.placeholder}
+            />
           </TouchableOpacity>
         ) : null}
       </Animated.View>
-      
+
       {/* Animated underline */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.underline,
           {
@@ -223,17 +241,17 @@ const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
               inputRange: [0, 1],
               outputRange: ['0%', '100%'],
             }),
-            backgroundColor: COLORS.primary
-          }
-        ]} 
+            backgroundColor: COLORS.primary,
+          },
+        ]}
       />
-      
+
       {/* Suggestions List */}
       {showSuggestions && suggestions.length > 0 && (
         <View style={styles.suggestionsContainer}>
           <FlatList
             data={suggestions}
-            keyExtractor={(item) => item.id}
+            keyExtractor={item => item.id}
             keyboardShouldPersistTaps="always"
             renderItem={({ item }) => (
               <TouchableOpacity
@@ -242,17 +260,27 @@ const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
                 activeOpacity={0.7}
               >
                 <View style={styles.suggestionIconContainer}>
-                  <Ionicons 
-                    name={item.category.toLowerCase().includes('whisky') ? 'wine-outline' : 'search'} 
-                    size={18} 
-                    color={COLORS.textSecondary} 
+                  <Ionicons
+                    name={
+                      item.category.toLowerCase().includes('whisky')
+                        ? 'wine-outline'
+                        : 'search'
+                    }
+                    size={18}
+                    color={COLORS.textSecondary}
                   />
                 </View>
                 <View style={styles.suggestionTextContainer}>
-                  <Text style={styles.suggestionTitle} numberOfLines={1}>{item.name}</Text>
-                  <Text style={styles.suggestionSubtitle} numberOfLines={1}>{item.category}</Text>
+                  <Text style={styles.suggestionTitle} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text style={styles.suggestionSubtitle} numberOfLines={1}>
+                    {item.category}
+                  </Text>
                 </View>
-                <Text style={styles.suggestionPrice}>${item.price.toFixed(0)}</Text>
+                <Text style={styles.suggestionPrice}>
+                  ${item.price.toFixed(0)}
+                </Text>
               </TouchableOpacity>
             )}
             style={styles.suggestionsList}
@@ -354,4 +382,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProductSearchBar; 
+export default ProductSearchBar;

@@ -5,7 +5,8 @@ const fs = require('fs');
 const path = require('path');
 
 const supabaseUrl = 'https://vqxnkxaeriizizfmqvua.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeG5reGFlcmlpeml6Zm1xdnVhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjAwMzM4MiwiZXhwIjoyMDY3NTc5MzgyfQ.y7sQCIqVduJ7Le3IkEGR-wSoOhppjRjqsC6GvEJAZEw';
+const supabaseKey =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeG5reGFlcmlpeml6Zm1xdnVhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjAwMzM4MiwiZXhwIjoyMDY3NTc5MzgyfQ.y7sQCIqVduJ7Le3IkEGR-wSoOhppjRjqsC6GvEJAZEw';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -15,14 +16,14 @@ const productImages = [
     sku: 'CM2015-750',
     name: 'Château Margaux 2015',
     imageUrl: 'https://picsum.photos/800/800?random=wine1',
-    filename: 'chateau-margaux-2015.jpg'
+    filename: 'chateau-margaux-2015.jpg',
   },
   {
     sku: 'JW-BLUE-700',
     name: 'Johnnie Walker Blue Label',
     imageUrl: 'https://picsum.photos/800/800?random=whisky1',
-    filename: 'johnnie-walker-blue.jpg'
-  }
+    filename: 'johnnie-walker-blue.jpg',
+  },
 ];
 
 // Create downloads directory
@@ -35,8 +36,8 @@ if (!fs.existsSync(downloadsDir)) {
 function downloadImage(url, filename) {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(path.join(downloadsDir, filename));
-    
-    const request = https.get(url, (response) => {
+
+    const request = https.get(url, response => {
       if (response.statusCode === 200) {
         response.pipe(file);
         file.on('finish', () => {
@@ -56,7 +57,7 @@ function downloadImage(url, filename) {
       }
     });
 
-    request.on('error', (error) => {
+    request.on('error', error => {
       file.close();
       if (fs.existsSync(path.join(downloadsDir, filename))) {
         fs.unlinkSync(path.join(downloadsDir, filename));
@@ -79,12 +80,12 @@ function downloadImage(url, filename) {
 async function uploadToSupabase(localFilePath, bucketPath) {
   try {
     const fileBuffer = fs.readFileSync(localFilePath);
-    
+
     const { data, error } = await supabase.storage
       .from('product-images')
       .upload(bucketPath, fileBuffer, {
         contentType: 'image/jpeg',
-        upsert: true
+        upsert: true,
       });
 
     if (error) {
@@ -115,42 +116,44 @@ async function updateProductImageUrl(sku, imageUrl) {
 async function downloadMissingImages() {
   console.log('🚀 Starting reliable product image download...');
   console.log('📸 Using Lorem Picsum for consistent placeholder images');
-  
+
   for (const product of productImages) {
     try {
       console.log(`\n📦 Processing ${product.name}...`);
-      
+
       // Download image
       console.log(`📥 Downloading image from: ${product.imageUrl}`);
       await downloadImage(product.imageUrl, product.filename);
       console.log(`✅ Downloaded: ${product.filename}`);
-      
+
       // Upload to Supabase
       const bucketPath = `products/${product.filename}`;
       console.log(`📤 Uploading to Supabase storage...`);
-      await uploadToSupabase(path.join(downloadsDir, product.filename), bucketPath);
+      await uploadToSupabase(
+        path.join(downloadsDir, product.filename),
+        bucketPath
+      );
       console.log(`✅ Uploaded to: ${bucketPath}`);
-      
+
       // Update database
       const supabaseImageUrl = `${supabaseUrl}/storage/v1/object/public/product-images/${bucketPath}`;
       console.log(`📝 Updating database URL...`);
       await updateProductImageUrl(product.sku, supabaseImageUrl);
       console.log(`✅ Updated database for ${product.sku}`);
-      
+
       // Clean up local file
       fs.unlinkSync(path.join(downloadsDir, product.filename));
       console.log(`🧹 Cleaned up local file`);
-      
+
       // Add delay between downloads
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
     } catch (error) {
       console.error(`❌ Error processing ${product.name}:`, error.message);
     }
   }
-  
+
   console.log('\n🎉 Reliable image download completed!');
-  
+
   // Final verification
   console.log('\n🔍 Final verification...');
   const { data: products, error } = await supabase
@@ -162,14 +165,14 @@ async function downloadMissingImages() {
     console.error('❌ Error verifying final state:', error);
   } else {
     console.log('\n📦 All product images:');
-    products?.forEach((product) => {
+    products?.forEach(product => {
       const filename = product.image_url.split('/').pop();
       const hasImage = !filename.includes('placeholder');
       const status = hasImage ? '✅' : '🔄';
       console.log(`${status} ${product.name} (${product.sku}): ${filename}`);
     });
   }
-  
+
   console.log('\n💡 Missing product images have been updated!');
   console.log('🔄 Refresh your app to see all the new images.');
 }
@@ -180,5 +183,5 @@ if (require.main === module) {
 }
 
 module.exports = {
-  downloadMissingImages
+  downloadMissingImages,
 };

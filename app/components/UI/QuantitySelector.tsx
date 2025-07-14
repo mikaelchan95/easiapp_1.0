@@ -7,7 +7,7 @@ import {
   Animated,
   StyleProp,
   ViewStyle,
-  AccessibilityInfo
+  AccessibilityInfo,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, SHADOWS } from '../../utils/theme';
@@ -41,78 +41,76 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   size = 'medium',
   style,
   showLabel = false,
-  productName = 'item'
+  productName = 'item',
 }) => {
   // Animation values
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const bounceAnim = useRef(new Animated.Value(1)).current;
-  
+
   const buttonSize = BUTTON_SIZES[size];
-  
+
   // Handle increment with proper validation and feedback
   const handleIncrement = () => {
     if (disabled || value >= max) return;
-    
+
     HapticFeedback.light();
-    
+
     // Bounce animation for feedback
     Animations.bounceAnimation(bounceAnim);
-    
+
     onChange(value + 1);
-    
+
     // Accessibility announcement
     AccessibilityInfo.announceForAccessibility(
       `Quantity increased to ${value + 1} for ${productName}`
     );
   };
-  
+
   // Handle decrement with proper validation and feedback
   const handleDecrement = () => {
     if (disabled || value <= min) return;
-    
+
     HapticFeedback.light();
-    
+
     // Bounce animation for feedback
     Animations.bounceAnimation(bounceAnim);
-    
+
     onChange(value - 1);
-    
+
     // Accessibility announcement
     AccessibilityInfo.announceForAccessibility(
       `Quantity decreased to ${value - 1} for ${productName}`
     );
   };
-  
+
   // Handle button press animation
   const handlePressIn = () => {
     Animated.timing(scaleAnim, {
       toValue: 0.95,
       duration: 100,
-      useNativeDriver: true
+      useNativeDriver: true,
     }).start();
   };
-  
+
   const handlePressOut = () => {
     Animated.timing(scaleAnim, {
       toValue: 1,
       duration: 100,
-      useNativeDriver: true
+      useNativeDriver: true,
     }).start();
   };
-  
+
   const canDecrement = !disabled && value > min;
   const canIncrement = !disabled && value < max;
-  
+
   return (
     <View style={[styles.container, style]}>
-      {showLabel && (
-        <Text style={styles.label}>Quantity</Text>
-      )}
-      
-      <Animated.View 
+      {showLabel && <Text style={styles.label}>Quantity</Text>}
+
+      <Animated.View
         style={[
           styles.quantityContainer,
-          { transform: [{ scale: bounceAnim }] }
+          { transform: [{ scale: bounceAnim }] },
         ]}
       >
         {/* Decrement Button */}
@@ -128,7 +126,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
               width: buttonSize.width,
               height: buttonSize.height,
             },
-            !canDecrement && styles.disabledButton
+            !canDecrement && styles.disabledButton,
           ]}
           accessibilityRole="button"
           accessibilityLabel={`Decrease quantity of ${productName}`}
@@ -136,28 +134,25 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
           accessibilityState={{ disabled: !canDecrement }}
         >
           <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-            <Ionicons 
-              name="remove" 
-              size={buttonSize.iconSize} 
-              color={canDecrement ? COLORS.text : COLORS.inactive} 
+            <Ionicons
+              name="remove"
+              size={buttonSize.iconSize}
+              color={canDecrement ? COLORS.text : COLORS.inactive}
             />
           </Animated.View>
         </TouchableOpacity>
-        
+
         {/* Quantity Display */}
         <View style={styles.quantityDisplay}>
-          <Text 
-            style={[
-              styles.quantityText,
-              disabled && styles.disabledText
-            ]}
+          <Text
+            style={[styles.quantityText, disabled && styles.disabledText]}
             accessibilityRole="text"
             accessibilityLabel={`Quantity: ${value}`}
           >
             {value}
           </Text>
         </View>
-        
+
         {/* Increment Button */}
         <TouchableOpacity
           onPress={handleIncrement}
@@ -171,7 +166,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
               width: buttonSize.width,
               height: buttonSize.height,
             },
-            !canIncrement && styles.disabledButton
+            !canIncrement && styles.disabledButton,
           ]}
           accessibilityRole="button"
           accessibilityLabel={`Increase quantity of ${productName}`}
@@ -179,10 +174,10 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
           accessibilityState={{ disabled: !canIncrement }}
         >
           <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-            <Ionicons 
-              name="add" 
-              size={buttonSize.iconSize} 
-              color={canIncrement ? COLORS.text : COLORS.inactive} 
+            <Ionicons
+              name="add"
+              size={buttonSize.iconSize}
+              color={canIncrement ? COLORS.text : COLORS.inactive}
             />
           </Animated.View>
         </TouchableOpacity>

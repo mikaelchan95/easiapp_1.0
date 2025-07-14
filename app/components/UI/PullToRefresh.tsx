@@ -43,9 +43,9 @@ const PullToRefresh: React.FC<PullToRefreshProps> = ({
   const handleRefresh = useCallback(async () => {
     // Haptic feedback when refresh starts
     HapticFeedback.medium();
-    
+
     setRefreshing(true);
-    
+
     // Start rotation animation
     Animated.loop(
       Animated.timing(rotateAnim, {
@@ -54,7 +54,7 @@ const PullToRefresh: React.FC<PullToRefreshProps> = ({
         useNativeDriver: true,
       })
     ).start();
-    
+
     try {
       await onRefresh();
     } catch (error) {
@@ -63,7 +63,7 @@ const PullToRefresh: React.FC<PullToRefreshProps> = ({
       // Success haptic when refresh completes
       HapticFeedback.success();
       setRefreshing(false);
-      
+
       // Reset animations
       rotateAnim.setValue(0);
       rotateAnim.stopAnimation();
@@ -72,17 +72,17 @@ const PullToRefresh: React.FC<PullToRefreshProps> = ({
 
   const handleScroll = (event: any) => {
     const offsetY = event.nativeEvent.contentOffset.y;
-    
+
     if (offsetY < 0) {
       const distance = Math.abs(offsetY);
       setPullDistance(distance);
-      
+
       // Update animations based on pull distance
       const progress = Math.min(distance / 100, 1);
-      
+
       Animated.parallel([
         Animated.timing(scaleAnim, {
-          toValue: 0.8 + (0.2 * progress),
+          toValue: 0.8 + 0.2 * progress,
           duration: 0,
           useNativeDriver: true,
         }),
@@ -92,7 +92,7 @@ const PullToRefresh: React.FC<PullToRefreshProps> = ({
           useNativeDriver: true,
         }),
       ]).start();
-      
+
       // Haptic feedback at threshold
       if (distance > 80 && distance < 85) {
         HapticFeedback.light();
@@ -114,31 +114,29 @@ const PullToRefresh: React.FC<PullToRefreshProps> = ({
   );
 
   // Custom iOS refresh indicator
-  const customRefreshIndicator = Platform.OS === 'ios' && pullDistance > 0 && !refreshing && (
-    <Animated.View
-      style={[
-        styles.customIndicator,
-        {
-          opacity: opacityAnim,
-          transform: [
-            { scale: scaleAnim },
-            {
-              rotate: rotateAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0deg', '360deg'],
-              }),
-            },
-          ],
-        },
-      ]}
-    >
-      <Ionicons
-        name="refresh"
-        size={24}
-        color={tintColor}
-      />
-    </Animated.View>
-  );
+  const customRefreshIndicator = Platform.OS === 'ios' &&
+    pullDistance > 0 &&
+    !refreshing && (
+      <Animated.View
+        style={[
+          styles.customIndicator,
+          {
+            opacity: opacityAnim,
+            transform: [
+              { scale: scaleAnim },
+              {
+                rotate: rotateAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '360deg'],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <Ionicons name="refresh" size={24} color={tintColor} />
+      </Animated.View>
+    );
 
   if (scrollComponent === 'FlatList') {
     return (

@@ -1,15 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  SafeAreaView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
   ScrollView,
   StatusBar,
   Animated,
   Dimensions,
-  InteractionManager
+  InteractionManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -31,7 +31,11 @@ import { HapticFeedback } from '../../utils/haptics';
 import notificationService from '../../services/notificationService';
 import { supabaseService } from '../../services/supabaseService';
 import { formatFinancialAmount } from '../../utils/formatting';
-import { DeliveryAddress, DeliverySlot, PaymentMethod } from '../../types/checkout';
+import {
+  DeliveryAddress,
+  DeliverySlot,
+  PaymentMethod,
+} from '../../types/checkout';
 
 const { width } = Dimensions.get('window');
 
@@ -39,11 +43,15 @@ export default function CheckoutScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { state, dispatch } = React.useContext(AppContext);
-  const { state: checkoutState, dispatch: checkoutDispatch, isCheckoutComplete } = useCheckout();
+  const {
+    state: checkoutState,
+    dispatch: checkoutDispatch,
+    isCheckoutComplete,
+  } = useCheckout();
   const { deliveryLocation } = useDeliveryLocation();
   const [orderCompleted, setOrderCompleted] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
-  
+
   // Use checkout navigation hook
   const {
     currentStep,
@@ -61,36 +69,38 @@ export default function CheckoutScreen() {
     getStepTitle,
     getProgressPercentage,
     isStepCompleted,
-    isStepActive
+    isStepActive,
   } = useCheckoutNavigation({
-    onStepChange: (step) => {
+    onStepChange: step => {
       // Update progress animation when step changes
       updateProgress();
       // Scroll to top when step changes
       if (scrollViewRef.current) {
         scrollViewRef.current.scrollTo({ y: 0, animated: false });
       }
-    }
+    },
   });
-  
+
   const stepAnimations = useRef([
     new Animated.Value(0),
     new Animated.Value(0),
     new Animated.Value(0),
-    new Animated.Value(0)
+    new Animated.Value(0),
   ]).current;
   const headerScaleAnim = useRef(new Animated.Value(1)).current;
-  
+
   // Initialize checkout state with user data
   useEffect(() => {
     const userName = state.user?.name || 'Guest User';
     const userPhone = state.user?.phone || '+65 9123 4567';
-    
+
     if (deliveryLocation && !checkoutState.address) {
       const postalCodeMatch = deliveryLocation.subtitle?.match(/\b\d{6}\b/);
       const postalCode = postalCodeMatch ? postalCodeMatch[0] : '';
-      const city = deliveryLocation.subtitle?.includes('Singapore') ? 'Singapore' : '';
-      
+      const city = deliveryLocation.subtitle?.includes('Singapore')
+        ? 'Singapore'
+        : '';
+
       const address: DeliveryAddress = {
         name: userName,
         street: deliveryLocation.title,
@@ -98,9 +108,9 @@ export default function CheckoutScreen() {
         city: city,
         postalCode: postalCode,
         phone: userPhone,
-        isDefault: false
+        isDefault: false,
       };
-      
+
       checkoutDispatch({ type: 'SET_ADDRESS', payload: address });
     } else if (!checkoutState.address) {
       // Default address if no delivery location is set
@@ -111,16 +121,22 @@ export default function CheckoutScreen() {
         city: 'Singapore',
         postalCode: '018956',
         phone: userPhone,
-        isDefault: true
+        isDefault: true,
       };
-      
+
       checkoutDispatch({ type: 'SET_ADDRESS', payload: defaultAddress });
     }
-  }, [state.user?.name, state.user?.phone, deliveryLocation, checkoutState.address, checkoutDispatch]);
-  
+  }, [
+    state.user?.name,
+    state.user?.phone,
+    deliveryLocation,
+    checkoutState.address,
+    checkoutDispatch,
+  ]);
+
   // Use actual cart items from context - redirect if empty
   const contextCartItems = state.cart;
-  
+
   // Redirect if no user or empty cart (but not during order completion)
   React.useEffect(() => {
     if (!state.user) {
@@ -131,40 +147,45 @@ export default function CheckoutScreen() {
       navigation.navigate('Main', { screen: 'Cart' });
     }
   }, [contextCartItems.length, state.user, navigation, orderCompleted]);
-  
+
   // Transform context cart items to checkout format
   const cartItems = contextCartItems.map(item => ({
     product: {
       ...item.product,
       imageUrl: item.product.image, // Map image to imageUrl for compatibility
     },
-    quantity: item.quantity
+    quantity: item.quantity,
   }));
-  
+
   // State for order totals to handle dynamic recalculation
-  const [orderTotals, setOrderTotals] = useState(() => 
+  const [orderTotals, setOrderTotals] = useState(() =>
     calculateOrderTotal(
-      cartItems, 
+      cartItems,
       getUserRole(state.user),
       checkoutState.deliverySlot?.id === 'express' ? 'express' : 'standard'
     )
   );
-  
+
   // Recalculate totals when user data or delivery slot changes
   useEffect(() => {
     const newTotals = calculateOrderTotal(
-      cartItems, 
+      cartItems,
       getUserRole(state.user),
       checkoutState.deliverySlot?.id === 'express' ? 'express' : 'standard'
     );
     setOrderTotals(newTotals);
-  }, [state.user?.role, state.user?.accountType, checkoutState.deliverySlot, cartItems.length]);
-  
+  }, [
+    state.user?.role,
+    state.user?.accountType,
+    checkoutState.deliverySlot,
+    cartItems.length,
+  ]);
+
   const subtotal = orderTotals.subtotal;
   const gst = orderTotals.gst;
   const deliveryFee = orderTotals.deliveryFee;
   const total = orderTotals.finalTotal;
-  
+
   // Animate step indicators when step changes
   useEffect(() => {
     stepAnimations.forEach((anim, index) => {
@@ -177,54 +198,58 @@ export default function CheckoutScreen() {
       }).start();
     });
   }, [currentStepIndex]);
-  
+
   // Step navigation handlers are now handled by the useCheckoutNavigation hook
-  
+
   const handleUpdateAddress = (address: DeliveryAddress) => {
     if (isAnimating) return;
-    
+
     checkoutDispatch({ type: 'SET_ADDRESS', payload: address });
-    
+
     // Auto-advance to next step after address is set
     InteractionManager.runAfterInteractions(() => {
       goToNextStep({ address });
     });
   };
-  
+
   const handleSelectDeliverySlot = (slot: DeliverySlot) => {
     if (isAnimating) return;
-    
+
     checkoutDispatch({ type: 'SET_DELIVERY_SLOT', payload: slot });
-    
+
     // Auto-advance to next step after slot is selected
     InteractionManager.runAfterInteractions(() => {
       goToNextStep({ deliverySlot: slot });
     });
   };
-  
+
   const handleSelectPaymentMethod = (method: PaymentMethod) => {
     if (isAnimating) return;
-    
+
     checkoutDispatch({ type: 'SET_PAYMENT_METHOD', payload: method });
-    
+
     // Auto-advance to next step after payment method is selected
     InteractionManager.runAfterInteractions(() => {
       goToNextStep({ paymentMethod: method });
     });
   };
-  
+
   const handlePlaceOrder = async () => {
-    if (!checkoutState.address || !checkoutState.deliverySlot || !checkoutState.paymentMethod) {
+    if (
+      !checkoutState.address ||
+      !checkoutState.deliverySlot ||
+      !checkoutState.paymentMethod
+    ) {
       console.error('❌ Missing required checkout data');
       return;
     }
-    
+
     checkoutDispatch({ type: 'SET_PROCESSING', payload: true });
     setOrderCompleted(true); // Prevent cart redirect during order completion
-    
+
     // Navigate to processing step
     navigateToStep('processing');
-    
+
     try {
       // Ensure user is authenticated
       if (!state.user) {
@@ -233,15 +258,18 @@ export default function CheckoutScreen() {
         (navigation as any).navigate('Auth', { screen: 'SignIn' });
         return;
       }
-      
+
       const currentUser = state.user;
-      
+
       console.log('🛒 Creating order for user:', currentUser.name);
-      
+
       // Prepare order data
       const orderData = {
         userId: currentUser.id,
-        companyId: currentUser.accountType === 'company' ? currentUser.companyId : undefined,
+        companyId:
+          currentUser.accountType === 'company'
+            ? currentUser.companyId
+            : undefined,
         items: cartItems,
         deliveryAddress: `${checkoutState.address.street}${checkoutState.address.unit ? `, ${checkoutState.address.unit}` : ''}, ${checkoutState.address.city}, ${checkoutState.address.postalCode}`,
         deliverySlot: checkoutState.deliverySlot,
@@ -251,21 +279,21 @@ export default function CheckoutScreen() {
         deliveryFee: deliveryFee,
         total: total,
       };
-      
+
       // Create order in database
       const result = await supabaseService.createOrder(orderData);
-      
+
       if (result) {
         const { orderId, orderNumber } = result;
-        
+
         // Schedule order notifications
         notificationService.simulateOrderProgress(orderNumber);
-        
+
         // Simulate order progression for real-time demo (after 10 seconds)
         setTimeout(() => {
           supabaseService.simulateOrderProgression(orderId);
         }, 10000);
-        
+
         // Wait for processing animation to complete
         setTimeout(() => {
           // Navigate to order confirmation
@@ -273,36 +301,42 @@ export default function CheckoutScreen() {
             orderId: orderNumber,
             total: total,
             deliveryDate: checkoutState.deliverySlot?.date || 'Tomorrow',
-            deliveryTime: checkoutState.deliverySlot?.timeSlot || '2-4 PM'
+            deliveryTime: checkoutState.deliverySlot?.timeSlot || '2-4 PM',
           });
-          
+
           // Complete purchase - this will clear cart, update stats
-          dispatch({ 
-            type: 'COMPLETE_PURCHASE', 
-            payload: { 
-              orderTotal: total, 
-              orderId: orderNumber 
-            } 
+          dispatch({
+            type: 'COMPLETE_PURCHASE',
+            payload: {
+              orderTotal: total,
+              orderId: orderNumber,
+            },
           });
-          
+
           // Reset checkout state for next order
           checkoutDispatch({ type: 'RESET_CHECKOUT' });
         }, 8000); // Wait for processing animation
       } else {
         console.error('Failed to create order');
-        checkoutDispatch({ type: 'SET_ERROR', payload: 'Failed to create order. Please try again.' });
+        checkoutDispatch({
+          type: 'SET_ERROR',
+          payload: 'Failed to create order. Please try again.',
+        });
       }
     } catch (error) {
       console.error('Error creating order:', error);
-      checkoutDispatch({ type: 'SET_ERROR', payload: 'An error occurred while processing your order.' });
+      checkoutDispatch({
+        type: 'SET_ERROR',
+        payload: 'An error occurred while processing your order.',
+      });
     } finally {
       checkoutDispatch({ type: 'SET_PROCESSING', payload: false });
     }
   };
-  
+
   const handleGoBack = () => {
     if (isAnimating) return;
-    
+
     if (currentStep === 'address') {
       navigation.goBack();
     } else if (currentStep === 'processing') {
@@ -312,33 +346,33 @@ export default function CheckoutScreen() {
       goToPreviousStep();
     }
   };
-  
+
   const canContinue = () => {
     return validateStep(currentStep, {
       address: checkoutState.address,
       deliverySlot: checkoutState.deliverySlot,
       paymentMethod: checkoutState.paymentMethod,
       cartItems: cartItems,
-      orderTotal: total
+      orderTotal: total,
     });
   };
-  
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
-      
+
       {/* Enhanced Header with proper safe area */}
       <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
-        <Animated.View 
+        <Animated.View
           style={[
             styles.header,
             {
-              transform: [{ scale: headerScaleAnim }]
-            }
+              transform: [{ scale: headerScaleAnim }],
+            },
           ]}
         >
-          <TouchableOpacity 
-            style={styles.backButton} 
+          <TouchableOpacity
+            style={styles.backButton}
             onPress={handleGoBack}
             activeOpacity={0.8}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -346,7 +380,7 @@ export default function CheckoutScreen() {
             <Ionicons name="chevron-back" size={24} color={COLORS.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{getStepTitle(currentStep)}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.stepFlowButton}
             onPress={() => navigation.navigate('CheckoutAddress' as never)}
             activeOpacity={0.8}
@@ -355,42 +389,49 @@ export default function CheckoutScreen() {
           </TouchableOpacity>
         </Animated.View>
       </View>
-      
+
       {/* Step-by-step flow option */}
       <View style={styles.flowOptionContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.flowOptionButton}
           onPress={() => navigation.navigate('CheckoutAddress' as never)}
           activeOpacity={0.8}
         >
           <Ionicons name="list-outline" size={20} color={COLORS.text} />
           <Text style={styles.flowOptionText}>Use step-by-step checkout</Text>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={COLORS.textSecondary}
+          />
         </TouchableOpacity>
       </View>
-      
+
       {/* Content with Animation */}
-      <ScrollView 
+      <ScrollView
         ref={scrollViewRef}
         style={styles.content}
-        contentContainerStyle={[styles.contentContainer, { paddingBottom: 200 }]}
+        contentContainerStyle={[
+          styles.contentContainer,
+          { paddingBottom: 200 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View
           style={{
             opacity: fadeAnim,
-            transform: [{ translateX: slideAnim }]
+            transform: [{ translateX: slideAnim }],
           }}
           removeClippedSubviews={true}
           renderToHardwareTextureAndroid={true}
         >
           {currentStep === 'address' && checkoutState.address && (
-            <AddressStep 
+            <AddressStep
               address={checkoutState.address}
               onContinue={handleUpdateAddress}
             />
           )}
-          
+
           {currentStep === 'delivery' && checkoutState.address && (
             <DeliveryStep
               address={checkoutState.address}
@@ -398,24 +439,27 @@ export default function CheckoutScreen() {
               subtotal={subtotal}
             />
           )}
-          
+
           {currentStep === 'payment' && (
             <PaymentStep
               onSelectMethod={handleSelectPaymentMethod}
               total={total}
             />
           )}
-          
+
           {currentStep === 'review' && checkoutState.address && (
             <ReviewStep
               cart={cartItems.map(item => ({
                 product: {
                   id: item.product.id,
                   name: item.product.name,
-                  price: getUserRole(state.user) === 'trade' ? item.product.tradePrice : item.product.retailPrice,
-                  imageUrl: item.product.imageUrl
+                  price:
+                    getUserRole(state.user) === 'trade'
+                      ? item.product.tradePrice
+                      : item.product.retailPrice,
+                  imageUrl: item.product.imageUrl,
                 },
-                quantity: item.quantity
+                quantity: item.quantity,
               }))}
               address={checkoutState.address}
               deliverySlot={checkoutState.deliverySlot}
@@ -426,7 +470,7 @@ export default function CheckoutScreen() {
               onPlaceOrder={handlePlaceOrder}
             />
           )}
-          
+
           {currentStep === 'processing' && (
             <ProcessingStep
               onComplete={() => {
@@ -435,71 +479,79 @@ export default function CheckoutScreen() {
               }}
             />
           )}
-          
+
           {/* Extra padding to ensure footer button doesn't cover content */}
           <View style={{ height: 120 }} />
         </Animated.View>
       </ScrollView>
-      
+
       {/* Footer Actions */}
       {currentStep !== 'processing' && (
-        <View style={[styles.bottomContainer, { paddingBottom: insets.bottom }]}>
+        <View
+          style={[styles.bottomContainer, { paddingBottom: insets.bottom }]}
+        >
           {/* Progress Bar */}
           <View style={styles.bottomProgressContainer}>
             <View style={styles.progressTrack}>
-              <Animated.View 
+              <Animated.View
                 style={[
                   styles.progressBar,
                   {
                     width: progressAnim.interpolate({
                       inputRange: [0, 1],
                       outputRange: ['0%', '100%'],
-                    })
-                  }
-                ]} 
+                    }),
+                  },
+                ]}
               />
             </View>
-            
+
             {/* Step indicators */}
             <View style={styles.stepIndicators}>
               {steps.slice(0, 4).map((step, index) => {
                 const isActive = index === currentStepIndex;
                 const isCompleted = index < currentStepIndex;
                 const isInactive = index > currentStepIndex;
-                
+
                 return (
                   <React.Fragment key={step}>
-                    <Animated.View 
+                    <Animated.View
                       style={[
                         styles.stepDot,
                         isCompleted && styles.completedStepDot,
                         isActive && styles.activeStepDot,
                         isInactive && styles.inactiveStepDot,
                         {
-                          transform: [{
-                            scale: stepAnimations[index].interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [0.8, 1.1],
-                            })
-                          }]
-                        }
+                          transform: [
+                            {
+                              scale: stepAnimations[index].interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0.8, 1.1],
+                              }),
+                            },
+                          ],
+                        },
                       ]}
                     >
                       {isCompleted && (
                         <Animated.View
                           style={{
                             opacity: stepAnimations[index],
-                            transform: [{ scale: stepAnimations[index] }]
+                            transform: [{ scale: stepAnimations[index] }],
                           }}
                         >
-                          <Ionicons name="checkmark" size={14} color={COLORS.accent} />
+                          <Ionicons
+                            name="checkmark"
+                            size={14}
+                            color={COLORS.accent}
+                          />
                         </Animated.View>
                       )}
                       {isActive && (
                         <Animated.View
                           style={{
                             opacity: stepAnimations[index],
-                            transform: [{ scale: stepAnimations[index] }]
+                            transform: [{ scale: stepAnimations[index] }],
                           }}
                         >
                           <View style={styles.activeStepIndicator} />
@@ -507,7 +559,7 @@ export default function CheckoutScreen() {
                       )}
                     </Animated.View>
                     {index < 3 && (
-                      <Animated.View 
+                      <Animated.View
                         style={[
                           styles.stepLine,
                           isCompleted && styles.completedStepLine,
@@ -515,9 +567,9 @@ export default function CheckoutScreen() {
                             opacity: stepAnimations[index].interpolate({
                               inputRange: [0, 1],
                               outputRange: [0.3, 1],
-                            })
-                          }
-                        ]} 
+                            }),
+                          },
+                        ]}
                       />
                     )}
                   </React.Fragment>
@@ -525,39 +577,49 @@ export default function CheckoutScreen() {
               })}
             </View>
           </View>
-          
+
           {/* Continue Button */}
           <View style={styles.footer}>
             <AnimatedButton
               label={
-                currentStep === 'address' ? 'Continue to Delivery' :
-                currentStep === 'delivery' ? 'Continue to Payment' :
-                currentStep === 'payment' ? 'Continue to Review' :
-                currentStep === 'review' ? `Place Order • ${formatFinancialAmount(total)}` :
-                'Continue'
+                currentStep === 'address'
+                  ? 'Continue to Delivery'
+                  : currentStep === 'delivery'
+                    ? 'Continue to Payment'
+                    : currentStep === 'payment'
+                      ? 'Continue to Review'
+                      : currentStep === 'review'
+                        ? `Place Order • ${formatFinancialAmount(total)}`
+                        : 'Continue'
               }
-              onPress={currentStep === 'review' ? handlePlaceOrder : () => {
-                if (isAnimating || !canContinue()) return;
-                
-                const validationData = {
-                  address: checkoutState.address,
-                  deliverySlot: checkoutState.deliverySlot,
-                  paymentMethod: checkoutState.paymentMethod
-                };
-                
-                goToNextStep(validationData);
-              }}
-              disabled={!canContinue() || isAnimating || checkoutState.isProcessing}
-              type={currentStep === 'review' ? "success" : "primary"}
-              icon={currentStep === 'review' ? "checkmark-circle" : "arrow-forward"}
-              iconPosition={currentStep === 'review' ? "left" : "right"}
+              onPress={
+                currentStep === 'review'
+                  ? handlePlaceOrder
+                  : () => {
+                      if (isAnimating || !canContinue()) return;
+
+                      const validationData = {
+                        address: checkoutState.address,
+                        deliverySlot: checkoutState.deliverySlot,
+                        paymentMethod: checkoutState.paymentMethod,
+                      };
+
+                      goToNextStep(validationData);
+                    }
+              }
+              disabled={
+                !canContinue() || isAnimating || checkoutState.isProcessing
+              }
+              type={currentStep === 'review' ? 'success' : 'primary'}
+              icon={
+                currentStep === 'review' ? 'checkmark-circle' : 'arrow-forward'
+              }
+              iconPosition={currentStep === 'review' ? 'left' : 'right'}
               fullWidth={true}
             />
           </View>
         </View>
       )}
-      
-
     </View>
   );
 }
@@ -731,4 +793,4 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.md,
     backgroundColor: COLORS.card,
   },
-}); 
+});

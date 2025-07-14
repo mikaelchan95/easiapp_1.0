@@ -1,14 +1,17 @@
 import React, { useContext } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
-  StatusBar 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  StatusBar,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { AppContext } from '../../context/AppContext';
@@ -25,7 +28,7 @@ const DEFAULT_ADDRESS = {
   unitNumber: '',
   postalCode: '',
   phone: '',
-  isDefault: false
+  isDefault: false,
 };
 
 export default function CheckoutAddressScreen() {
@@ -35,15 +38,18 @@ export default function CheckoutAddressScreen() {
   const { state: checkoutState, dispatch: checkoutDispatch } = useCheckout();
   const { deliveryLocation } = useDeliveryLocation();
 
-  
   // Can continue if we have a delivery location OR a complete checkout address
-  const canContinue = !!(deliveryLocation || (checkoutState.deliveryAddress?.name && checkoutState.deliveryAddress?.address));
+  const canContinue = !!(
+    deliveryLocation ||
+    (checkoutState.deliveryAddress?.name &&
+      checkoutState.deliveryAddress?.address)
+  );
 
   const handleContinue = () => {
     // Additional safety check: if we have a delivery location but no checkout address, set it
     if (deliveryLocation && !checkoutState.deliveryAddress) {
-      checkoutDispatch({ 
-        type: 'SET_DELIVERY_ADDRESS', 
+      checkoutDispatch({
+        type: 'SET_DELIVERY_ADDRESS',
         payload: {
           id: deliveryLocation.id || 'temp-id',
           name: deliveryLocation.title || 'Selected Location', // Use title from LocationSuggestion
@@ -51,10 +57,10 @@ export default function CheckoutAddressScreen() {
           unitNumber: deliveryLocation.unitNumber || '',
           postalCode: deliveryLocation.postalCode || '',
           phone: '', // LocationSuggestion doesn't have phone
-          isDefault: false
-        }
+          isDefault: false,
+        },
       });
-      
+
       // Small delay to ensure state is updated before navigation
       setTimeout(() => {
         navigation.navigate('CheckoutDelivery' as never);
@@ -73,7 +79,7 @@ export default function CheckoutAddressScreen() {
       {/* Header Container */}
       <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
         <View style={styles.simpleHeader}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={handleBack}
             activeOpacity={0.7}
@@ -81,50 +87,50 @@ export default function CheckoutAddressScreen() {
           >
             <Ionicons name="chevron-back" size={24} color={COLORS.text} />
           </TouchableOpacity>
-          
+
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>Delivery Address</Text>
           </View>
-          
+
           <View style={styles.headerSpacer} />
         </View>
       </View>
-      
-      <ScrollView 
+
+      <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <AddressStep 
+        <AddressStep
           address={checkoutState.deliveryAddress || DEFAULT_ADDRESS}
-          onContinue={(address) => {
-            checkoutDispatch({ type: 'SET_DELIVERY_ADDRESS', payload: address });
+          onContinue={address => {
+            checkoutDispatch({
+              type: 'SET_DELIVERY_ADDRESS',
+              payload: address,
+            });
           }}
         />
       </ScrollView>
 
       {/* Step Indicator */}
-      <CheckoutStepIndicator 
-        currentStep={1}
-        totalSteps={4}
-      />
+      <CheckoutStepIndicator currentStep={1} totalSteps={4} />
 
       {/* Bottom Button */}
-      <View style={[
-        styles.bottomContainer,
-        { paddingBottom: insets.bottom + SPACING.sm } // Just safe area + small padding
-      ]}>
-        <TouchableOpacity 
+      <View
+        style={[
+          styles.bottomContainer,
+          { paddingBottom: insets.bottom + SPACING.sm }, // Just safe area + small padding
+        ]}
+      >
+        <TouchableOpacity
           style={[
             styles.continueButton,
-            !canContinue && styles.continueButtonDisabled
+            !canContinue && styles.continueButtonDisabled,
           ]}
           onPress={handleContinue}
           disabled={!canContinue}
         >
-          <Text style={styles.continueButtonText}>
-            Continue to Delivery
-          </Text>
+          <Text style={styles.continueButtonText}>Continue to Delivery</Text>
         </TouchableOpacity>
       </View>
     </View>

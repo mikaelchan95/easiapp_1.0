@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   FlatList,
-  Keyboard
+  Keyboard,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { COLORS, SHADOWS } from '../../utils/theme';
@@ -36,11 +36,11 @@ const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
   error,
   loading = false,
   onQuickSelect,
-  popularPostalCodes = GoogleMapsService.getPopularPostalCodes()
+  popularPostalCodes = GoogleMapsService.getPopularPostalCodes(),
 }) => {
   const [focused, setFocused] = useState(false);
   const [localError, setLocalError] = useState<string | undefined>(error);
-  
+
   // Clear local error when error prop changes
   useEffect(() => {
     setLocalError(error);
@@ -49,7 +49,7 @@ const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
   // Handle validation on blur
   const handleBlur = () => {
     setFocused(false);
-    
+
     if (value && !GoogleMapsService.isValidPostalCode(value)) {
       setLocalError('Please enter a valid 6-digit postal code');
     } else {
@@ -68,7 +68,7 @@ const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
       setLocalError('Please enter a valid 6-digit postal code');
       return;
     }
-    
+
     setLocalError(undefined);
     Keyboard.dismiss();
     onSubmit(value);
@@ -80,7 +80,7 @@ const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
     onChangeText(postalCode);
     if (onQuickSelect) {
       onQuickSelect(postalCode);
-      } else {
+    } else {
       onSubmit(postalCode);
     }
   };
@@ -98,22 +98,29 @@ const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
         Enter your Singapore postal code to quickly find your delivery address
       </Text>
 
-      <View style={[
-        styles.inputContainer,
-        focused ? styles.inputContainerFocused : {},
-        localError ? styles.inputContainerError : {}
-      ]}>
-        <MaterialIcons name="location-on" size={24} color="#000" style={styles.icon} />
-        
+      <View
+        style={[
+          styles.inputContainer,
+          focused ? styles.inputContainerFocused : {},
+          localError ? styles.inputContainerError : {},
+        ]}
+      >
+        <MaterialIcons
+          name="location-on"
+          size={24}
+          color="#000"
+          style={styles.icon}
+        />
+
         <TextInput
           value={value}
-          onChangeText={(text) => {
+          onChangeText={text => {
             // Only allow digits
             const sanitized = text.replace(/[^0-9]/g, '');
             // Limit to 6 digits
             const formatted = sanitized.slice(0, 6);
             onChangeText(formatted);
-            
+
             // Clear error when typing
             if (localError) {
               setLocalError(undefined);
@@ -127,34 +134,36 @@ const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
           onBlur={handleBlur}
           onSubmitEditing={handleSubmit}
         />
-        
+
         {loading ? (
-          <ActivityIndicator size="small" color="#000" style={styles.actionIcon} />
+          <ActivityIndicator
+            size="small"
+            color="#000"
+            style={styles.actionIcon}
+          />
         ) : value ? (
-        <TouchableOpacity
+          <TouchableOpacity
             onPress={() => onChangeText('')}
             style={styles.actionIcon}
-        >
+          >
             <MaterialIcons name="cancel" size={20} color="#777" />
-        </TouchableOpacity>
+          </TouchableOpacity>
         ) : null}
       </View>
 
       {localError ? (
         <Text style={styles.errorText}>{localError}</Text>
       ) : (
-        <Text style={styles.helperText}>
-          6-digit Singapore postal code
-        </Text>
+        <Text style={styles.helperText}>6-digit Singapore postal code</Text>
       )}
 
       <View style={styles.quickAccessContainer}>
         <Text style={styles.quickAccessLabel}>Popular areas:</Text>
-        
+
         <FlatList
           horizontal
           data={popularPostalCodes}
-          keyExtractor={(item) => item.code}
+          keyExtractor={item => item.code}
           showsHorizontalScrollIndicator={false}
           renderItem={({ item }) => (
             <TouchableOpacity
@@ -168,11 +177,11 @@ const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
           contentContainerStyle={styles.quickAccessList}
         />
       </View>
-      
+
       <TouchableOpacity
         style={[
           styles.submitButton,
-          (!value || loading) ? styles.submitButtonDisabled : {}
+          !value || loading ? styles.submitButtonDisabled : {},
         ]}
         onPress={handleSubmit}
         disabled={!value || loading}
@@ -181,7 +190,12 @@ const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
           {loading ? 'Searching...' : 'Search'}
         </Text>
         {!loading && (
-          <MaterialIcons name="search" size={20} color="#fff" style={styles.submitIcon} />
+          <MaterialIcons
+            name="search"
+            size={20}
+            color="#fff"
+            style={styles.submitIcon}
+          />
         )}
       </TouchableOpacity>
     </View>

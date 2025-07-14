@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  StatusBar,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,10 +18,30 @@ type OrderTrackingRouteProp = RouteProp<RootStackParamList, 'OrderTracking'>;
 
 // Order status mapping
 const ORDER_STATUSES = [
-  { id: 'pending', label: 'Order Received', icon: 'receipt-outline', description: 'Your order has been confirmed and is being processed.' },
-  { id: 'preparing', label: 'Being Prepared', icon: 'cube-outline', description: 'We are preparing your items for delivery.' },
-  { id: 'out_for_delivery', label: 'Out for Delivery', icon: 'car-outline', description: 'Your order is on its way to you.' },
-  { id: 'delivered', label: 'Delivered', icon: 'checkmark-circle-outline', description: 'Your order has been delivered. Enjoy!' },
+  {
+    id: 'pending',
+    label: 'Order Received',
+    icon: 'receipt-outline',
+    description: 'Your order has been confirmed and is being processed.',
+  },
+  {
+    id: 'preparing',
+    label: 'Being Prepared',
+    icon: 'cube-outline',
+    description: 'We are preparing your items for delivery.',
+  },
+  {
+    id: 'out_for_delivery',
+    label: 'Out for Delivery',
+    icon: 'car-outline',
+    description: 'Your order is on its way to you.',
+  },
+  {
+    id: 'delivered',
+    label: 'Delivered',
+    icon: 'checkmark-circle-outline',
+    description: 'Your order has been delivered. Enjoy!',
+  },
 ];
 
 const OrderTrackingScreen: React.FC = () => {
@@ -22,11 +49,11 @@ const OrderTrackingScreen: React.FC = () => {
   const route = useRoute<OrderTrackingRouteProp>();
   const { orderId } = route.params;
   const insets = useSafeAreaInsets();
-  
+
   // Mock order details - in a real app, this would come from an API
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Fetch real order data from Supabase
   useEffect(() => {
     const fetchOrder = async () => {
@@ -41,39 +68,42 @@ const OrderTrackingScreen: React.FC = () => {
         setLoading(false);
       }
     };
-    
+
     fetchOrder();
   }, [orderId]);
-  
+
   // Set up real-time order updates
   useEffect(() => {
     if (!order) return;
-    
-    const subscription = supabaseService.subscribeToOrderUpdates(orderId, (updatedOrder) => {
-      setOrder(updatedOrder);
-    });
-    
+
+    const subscription = supabaseService.subscribeToOrderUpdates(
+      orderId,
+      updatedOrder => {
+        setOrder(updatedOrder);
+      }
+    );
+
     return () => {
       subscription?.unsubscribe();
     };
   }, [orderId, order]);
-  
+
   const handleBack = () => {
     navigation.goBack();
   };
-  
+
   const handleContactDriver = () => {
     // In a real app, this would initiate a call
     console.log('Contacting driver for order:', orderId);
   };
-  
+
   const getCurrentStatusIndex = () => {
     if (!order) return 0;
     return ORDER_STATUSES.findIndex(status => status.id === order.status);
   };
-  
+
   const currentStatusIndex = getCurrentStatusIndex();
-  
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -85,7 +115,7 @@ const OrderTrackingScreen: React.FC = () => {
       </View>
     );
   }
-  
+
   if (!order) {
     return (
       <View style={styles.container}>
@@ -100,12 +130,12 @@ const OrderTrackingScreen: React.FC = () => {
       </View>
     );
   }
-  
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
       <View style={[styles.statusBarSpacer, { height: insets.top }]} />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
@@ -114,28 +144,33 @@ const OrderTrackingScreen: React.FC = () => {
         <Text style={styles.headerTitle}>Track Order</Text>
         <View style={styles.placeholder} />
       </View>
-      
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+      >
         {/* Order ID */}
         <View style={styles.orderIdContainer}>
           <Text style={styles.orderIdLabel}>Order Number</Text>
           <Text style={styles.orderId}>{order.orderNumber}</Text>
         </View>
-        
+
         {/* Status Timeline */}
         <View style={styles.timelineContainer}>
           {ORDER_STATUSES.map((status, index) => {
             const isActive = index <= currentStatusIndex;
             const isCurrent = index === currentStatusIndex;
-            
+
             return (
               <View key={status.id} style={styles.timelineItem}>
                 <View style={styles.iconColumn}>
-                  <View style={[
-                    styles.statusIcon,
-                    isActive && styles.activeStatusIcon,
-                    isCurrent && styles.currentStatusIcon
-                  ]}>
+                  <View
+                    style={[
+                      styles.statusIcon,
+                      isActive && styles.activeStatusIcon,
+                      isCurrent && styles.currentStatusIcon,
+                    ]}
+                  >
                     <Ionicons
                       name={status.icon as any}
                       size={20}
@@ -143,31 +178,37 @@ const OrderTrackingScreen: React.FC = () => {
                     />
                   </View>
                   {index < ORDER_STATUSES.length - 1 && (
-                    <View style={[
-                      styles.connector,
-                      index < currentStatusIndex && styles.activeConnector
-                    ]} />
+                    <View
+                      style={[
+                        styles.connector,
+                        index < currentStatusIndex && styles.activeConnector,
+                      ]}
+                    />
                   )}
                 </View>
-                
+
                 <View style={styles.statusContent}>
-                  <Text style={[
-                    styles.statusLabel,
-                    isActive && styles.activeStatusLabel
-                  ]}>
+                  <Text
+                    style={[
+                      styles.statusLabel,
+                      isActive && styles.activeStatusLabel,
+                    ]}
+                  >
                     {status.label}
                   </Text>
                   <Text style={styles.statusDescription}>
                     {status.description}
                   </Text>
-                  
+
                   {isCurrent && status.id === 'out_for_delivery' && (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.contactButton}
                       onPress={handleContactDriver}
                     >
                       <Ionicons name="call-outline" size={16} color="#fff" />
-                      <Text style={styles.contactButtonText}>Contact Driver</Text>
+                      <Text style={styles.contactButtonText}>
+                        Contact Driver
+                      </Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -175,17 +216,23 @@ const OrderTrackingScreen: React.FC = () => {
             );
           })}
         </View>
-        
+
         {/* Delivery Details */}
         <View style={styles.detailsCard}>
           <Text style={styles.detailsTitle}>Delivery Details</Text>
-          
+
           <View style={styles.detailRow}>
-            <Ionicons name="time-outline" size={20} color={COLORS.textSecondary} />
+            <Ionicons
+              name="time-outline"
+              size={20}
+              color={COLORS.textSecondary}
+            />
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Estimated Delivery</Text>
               <View style={styles.deliveryTimeContainer}>
-                <Text style={styles.deliveryTimeText}>{order.estimatedDelivery || 'Processing'}</Text>
+                <Text style={styles.deliveryTimeText}>
+                  {order.estimatedDelivery || 'Processing'}
+                </Text>
                 {order.estimatedDelivery && (
                   <View style={styles.deliveryTimeBadge}>
                     <Ionicons name="flash" size={12} color="#4CAF50" />
@@ -195,21 +242,29 @@ const OrderTrackingScreen: React.FC = () => {
               </View>
             </View>
           </View>
-          
+
           <View style={styles.detailRow}>
-            <Ionicons name="location-outline" size={20} color={COLORS.textSecondary} />
+            <Ionicons
+              name="location-outline"
+              size={20}
+              color={COLORS.textSecondary}
+            />
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Delivery Address</Text>
-              <Text style={styles.detailValue}>
-                {order.deliveryAddress}
-              </Text>
+              <Text style={styles.detailValue}>{order.deliveryAddress}</Text>
             </View>
           </View>
-          
+
           <View style={styles.detailRow}>
-            <Ionicons name="cube-outline" size={20} color={COLORS.textSecondary} />
+            <Ionicons
+              name="cube-outline"
+              size={20}
+              color={COLORS.textSecondary}
+            />
             <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Items ({order.items.length})</Text>
+              <Text style={styles.detailLabel}>
+                Items ({order.items.length})
+              </Text>
               {order.items.map(item => (
                 <Text key={item.id} style={styles.detailValue}>
                   {item.quantity}x {item.name}
@@ -217,9 +272,13 @@ const OrderTrackingScreen: React.FC = () => {
               ))}
             </View>
           </View>
-          
+
           <View style={styles.detailRow}>
-            <Ionicons name="card-outline" size={20} color={COLORS.textSecondary} />
+            <Ionicons
+              name="card-outline"
+              size={20}
+              color={COLORS.textSecondary}
+            />
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Order Total</Text>
               <Text style={styles.detailValue}>${order.total.toFixed(2)}</Text>
@@ -470,4 +529,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OrderTrackingScreen; 
+export default OrderTrackingScreen;

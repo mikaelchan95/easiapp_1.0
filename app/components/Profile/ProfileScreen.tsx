@@ -1,10 +1,10 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
   Alert,
   StatusBar,
   Image,
@@ -13,7 +13,7 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
-  Linking
+  Linking,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -31,14 +31,17 @@ import { HapticFeedback } from '../../utils/haptics';
 import notificationService from '../../services/notificationService';
 
 // Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 // Enhanced contact interactions
 const handleContactPress = async (type: 'email' | 'phone', value: string) => {
   HapticFeedback.light();
-  
+
   if (type === 'email') {
     // Open email app
     const emailUrl = `mailto:${value}`;
@@ -48,7 +51,12 @@ const handleContactPress = async (type: 'email' | 'phone', value: string) => {
     } else {
       Alert.alert('Email', value, [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Copy', onPress: () => { /* Copy email to clipboard */ } }
+        {
+          text: 'Copy',
+          onPress: () => {
+            /* Copy email to clipboard */
+          },
+        },
       ]);
     }
   } else if (type === 'phone') {
@@ -59,7 +67,12 @@ const handleContactPress = async (type: 'email' | 'phone', value: string) => {
     } else {
       Alert.alert('Phone', value, [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Copy', onPress: () => { /* Copy phone to clipboard */ } }
+        {
+          text: 'Copy',
+          onPress: () => {
+            /* Copy phone to clipboard */
+          },
+        },
       ]);
     }
   }
@@ -68,66 +81,75 @@ const handleContactPress = async (type: 'email' | 'phone', value: string) => {
 export default function ProfileScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { state, dispatch, signOut, updateUserProfile } = useContext(AppContext);
+  const { state, dispatch, signOut, updateUserProfile } =
+    useContext(AppContext);
   const { state: rewardsState } = useRewards();
   const [isLoading, setIsLoading] = useState(false);
   const [isCompanyExpanded, setIsCompanyExpanded] = useState(false);
-  const [isChangingProfilePicture, setIsChangingProfilePicture] = useState(false);
+  const [isChangingProfilePicture, setIsChangingProfilePicture] =
+    useState(false);
   const [imageKey, setImageKey] = useState(Date.now()); // Force image refresh
   const { testSupabaseIntegration, loadUserFromSupabase } = useAppContext();
-  
+
   // Function to manually refresh company data
   const refreshCompanyData = async () => {
     if (user?.accountType === 'company' && user?.companyId) {
       if (__DEV__) console.log('🔄 Manually refreshing company data...');
       try {
-        const { supabaseService } = await import('../../services/supabaseService');
+        const { supabaseService } = await import(
+          '../../services/supabaseService'
+        );
         const company = await supabaseService.getCompanyById(user.companyId);
         if (company) {
           if (__DEV__) console.log('✅ Company refreshed:', company.name);
           dispatch({ type: 'SET_COMPANY', payload: company });
         } else {
-          if (__DEV__) console.log('❌ No company found for ID:', user.companyId);
+          if (__DEV__)
+            console.log('❌ No company found for ID:', user.companyId);
         }
       } catch (error) {
         console.error('❌ Error refreshing company data:', error);
       }
     }
   };
-  
+
   const { user, company, userStats } = state;
   const [teamMembers, setTeamMembers] = useState<CompanyUser[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
-  
+
   // Load actual team members from Supabase
   const loadTeamMembers = async () => {
     if (company && user?.accountType === 'company') {
       try {
-        const { supabaseService } = await import('../../services/supabaseService');
+        const { supabaseService } = await import(
+          '../../services/supabaseService'
+        );
         const members = await supabaseService.getCompanyTeamMembers(company.id);
         setTeamMembers(members || []);
-        if (__DEV__) console.log('✅ Loaded team members:', members?.length || 0);
+        if (__DEV__)
+          console.log('✅ Loaded team members:', members?.length || 0);
       } catch (error) {
         console.error('❌ Error loading team members:', error);
         setTeamMembers([]);
       }
     }
   };
-  
+
   // Load actual pending approvals from Supabase
   const loadPendingApprovals = async () => {
     if (user?.accountType === 'company') {
       try {
         // For now, just set empty array - can implement real approvals later
         setPendingApprovals([]);
-        if (__DEV__) console.log('✅ Loaded pending approvals: 0 (not implemented yet)');
+        if (__DEV__)
+          console.log('✅ Loaded pending approvals: 0 (not implemented yet)');
       } catch (error) {
         console.error('❌ Error loading pending approvals:', error);
         setPendingApprovals([]);
       }
     }
   };
-  
+
   // Load team members and approvals when company changes
   useEffect(() => {
     loadTeamMembers();
@@ -138,12 +160,15 @@ export default function ProfileScreen() {
   useEffect(() => {
     const testIntegration = async () => {
       try {
-        if (__DEV__) console.log('🔄 Testing Supabase integration in background...');
+        if (__DEV__)
+          console.log('🔄 Testing Supabase integration in background...');
         const success = await testSupabaseIntegration();
         if (success) {
-          if (__DEV__) console.log('✅ Background Supabase test completed successfully');
+          if (__DEV__)
+            console.log('✅ Background Supabase test completed successfully');
         } else {
-          if (__DEV__) console.log('⚠️ Background Supabase test failed, using mock data');
+          if (__DEV__)
+            console.log('⚠️ Background Supabase test failed, using mock data');
         }
       } catch (error) {
         console.log('⚠️ Background Supabase test error:', error);
@@ -154,53 +179,49 @@ export default function ProfileScreen() {
   }, []);
 
   const handleLogout = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Sign Out', 
-          style: 'destructive', 
-          onPress: async () => {
-            console.log('🔄 User confirmed sign out');
-            
-            // Don't manage loading state locally - let global state handle it
-            const success = await signOut();
-            
-            if (success) {
-              console.log('✅ Sign out initiated successfully');
-              // Navigation and state cleanup handled by auth state listener
-            } else {
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
-            }
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          console.log('🔄 User confirmed sign out');
+
+          // Don't manage loading state locally - let global state handle it
+          const success = await signOut();
+
+          if (success) {
+            console.log('✅ Sign out initiated successfully');
+            // Navigation and state cleanup handled by auth state listener
+          } else {
+            Alert.alert('Error', 'Failed to sign out. Please try again.');
           }
-        }
-      ]
-    );
+        },
+      },
+    ]);
   };
 
   const handleProfilePictureChange = async () => {
     HapticFeedback.light();
-    
-    Alert.alert(
-      'Change Profile Picture',
-      'Choose an option',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Take Photo', onPress: () => takePhoto() },
-        { text: 'Choose from Library', onPress: () => pickFromLibrary() }
-      ]
-    );
+
+    Alert.alert('Change Profile Picture', 'Choose an option', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Take Photo', onPress: () => takePhoto() },
+      { text: 'Choose from Library', onPress: () => pickFromLibrary() },
+    ]);
   };
 
   const takePhoto = async () => {
     try {
       setIsChangingProfilePicture(true);
-      
-      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+
+      const permissionResult =
+        await ImagePicker.requestCameraPermissionsAsync();
       if (!permissionResult.granted) {
-        Alert.alert('Permission required', 'Camera permission is needed to take photos.');
+        Alert.alert(
+          'Permission required',
+          'Camera permission is needed to take photos.'
+        );
         return;
       }
 
@@ -226,10 +247,14 @@ export default function ProfileScreen() {
   const pickFromLibrary = async () => {
     try {
       setIsChangingProfilePicture(true);
-      
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permissionResult.granted) {
-        Alert.alert('Permission required', 'Photo library permission is needed to select photos.');
+        Alert.alert(
+          'Permission required',
+          'Photo library permission is needed to select photos.'
+        );
         return;
       }
 
@@ -257,38 +282,49 @@ export default function ProfileScreen() {
       if (user && updateUserProfile) {
         setIsLoading(true);
         console.log('📸 Uploading profile image to Supabase Storage...');
-        
+
         // Upload directly to Supabase storage - no fallback to local
         const fileName = `profile-${user.id}-${Date.now()}.jpg`;
-        
-        const { supabaseService } = await import('../../services/supabaseService');
-        const publicUrl = await supabaseService.uploadProfileImageFromUri(user.id, imageUri, fileName);
-        
+
+        const { supabaseService } = await import(
+          '../../services/supabaseService'
+        );
+        const publicUrl = await supabaseService.uploadProfileImageFromUri(
+          user.id,
+          imageUri,
+          fileName
+        );
+
         if (!publicUrl) {
           throw new Error('Failed to upload image to Supabase Storage');
         }
-        
+
         console.log('✅ Image uploaded to Supabase Storage:', publicUrl);
-        
+
         // Update user profile with Supabase Storage URL (with cache busting)
         const cacheBustedUrl = `${publicUrl}?v=${Date.now()}`;
-        const success = await updateUserProfile({ profileImage: cacheBustedUrl });
-        
+        const success = await updateUserProfile({
+          profileImage: cacheBustedUrl,
+        });
+
         if (!success) {
           throw new Error('Failed to update user profile in database');
         }
-        
+
         // Force image refresh
         setImageKey(Date.now());
-        
+
         HapticFeedback.success();
         console.log('✅ Profile picture updated successfully in Supabase');
-        Alert.alert('Success', 'Profile picture updated and saved to cloud storage!');
+        Alert.alert(
+          'Success',
+          'Profile picture updated and saved to cloud storage!'
+        );
       }
     } catch (error) {
       console.error('❌ Error updating profile picture:', error);
       Alert.alert(
-        'Upload Failed', 
+        'Upload Failed',
         'Failed to upload profile picture to cloud storage. Please check your internet connection and try again.',
         [{ text: 'OK', style: 'default' }]
       );
@@ -300,23 +336,24 @@ export default function ProfileScreen() {
   const handleTestNotifications = async () => {
     try {
       await notificationService.simulateOrderProgress('TEST-ORDER-123');
-      Alert.alert('Test Notifications', 'Order progress notifications scheduled! You should see them over the next 30 seconds.');
+      Alert.alert(
+        'Test Notifications',
+        'Order progress notifications scheduled! You should see them over the next 30 seconds.'
+      );
     } catch (error) {
       Alert.alert('Error', 'Failed to schedule test notifications');
     }
   };
 
-
   const handleFeaturePress = (feature: string) => {
     console.log(`Pressed: ${feature}`);
-    
+
     // Handle test notifications
     if (feature === 'Test Notifications') {
       handleTestNotifications();
       return;
     }
-    
-    
+
     // Navigate to specific screens
     switch (feature) {
       case 'Company Profile':
@@ -367,13 +404,16 @@ export default function ProfileScreen() {
     try {
       const userData = await loadUserFromSupabase(userId);
       if (userData) {
-        console.log('✅ Successfully loaded user data behind the scenes:', userData.name);
+        console.log(
+          '✅ Successfully loaded user data behind the scenes:',
+          userData.name
+        );
       }
     } catch (error) {
       console.log('⚠️ Error loading user data:', error);
     }
   };
-  
+
   // Auto-refresh company data when component mounts
   useEffect(() => {
     refreshCompanyData();
@@ -385,21 +425,21 @@ export default function ProfileScreen() {
         <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
         <View style={[styles.statusBarSpacer, { height: insets.top }]} />
         <View style={styles.headerContainer}>
-          <MobileHeader 
-            title="Profile" 
-            showBackButton={false} 
+          <MobileHeader
+            title="Profile"
+            showBackButton={false}
             showSearch={false}
             showCartButton={false}
           />
         </View>
         <View style={styles.loadingContainer}>
-          <Text style={styles.noUserText}>Please sign in to view your profile</Text>
+          <Text style={styles.noUserText}>
+            Please sign in to view your profile
+          </Text>
         </View>
       </View>
     );
   }
-
-
 
   const renderCompanySection = () => {
     if (!isCompanyUser(user)) {
@@ -416,9 +456,11 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.modernCompanyInfo}>
               <Text style={styles.modernCompanyName}>Loading Company...</Text>
-              <Text style={styles.modernCompanyUEN}>Please wait while we load your company information.</Text>
+              <Text style={styles.modernCompanyUEN}>
+                Please wait while we load your company information.
+              </Text>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.modernExpandButton}
               onPress={refreshCompanyData}
               activeOpacity={0.7}
@@ -431,11 +473,11 @@ export default function ProfileScreen() {
     }
 
     const companyUser = user as CompanyUser;
-    
+
     return (
       <>
         {/* Modern Collapsible Company Widget */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.modernCompanyCard}
           onPress={toggleCompanyExpansion}
           activeOpacity={0.98}
@@ -445,7 +487,7 @@ export default function ProfileScreen() {
             <View style={styles.modernCompanyIcon}>
               <Ionicons name="business" size={24} color={COLORS.text} />
             </View>
-            
+
             <View style={styles.modernCompanyInfo}>
               <Text style={styles.modernCompanyName}>{company.name}</Text>
               <View style={styles.modernCompanyMeta}>
@@ -457,12 +499,12 @@ export default function ProfileScreen() {
                 <Text style={styles.modernCompanyUEN}>UEN: {company.uen}</Text>
               </View>
             </View>
-            
+
             <View style={styles.modernExpandButton}>
-              <Ionicons 
-                name={isCompanyExpanded ? "chevron-up" : "chevron-down"} 
-                size={20} 
-                color={COLORS.textSecondary} 
+              <Ionicons
+                name={isCompanyExpanded ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={COLORS.textSecondary}
               />
             </View>
           </View>
@@ -470,13 +512,19 @@ export default function ProfileScreen() {
           {/* Company Status Indicator */}
           <View style={styles.companyStatusContainer}>
             <View style={styles.companyStatusItem}>
-              <Ionicons 
-                name={company.status === 'active' ? 'checkmark-circle' : 'time'} 
-                size={20} 
-                color={company.status === 'active' ? COLORS.text : COLORS.textSecondary} 
+              <Ionicons
+                name={company.status === 'active' ? 'checkmark-circle' : 'time'}
+                size={20}
+                color={
+                  company.status === 'active'
+                    ? COLORS.text
+                    : COLORS.textSecondary
+                }
               />
               <Text style={styles.companyStatusText}>
-                {company.status === 'active' ? 'Account Active' : 'Account Pending'}
+                {company.status === 'active'
+                  ? 'Account Active'
+                  : 'Account Pending'}
               </Text>
             </View>
           </View>
@@ -487,69 +535,95 @@ export default function ProfileScreen() {
           <View style={styles.expandedSection}>
             <Text style={styles.expandedSectionTitle}>Company Management</Text>
             <View style={styles.modernQuickActionsGrid}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.modernQuickActionItem}
                 onPress={() => handleFeaturePress('Team Management')}
                 activeOpacity={0.7}
               >
                 <View style={styles.modernQuickActionIcon}>
-                  <Ionicons name="people-outline" size={20} color={COLORS.text} />
+                  <Ionicons
+                    name="people-outline"
+                    size={20}
+                    color={COLORS.text}
+                  />
                 </View>
                 <Text style={styles.modernQuickActionLabel}>Team</Text>
                 {teamMembers.length > 0 && (
                   <View style={styles.modernQuickActionBadge}>
-                    <Text style={styles.modernQuickActionBadgeText}>{teamMembers.length}</Text>
+                    <Text style={styles.modernQuickActionBadgeText}>
+                      {teamMembers.length}
+                    </Text>
                   </View>
                 )}
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.modernQuickActionItem}
                 onPress={() => handleFeaturePress('Pending Approvals')}
                 activeOpacity={0.7}
               >
                 <View style={styles.modernQuickActionIcon}>
-                  <MaterialIcons name="approval" size={20} color={COLORS.text} />
+                  <MaterialIcons
+                    name="approval"
+                    size={20}
+                    color={COLORS.text}
+                  />
                 </View>
                 <Text style={styles.modernQuickActionLabel}>Approvals</Text>
                 {pendingApprovals.length > 0 && (
                   <View style={styles.modernQuickActionBadge}>
-                    <Text style={styles.modernQuickActionBadgeText}>{pendingApprovals.length}</Text>
+                    <Text style={styles.modernQuickActionBadgeText}>
+                      {pendingApprovals.length}
+                    </Text>
                   </View>
                 )}
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.modernQuickActionItem}
                 onPress={() => handleFeaturePress('Order History')}
                 activeOpacity={0.7}
               >
                 <View style={styles.modernQuickActionIcon}>
-                  <Ionicons name="receipt-outline" size={20} color={COLORS.text} />
+                  <Ionicons
+                    name="receipt-outline"
+                    size={20}
+                    color={COLORS.text}
+                  />
                 </View>
                 <Text style={styles.modernQuickActionLabel}>Orders</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.modernQuickActionItem}
                 onPress={() => handleFeaturePress('Company Reports')}
                 activeOpacity={0.7}
               >
                 <View style={styles.modernQuickActionIcon}>
-                  <Ionicons name="bar-chart-outline" size={20} color={COLORS.text} />
+                  <Ionicons
+                    name="bar-chart-outline"
+                    size={20}
+                    color={COLORS.text}
+                  />
                 </View>
                 <Text style={styles.modernQuickActionLabel}>Reports</Text>
               </TouchableOpacity>
             </View>
 
             {/* Quick Access to Company Profile */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.modernProfileButton}
               onPress={() => handleFeaturePress('Company Profile')}
               activeOpacity={0.7}
             >
-              <Text style={styles.modernProfileButtonText}>View Full Company Profile</Text>
-              <Ionicons name="arrow-forward" size={16} color={COLORS.textSecondary} />
+              <Text style={styles.modernProfileButtonText}>
+                View Full Company Profile
+              </Text>
+              <Ionicons
+                name="arrow-forward"
+                size={16}
+                color={COLORS.textSecondary}
+              />
             </TouchableOpacity>
           </View>
         )}
@@ -560,7 +634,7 @@ export default function ProfileScreen() {
   const renderUserProfile = () => {
     const isCompany = isCompanyUser(user);
     const userRole = getUserRole(user);
-    
+
     return (
       <View style={styles.profileCard}>
         {/* Center-aligned Header */}
@@ -572,7 +646,7 @@ export default function ProfileScreen() {
 
         {/* Enhanced Profile Section */}
         <View style={styles.profileSection}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.avatarSection}
             onPress={handleProfilePictureChange}
             activeOpacity={0.8}
@@ -581,20 +655,32 @@ export default function ProfileScreen() {
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
                 {user.profileImage ? (
-                  <Image 
+                  <Image
                     key={imageKey}
-                    source={{ uri: user.profileImage.split('?')[0] }} 
+                    source={{ uri: user.profileImage.split('?')[0] }}
                     style={styles.avatarImage}
-                    onError={(error) => {
-                      console.log('❌ Image load error:', error.nativeEvent.error);
+                    onError={error => {
+                      console.log(
+                        '❌ Image load error:',
+                        error.nativeEvent.error
+                      );
                       console.log('❌ Failed URL:', user.profileImage);
                     }}
-                    onLoad={() => console.log('✅ Image loaded successfully:', user.profileImage)}
+                    onLoad={() =>
+                      console.log(
+                        '✅ Image loaded successfully:',
+                        user.profileImage
+                      )
+                    }
                   />
                 ) : (
                   <View style={styles.avatarPlaceholder}>
                     <Text style={styles.avatarInitials}>
-                      {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                      {user.name
+                        .split(' ')
+                        .map(n => n[0])
+                        .join('')
+                        .toUpperCase()}
                     </Text>
                   </View>
                 )}
@@ -609,11 +695,17 @@ export default function ProfileScreen() {
               </View>
             </View>
           </TouchableOpacity>
-          
+
           <View style={styles.userInfoSection}>
             <View style={styles.userMainInfo}>
               <View style={styles.nameRow}>
-                <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">{user.name}</Text>
+                <Text
+                  style={styles.userName}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {user.name}
+                </Text>
                 <View style={styles.verifiedBadge}>
                   <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
                 </View>
@@ -622,13 +714,15 @@ export default function ProfileScreen() {
                 <Text style={styles.accountType}>
                   {isCompany ? 'Business Account' : 'Personal Account'}
                 </Text>
-                <Text style={styles.rewardTier}>{rewardsState.userRewards.tier} Tier</Text>
+                <Text style={styles.rewardTier}>
+                  {rewardsState.userRewards.tier} Tier
+                </Text>
               </View>
             </View>
           </View>
-          
+
           <View style={styles.headerButtons}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.settingsButton}
               onPress={handleLogout}
               activeOpacity={0.7}
@@ -637,7 +731,11 @@ export default function ProfileScreen() {
               {state.loading ? (
                 <ActivityIndicator size="small" color={COLORS.text} />
               ) : (
-                <Ionicons name="log-out-outline" size={22} color={COLORS.text} />
+                <Ionicons
+                  name="log-out-outline"
+                  size={22}
+                  color={COLORS.text}
+                />
               )}
             </TouchableOpacity>
           </View>
@@ -645,7 +743,7 @@ export default function ProfileScreen() {
 
         {/* Enhanced Quick Actions */}
         <View style={styles.quickActions}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.quickActionButton}
             onPress={() => handleFeaturePress('Order History')}
             activeOpacity={0.7}
@@ -655,8 +753,8 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.quickActionLabel}>Orders</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.quickActionButton}
             onPress={() => handleFeaturePress('Wishlist')}
             activeOpacity={0.7}
@@ -666,8 +764,8 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.quickActionLabel}>Wishlist</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.quickActionButton}
             onPress={() => navigation.navigate('Rewards')}
             activeOpacity={0.7}
@@ -677,20 +775,22 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.quickActionLabel}>Rewards</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.quickActionButton}
             onPress={() => handleFeaturePress('Support')}
             activeOpacity={0.7}
           >
             <View style={styles.quickActionIcon}>
-              <Ionicons name="help-circle-outline" size={18} color={COLORS.text} />
+              <Ionicons
+                name="help-circle-outline"
+                size={18}
+                color={COLORS.text}
+              />
             </View>
             <Text style={styles.quickActionLabel}>Support</Text>
           </TouchableOpacity>
-          
         </View>
-
       </View>
     );
   };
@@ -698,18 +798,17 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
-      
+
       <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
         {/* User Profile Header */}
         {renderUserProfile()}
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollContainer}
-        contentContainerStyle={styles.scrollContent} 
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-
         {/* Company Section (only for company users) */}
         {renderCompanySection()}
 
@@ -750,7 +849,7 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.md,
     position: 'relative',
   },
-  
+
   // Enhanced Header Top Row
   headerTopRow: {
     alignItems: 'center',
@@ -765,7 +864,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  
+
   // Enhanced Profile Section
   profileSection: {
     flexDirection: 'row',
@@ -1015,28 +1114,28 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
   },
-     modernStatDivider: {
-     width: 1,
-     height: 32,
-     backgroundColor: COLORS.border,
-   },
+  modernStatDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: COLORS.border,
+  },
 
-   // Sections
-   section: {
-     marginBottom: SPACING.md,
-   },
-   sectionTitle: {
-     ...TYPOGRAPHY.h4,
-     marginBottom: SPACING.sm,
-     paddingHorizontal: 4,
-   },
-   expandedSection: {
-     backgroundColor: COLORS.card,
-     borderRadius: 16,
-     padding: SPACING.lg,
-     marginTop: SPACING.sm,
-     ...SHADOWS.light,
-   },
+  // Sections
+  section: {
+    marginBottom: SPACING.md,
+  },
+  sectionTitle: {
+    ...TYPOGRAPHY.h4,
+    marginBottom: SPACING.sm,
+    paddingHorizontal: 4,
+  },
+  expandedSection: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: SPACING.lg,
+    marginTop: SPACING.sm,
+    ...SHADOWS.light,
+  },
   expandedSectionTitle: {
     ...TYPOGRAPHY.h4,
     marginBottom: SPACING.sm,
@@ -1203,7 +1302,6 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.sm,
   },
 
-
   // Quick Actions
   quickActions: {
     flexDirection: 'row',
@@ -1236,5 +1334,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: COLORS.text,
   },
-
-}); 
+});

@@ -70,13 +70,16 @@ export class ErrorBoundary extends Component<Props, State> {
             <View style={styles.iconContainer}>
               <Ionicons name="warning" size={48} color={COLORS.error} />
             </View>
-            
+
             <Text style={styles.title}>Something went wrong</Text>
             <Text style={styles.subtitle}>
               We're sorry, but something unexpected happened. Please try again.
             </Text>
 
-            <TouchableOpacity style={styles.retryButton} onPress={this.handleRetry}>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={this.handleRetry}
+            >
               <Text style={styles.retryButtonText}>Try Again</Text>
             </TouchableOpacity>
 
@@ -165,7 +168,9 @@ const styles = StyleSheet.create({
 });
 
 // Simple error fallback component
-export const SimpleErrorFallback: React.FC<{ onRetry?: () => void }> = ({ onRetry }) => (
+export const SimpleErrorFallback: React.FC<{ onRetry?: () => void }> = ({
+  onRetry,
+}) => (
   <View style={styles.simpleFallback}>
     <Ionicons name="alert-circle" size={24} color={COLORS.error} />
     <Text style={styles.simpleFallbackText}>Unable to load</Text>

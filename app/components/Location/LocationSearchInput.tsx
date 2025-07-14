@@ -22,7 +22,7 @@ interface LocationSearchInputProps {
 }
 
 const LocationSearchInput: React.FC<LocationSearchInputProps> = ({
-  placeholder = "Search for address...",
+  placeholder = 'Search for address...',
   onSuggestionsChange,
   onSearchStateChange,
   onFocus,
@@ -32,7 +32,7 @@ const LocationSearchInput: React.FC<LocationSearchInputProps> = ({
   const [searchText, setSearchText] = useState(initialValue);
   const [isLoading, setIsLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  
+
   // Refs for cleanup
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchInputRef = useRef<TextInput>(null);
@@ -50,49 +50,53 @@ const LocationSearchInput: React.FC<LocationSearchInputProps> = ({
   }, []);
 
   // Handle search with debouncing and proper cleanup
-  const handleSearchChange = useCallback(async (text: string) => {
-    setSearchText(text);
-    
-    // Clear previous timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-      searchTimeoutRef.current = null;
-    }
-    
-    if (text.length > 2) {
-      setIsLoading(true);
-      onSearchStateChange(true);
-      
-      // Debounce search with cleanup
-      searchTimeoutRef.current = setTimeout(async () => {
-        try {
-          // Check if component is still mounted
-          if (!mountedRef.current) return;
-          
-          const results = await GoogleMapsService.getAutocompleteSuggestions(text);
-          
-          // Double-check if still mounted after async operation
-          if (!mountedRef.current) return;
-          
-          onSuggestionsChange(results);
-        } catch (error) {
-          console.error('Search error:', error);
-          if (mountedRef.current) {
-            onSuggestionsChange([]);
+  const handleSearchChange = useCallback(
+    async (text: string) => {
+      setSearchText(text);
+
+      // Clear previous timeout
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
+      }
+
+      if (text.length > 2) {
+        setIsLoading(true);
+        onSearchStateChange(true);
+
+        // Debounce search with cleanup
+        searchTimeoutRef.current = setTimeout(async () => {
+          try {
+            // Check if component is still mounted
+            if (!mountedRef.current) return;
+
+            const results =
+              await GoogleMapsService.getAutocompleteSuggestions(text);
+
+            // Double-check if still mounted after async operation
+            if (!mountedRef.current) return;
+
+            onSuggestionsChange(results);
+          } catch (error) {
+            console.error('Search error:', error);
+            if (mountedRef.current) {
+              onSuggestionsChange([]);
+            }
+          } finally {
+            if (mountedRef.current) {
+              setIsLoading(false);
+              onSearchStateChange(false);
+            }
           }
-        } finally {
-          if (mountedRef.current) {
-            setIsLoading(false);
-            onSearchStateChange(false);
-          }
-        }
-      }, 300);
-    } else {
-      setIsLoading(false);
-      onSearchStateChange(false);
-      onSuggestionsChange([]);
-    }
-  }, [onSuggestionsChange, onSearchStateChange]);
+        }, 300);
+      } else {
+        setIsLoading(false);
+        onSearchStateChange(false);
+        onSuggestionsChange([]);
+      }
+    },
+    [onSuggestionsChange, onSearchStateChange]
+  );
 
   // Handle input focus
   const handleInputFocus = useCallback(() => {
@@ -112,7 +116,7 @@ const LocationSearchInput: React.FC<LocationSearchInputProps> = ({
     onSuggestionsChange([]);
     setIsLoading(false);
     onSearchStateChange(false);
-    
+
     // Clear any pending timeouts
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
@@ -127,12 +131,9 @@ const LocationSearchInput: React.FC<LocationSearchInputProps> = ({
 
   return (
     <View style={styles.container}>
-      <View style={[
-        styles.searchBar,
-        isFocused && styles.searchBarFocused
-      ]}>
+      <View style={[styles.searchBar, isFocused && styles.searchBarFocused]}>
         <Ionicons name="search" size={20} color={COLORS.textSecondary} />
-        
+
         <TextInput
           ref={searchInputRef}
           style={styles.searchInput}
@@ -161,7 +162,11 @@ const LocationSearchInput: React.FC<LocationSearchInputProps> = ({
             accessibilityLabel="Clear search"
             accessibilityRole="button"
           >
-            <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+            <Ionicons
+              name="close-circle"
+              size={20}
+              color={COLORS.textSecondary}
+            />
           </TouchableOpacity>
         ) : null}
       </View>

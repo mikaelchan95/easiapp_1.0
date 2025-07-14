@@ -17,8 +17,12 @@ import { AppContext } from '../../context/AppContext';
 import { isCompanyUser } from '../../types/user';
 import { formatStatCurrency } from '../../utils/formatting';
 import { HapticFeedback } from '../../utils/haptics';
-import BreadcrumbNavigation, { createBreadcrumbs } from '../Navigation/BreadcrumbNavigation';
-import PermissionGuard, { PERMISSION_REQUIREMENTS } from '../Navigation/PermissionGuard';
+import BreadcrumbNavigation, {
+  createBreadcrumbs,
+} from '../Navigation/BreadcrumbNavigation';
+import PermissionGuard, {
+  PERMISSION_REQUIREMENTS,
+} from '../Navigation/PermissionGuard';
 
 interface PaymentMethod {
   id: string;
@@ -38,7 +42,7 @@ const PAYMENT_METHODS: PaymentMethod[] = [
     description: 'Visa, Mastercard, AMEX',
     icon: 'card',
     processing_fee: 2.9,
-    estimated_time: 'Instant'
+    estimated_time: 'Instant',
   },
   {
     id: 'bank_transfer',
@@ -46,7 +50,7 @@ const PAYMENT_METHODS: PaymentMethod[] = [
     name: 'Bank Transfer',
     description: 'Direct bank transfer',
     icon: 'business',
-    estimated_time: '1-3 business days'
+    estimated_time: '1-3 business days',
   },
   {
     id: 'paypal',
@@ -55,8 +59,8 @@ const PAYMENT_METHODS: PaymentMethod[] = [
     description: 'Pay with PayPal account',
     icon: 'logo-paypal',
     processing_fee: 3.4,
-    estimated_time: 'Instant'
-  }
+    estimated_time: 'Instant',
+  },
 ];
 
 export default function CreditPaymentScreen() {
@@ -65,7 +69,8 @@ export default function CreditPaymentScreen() {
   const { state } = useContext(AppContext);
   const { user, company } = state;
 
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] =
+    useState<PaymentMethod | null>(null);
   const [loading, setLoading] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
 
@@ -73,8 +78,8 @@ export default function CreditPaymentScreen() {
   const availableCredit = company?.currentCredit || 0;
   const creditLimit = company?.creditLimit || 0;
   const usedCredit = creditLimit - availableCredit;
-  const processingFee = selectedPaymentMethod?.processing_fee 
-    ? (usedCredit * selectedPaymentMethod.processing_fee) / 100 
+  const processingFee = selectedPaymentMethod?.processing_fee
+    ? (usedCredit * selectedPaymentMethod.processing_fee) / 100
     : 0;
   const totalAmount = usedCredit + processingFee;
 
@@ -95,7 +100,7 @@ export default function CreditPaymentScreen() {
     try {
       // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       // In a real implementation, this would call a payment service
       if (__DEV__) {
         console.log('Processing payment:', {
@@ -103,7 +108,7 @@ export default function CreditPaymentScreen() {
           amount: totalAmount,
           paymentMethod: selectedPaymentMethod.type,
           creditPaid: usedCredit,
-          processingFee
+          processingFee,
         });
       }
 
@@ -113,17 +118,20 @@ export default function CreditPaymentScreen() {
         [
           {
             text: 'View Receipt',
-            onPress: () => navigation.navigate('BillingDashboard' as never)
+            onPress: () => navigation.navigate('BillingDashboard' as never),
           },
           {
             text: 'Done',
-            onPress: () => navigation.goBack()
-          }
+            onPress: () => navigation.goBack(),
+          },
         ]
       );
     } catch (error) {
       console.error('Payment failed:', error);
-      Alert.alert('Payment Failed', 'There was an error processing your payment. Please try again.');
+      Alert.alert(
+        'Payment Failed',
+        'There was an error processing your payment. Please try again.'
+      );
     } finally {
       setProcessingPayment(false);
     }
@@ -132,7 +140,9 @@ export default function CreditPaymentScreen() {
   if (!user || !isCompanyUser(user) || !company) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>Access denied. Company account required.</Text>
+        <Text style={styles.errorText}>
+          Access denied. Company account required.
+        </Text>
       </View>
     );
   }
@@ -141,11 +151,11 @@ export default function CreditPaymentScreen() {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
-        
+
         <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
           <View style={styles.header}>
-            <TouchableOpacity 
-              style={styles.backButton} 
+            <TouchableOpacity
+              style={styles.backButton}
               onPress={() => navigation.goBack()}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
@@ -154,7 +164,7 @@ export default function CreditPaymentScreen() {
             <Text style={styles.headerTitle}>Credit Payment</Text>
             <View style={styles.headerRight} />
           </View>
-          
+
           <BreadcrumbNavigation
             items={createBreadcrumbs('CreditPayment')}
             showBackButton={false}
@@ -167,7 +177,7 @@ export default function CreditPaymentScreen() {
           <Text style={styles.emptyStateText}>
             Your credit account is in good standing with no outstanding balance.
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.primaryButton}
             onPress={() => navigation.goBack()}
           >
@@ -182,12 +192,12 @@ export default function CreditPaymentScreen() {
     <PermissionGuard requirements={PERMISSION_REQUIREMENTS.COMPANY_ONLY}>
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
-        
+
         {/* Header */}
         <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
           <View style={styles.header}>
-            <TouchableOpacity 
-              style={styles.backButton} 
+            <TouchableOpacity
+              style={styles.backButton}
               onPress={() => navigation.goBack()}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
@@ -196,82 +206,115 @@ export default function CreditPaymentScreen() {
             <Text style={styles.headerTitle}>Credit Payment</Text>
             <View style={styles.headerRight} />
           </View>
-          
+
           <BreadcrumbNavigation
             items={createBreadcrumbs('CreditPayment')}
             showBackButton={false}
           />
         </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Payment Summary */}
           <View style={styles.summaryCard}>
             <View style={styles.summaryHeader}>
               <Ionicons name="card" size={24} color={COLORS.text} />
               <Text style={styles.summaryTitle}>Payment Summary</Text>
             </View>
-            
+
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Credit Used</Text>
-              <Text style={styles.summaryAmount}>{formatStatCurrency(usedCredit)}</Text>
+              <Text style={styles.summaryAmount}>
+                {formatStatCurrency(usedCredit)}
+              </Text>
             </View>
-            
+
             {processingFee > 0 && (
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>
                   Processing Fee ({selectedPaymentMethod?.processing_fee}%)
                 </Text>
-                <Text style={styles.summaryAmount}>{formatStatCurrency(processingFee)}</Text>
+                <Text style={styles.summaryAmount}>
+                  {formatStatCurrency(processingFee)}
+                </Text>
               </View>
             )}
-            
+
             <View style={[styles.summaryRow, styles.totalRow]}>
               <Text style={styles.totalLabel}>Total Amount</Text>
-              <Text style={styles.totalAmount}>{formatStatCurrency(totalAmount)}</Text>
+              <Text style={styles.totalAmount}>
+                {formatStatCurrency(totalAmount)}
+              </Text>
             </View>
           </View>
 
           {/* Payment Methods */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Select Payment Method</Text>
-            
-            {PAYMENT_METHODS.map((method) => (
+
+            {PAYMENT_METHODS.map(method => (
               <TouchableOpacity
                 key={method.id}
                 style={[
                   styles.paymentMethodCard,
-                  selectedPaymentMethod?.id === method.id && styles.selectedPaymentMethod
+                  selectedPaymentMethod?.id === method.id &&
+                    styles.selectedPaymentMethod,
                 ]}
                 onPress={() => handlePaymentMethodSelect(method)}
                 activeOpacity={0.7}
               >
                 <View style={styles.paymentMethodContent}>
                   <View style={styles.paymentMethodLeft}>
-                    <View style={[
-                      styles.paymentMethodIcon,
-                      selectedPaymentMethod?.id === method.id && styles.selectedIcon
-                    ]}>
-                      <Ionicons 
-                        name={method.icon as any} 
-                        size={24} 
-                        color={selectedPaymentMethod?.id === method.id ? COLORS.accent : COLORS.text} 
+                    <View
+                      style={[
+                        styles.paymentMethodIcon,
+                        selectedPaymentMethod?.id === method.id &&
+                          styles.selectedIcon,
+                      ]}
+                    >
+                      <Ionicons
+                        name={method.icon as any}
+                        size={24}
+                        color={
+                          selectedPaymentMethod?.id === method.id
+                            ? COLORS.accent
+                            : COLORS.text
+                        }
                       />
                     </View>
                     <View style={styles.paymentMethodInfo}>
-                      <Text style={styles.paymentMethodName}>{method.name}</Text>
-                      <Text style={styles.paymentMethodDescription}>{method.description}</Text>
-                      <Text style={styles.estimatedTime}>Est. {method.estimated_time}</Text>
+                      <Text style={styles.paymentMethodName}>
+                        {method.name}
+                      </Text>
+                      <Text style={styles.paymentMethodDescription}>
+                        {method.description}
+                      </Text>
+                      <Text style={styles.estimatedTime}>
+                        Est. {method.estimated_time}
+                      </Text>
                     </View>
                   </View>
-                  
+
                   <View style={styles.paymentMethodRight}>
                     {method.processing_fee && (
-                      <Text style={styles.processingFee}>{method.processing_fee}% fee</Text>
+                      <Text style={styles.processingFee}>
+                        {method.processing_fee}% fee
+                      </Text>
                     )}
                     <Ionicons
-                      name={selectedPaymentMethod?.id === method.id ? "radio-button-on" : "radio-button-off"}
+                      name={
+                        selectedPaymentMethod?.id === method.id
+                          ? 'radio-button-on'
+                          : 'radio-button-off'
+                      }
                       size={24}
-                      color={selectedPaymentMethod?.id === method.id ? COLORS.primary : COLORS.textSecondary}
+                      color={
+                        selectedPaymentMethod?.id === method.id
+                          ? COLORS.primary
+                          : COLORS.textSecondary
+                      }
                     />
                   </View>
                 </View>
@@ -283,7 +326,8 @@ export default function CreditPaymentScreen() {
           <View style={styles.securityNotice}>
             <Ionicons name="shield-checkmark" size={20} color="#4CAF50" />
             <Text style={styles.securityText}>
-              Your payment information is encrypted and secure. We never store your payment details.
+              Your payment information is encrypted and secure. We never store
+              your payment details.
             </Text>
           </View>
 
@@ -295,7 +339,8 @@ export default function CreditPaymentScreen() {
           <TouchableOpacity
             style={[
               styles.payButton,
-              (!selectedPaymentMethod || processingPayment) && styles.disabledButton
+              (!selectedPaymentMethod || processingPayment) &&
+                styles.disabledButton,
             ]}
             onPress={handleProcessPayment}
             disabled={!selectedPaymentMethod || processingPayment}

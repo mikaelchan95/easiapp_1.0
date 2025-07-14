@@ -31,19 +31,74 @@ const chartWidth = screenWidth - 48; // Account for padding
 
 // Mock data for demonstration
 const mockMonthlyData: MonthlyData[] = [
-  { month: 'Jan', revenue: 85000, expenses: 12000, orders: 156, avgOrderValue: 545, creditUsed: 15000, paymentsReceived: 70000 },
-  { month: 'Feb', revenue: 92000, expenses: 11500, orders: 168, avgOrderValue: 548, creditUsed: 18000, paymentsReceived: 85000 },
-  { month: 'Mar', revenue: 78000, expenses: 13200, orders: 142, avgOrderValue: 549, creditUsed: 22000, paymentsReceived: 65000 },
-  { month: 'Apr', revenue: 105000, expenses: 14800, orders: 195, avgOrderValue: 538, creditUsed: 28000, paymentsReceived: 90000 },
-  { month: 'May', revenue: 118000, expenses: 16200, orders: 218, avgOrderValue: 541, creditUsed: 25000, paymentsReceived: 105000 },
-  { month: 'Jun', revenue: 95000, expenses: 15100, orders: 175, avgOrderValue: 543, creditUsed: 30000, paymentsReceived: 88000 },
+  {
+    month: 'Jan',
+    revenue: 85000,
+    expenses: 12000,
+    orders: 156,
+    avgOrderValue: 545,
+    creditUsed: 15000,
+    paymentsReceived: 70000,
+  },
+  {
+    month: 'Feb',
+    revenue: 92000,
+    expenses: 11500,
+    orders: 168,
+    avgOrderValue: 548,
+    creditUsed: 18000,
+    paymentsReceived: 85000,
+  },
+  {
+    month: 'Mar',
+    revenue: 78000,
+    expenses: 13200,
+    orders: 142,
+    avgOrderValue: 549,
+    creditUsed: 22000,
+    paymentsReceived: 65000,
+  },
+  {
+    month: 'Apr',
+    revenue: 105000,
+    expenses: 14800,
+    orders: 195,
+    avgOrderValue: 538,
+    creditUsed: 28000,
+    paymentsReceived: 90000,
+  },
+  {
+    month: 'May',
+    revenue: 118000,
+    expenses: 16200,
+    orders: 218,
+    avgOrderValue: 541,
+    creditUsed: 25000,
+    paymentsReceived: 105000,
+  },
+  {
+    month: 'Jun',
+    revenue: 95000,
+    expenses: 15100,
+    orders: 175,
+    avgOrderValue: 543,
+    creditUsed: 30000,
+    paymentsReceived: 88000,
+  },
 ];
 
-export default function MonthlyOverview({ companyId, showHeader = true }: MonthlyOverviewProps) {
+export default function MonthlyOverview({
+  companyId,
+  showHeader = true,
+}: MonthlyOverviewProps) {
   const [data, setData] = useState<MonthlyData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMetric, setSelectedMetric] = useState<'revenue' | 'orders' | 'credit'>('revenue');
-  const [selectedPeriod, setSelectedPeriod] = useState<'6m' | '12m' | 'ytd'>('6m');
+  const [selectedMetric, setSelectedMetric] = useState<
+    'revenue' | 'orders' | 'credit'
+  >('revenue');
+  const [selectedPeriod, setSelectedPeriod] = useState<'6m' | '12m' | 'ytd'>(
+    '6m'
+  );
 
   useEffect(() => {
     loadMonthlyData();
@@ -54,7 +109,7 @@ export default function MonthlyOverview({ companyId, showHeader = true }: Monthl
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Filter data based on selected period
       let filteredData = mockMonthlyData;
       if (selectedPeriod === '6m') {
@@ -62,7 +117,7 @@ export default function MonthlyOverview({ companyId, showHeader = true }: Monthl
       } else if (selectedPeriod === 'ytd') {
         filteredData = mockMonthlyData; // Assuming current year data
       }
-      
+
       setData(filteredData);
     } catch (error) {
       console.error('Error loading monthly data:', error);
@@ -73,10 +128,14 @@ export default function MonthlyOverview({ companyId, showHeader = true }: Monthl
 
   const getMetricValue = (item: MonthlyData, metric: string) => {
     switch (metric) {
-      case 'revenue': return item.revenue;
-      case 'orders': return item.orders;
-      case 'credit': return item.creditUsed;
-      default: return item.revenue;
+      case 'revenue':
+        return item.revenue;
+      case 'orders':
+        return item.orders;
+      case 'credit':
+        return item.creditUsed;
+      default:
+        return item.revenue;
     }
   };
 
@@ -114,10 +173,18 @@ export default function MonthlyOverview({ companyId, showHeader = true }: Monthl
         <View style={styles.chartArea}>
           {/* Y-axis labels */}
           <View style={styles.yAxisLabels}>
-            <Text style={styles.axisLabel}>{formatValue(maxValue, selectedMetric)}</Text>
-            <Text style={styles.axisLabel}>{formatValue(maxValue * 0.75, selectedMetric)}</Text>
-            <Text style={styles.axisLabel}>{formatValue(maxValue * 0.5, selectedMetric)}</Text>
-            <Text style={styles.axisLabel}>{formatValue(maxValue * 0.25, selectedMetric)}</Text>
+            <Text style={styles.axisLabel}>
+              {formatValue(maxValue, selectedMetric)}
+            </Text>
+            <Text style={styles.axisLabel}>
+              {formatValue(maxValue * 0.75, selectedMetric)}
+            </Text>
+            <Text style={styles.axisLabel}>
+              {formatValue(maxValue * 0.5, selectedMetric)}
+            </Text>
+            <Text style={styles.axisLabel}>
+              {formatValue(maxValue * 0.25, selectedMetric)}
+            </Text>
             <Text style={styles.axisLabel}>0</Text>
           </View>
 
@@ -127,7 +194,7 @@ export default function MonthlyOverview({ companyId, showHeader = true }: Monthl
               {data.map((item, index) => {
                 const value = getMetricValue(item, selectedMetric);
                 const height = (value / maxValue) * chartHeight;
-                
+
                 return (
                   <View key={index} style={styles.barColumn}>
                     <View style={[styles.bar, { height }]} />
@@ -147,13 +214,18 @@ export default function MonthlyOverview({ companyId, showHeader = true }: Monthl
 
     const totalRevenue = data.reduce((sum, item) => sum + item.revenue, 0);
     const totalOrders = data.reduce((sum, item) => sum + item.orders, 0);
-    const totalCreditUsed = data.reduce((sum, item) => sum + item.creditUsed, 0);
+    const totalCreditUsed = data.reduce(
+      (sum, item) => sum + item.creditUsed,
+      0
+    );
     const avgOrderValue = totalRevenue / totalOrders;
 
     return (
       <View style={styles.summaryStats}>
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>${(totalRevenue / 1000).toFixed(0)}k</Text>
+          <Text style={styles.statValue}>
+            ${(totalRevenue / 1000).toFixed(0)}k
+          </Text>
           <Text style={styles.statLabel}>Total Revenue</Text>
           <View style={styles.statTrend}>
             <Ionicons name="trending-up" size={16} color="#10B981" />
@@ -171,7 +243,9 @@ export default function MonthlyOverview({ companyId, showHeader = true }: Monthl
         </View>
 
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>${String(avgOrderValue.toFixed(0))}</Text>
+          <Text style={styles.statValue}>
+            ${String(avgOrderValue.toFixed(0))}
+          </Text>
           <Text style={styles.statLabel}>Avg Order Value</Text>
           <View style={styles.statTrend}>
             <Ionicons name="trending-down" size={16} color="#EF4444" />
@@ -180,7 +254,9 @@ export default function MonthlyOverview({ companyId, showHeader = true }: Monthl
         </View>
 
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>${(totalCreditUsed / 1000).toFixed(0)}k</Text>
+          <Text style={styles.statValue}>
+            ${(totalCreditUsed / 1000).toFixed(0)}k
+          </Text>
           <Text style={styles.statLabel}>Credit Used</Text>
           <View style={styles.statTrend}>
             <Ionicons name="trending-up" size={16} color="#F59E0B" />
@@ -202,14 +278,26 @@ export default function MonthlyOverview({ companyId, showHeader = true }: Monthl
 
       {/* Period Selection */}
       <View style={styles.periodSelector}>
-        {(['6m', '12m', 'ytd'] as const).map((period) => (
+        {(['6m', '12m', 'ytd'] as const).map(period => (
           <TouchableOpacity
             key={period}
-            style={[styles.periodButton, selectedPeriod === period && styles.activePeriodButton]}
+            style={[
+              styles.periodButton,
+              selectedPeriod === period && styles.activePeriodButton,
+            ]}
             onPress={() => setSelectedPeriod(period)}
           >
-            <Text style={[styles.periodButtonText, selectedPeriod === period && styles.activePeriodButtonText]}>
-              {period === '6m' ? '6 Months' : period === '12m' ? '12 Months' : 'Year to Date'}
+            <Text
+              style={[
+                styles.periodButtonText,
+                selectedPeriod === period && styles.activePeriodButtonText,
+              ]}
+            >
+              {period === '6m'
+                ? '6 Months'
+                : period === '12m'
+                  ? '12 Months'
+                  : 'Year to Date'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -217,14 +305,26 @@ export default function MonthlyOverview({ companyId, showHeader = true }: Monthl
 
       {/* Metric Selection */}
       <View style={styles.metricSelector}>
-        {(['revenue', 'orders', 'credit'] as const).map((metric) => (
+        {(['revenue', 'orders', 'credit'] as const).map(metric => (
           <TouchableOpacity
             key={metric}
-            style={[styles.metricButton, selectedMetric === metric && styles.activeMetricButton]}
+            style={[
+              styles.metricButton,
+              selectedMetric === metric && styles.activeMetricButton,
+            ]}
             onPress={() => setSelectedMetric(metric)}
           >
-            <Text style={[styles.metricButtonText, selectedMetric === metric && styles.activeMetricButtonText]}>
-              {metric === 'revenue' ? 'Revenue' : metric === 'orders' ? 'Orders' : 'Credit Used'}
+            <Text
+              style={[
+                styles.metricButtonText,
+                selectedMetric === metric && styles.activeMetricButtonText,
+              ]}
+            >
+              {metric === 'revenue'
+                ? 'Revenue'
+                : metric === 'orders'
+                  ? 'Orders'
+                  : 'Credit Used'}
             </Text>
           </TouchableOpacity>
         ))}

@@ -4,7 +4,7 @@ import { AppContext } from '../../context/AppContext';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../utils/theme';
 import { Ionicons } from '@expo/vector-icons';
 
-export type Permission = 
+export type Permission =
   | 'view_billing'
   | 'manage_billing'
   | 'view_orders'
@@ -29,19 +29,26 @@ interface PermissionGuardProps {
 // Define role hierarchy and permissions
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   admin: [
-    'view_billing', 'manage_billing', 'view_orders', 'create_orders', 
-    'approve_orders', 'manage_team', 'view_analytics', 'admin_access', 'company_settings'
+    'view_billing',
+    'manage_billing',
+    'view_orders',
+    'create_orders',
+    'approve_orders',
+    'manage_team',
+    'view_analytics',
+    'admin_access',
+    'company_settings',
   ],
   manager: [
-    'view_billing', 'view_orders', 'create_orders', 'approve_orders', 
-    'view_analytics', 'company_settings'
+    'view_billing',
+    'view_orders',
+    'create_orders',
+    'approve_orders',
+    'view_analytics',
+    'company_settings',
   ],
-  member: [
-    'view_orders', 'create_orders', 'view_analytics'
-  ],
-  viewer: [
-    'view_orders', 'view_analytics'
-  ]
+  member: ['view_orders', 'create_orders', 'view_analytics'],
+  viewer: ['view_orders', 'view_analytics'],
 };
 
 const DefaultFallback = ({ message }: { message: string }) => (
@@ -58,7 +65,7 @@ export default function PermissionGuard({
   requiredRole,
   requireCompany = false,
   fallback,
-  showFallback = true
+  showFallback = true,
 }: PermissionGuardProps) {
   const { state } = useContext(AppContext);
   const { user, company, userPermissions } = state;
@@ -66,17 +73,25 @@ export default function PermissionGuard({
   // Check if user is authenticated
   if (!user) {
     if (!showFallback) return null;
-    return fallback || <DefaultFallback message="Please sign in to access this feature." />;
+    return (
+      fallback || (
+        <DefaultFallback message="Please sign in to access this feature." />
+      )
+    );
   }
 
   // Check if company is required
   if (requireCompany && (!company || user.accountType !== 'company')) {
     if (!showFallback) return null;
-    return fallback || <DefaultFallback message="This feature is only available to company accounts." />;
+    return (
+      fallback || (
+        <DefaultFallback message="This feature is only available to company accounts." />
+      )
+    );
   }
 
   // Get user's role from permissions or default to 'member'
-  const userRole = userPermissions?.role as UserRole || 'member';
+  const userRole = (userPermissions?.role as UserRole) || 'member';
 
   // Check role requirement
   if (requiredRole) {
@@ -84,7 +99,7 @@ export default function PermissionGuard({
       viewer: 1,
       member: 2,
       manager: 3,
-      admin: 4
+      admin: 4,
     };
 
     const userRoleLevel = roleHierarchy[userRole] || 0;
@@ -92,26 +107,34 @@ export default function PermissionGuard({
 
     if (userRoleLevel < requiredRoleLevel) {
       if (!showFallback) return null;
-      return fallback || <DefaultFallback message={`This feature requires ${requiredRole} role or higher.`} />;
+      return (
+        fallback || (
+          <DefaultFallback
+            message={`This feature requires ${requiredRole} role or higher.`}
+          />
+        )
+      );
     }
   }
 
   // Check specific permissions
   if (requiredPermissions.length > 0) {
     const userPermissionList = ROLE_PERMISSIONS[userRole] || [];
-    const hasAllPermissions = requiredPermissions.every(permission => 
+    const hasAllPermissions = requiredPermissions.every(permission =>
       userPermissionList.includes(permission)
     );
 
     if (!hasAllPermissions) {
       if (!showFallback) return null;
-      const missingPermissions = requiredPermissions.filter(permission => 
-        !userPermissionList.includes(permission)
+      const missingPermissions = requiredPermissions.filter(
+        permission => !userPermissionList.includes(permission)
       );
-      return fallback || (
-        <DefaultFallback 
-          message={`Missing required permissions: ${missingPermissions.join(', ')}`} 
-        />
+      return (
+        fallback || (
+          <DefaultFallback
+            message={`Missing required permissions: ${missingPermissions.join(', ')}`}
+          />
+        )
       );
     }
   }
@@ -127,22 +150,22 @@ export function usePermissions() {
 
   const hasPermission = (permission: Permission): boolean => {
     if (!user) return false;
-    
-    const userRole = userPermissions?.role as UserRole || 'member';
+
+    const userRole = (userPermissions?.role as UserRole) || 'member';
     const userPermissionList = ROLE_PERMISSIONS[userRole] || [];
-    
+
     return userPermissionList.includes(permission);
   };
 
   const hasRole = (role: UserRole): boolean => {
     if (!user) return false;
-    
-    const userRole = userPermissions?.role as UserRole || 'member';
+
+    const userRole = (userPermissions?.role as UserRole) || 'member';
     const roleHierarchy: Record<UserRole, number> = {
       viewer: 1,
       member: 2,
       manager: 3,
-      admin: 4
+      admin: 4,
     };
 
     const userRoleLevel = roleHierarchy[userRole] || 0;
@@ -159,9 +182,9 @@ export function usePermissions() {
     hasPermission,
     hasRole,
     isCompanyUser,
-    userRole: userPermissions?.role as UserRole || 'member',
+    userRole: (userPermissions?.role as UserRole) || 'member',
     user,
-    company
+    company,
   };
 }
 

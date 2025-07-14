@@ -7,7 +7,7 @@ import {
   Animated,
   ViewStyle,
   TextStyle,
-  StyleProp
+  StyleProp,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS } from '../../utils/theme';
@@ -46,65 +46,65 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   success = false,
   successText = 'Success!',
   type = 'primary',
-  fullWidth = false
+  fullWidth = false,
 }) => {
   // Animation values
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
   const loadingSpinValue = useRef(new Animated.Value(0)).current;
-  
+
   // State for button press tracking
   const [isPressed, setIsPressed] = useState(false);
-  
+
   // Handle press in animation
   const handlePressIn = () => {
     if (disabled || loading) return;
-    
+
     setIsPressed(true);
     Animations.pressFeedback(scaleAnim).start();
     Animated.timing(opacityAnim, {
       toValue: 0.9,
       duration: 150,
-      useNativeDriver: true
+      useNativeDriver: true,
     }).start();
   };
-  
+
   // Handle press out animation
   const handlePressOut = () => {
     if (disabled || loading) return;
-    
+
     setIsPressed(false);
     Animations.releaseFeedback(scaleAnim).start();
     Animated.timing(opacityAnim, {
       toValue: 1,
       duration: 150,
-      useNativeDriver: true
+      useNativeDriver: true,
     }).start();
   };
-  
+
   // Handle button press
   const handlePress = () => {
     if (disabled || loading) return;
-    
+
     // Add a subtle bounce effect on press
     Animated.sequence([
       Animated.timing(scaleAnim, {
         toValue: 0.95,
         duration: 100,
-        useNativeDriver: true
+        useNativeDriver: true,
       }),
       Animated.spring(scaleAnim, {
         toValue: 1,
         friction: 4,
         tension: 100,
-        useNativeDriver: true
-      })
+        useNativeDriver: true,
+      }),
     ]).start();
-    
+
     // Call the provided onPress handler
     onPress();
   };
-  
+
   // Start loading spinner animation
   React.useEffect(() => {
     if (loading) {
@@ -113,14 +113,14 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
           toValue: 1,
           duration: 1000,
           useNativeDriver: true,
-          easing: Animations.TIMING.easeInOut
+          easing: Animations.TIMING.easeInOut,
         })
       ).start();
     } else {
       loadingSpinValue.setValue(0);
     }
   }, [loading]);
-  
+
   // Get button style based on type
   const getButtonStyle = () => {
     switch (type) {
@@ -138,7 +138,7 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
         return styles.primaryButton;
     }
   };
-  
+
   // Get text style based on type
   const getTextStyle = () => {
     switch (type) {
@@ -156,11 +156,11 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
         return styles.primaryText;
     }
   };
-  
+
   // Get icon color based on type
   const getIconColor = () => {
     if (iconColor) return iconColor;
-    
+
     switch (type) {
       case 'primary':
         return COLORS.accent;
@@ -176,59 +176,81 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
         return COLORS.accent;
     }
   };
-  
+
   // Render loading spinner
   const renderLoadingSpinner = () => {
     const spin = loadingSpinValue.interpolate({
       inputRange: [0, 1],
-      outputRange: ['0deg', '360deg']
+      outputRange: ['0deg', '360deg'],
     });
-    
+
     return (
       <Animated.View style={{ transform: [{ rotate: spin }] }}>
         <View style={styles.loadingCircle} />
       </Animated.View>
     );
   };
-  
+
   // Render success icon
   const renderSuccessIcon = () => {
-    return <Ionicons name="checkmark-circle" size={iconSize} color={getIconColor()} />;
+    return (
+      <Ionicons
+        name="checkmark-circle"
+        size={iconSize}
+        color={getIconColor()}
+      />
+    );
   };
-  
+
   // Render button content based on state
   const renderContent = () => {
     if (loading) {
       return (
         <View style={styles.contentContainer}>
           {renderLoadingSpinner()}
-          <Text style={[getTextStyle(), textStyle, styles.contentText]}>{loadingText}</Text>
+          <Text style={[getTextStyle(), textStyle, styles.contentText]}>
+            {loadingText}
+          </Text>
         </View>
       );
     }
-    
+
     if (success) {
       return (
         <View style={styles.contentContainer}>
           {renderSuccessIcon()}
-          <Text style={[getTextStyle(), textStyle, styles.contentText]}>{successText}</Text>
+          <Text style={[getTextStyle(), textStyle, styles.contentText]}>
+            {successText}
+          </Text>
         </View>
       );
     }
-    
+
     return (
       <View style={styles.contentContainer}>
         {icon && iconPosition === 'left' && (
-          <Ionicons name={icon as any} size={iconSize} color={getIconColor()} style={styles.iconLeft} />
+          <Ionicons
+            name={icon as any}
+            size={iconSize}
+            color={getIconColor()}
+            style={styles.iconLeft}
+          />
         )}
-        <Text style={[getTextStyle(), textStyle]} numberOfLines={1}>{label}</Text>
+        <Text style={[getTextStyle(), textStyle]} numberOfLines={1}>
+          {label}
+        </Text>
         {icon && iconPosition === 'right' && (
-          <Ionicons name={icon as any} size={iconSize} color={getIconColor()} style={styles.iconRight} />
+          <Ionicons
+            name={icon as any}
+            size={iconSize}
+            color={getIconColor()}
+            style={styles.iconRight}
+          />
         )}
       </View>
     );
   };
-  
+
   return (
     <TouchableWithoutFeedback
       onPressIn={handlePressIn}
@@ -236,17 +258,17 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
       onPress={handlePress}
       disabled={disabled || loading}
     >
-      <Animated.View 
+      <Animated.View
         style={[
           styles.button,
           getButtonStyle(),
           {
             transform: [{ scale: scaleAnim }],
-            opacity: disabled ? 0.6 : opacityAnim
+            opacity: disabled ? 0.6 : opacityAnim,
           },
           fullWidth && styles.fullWidth,
           disabled && styles.disabledButton,
-          style
+          style,
         ]}
       >
         {renderContent()}
@@ -334,7 +356,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.2)',
     borderTopColor: COLORS.accent,
     marginRight: 8,
-  }
+  },
 });
 
-export default AnimatedButton; 
+export default AnimatedButton;

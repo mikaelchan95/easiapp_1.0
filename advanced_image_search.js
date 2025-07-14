@@ -8,7 +8,8 @@ const fs = require('fs');
 const path = require('path');
 
 const supabaseUrl = 'https://vqxnkxaeriizizfmqvua.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeG5reGFlcmlpeml6Zm1xdnVhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjAwMzM4MiwiZXhwIjoyMDY3NTc5MzgyfQ.y7sQCIqVduJ7Le3IkEGR-wSoOhppjRjqsC6GvEJAZEw';
+const supabaseKey =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeG5reGFlcmlpeml6Zm1xdnVhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjAwMzM4MiwiZXhwIjoyMDY3NTc5MzgyfQ.y7sQCIqVduJ7Le3IkEGR-wSoOhppjRjqsC6GvEJAZEw';
 
 // Get your free API key from https://unsplash.com/developers
 const UNSPLASH_ACCESS_KEY = 'YOUR_UNSPLASH_ACCESS_KEY'; // Replace with your actual key
@@ -21,20 +22,23 @@ const productSearchTerms = [
     sku: 'CM2015-750',
     name: 'Château Margaux 2015',
     searchTerm: 'red wine bottle bordeaux',
-    fallbackUrl: 'https://images.unsplash.com/photo-1586370434639-0fe43b2d32d6?w=800&h=800&fit=crop'
+    fallbackUrl:
+      'https://images.unsplash.com/photo-1586370434639-0fe43b2d32d6?w=800&h=800&fit=crop',
   },
   {
     sku: 'HEN-PAR-700',
     name: 'Hennessy Paradis',
     searchTerm: 'cognac bottle hennessy',
-    fallbackUrl: 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=800&h=800&fit=crop'
+    fallbackUrl:
+      'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=800&h=800&fit=crop',
   },
   {
     sku: 'JW-BLUE-700',
     name: 'Johnnie Walker Blue Label',
     searchTerm: 'whisky bottle blue label',
-    fallbackUrl: 'https://images.unsplash.com/photo-1582476572141-0a4c2d5b7d8a?w=800&h=800&fit=crop'
-  }
+    fallbackUrl:
+      'https://images.unsplash.com/photo-1582476572141-0a4c2d5b7d8a?w=800&h=800&fit=crop',
+  },
 ];
 
 // Create downloads directory
@@ -50,17 +54,17 @@ function searchUnsplashImages(searchTerm) {
       hostname: 'api.unsplash.com',
       path: `/search/photos?query=${encodeURIComponent(searchTerm)}&per_page=5&orientation=portrait`,
       headers: {
-        'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`
-      }
+        Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
+      },
     };
 
-    const req = https.request(options, (res) => {
+    const req = https.request(options, res => {
       let data = '';
-      
-      res.on('data', (chunk) => {
+
+      res.on('data', chunk => {
         data += chunk;
       });
-      
+
       res.on('end', () => {
         try {
           const result = JSON.parse(data);
@@ -70,7 +74,7 @@ function searchUnsplashImages(searchTerm) {
             resolve({
               url: image.urls.regular,
               alt: image.alt_description,
-              photographer: image.user.name
+              photographer: image.user.name,
             });
           } else {
             reject(new Error('No images found'));
@@ -81,7 +85,7 @@ function searchUnsplashImages(searchTerm) {
       });
     });
 
-    req.on('error', (error) => {
+    req.on('error', error => {
       reject(error);
     });
 
@@ -93,20 +97,22 @@ function searchUnsplashImages(searchTerm) {
 function downloadImage(url, filename) {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(path.join(downloadsDir, filename));
-    
-    https.get(url, (response) => {
-      if (response.statusCode === 200) {
-        response.pipe(file);
-        file.on('finish', () => {
-          file.close();
-          resolve(filename);
-        });
-      } else {
-        reject(new Error(`Failed to download image: ${response.statusCode}`));
-      }
-    }).on('error', (error) => {
-      reject(error);
-    });
+
+    https
+      .get(url, response => {
+        if (response.statusCode === 200) {
+          response.pipe(file);
+          file.on('finish', () => {
+            file.close();
+            resolve(filename);
+          });
+        } else {
+          reject(new Error(`Failed to download image: ${response.statusCode}`));
+        }
+      })
+      .on('error', error => {
+        reject(error);
+      });
   });
 }
 
@@ -114,12 +120,12 @@ function downloadImage(url, filename) {
 async function uploadToSupabase(localFilePath, bucketPath) {
   try {
     const fileBuffer = fs.readFileSync(localFilePath);
-    
+
     const { data, error } = await supabase.storage
       .from('product-images')
       .upload(bucketPath, fileBuffer, {
         contentType: 'image/jpeg',
-        upsert: true
+        upsert: true,
       });
 
     if (error) {
@@ -149,7 +155,7 @@ async function updateProductImageUrl(sku, imageUrl) {
 // Main function with API integration
 async function searchAndDownloadImages() {
   console.log('🔍 Starting advanced image search and download...');
-  
+
   if (UNSPLASH_ACCESS_KEY === 'YOUR_UNSPLASH_ACCESS_KEY') {
     console.log('⚠️  Please set your Unsplash API key in the script');
     console.log('📝 Get your free API key at: https://unsplash.com/developers');
@@ -160,9 +166,9 @@ async function searchAndDownloadImages() {
   for (const product of productSearchTerms) {
     try {
       console.log(`\n📦 Processing ${product.name}...`);
-      
+
       let imageUrl = product.fallbackUrl;
-      
+
       // Try to search for better images
       try {
         console.log(`🔍 Searching for: ${product.searchTerm}`);
@@ -172,63 +178,61 @@ async function searchAndDownloadImages() {
       } catch (searchError) {
         console.log(`⚠️  Search failed, using fallback image`);
       }
-      
+
       // Download image
       const filename = `${product.sku.toLowerCase()}.jpg`;
       console.log(`📥 Downloading image...`);
       await downloadImage(imageUrl, filename);
       console.log(`✅ Downloaded: ${filename}`);
-      
+
       // Upload to Supabase
       const bucketPath = `products/${filename}`;
       console.log(`📤 Uploading to Supabase storage...`);
       await uploadToSupabase(path.join(downloadsDir, filename), bucketPath);
       console.log(`✅ Uploaded to: ${bucketPath}`);
-      
+
       // Update database
       const supabaseImageUrl = `${supabaseUrl}/storage/v1/object/public/product-images/${bucketPath}`;
       console.log(`📝 Updating database URL...`);
       await updateProductImageUrl(product.sku, supabaseImageUrl);
       console.log(`✅ Updated database for ${product.sku}`);
-      
+
       // Clean up local file
       fs.unlinkSync(path.join(downloadsDir, filename));
       console.log(`🧹 Cleaned up local file`);
-      
     } catch (error) {
       console.error(`❌ Error processing ${product.name}:`, error.message);
     }
   }
-  
+
   console.log('\n🎉 Advanced image search and upload completed!');
 }
 
 // Fallback function without API
 async function fallbackDownload() {
   console.log('🔄 Using fallback image download...');
-  
+
   for (const product of productSearchTerms) {
     try {
       console.log(`\n📦 Processing ${product.name}...`);
-      
+
       const filename = `${product.sku.toLowerCase()}.jpg`;
       console.log(`📥 Downloading fallback image...`);
       await downloadImage(product.fallbackUrl, filename);
       console.log(`✅ Downloaded: ${filename}`);
-      
+
       const bucketPath = `products/${filename}`;
       console.log(`📤 Uploading to Supabase storage...`);
       await uploadToSupabase(path.join(downloadsDir, filename), bucketPath);
       console.log(`✅ Uploaded to: ${bucketPath}`);
-      
+
       const supabaseImageUrl = `${supabaseUrl}/storage/v1/object/public/product-images/${bucketPath}`;
       console.log(`📝 Updating database URL...`);
       await updateProductImageUrl(product.sku, supabaseImageUrl);
       console.log(`✅ Updated database for ${product.sku}`);
-      
+
       fs.unlinkSync(path.join(downloadsDir, filename));
       console.log(`🧹 Cleaned up local file`);
-      
     } catch (error) {
       console.error(`❌ Error processing ${product.name}:`, error.message);
     }
@@ -266,5 +270,5 @@ if (require.main === module) {
 
 module.exports = {
   searchAndDownloadImages,
-  fallbackDownload
+  fallbackDownload,
 };

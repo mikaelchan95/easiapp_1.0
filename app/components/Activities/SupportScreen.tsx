@@ -8,7 +8,7 @@ import {
   Animated,
   TextInput,
   Linking,
-  Dimensions
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -41,64 +41,99 @@ const FAQ_DATA: FAQItem[] = [
   {
     id: '1',
     question: 'How do I track my order?',
-    answer: 'You can track your order by going to "Order History" in your account, or by clicking the tracking link in your confirmation email.',
+    answer:
+      'You can track your order by going to "Order History" in your account, or by clicking the tracking link in your confirmation email.',
     category: 'orders',
-    helpful: 45
+    helpful: 45,
   },
   {
     id: '2',
     question: 'What is your return policy?',
-    answer: 'We offer a 30-day return policy for unopened items. Due to regulations, alcohol returns may have restrictions based on your location.',
+    answer:
+      'We offer a 30-day return policy for unopened items. Due to regulations, alcohol returns may have restrictions based on your location.',
     category: 'returns',
-    helpful: 32
+    helpful: 32,
   },
   {
     id: '3',
     question: 'Do you deliver to my area?',
-    answer: 'We deliver to most areas. Enter your zip code during checkout to see if delivery is available in your location.',
+    answer:
+      'We deliver to most areas. Enter your zip code during checkout to see if delivery is available in your location.',
     category: 'delivery',
-    helpful: 28
+    helpful: 28,
   },
   {
     id: '4',
     question: 'How do I use my rewards points?',
-    answer: 'Rewards points are automatically applied at checkout. You can also manually apply them on the payment screen.',
+    answer:
+      'Rewards points are automatically applied at checkout. You can also manually apply them on the payment screen.',
     category: 'rewards',
-    helpful: 22
+    helpful: 22,
   },
   {
     id: '5',
     question: 'Is my payment information secure?',
-    answer: 'Yes, we use industry-standard encryption and never store your full credit card details. All transactions are processed securely.',
+    answer:
+      'Yes, we use industry-standard encryption and never store your full credit card details. All transactions are processed securely.',
     category: 'security',
-    helpful: 18
-  }
+    helpful: 18,
+  },
 ];
 
 const HELP_CATEGORIES = [
-  { id: 'orders', title: 'Orders & Delivery', icon: 'cube-outline', color: '#4CAF50' },
-  { id: 'returns', title: 'Returns & Refunds', icon: 'return-down-back-outline', color: '#2196F3' },
-  { id: 'account', title: 'Account & Profile', icon: 'person-outline', color: '#9C27B0' },
-  { id: 'rewards', title: 'Rewards & Points', icon: 'gift-outline', color: '#FF9800' },
-  { id: 'security', title: 'Security & Privacy', icon: 'shield-outline', color: '#607D8B' },
-  { id: 'delivery', title: 'Delivery Info', icon: 'location-outline', color: '#E91E63' }
+  {
+    id: 'orders',
+    title: 'Orders & Delivery',
+    icon: 'cube-outline',
+    color: '#4CAF50',
+  },
+  {
+    id: 'returns',
+    title: 'Returns & Refunds',
+    icon: 'return-down-back-outline',
+    color: '#2196F3',
+  },
+  {
+    id: 'account',
+    title: 'Account & Profile',
+    icon: 'person-outline',
+    color: '#9C27B0',
+  },
+  {
+    id: 'rewards',
+    title: 'Rewards & Points',
+    icon: 'gift-outline',
+    color: '#FF9800',
+  },
+  {
+    id: 'security',
+    title: 'Security & Privacy',
+    icon: 'shield-outline',
+    color: '#607D8B',
+  },
+  {
+    id: 'delivery',
+    title: 'Delivery Info',
+    icon: 'location-outline',
+    color: '#E91E63',
+  },
 ];
 
 export default function SupportScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const headerAnim = useRef(new Animated.Value(0)).current;
-  
+
   // State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [expandedFAQ, setExpandedFAQ] = useState<string | null>(null);
   const [filteredFAQs, setFilteredFAQs] = useState(FAQ_DATA);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  
+
   // Contact methods
   const contactMethods: ContactMethod[] = [
     {
@@ -109,7 +144,7 @@ export default function SupportScreen() {
       color: '#4CAF50',
       available: true,
       responseTime: 'Usually responds in 2-3 minutes',
-      action: () => console.log('Open live chat')
+      action: () => console.log('Open live chat'),
     },
     {
       id: 'email',
@@ -119,7 +154,7 @@ export default function SupportScreen() {
       color: '#2196F3',
       available: true,
       responseTime: 'Usually responds within 24 hours',
-      action: () => Linking.openURL('mailto:support@easiapp.com')
+      action: () => Linking.openURL('mailto:support@easiapp.com'),
     },
     {
       id: 'phone',
@@ -129,7 +164,7 @@ export default function SupportScreen() {
       color: '#FF9800',
       available: true,
       responseTime: 'Mon-Fri 9AM-6PM EST',
-      action: () => Linking.openURL('tel:+1-800-EASI-APP')
+      action: () => Linking.openURL('tel:+1-800-EASI-APP'),
     },
     {
       id: 'video',
@@ -139,10 +174,10 @@ export default function SupportScreen() {
       color: '#9C27B0',
       available: false,
       responseTime: 'Available for premium members',
-      action: () => console.log('Schedule video call')
-    }
+      action: () => console.log('Schedule video call'),
+    },
   ];
-  
+
   useEffect(() => {
     // Initial animation
     Animated.parallel([
@@ -150,90 +185,99 @@ export default function SupportScreen() {
         toValue: 1,
         duration: 600,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
+        easing: Animations.TIMING.easeOut,
       }),
       Animated.timing(headerAnim, {
         toValue: 1,
         duration: 400,
         delay: 200,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
-      })
+        easing: Animations.TIMING.easeOut,
+      }),
     ]).start();
   }, []);
-  
+
   useEffect(() => {
     // Filter FAQs
     let filtered = FAQ_DATA;
-    
+
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(faq => faq.category === selectedCategory);
     }
-    
+
     if (searchQuery) {
-      filtered = filtered.filter(faq => 
-        faq.question.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1 ||
-        faq.answer.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1
+      filtered = filtered.filter(
+        faq =>
+          faq.question.toLowerCase().indexOf(searchQuery.toLowerCase()) !==
+            -1 ||
+          faq.answer.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1
       );
     }
-    
+
     setFilteredFAQs(filtered);
   }, [selectedCategory, searchQuery]);
-  
+
   const handleFAQPress = (faqId: string) => {
     setExpandedFAQ(expandedFAQ === faqId ? null : faqId);
   };
-  
+
   const renderHelpCategory = (category: any) => {
     const isSelected = selectedCategory === category.id;
-    
+
     return (
       <TouchableOpacity
         key={category.id}
         style={[
           styles.categoryButton,
-          isSelected && styles.categoryButtonSelected
+          isSelected && styles.categoryButtonSelected,
         ]}
         onPress={() => setSelectedCategory(category.id)}
         accessible={true}
         accessibilityRole="button"
         accessibilityLabel={`Filter by ${category.title}`}
       >
-        <View style={[styles.categoryIcon, { backgroundColor: `${category.color}15` }]}>
-          <Ionicons 
-            name={category.icon as any} 
-            size={20} 
-            color={isSelected ? COLORS.accent : category.color} 
+        <View
+          style={[
+            styles.categoryIcon,
+            { backgroundColor: `${category.color}15` },
+          ]}
+        >
+          <Ionicons
+            name={category.icon as any}
+            size={20}
+            color={isSelected ? COLORS.accent : category.color}
           />
         </View>
-        <Text style={[
-          styles.categoryText,
-          isSelected && styles.categoryTextSelected
-        ]}>
+        <Text
+          style={[
+            styles.categoryText,
+            isSelected && styles.categoryTextSelected,
+          ]}
+        >
           {category.title}
         </Text>
       </TouchableOpacity>
     );
   };
-  
+
   const renderFAQItem = (faq: FAQItem) => {
     const isExpanded = expandedFAQ === faq.id;
     const rotateAnim = useRef(new Animated.Value(isExpanded ? 1 : 0)).current;
-    
+
     useEffect(() => {
       Animated.timing(rotateAnim, {
         toValue: isExpanded ? 1 : 0,
         duration: 200,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeInOut
+        easing: Animations.TIMING.easeInOut,
       }).start();
     }, [isExpanded]);
-    
+
     const rotation = rotateAnim.interpolate({
       inputRange: [0, 1],
-      outputRange: ['0deg', '180deg']
+      outputRange: ['0deg', '180deg'],
     });
-    
+
     return (
       <View key={faq.id} style={styles.faqItem}>
         <TouchableOpacity
@@ -248,13 +292,17 @@ export default function SupportScreen() {
             <Ionicons name="chevron-down" size={20} color={COLORS.inactive} />
           </Animated.View>
         </TouchableOpacity>
-        
+
         {isExpanded && (
           <View style={styles.faqAnswer}>
             <Text style={styles.faqAnswerText}>{faq.answer}</Text>
             <View style={styles.faqMeta}>
               <TouchableOpacity style={styles.helpfulButton}>
-                <Ionicons name="thumbs-up-outline" size={16} color={COLORS.inactive} />
+                <Ionicons
+                  name="thumbs-up-outline"
+                  size={16}
+                  color={COLORS.inactive}
+                />
                 <Text style={styles.helpfulText}>Helpful ({faq.helpful})</Text>
               </TouchableOpacity>
             </View>
@@ -263,14 +311,14 @@ export default function SupportScreen() {
       </View>
     );
   };
-  
+
   const renderContactMethod = (method: ContactMethod) => {
     return (
       <TouchableOpacity
         key={method.id}
         style={[
           styles.contactMethod,
-          !method.available && styles.contactMethodDisabled
+          !method.available && styles.contactMethodDisabled,
         ]}
         onPress={method.action}
         disabled={!method.available}
@@ -278,22 +326,28 @@ export default function SupportScreen() {
         accessibilityRole="button"
         accessibilityLabel={`${method.title}: ${method.subtitle}`}
       >
-        <View style={[styles.contactIcon, { backgroundColor: `${method.color}15` }]}>
-          <Ionicons 
-            name={method.icon as any} 
-            size={24} 
-            color={method.available ? method.color : COLORS.inactive} 
+        <View
+          style={[styles.contactIcon, { backgroundColor: `${method.color}15` }]}
+        >
+          <Ionicons
+            name={method.icon as any}
+            size={24}
+            color={method.available ? method.color : COLORS.inactive}
           />
           {method.available && (
-            <View style={[styles.statusDot, { backgroundColor: method.color }]} />
+            <View
+              style={[styles.statusDot, { backgroundColor: method.color }]}
+            />
           )}
         </View>
-        
+
         <View style={styles.contactInfo}>
-          <Text style={[
-            styles.contactTitle,
-            !method.available && styles.contactTitleDisabled
-          ]}>
+          <Text
+            style={[
+              styles.contactTitle,
+              !method.available && styles.contactTitleDisabled,
+            ]}
+          >
             {method.title}
           </Text>
           <Text style={styles.contactSubtitle}>{method.subtitle}</Text>
@@ -301,33 +355,33 @@ export default function SupportScreen() {
             <Text style={styles.responseTime}>{method.responseTime}</Text>
           )}
         </View>
-        
-        <Ionicons 
-          name="chevron-forward" 
-          size={20} 
-          color={method.available ? COLORS.inactive : COLORS.border} 
+
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={method.available ? COLORS.inactive : COLORS.border}
         />
       </TouchableOpacity>
     );
   };
-  
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.header,
-          { 
+          {
             opacity: headerAnim,
             transform: [
               {
                 translateY: headerAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [-20, 0]
-                })
-              }
-            ]
-          }
+                  outputRange: [-20, 0],
+                }),
+              },
+            ],
+          },
         ]}
       >
         <TouchableOpacity
@@ -339,25 +393,25 @@ export default function SupportScreen() {
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        
+
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Help & Support</Text>
           <Text style={styles.headerSubtitle}>How can we help you today?</Text>
         </View>
       </Animated.View>
-      
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Search Bar */}
-        <Animated.View 
-          style={[
-            styles.searchSection,
-            { opacity: fadeAnim }
-          ]}
-        >
-          <View style={[
-            styles.searchContainer,
-            isSearchFocused && styles.searchContainerFocused
-          ]}>
+        <Animated.View style={[styles.searchSection, { opacity: fadeAnim }]}>
+          <View
+            style={[
+              styles.searchContainer,
+              isSearchFocused && styles.searchContainerFocused,
+            ]}
+          >
             <Ionicons name="search-outline" size={20} color={COLORS.inactive} />
             <TextInput
               style={styles.searchInput}
@@ -378,78 +432,82 @@ export default function SupportScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Clear search"
               >
-                <Ionicons name="close-circle" size={20} color={COLORS.inactive} />
+                <Ionicons
+                  name="close-circle"
+                  size={20}
+                  color={COLORS.inactive}
+                />
               </TouchableOpacity>
             )}
           </View>
         </Animated.View>
-        
+
         {/* Contact Methods */}
-        <Animated.View 
-          style={[
-            styles.contactSection,
-            { opacity: fadeAnim }
-          ]}
-        >
+        <Animated.View style={[styles.contactSection, { opacity: fadeAnim }]}>
           <Text style={styles.sectionTitle}>Contact Us</Text>
           <View style={styles.contactGrid}>
             {contactMethods.map(renderContactMethod)}
           </View>
         </Animated.View>
-        
+
         {/* Help Categories */}
-        <Animated.View 
-          style={[
-            styles.categoriesSection,
-            { opacity: fadeAnim }
-          ]}
+        <Animated.View
+          style={[styles.categoriesSection, { opacity: fadeAnim }]}
         >
           <Text style={styles.sectionTitle}>Browse by Topic</Text>
           <View style={styles.categoriesGrid}>
             <TouchableOpacity
               style={[
                 styles.categoryButton,
-                selectedCategory === 'all' && styles.categoryButtonSelected
+                selectedCategory === 'all' && styles.categoryButtonSelected,
               ]}
               onPress={() => setSelectedCategory('all')}
             >
-              <View style={[styles.categoryIcon, { backgroundColor: `${COLORS.primary}15` }]}>
-                <Ionicons 
-                  name="grid-outline" 
-                  size={20} 
-                  color={selectedCategory === 'all' ? COLORS.accent : COLORS.primary} 
+              <View
+                style={[
+                  styles.categoryIcon,
+                  { backgroundColor: `${COLORS.primary}15` },
+                ]}
+              >
+                <Ionicons
+                  name="grid-outline"
+                  size={20}
+                  color={
+                    selectedCategory === 'all' ? COLORS.accent : COLORS.primary
+                  }
                 />
               </View>
-              <Text style={[
-                styles.categoryText,
-                selectedCategory === 'all' && styles.categoryTextSelected
-              ]}>
+              <Text
+                style={[
+                  styles.categoryText,
+                  selectedCategory === 'all' && styles.categoryTextSelected,
+                ]}
+              >
                 All Topics
               </Text>
             </TouchableOpacity>
             {HELP_CATEGORIES.map(renderHelpCategory)}
           </View>
         </Animated.View>
-        
+
         {/* FAQ Section */}
-        <Animated.View 
-          style={[
-            styles.faqSection,
-            { opacity: fadeAnim }
-          ]}
-        >
+        <Animated.View style={[styles.faqSection, { opacity: fadeAnim }]}>
           <Text style={styles.sectionTitle}>
             Frequently Asked Questions
             {selectedCategory !== 'all' && ` (${filteredFAQs.length})`}
           </Text>
-          
+
           {filteredFAQs.length > 0 ? (
             <View style={styles.faqList}>
               {filteredFAQs.map(renderFAQItem)}
             </View>
           ) : (
             <View style={styles.noResultsContainer}>
-              <Ionicons name="search-outline" size={48} color={COLORS.inactive} />
+              <Ionicons
+                name="search-outline"
+                size={48}
+                color={COLORS.inactive}
+              />
               <Text style={styles.noResultsTitle}>No results found</Text>
               <Text style={styles.noResultsText}>
                 Try adjusting your search or browse different topics
@@ -457,13 +515,10 @@ export default function SupportScreen() {
             </View>
           )}
         </Animated.View>
-        
+
         {/* Additional Help */}
-        <Animated.View 
-          style={[
-            styles.additionalSection,
-            { opacity: fadeAnim }
-          ]}
+        <Animated.View
+          style={[styles.additionalSection, { opacity: fadeAnim }]}
         >
           <View style={styles.additionalCard}>
             <Ionicons name="bulb-outline" size={32} color={COLORS.primary} />

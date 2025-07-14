@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useContext } from 'react';
-import { 
-  Modal, 
-  View, 
-  StyleSheet, 
+import {
+  Modal,
+  View,
+  StyleSheet,
   SafeAreaView,
   StatusBar,
-  Platform 
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { AppContext } from '../../context/AppContext';
@@ -18,20 +18,23 @@ interface LocationPickerModalProps {
   onClose: () => void;
 }
 
-const LocationPickerModal: React.FC<LocationPickerModalProps> = ({ 
-  visible, 
-  onClose 
+const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
+  visible,
+  onClose,
 }) => {
   const { state, dispatch } = useContext(AppContext);
   const navigation = useNavigation();
-  
-  const handleLocationSelect = useCallback((location: LocationSuggestion) => {
-    // Update global state
-    dispatch({ type: 'SET_SELECTED_LOCATION', payload: location });
-    
-    // Close the modal
-    onClose();
-  }, [dispatch, onClose]);
+
+  const handleLocationSelect = useCallback(
+    (location: LocationSuggestion) => {
+      // Update global state
+      dispatch({ type: 'SET_SELECTED_LOCATION', payload: location });
+
+      // Close the modal
+      onClose();
+    },
+    [dispatch, onClose]
+  );
 
   return (
     <Modal
@@ -51,7 +54,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  }
+  },
 });
 
 export default LocationPickerModal;

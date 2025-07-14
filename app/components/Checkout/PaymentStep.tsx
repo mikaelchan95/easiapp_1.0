@@ -10,26 +10,26 @@ const PAYMENT_METHODS: PaymentMethod[] = [
     id: 'digital_cod',
     name: 'Digital COD',
     icon: 'cash-outline',
-    isDefault: true
+    isDefault: true,
   },
   {
     id: 'wallet',
     name: 'Digital Wallet',
     icon: 'wallet-outline',
-    isDefault: false
+    isDefault: false,
   },
   {
     id: 'credit',
     name: 'Credit Terms',
     icon: 'card-outline',
-    isDefault: false
+    isDefault: false,
   },
   {
     id: 'card',
     name: 'Credit/Debit Card',
     icon: 'card-outline',
-    isDefault: false
-  }
+    isDefault: false,
+  },
 ];
 
 interface PaymentStepProps {
@@ -37,104 +37,126 @@ interface PaymentStepProps {
   total: number;
 }
 
-const PaymentStep: React.FC<PaymentStepProps> = ({ 
-  onSelectMethod,
-  total
-}) => {
-  const [selectedMethodId, setSelectedMethodId] = useState<string>(PAYMENT_METHODS[0].id);
-  
+const PaymentStep: React.FC<PaymentStepProps> = ({ onSelectMethod, total }) => {
+  const [selectedMethodId, setSelectedMethodId] = useState<string>(
+    PAYMENT_METHODS[0].id
+  );
+
   const handleSelectMethod = (method: PaymentMethod) => {
     setSelectedMethodId(method.id);
     onSelectMethod(method);
   };
-  
+
   // Find selected payment method
-  const selectedMethod = PAYMENT_METHODS.find(m => m.id === selectedMethodId) || PAYMENT_METHODS[0];
-  
+  const selectedMethod =
+    PAYMENT_METHODS.find(m => m.id === selectedMethodId) || PAYMENT_METHODS[0];
+
   // Digital wallet balance (mock)
   const walletBalance = 200;
   const hasEnoughBalance = walletBalance >= total;
-  
+
   // Credit status (mock)
   const creditLimit = 5000;
   const creditAvailable = 3500;
   const isCreditApproved = true;
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.methodsContainer}>
-        {PAYMENT_METHODS.map((method) => {
+        {PAYMENT_METHODS.map(method => {
           // Disable wallet option if balance is insufficient
           const isWalletDisabled = method.id === 'wallet' && !hasEnoughBalance;
-          
+
           // Disable credit option if not approved
           const isCreditDisabled = method.id === 'credit' && !isCreditApproved;
-          
+
           // Check if method is disabled
           const isDisabled = isWalletDisabled || isCreditDisabled;
-          
+
           return (
             <TouchableOpacity
               key={method.id}
               style={[
                 styles.methodCard,
                 selectedMethodId === method.id && styles.selectedMethodCard,
-                isDisabled && styles.disabledMethodCard
+                isDisabled && styles.disabledMethodCard,
               ]}
               onPress={() => !isDisabled && handleSelectMethod(method)}
               disabled={isDisabled}
             >
               <View style={styles.methodContent}>
-                <View style={[styles.methodIcon, selectedMethodId === method.id && styles.selectedMethodIcon]}>
+                <View
+                  style={[
+                    styles.methodIcon,
+                    selectedMethodId === method.id && styles.selectedMethodIcon,
+                  ]}
+                >
                   <Ionicons
                     name={method.icon as any}
                     size={20}
                     color={selectedMethodId === method.id ? '#fff' : '#1a1a1a'}
                   />
                 </View>
-                
+
                 <View style={styles.methodInfo}>
-                  <Text style={[
-                    styles.methodName,
-                    selectedMethodId === method.id && styles.selectedMethodText,
-                    isDisabled && styles.disabledMethodText
-                  ]}>
+                  <Text
+                    style={[
+                      styles.methodName,
+                      selectedMethodId === method.id &&
+                        styles.selectedMethodText,
+                      isDisabled && styles.disabledMethodText,
+                    ]}
+                  >
                     {method.name}
                   </Text>
-                  
+
                   {method.id === 'digital_cod' && (
-                    <Text style={styles.methodDescription}>Pay on delivery with digital confirmation</Text>
-                  )}
-                  
-                  {method.id === 'wallet' && (
-                    <Text style={[styles.methodDescription, !hasEnoughBalance && styles.errorText]}>
-                      {hasEnoughBalance 
-                        ? `Balance: $${walletBalance.toFixed(0)}`
-                        : `Insufficient balance: $${walletBalance.toFixed(0)}`
-                      }
+                    <Text style={styles.methodDescription}>
+                      Pay on delivery with digital confirmation
                     </Text>
                   )}
-                  
+
+                  {method.id === 'wallet' && (
+                    <Text
+                      style={[
+                        styles.methodDescription,
+                        !hasEnoughBalance && styles.errorText,
+                      ]}
+                    >
+                      {hasEnoughBalance
+                        ? `Balance: $${walletBalance.toFixed(0)}`
+                        : `Insufficient balance: $${walletBalance.toFixed(0)}`}
+                    </Text>
+                  )}
+
                   {method.id === 'credit' && (
-                    <Text style={[styles.methodDescription, !isCreditApproved && styles.errorText]}>
+                    <Text
+                      style={[
+                        styles.methodDescription,
+                        !isCreditApproved && styles.errorText,
+                      ]}
+                    >
                       {isCreditApproved
                         ? `Available: $${creditAvailable.toFixed(0)} of $${creditLimit.toFixed(0)}`
-                        : 'Not approved for credit terms'
-                      }
+                        : 'Not approved for credit terms'}
                     </Text>
                   )}
-                  
+
                   {method.id === 'card' && (
-                    <Text style={styles.methodDescription}>Visa, Mastercard, American Express</Text>
+                    <Text style={styles.methodDescription}>
+                      Visa, Mastercard, American Express
+                    </Text>
                   )}
                 </View>
               </View>
-              
+
               <View style={styles.radioContainer}>
-                <View style={[
-                  styles.radioOuter,
-                  selectedMethodId === method.id && styles.selectedRadioOuter
-                ]}>
+                <View
+                  style={[
+                    styles.radioOuter,
+                    selectedMethodId === method.id && styles.selectedRadioOuter,
+                  ]}
+                >
                   {selectedMethodId === method.id && (
                     <View style={styles.radioInner} />
                   )}
@@ -144,51 +166,63 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
           );
         })}
       </View>
-      
+
       {/* Payment Method Details */}
       <View style={styles.detailsContainer}>
         <Text style={styles.detailsTitle}>Payment Details</Text>
-        
+
         {selectedMethod.id === 'digital_cod' && (
           <View style={styles.detailsContent}>
             <View style={styles.detailsIconContainer}>
-              <Ionicons name="phone-portrait-outline" size={40} color="#1a1a1a" />
+              <Ionicons
+                name="phone-portrait-outline"
+                size={40}
+                color="#1a1a1a"
+              />
             </View>
             <Text style={styles.detailsText}>
-              You'll be asked to confirm payment digitally when your order is delivered. No cash handling needed.
+              You'll be asked to confirm payment digitally when your order is
+              delivered. No cash handling needed.
             </Text>
           </View>
         )}
-        
+
         {selectedMethod.id === 'wallet' && hasEnoughBalance && (
           <View style={styles.detailsContent}>
             <View style={styles.detailsIconContainer}>
               <Ionicons name="wallet-outline" size={40} color="#1a1a1a" />
             </View>
             <Text style={styles.detailsText}>
-              ${total.toFixed(2)} will be deducted from your wallet balance upon order confirmation.
+              ${total.toFixed(2)} will be deducted from your wallet balance upon
+              order confirmation.
             </Text>
           </View>
         )}
-        
+
         {selectedMethod.id === 'credit' && isCreditApproved && (
           <View style={styles.detailsContent}>
             <View style={styles.detailsIconContainer}>
-              <Ionicons name="document-text-outline" size={40} color="#1a1a1a" />
+              <Ionicons
+                name="document-text-outline"
+                size={40}
+                color="#1a1a1a"
+              />
             </View>
             <Text style={styles.detailsText}>
-              This purchase will be added to your credit account. Payment due according to your credit terms.
+              This purchase will be added to your credit account. Payment due
+              according to your credit terms.
             </Text>
           </View>
         )}
-        
+
         {selectedMethod.id === 'card' && (
           <View style={styles.detailsContent}>
             <View style={styles.detailsIconContainer}>
               <Ionicons name="card-outline" size={40} color="#1a1a1a" />
             </View>
             <Text style={styles.detailsText}>
-              Your card will be charged ${total.toFixed(2)} when your order is confirmed.
+              Your card will be charged ${total.toFixed(2)} when your order is
+              confirmed.
             </Text>
             <View style={styles.cardLogos}>
               {/* Replace with actual card logos */}
@@ -199,7 +233,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
           </View>
         )}
       </View>
-      
+
       {/* Security Note */}
       <View style={styles.securityNote}>
         <Ionicons name="shield-checkmark-outline" size={24} color="#4CAF50" />
@@ -377,4 +411,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PaymentStep; 
+export default PaymentStep;

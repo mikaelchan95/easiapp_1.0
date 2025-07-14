@@ -39,100 +39,100 @@ interface CartItemProps {
   onSwipeEnd?: () => void;
 }
 
-type ProductNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ProductDetail'>;
+type ProductNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'ProductDetail'
+>;
 
 const { width } = Dimensions.get('window');
 const ACTION_WIDTH = 80;
 
-const CartItem: React.FC<CartItemProps> = ({ 
-  item, 
+const CartItem: React.FC<CartItemProps> = ({
+  item,
   onQuantityChange,
   onDelete,
   onSaveForLater,
   onAddToFavorites,
   onSwipeStart,
-  onSwipeEnd
+  onSwipeEnd,
 }) => {
   const navigation = useNavigation<ProductNavigationProp>();
-  
+
   // Debug logging for image URL
   console.log(`🖼️ CartItem ${item.name} imageUrl:`, {
     imageUrl: item.imageUrl,
     imageUrlType: typeof item.imageUrl,
     isString: typeof item.imageUrl === 'string',
-    isValidString: typeof item.imageUrl === 'string' && item.imageUrl.length > 0
+    isValidString:
+      typeof item.imageUrl === 'string' && item.imageUrl.length > 0,
   });
-  
+
   // Animation values
   const itemScale = useRef(new Animated.Value(1)).current;
   const itemOpacity = useRef(new Animated.Value(1)).current;
   const deleteAnimation = useRef(new Animated.Value(0)).current;
   const quantityBounce = useRef(new Animated.Value(1)).current;
-  
+
   // State
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSwipeOpen, setIsSwipeOpen] = useState(false);
-  
+
   // Refs
   const swipeableRef = useRef<Swipeable>(null);
-  
+
   const handleItemPress = () => {
     navigation.navigate('ProductDetail', { id: item.productId });
   };
-  
+
   // Format price with proper currency
   const formattedPrice = formatFinancialAmount(item.price * item.quantity);
   const formattedUnitPrice = formatFinancialAmount(item.price);
-  
+
   // Quick delete confirmation with haptic
   const confirmQuickDelete = () => {
     HapticFeedback.warning();
-    
-    Alert.alert(
-      'Remove Item',
-      `Remove ${item.name} from your cart?`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => HapticFeedback.light()
-        },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: handleDelete
-        }
-      ]
-    );
+
+    Alert.alert('Remove Item', `Remove ${item.name} from your cart?`, [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+        onPress: () => HapticFeedback.light(),
+      },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: handleDelete,
+      },
+    ]);
   };
-  
+
   // Handle delete with smooth animation
   const handleDelete = () => {
     if (isDeleting) return;
-    
+
     setIsDeleting(true);
     HapticPatterns.delete();
-    
+
     // Close swipeable first
     swipeableRef.current?.close();
-    
+
     // Animate deletion
     Animated.parallel([
       Animated.timing(itemOpacity, {
         toValue: 0,
         duration: 300,
-        useNativeDriver: true
+        useNativeDriver: true,
       }),
       Animated.timing(itemScale, {
         toValue: 0.8,
         duration: 300,
-        useNativeDriver: true
+        useNativeDriver: true,
       }),
       Animated.timing(deleteAnimation, {
         toValue: 1,
         duration: 300,
-        useNativeDriver: false
-      })
+        useNativeDriver: false,
+      }),
     ]).start(() => {
       if (onDelete) {
         onDelete();
@@ -141,27 +141,27 @@ const CartItem: React.FC<CartItemProps> = ({
       }
     });
   };
-  
+
   // Handle save for later
   const handleSaveForLater = () => {
     HapticFeedback.medium();
     swipeableRef.current?.close();
-    
+
     if (onSaveForLater) {
       onSaveForLater();
     }
   };
-  
+
   // Handle add to favorites
   const handleAddToFavorites = () => {
     HapticFeedback.medium();
     swipeableRef.current?.close();
-    
+
     if (onAddToFavorites) {
       onAddToFavorites();
     }
   };
-  
+
   // Handle quantity change
   const handleQuantityChange = (newQuantity: number) => {
     if (newQuantity === 0) {
@@ -172,7 +172,7 @@ const CartItem: React.FC<CartItemProps> = ({
       onQuantityChange(newQuantity);
     }
   };
-  
+
   // Render right actions (swipe left to reveal)
   const renderRightActions = (
     progress: Animated.AnimatedInterpolation<number>,
@@ -207,7 +207,7 @@ const CartItem: React.FC<CartItemProps> = ({
             </RectButton>
           </Animated.View>
         )}
-        
+
         {/* Favorite Action */}
         {onAddToFavorites && (
           <Animated.View
@@ -235,7 +235,7 @@ const CartItem: React.FC<CartItemProps> = ({
             </RectButton>
           </Animated.View>
         )}
-        
+
         {/* Delete Action */}
         <Animated.View
           style={[
@@ -271,7 +271,7 @@ const CartItem: React.FC<CartItemProps> = ({
       </View>
     );
   };
-  
+
   // Handle swipe events
   const onSwipeableWillOpen = (direction: 'left' | 'right') => {
     HapticFeedback.light();
@@ -280,22 +280,22 @@ const CartItem: React.FC<CartItemProps> = ({
       onSwipeStart();
     }
   };
-  
+
   const onSwipeableWillClose = () => {
     setIsSwipeOpen(false);
     if (onSwipeEnd) {
       onSwipeEnd();
     }
   };
-  
+
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.container,
         {
           opacity: itemOpacity,
           transform: [{ scale: itemScale }],
-        }
+        },
       ]}
     >
       <Swipeable
@@ -309,13 +309,17 @@ const CartItem: React.FC<CartItemProps> = ({
         enabled={!isDeleting}
       >
         <View style={[styles.card, isSwipeOpen && styles.cardSwiped]}>
-          <TouchableOpacity 
-            style={styles.imageContainer} 
+          <TouchableOpacity
+            style={styles.imageContainer}
             onPress={handleItemPress}
             activeOpacity={0.8}
           >
-            <Image 
-              source={getProductImageSource(item.imageUrl, item.name) || { uri: 'https://images.unsplash.com/photo-1568213816046-0ee1c42bd559?w=400&h=400&fit=crop' }} 
+            <Image
+              source={
+                getProductImageSource(item.imageUrl, item.name) || {
+                  uri: 'https://images.unsplash.com/photo-1568213816046-0ee1c42bd559?w=400&h=400&fit=crop',
+                }
+              }
               style={styles.image}
               resizeMode="cover"
             />
@@ -323,14 +327,16 @@ const CartItem: React.FC<CartItemProps> = ({
               <Ionicons name="wine" size={12} color={COLORS.card} />
             </View>
           </TouchableOpacity>
-          
+
           <View style={styles.content}>
             <TouchableOpacity onPress={handleItemPress}>
-              <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
+              <Text style={styles.name} numberOfLines={2}>
+                {item.name}
+              </Text>
             </TouchableOpacity>
-            
+
             <Text style={styles.unitPrice}>{formattedUnitPrice} each</Text>
-            
+
             <View style={styles.actionRow}>
               <QuantitySelector
                 value={item.quantity}
@@ -467,4 +473,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CartItem; 
+export default CartItem;

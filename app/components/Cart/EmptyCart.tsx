@@ -1,13 +1,13 @@
 import React, { useRef, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Image, 
-  Animated, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Animated,
   Easing,
-  Dimensions
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -19,12 +19,12 @@ import AnimatedButton from '../UI/AnimatedButton';
 export default function EmptyCart() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const cartBounceAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Animate on mount
   useEffect(() => {
     // Sequence of animations
@@ -33,20 +33,20 @@ export default function EmptyCart() {
         toValue: 1,
         duration: 600,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
+        easing: Animations.TIMING.easeOut,
       }),
       Animated.spring(scaleAnim, {
         toValue: 1,
         friction: 7,
         tension: 40,
-        useNativeDriver: true
-      })
+        useNativeDriver: true,
+      }),
     ]).start(() => {
       // After the initial animation, start the cart bounce
       startCartBounce();
     });
   }, []);
-  
+
   // Bouncing cart animation
   const startCartBounce = () => {
     Animated.loop(
@@ -55,37 +55,37 @@ export default function EmptyCart() {
           toValue: 1,
           duration: 800,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true
+          useNativeDriver: true,
         }),
         Animated.timing(cartBounceAnim, {
           toValue: 0,
           duration: 800,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true
-        })
+          useNativeDriver: true,
+        }),
       ])
     ).start();
   };
-  
+
   // Handle navigation to explore products
   const handleExplorePress = () => {
     navigation.navigate('Main', { screen: 'Products' });
   };
-  
+
   // Calculate cart Y position for bounce animation
   const cartYPosition = cartBounceAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -15]
+    outputRange: [0, -15],
   });
-  
+
   return (
     <View style={styles.container}>
       {/* Status Bar Spacer */}
       <View style={{ height: insets.top, backgroundColor: COLORS.card }} />
-      
+
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
@@ -94,32 +94,32 @@ export default function EmptyCart() {
         <Text style={styles.headerTitle}>Cart</Text>
         <View style={{ width: 40 }} />
       </View>
-      
+
       {/* Empty State Content */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.content,
-          { 
+          {
             opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }]
-          }
+            transform: [{ scale: scaleAnim }],
+          },
         ]}
       >
         {/* Cart Icon with Bounce Animation */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.iconContainer,
-            { transform: [{ translateY: cartYPosition }] }
+            { transform: [{ translateY: cartYPosition }] },
           ]}
         >
           <Ionicons name="cart-outline" size={80} color={COLORS.inactive} />
         </Animated.View>
-        
+
         <Text style={styles.title}>Your cart is empty</Text>
         <Text style={styles.description}>
           Looks like you haven't added any products to your cart yet
         </Text>
-        
+
         <AnimatedButton
           label="Browse Products"
           icon="compass-outline"
@@ -194,4 +194,4 @@ const styles = StyleSheet.create({
     marginTop: SPACING.lg,
     width: width * 0.7,
   },
-}); 
+});

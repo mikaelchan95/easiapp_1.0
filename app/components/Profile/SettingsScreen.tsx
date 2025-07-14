@@ -9,7 +9,7 @@ import {
   Switch,
   Alert,
   Animated,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -27,26 +27,26 @@ interface UserSettings {
   lastName: string;
   email: string;
   phone: string;
-  
+
   // Notification Preferences
   pushNotifications: boolean;
   emailNotifications: boolean;
   orderUpdates: boolean;
   promotionalEmails: boolean;
   smsNotifications: boolean;
-  
+
   // App Preferences
   darkMode: boolean;
   language: string;
   currency: string;
   defaultView: 'grid' | 'list';
-  
+
   // Privacy & Security
   profileVisibility: 'public' | 'private';
   shareDataForAnalytics: boolean;
   twoFactorAuth: boolean;
   biometricAuth: boolean;
-  
+
   // Delivery Preferences
   defaultDeliveryAddress: string;
   preferredDeliveryTime: string;
@@ -73,33 +73,37 @@ const DEFAULT_SETTINGS: UserSettings = {
   biometricAuth: false,
   defaultDeliveryAddress: '',
   preferredDeliveryTime: 'Any time',
-  deliveryInstructions: ''
+  deliveryInstructions: '',
 };
 
 export default function SettingsScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { state, dispatch } = useContext(AppContext);
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
-  
+
   // State
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<string[]>(['personal']);
+  const [expandedSections, setExpandedSections] = useState<string[]>([
+    'personal',
+  ]);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometricTypeName, setBiometricTypeName] = useState('Biometric Authentication');
+  const [biometricTypeName, setBiometricTypeName] = useState(
+    'Biometric Authentication'
+  );
 
   useEffect(() => {
     // Load user settings from context or storage
     loadUserSettings();
-    
+
     // Check biometric availability
     checkBiometricAvailability();
-    
+
     // Start animations
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -111,7 +115,7 @@ export default function SettingsScreen() {
         toValue: 0,
         duration: 400,
         useNativeDriver: true,
-      })
+      }),
     ]).start();
   }, []);
 
@@ -119,7 +123,7 @@ export default function SettingsScreen() {
     try {
       // Start with default settings merged with context settings
       let initialSettings = { ...DEFAULT_SETTINGS, ...state.userSettings };
-      
+
       // If user is logged in, populate with user data
       if (state.user) {
         initialSettings = {
@@ -130,7 +134,7 @@ export default function SettingsScreen() {
           phone: state.user?.phone || '',
         };
       }
-      
+
       // Load saved settings from AsyncStorage
       try {
         const savedSettings = await AsyncStorage.getItem('userSettings');
@@ -141,7 +145,7 @@ export default function SettingsScreen() {
       } catch (storageError) {
         console.log('No saved settings found, using defaults');
       }
-      
+
       setSettings(initialSettings);
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -153,14 +157,18 @@ export default function SettingsScreen() {
       const isAvailable = await biometricService.isBiometricAvailable();
       const isEnabled = await biometricService.isBiometricEnabled();
       const typeName = await biometricService.getBiometricTypeName();
-      
+
       setBiometricAvailable(isAvailable);
       setBiometricTypeName(typeName);
-      
+
       // Update settings with current biometric status
       setSettings(prev => ({ ...prev, biometricAuth: isEnabled }));
-      
-      console.log('🔐 Biometric availability in settings:', { isAvailable, isEnabled, typeName });
+
+      console.log('🔐 Biometric availability in settings:', {
+        isAvailable,
+        isEnabled,
+        typeName,
+      });
     } catch (error) {
       console.error('❌ Error checking biometric availability:', error);
     }
@@ -177,20 +185,34 @@ export default function SettingsScreen() {
       // Enable biometric authentication
       try {
         if (!state.user?.email) {
-          Alert.alert('Error', 'Unable to set up biometric authentication. Please try signing in again.');
+          Alert.alert(
+            'Error',
+            'Unable to set up biometric authentication. Please try signing in again.'
+          );
           return;
         }
 
-        const setupResult = await biometricService.setupBiometricAuth(state.user.email);
+        const setupResult = await biometricService.setupBiometricAuth(
+          state.user.email
+        );
         if (setupResult.success) {
           handleSettingChange('biometricAuth', true);
-          Alert.alert('Success', `${biometricTypeName} has been enabled successfully!`);
+          Alert.alert(
+            'Success',
+            `${biometricTypeName} has been enabled successfully!`
+          );
         } else {
-          Alert.alert('Setup Failed', setupResult.error || 'Failed to enable biometric authentication.');
+          Alert.alert(
+            'Setup Failed',
+            setupResult.error || 'Failed to enable biometric authentication.'
+          );
         }
       } catch (error) {
         console.error('❌ Error enabling biometric authentication:', error);
-        Alert.alert('Error', 'An unexpected error occurred while enabling biometric authentication.');
+        Alert.alert(
+          'Error',
+          'An unexpected error occurred while enabling biometric authentication.'
+        );
       }
     } else {
       // Disable biometric authentication
@@ -207,13 +229,22 @@ export default function SettingsScreen() {
                 await biometricService.setBiometricEnabled(false);
                 await biometricService.clearStoredCredentials();
                 handleSettingChange('biometricAuth', false);
-                Alert.alert('Disabled', `${biometricTypeName} has been disabled.`);
+                Alert.alert(
+                  'Disabled',
+                  `${biometricTypeName} has been disabled.`
+                );
               } catch (error) {
-                console.error('❌ Error disabling biometric authentication:', error);
-                Alert.alert('Error', 'An error occurred while disabling biometric authentication.');
+                console.error(
+                  '❌ Error disabling biometric authentication:',
+                  error
+                );
+                Alert.alert(
+                  'Error',
+                  'An error occurred while disabling biometric authentication.'
+                );
               }
-            }
-          }
+            },
+          },
         ]
       );
     }
@@ -221,32 +252,37 @@ export default function SettingsScreen() {
 
   const handleSaveSettings = async () => {
     if (!hasChanges) return;
-    
+
     setIsSaving(true);
     HapticFeedback.medium();
-    
+
     try {
       // Save to AsyncStorage
       await AsyncStorage.setItem('userSettings', JSON.stringify(settings));
-      
+
       // Update context state
-      dispatch({ 
-        type: 'SAVE_USER_SETTINGS', 
-        payload: settings 
+      dispatch({
+        type: 'SAVE_USER_SETTINGS',
+        payload: settings,
       });
-      
+
       // Update user profile if personal info changed
-      if (settings.firstName || settings.lastName || settings.email || settings.phone) {
+      if (
+        settings.firstName ||
+        settings.lastName ||
+        settings.email ||
+        settings.phone
+      ) {
         dispatch({
           type: 'UPDATE_USER_PROFILE',
           payload: {
             name: `${settings.firstName} ${settings.lastName}`.trim(),
             email: settings.email,
             phone: settings.phone,
-          }
+          },
         });
       }
-      
+
       setHasChanges(false);
       Alert.alert('Success', 'Your settings have been saved successfully!');
     } catch (error) {
@@ -258,8 +294,8 @@ export default function SettingsScreen() {
   };
 
   const toggleSection = (section: string) => {
-    setExpandedSections(prev => 
-      prev.includes(section) 
+    setExpandedSections(prev =>
+      prev.includes(section)
         ? prev.filter(s => s !== section)
         : [...prev, section]
     );
@@ -293,7 +329,7 @@ export default function SettingsScreen() {
         />
       )}
       {type === 'select' && options && (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.selectButton}
           onPress={() => {
             // Show picker modal for options
@@ -302,13 +338,17 @@ export default function SettingsScreen() {
               '',
               options.map(option => ({
                 text: option,
-                onPress: () => onValueChange(option)
+                onPress: () => onValueChange(option),
               }))
             );
           }}
         >
           <Text style={styles.selectText}>{value}</Text>
-          <Ionicons name="chevron-down" size={16} color={COLORS.textSecondary} />
+          <Ionicons
+            name="chevron-down"
+            size={16}
+            color={COLORS.textSecondary}
+          />
         </TouchableOpacity>
       )}
     </View>
@@ -321,7 +361,7 @@ export default function SettingsScreen() {
     children: React.ReactNode
   ) => {
     const isExpanded = expandedSections.includes(sectionKey);
-    
+
     return (
       <View style={styles.section}>
         <TouchableOpacity
@@ -332,13 +372,13 @@ export default function SettingsScreen() {
             <Ionicons name={icon as any} size={24} color={COLORS.primary} />
             <Text style={styles.sectionTitle}>{title}</Text>
           </View>
-          <Ionicons 
-            name={isExpanded ? "chevron-up" : "chevron-down"} 
-            size={20} 
-            color={COLORS.textSecondary} 
+          <Ionicons
+            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color={COLORS.textSecondary}
           />
         </TouchableOpacity>
-        
+
         {isExpanded && (
           <Animated.View style={styles.sectionContent}>
             {children}
@@ -351,13 +391,13 @@ export default function SettingsScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.header,
           {
             opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
-          }
+            transform: [{ translateY: slideAnim }],
+          },
         ]}
       >
         <TouchableOpacity
@@ -366,12 +406,14 @@ export default function SettingsScreen() {
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        
+
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Settings</Text>
-          <Text style={styles.headerSubtitle}>Customize your app experience</Text>
+          <Text style={styles.headerSubtitle}>
+            Customize your app experience
+          </Text>
         </View>
-        
+
         {hasChanges && (
           <TouchableOpacity
             style={styles.saveButton}
@@ -387,7 +429,7 @@ export default function SettingsScreen() {
         )}
       </Animated.View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
@@ -395,7 +437,7 @@ export default function SettingsScreen() {
         <Animated.View
           style={{
             opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
+            transform: [{ translateY: slideAnim }],
           }}
         >
           {/* Personal Information */}
@@ -407,28 +449,28 @@ export default function SettingsScreen() {
               {renderSettingItem(
                 'First Name',
                 settings.firstName,
-                (value) => handleSettingChange('firstName', value),
+                value => handleSettingChange('firstName', value),
                 'text',
                 'Enter your first name'
               )}
               {renderSettingItem(
                 'Last Name',
                 settings.lastName,
-                (value) => handleSettingChange('lastName', value),
+                value => handleSettingChange('lastName', value),
                 'text',
                 'Enter your last name'
               )}
               {renderSettingItem(
                 'Email',
                 settings.email,
-                (value) => handleSettingChange('email', value),
+                value => handleSettingChange('email', value),
                 'text',
                 'Enter your email address'
               )}
               {renderSettingItem(
                 'Phone',
                 settings.phone,
-                (value) => handleSettingChange('phone', value),
+                value => handleSettingChange('phone', value),
                 'text',
                 'Enter your phone number'
               )}
@@ -444,31 +486,31 @@ export default function SettingsScreen() {
               {renderSettingItem(
                 'Push Notifications',
                 settings.pushNotifications,
-                (value) => handleSettingChange('pushNotifications', value),
+                value => handleSettingChange('pushNotifications', value),
                 'switch'
               )}
               {renderSettingItem(
                 'Email Notifications',
                 settings.emailNotifications,
-                (value) => handleSettingChange('emailNotifications', value),
+                value => handleSettingChange('emailNotifications', value),
                 'switch'
               )}
               {renderSettingItem(
                 'Order Updates',
                 settings.orderUpdates,
-                (value) => handleSettingChange('orderUpdates', value),
+                value => handleSettingChange('orderUpdates', value),
                 'switch'
               )}
               {renderSettingItem(
                 'Promotional Emails',
                 settings.promotionalEmails,
-                (value) => handleSettingChange('promotionalEmails', value),
+                value => handleSettingChange('promotionalEmails', value),
                 'switch'
               )}
               {renderSettingItem(
                 'SMS Notifications',
                 settings.smsNotifications,
-                (value) => handleSettingChange('smsNotifications', value),
+                value => handleSettingChange('smsNotifications', value),
                 'switch'
               )}
             </>
@@ -483,13 +525,13 @@ export default function SettingsScreen() {
               {renderSettingItem(
                 'Dark Mode',
                 settings.darkMode,
-                (value) => handleSettingChange('darkMode', value),
+                value => handleSettingChange('darkMode', value),
                 'switch'
               )}
               {renderSettingItem(
                 'Language',
                 settings.language,
-                (value) => handleSettingChange('language', value),
+                value => handleSettingChange('language', value),
                 'select',
                 undefined,
                 ['English', 'Chinese', 'Malay', 'Tamil']
@@ -497,7 +539,7 @@ export default function SettingsScreen() {
               {renderSettingItem(
                 'Currency',
                 settings.currency,
-                (value) => handleSettingChange('currency', value),
+                value => handleSettingChange('currency', value),
                 'select',
                 undefined,
                 ['SGD', 'USD', 'EUR', 'GBP']
@@ -505,7 +547,7 @@ export default function SettingsScreen() {
               {renderSettingItem(
                 'Default View',
                 settings.defaultView,
-                (value) => handleSettingChange('defaultView', value),
+                value => handleSettingChange('defaultView', value),
                 'select',
                 undefined,
                 ['grid', 'list']
@@ -522,7 +564,7 @@ export default function SettingsScreen() {
               {renderSettingItem(
                 'Profile Visibility',
                 settings.profileVisibility,
-                (value) => handleSettingChange('profileVisibility', value),
+                value => handleSettingChange('profileVisibility', value),
                 'select',
                 undefined,
                 ['public', 'private']
@@ -530,19 +572,21 @@ export default function SettingsScreen() {
               {renderSettingItem(
                 'Share Data for Analytics',
                 settings.shareDataForAnalytics,
-                (value) => handleSettingChange('shareDataForAnalytics', value),
+                value => handleSettingChange('shareDataForAnalytics', value),
                 'switch'
               )}
               {renderSettingItem(
                 'Two-Factor Authentication',
                 settings.twoFactorAuth,
-                (value) => handleSettingChange('twoFactorAuth', value),
+                value => handleSettingChange('twoFactorAuth', value),
                 'switch'
               )}
               <View style={styles.biometricContainer}>
                 <BiometricSettings
                   userEmail={state.user?.email}
-                  onBiometricEnabledChange={(enabled) => handleSettingChange('biometricAuth', enabled)}
+                  onBiometricEnabledChange={enabled =>
+                    handleSettingChange('biometricAuth', enabled)
+                  }
                 />
               </View>
             </>
@@ -557,22 +601,27 @@ export default function SettingsScreen() {
               {renderSettingItem(
                 'Default Delivery Address',
                 settings.defaultDeliveryAddress,
-                (value) => handleSettingChange('defaultDeliveryAddress', value),
+                value => handleSettingChange('defaultDeliveryAddress', value),
                 'text',
                 'Enter your default address'
               )}
               {renderSettingItem(
                 'Preferred Delivery Time',
                 settings.preferredDeliveryTime,
-                (value) => handleSettingChange('preferredDeliveryTime', value),
+                value => handleSettingChange('preferredDeliveryTime', value),
                 'select',
                 undefined,
-                ['Any time', 'Morning (9am-12pm)', 'Afternoon (12pm-6pm)', 'Evening (6pm-9pm)']
+                [
+                  'Any time',
+                  'Morning (9am-12pm)',
+                  'Afternoon (12pm-6pm)',
+                  'Evening (6pm-9pm)',
+                ]
               )}
               {renderSettingItem(
                 'Delivery Instructions',
                 settings.deliveryInstructions,
-                (value) => handleSettingChange('deliveryInstructions', value),
+                value => handleSettingChange('deliveryInstructions', value),
                 'text',
                 'Special delivery instructions'
               )}
@@ -583,11 +632,8 @@ export default function SettingsScreen() {
 
       {/* Floating Save Button */}
       {hasChanges && (
-        <Animated.View 
-          style={[
-            styles.floatingSaveButton,
-            { opacity: fadeAnim }
-          ]}
+        <Animated.View
+          style={[styles.floatingSaveButton, { opacity: fadeAnim }]}
         >
           <TouchableOpacity
             style={styles.saveButtonMain}

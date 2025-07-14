@@ -1,12 +1,12 @@
 import React, { useRef, useContext } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
   TouchableOpacity,
   Animated,
-  Dimensions
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Product } from '../../utils/pricing';
@@ -27,18 +27,18 @@ const { width } = Dimensions.get('window');
 const CARD_WIDTH = 180; // Match EnhancedProductCard width
 const CARD_SPACING = 16;
 
-const SuggestedAddons: React.FC<SuggestedAddonsProps> = ({ 
+const SuggestedAddons: React.FC<SuggestedAddonsProps> = ({
   cartProductIds,
-  onAddToCart
+  onAddToCart,
 }) => {
   const navigation = useNavigation();
   const { showCartNotification } = useContext(CartNotificationContext);
   const { state } = useContext(AppContext);
-  
+
   // Animation references
   const headerAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Filter and enhance product suggestions with stable data
   const suggestedProducts = React.useMemo(() => {
     return state.products
@@ -47,48 +47,57 @@ const SuggestedAddons: React.FC<SuggestedAddonsProps> = ({
       .map((product, index) => ({
         ...product,
         // Add stable "customers also bought" logic based on product ID
-        popularity: Math.abs(product.id.toString().charCodeAt(0) * 17 + index * 5) % 100 + 50,
-        discount: product.retailPrice > product.tradePrice ? 
-          Math.round(((product.retailPrice - product.tradePrice) / product.retailPrice) * 100) : 0
+        popularity:
+          (Math.abs(product.id.toString().charCodeAt(0) * 17 + index * 5) %
+            100) +
+          50,
+        discount:
+          product.retailPrice > product.tradePrice
+            ? Math.round(
+                ((product.retailPrice - product.tradePrice) /
+                  product.retailPrice) *
+                  100
+              )
+            : 0,
       }))
       .sort((a, b) => b.popularity - a.popularity);
   }, [cartProductIds, state.products]); // Only recalculate when cart contents change
-  
+
   // Animate on mount
   React.useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 400,
       delay: 200,
-      useNativeDriver: true
+      useNativeDriver: true,
     }).start();
   }, []);
-  
+
   if (suggestedProducts.length === 0) {
     return null;
   }
-  
-
 
   const handleProductPress = (product: Product) => {
     navigation.navigate('ProductDetail', { id: product.id });
   };
-  
+
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       {/* Enhanced Header */}
-      <Animated.View 
-        style={[
-          styles.header,
-          { transform: [{ scale: headerAnim }] }
-        ]}
+      <Animated.View
+        style={[styles.header, { transform: [{ scale: headerAnim }] }]}
       >
         <View style={styles.titleContainer}>
-          <Ionicons name="people" size={20} color={COLORS.primary} style={styles.icon} />
+          <Ionicons
+            name="people"
+            size={20}
+            color={COLORS.primary}
+            style={styles.icon}
+          />
           <Text style={styles.title}>Customers Also Bought</Text>
         </View>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.viewAllButton}
           activeOpacity={0.7}
           onPress={() => {
@@ -97,10 +106,14 @@ const SuggestedAddons: React.FC<SuggestedAddonsProps> = ({
           }}
         >
           <Text style={styles.viewAllText}>View All</Text>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={COLORS.textSecondary}
+          />
         </TouchableOpacity>
       </Animated.View>
-      
+
       {/* Product Carousel */}
       <ScrollView
         horizontal
@@ -121,7 +134,7 @@ const SuggestedAddons: React.FC<SuggestedAddonsProps> = ({
           />
         ))}
       </ScrollView>
-      
+
       {/* Subtle divider */}
       <View style={styles.divider} />
     </Animated.View>
@@ -182,4 +195,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SuggestedAddons; 
+export default SuggestedAddons;

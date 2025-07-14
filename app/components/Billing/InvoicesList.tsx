@@ -11,7 +11,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../utils/theme';
-import companyBillingService, { CompanyInvoice } from '../../services/companyBillingService';
+import companyBillingService, {
+  CompanyInvoice,
+} from '../../services/companyBillingService';
 
 interface InvoicesListProps {
   companyId: string;
@@ -53,56 +55,63 @@ export const InvoicesList: React.FC<InvoicesListProps> = ({
     loadInvoices(true);
   }, [companyId, activeFilter]);
 
-  const loadInvoices = useCallback(async (reset = false) => {
-    const isInitialLoad = reset || currentPage === 0;
-    
-    if (isInitialLoad) {
-      setLoading(true);
-      setError(null);
-    } else {
-      setLoadingMore(true);
-    }
+  const loadInvoices = useCallback(
+    async (reset = false) => {
+      const isInitialLoad = reset || currentPage === 0;
 
-    try {
-      const offset = isInitialLoad ? 0 : currentPage * pageSize;
-      const status = activeFilter === 'all' ? undefined : activeFilter;
+      if (isInitialLoad) {
+        setLoading(true);
+        setError(null);
+      } else {
+        setLoadingMore(true);
+      }
 
-      const { data, error: fetchError, count } = await companyBillingService.getCompanyInvoices(
-        companyId,
-        {
+      try {
+        const offset = isInitialLoad ? 0 : currentPage * pageSize;
+        const status = activeFilter === 'all' ? undefined : activeFilter;
+
+        const {
+          data,
+          error: fetchError,
+          count,
+        } = await companyBillingService.getCompanyInvoices(companyId, {
           limit: pageSize,
           offset,
           status,
+        });
+
+        if (fetchError) {
+          setError(fetchError);
+          return;
         }
-      );
 
-      if (fetchError) {
-        setError(fetchError);
-        return;
+        const newInvoices = data || [];
+
+        if (isInitialLoad) {
+          setInvoices(newInvoices);
+          setCurrentPage(1);
+        } else {
+          setInvoices(prev => [...prev, ...newInvoices]);
+          setCurrentPage(prev => prev + 1);
+        }
+
+        // Check if there are more items
+        const totalLoaded = isInitialLoad
+          ? newInvoices.length
+          : invoices.length + newInvoices.length;
+        setHasMore(
+          count ? totalLoaded < count : newInvoices.length === pageSize
+        );
+      } catch (err) {
+        setError('Failed to load invoices');
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+        setRefreshing(false);
       }
-
-      const newInvoices = data || [];
-      
-      if (isInitialLoad) {
-        setInvoices(newInvoices);
-        setCurrentPage(1);
-      } else {
-        setInvoices(prev => [...prev, ...newInvoices]);
-        setCurrentPage(prev => prev + 1);
-      }
-
-      // Check if there are more items
-      const totalLoaded = isInitialLoad ? newInvoices.length : invoices.length + newInvoices.length;
-      setHasMore(count ? totalLoaded < count : newInvoices.length === pageSize);
-
-    } catch (err) {
-      setError('Failed to load invoices');
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-      setRefreshing(false);
-    }
-  }, [companyId, currentPage, pageSize, activeFilter, invoices.length]);
+    },
+    [companyId, currentPage, pageSize, activeFilter, invoices.length]
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -148,18 +157,22 @@ export const InvoicesList: React.FC<InvoicesListProps> = ({
       Alert.alert(
         `Invoice ${invoice.invoice_number}`,
         `Amount: ${companyBillingService.formatCurrency(invoice.billing_amount)}\n` +
-        `Status: ${invoice.status.toUpperCase()}\n` +
-        `Due Date: ${companyBillingService.formatDate(invoice.payment_due_date)}\n` +
-        `Payment Terms: ${invoice.payment_terms}`,
+          `Status: ${invoice.status.toUpperCase()}\n` +
+          `Due Date: ${companyBillingService.formatDate(invoice.payment_due_date)}\n` +
+          `Payment Terms: ${invoice.payment_terms}`,
         [{ text: 'OK' }]
       );
     }
   };
 
   const renderInvoiceItem = ({ item }: { item: CompanyInvoice }) => {
-    const isOverdue = companyBillingService.isInvoiceOverdue(item.payment_due_date || '');
-    const daysUntilDue = companyBillingService.getDaysUntilDue(item.payment_due_date || '');
-    
+    const isOverdue = companyBillingService.isInvoiceOverdue(
+      item.payment_due_date || ''
+    );
+    const daysUntilDue = companyBillingService.getDaysUntilDue(
+      item.payment_due_date || ''
+    );
+
     return (
       <TouchableOpacity
         style={styles.invoiceItem}
@@ -168,14 +181,21 @@ export const InvoicesList: React.FC<InvoicesListProps> = ({
       >
         <View style={styles.invoiceHeader}>
           <View style={styles.invoiceNumberSection}>
-            <Text style={styles.invoiceNumber}>{item.invoice_number || 'N/A'}</Text>
+            <Text style={styles.invoiceNumber}>
+              {item.invoice_number || 'N/A'}
+            </Text>
             <View style={styles.statusContainer}>
               <Ionicons
                 name={getInvoiceStatusIcon(item.status)}
                 size={12}
                 color={getInvoiceStatusColor(item.status)}
               />
-              <Text style={[styles.statusText, { color: getInvoiceStatusColor(item.status) }]}>
+              <Text
+                style={[
+                  styles.statusText,
+                  { color: getInvoiceStatusColor(item.status) },
+                ]}
+              >
                 {(item.status || 'UNKNOWN').toUpperCase()}
               </Text>
             </View>
@@ -186,7 +206,8 @@ export const InvoicesList: React.FC<InvoicesListProps> = ({
             </Text>
             {item.outstanding_amount && item.outstanding_amount > 0 && (
               <Text style={styles.outstandingAmount}>
-                Outstanding: {companyBillingService.formatCurrency(item.outstanding_amount)}
+                Outstanding:{' '}
+                {companyBillingService.formatCurrency(item.outstanding_amount)}
               </Text>
             )}
           </View>
@@ -201,10 +222,12 @@ export const InvoicesList: React.FC<InvoicesListProps> = ({
           </View>
           <View style={styles.dateSection}>
             <Text style={styles.dateLabel}>Due Date</Text>
-            <Text style={[
-              styles.dateValue,
-              { color: isOverdue ? '#EF4444' : theme.colors.text.primary }
-            ]}>
+            <Text
+              style={[
+                styles.dateValue,
+                { color: isOverdue ? '#EF4444' : theme.colors.text.primary },
+              ]}
+            >
               {companyBillingService.formatDate(item.payment_due_date || '')}
             </Text>
           </View>
@@ -229,7 +252,11 @@ export const InvoicesList: React.FC<InvoicesListProps> = ({
         )}
 
         <View style={styles.actionIndicator}>
-          <Ionicons name="chevron-forward" size={16} color={theme.colors.text.secondary} />
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={theme.colors.text.secondary}
+          />
         </View>
       </TouchableOpacity>
     );
@@ -257,14 +284,16 @@ export const InvoicesList: React.FC<InvoicesListProps> = ({
             <TouchableOpacity
               style={[
                 styles.filterButton,
-                activeFilter === item.key && styles.activeFilterButton
+                activeFilter === item.key && styles.activeFilterButton,
               ]}
               onPress={() => handleFilterPress(item.key)}
             >
-              <Text style={[
-                styles.filterButtonText,
-                activeFilter === item.key && styles.activeFilterButtonText
-              ]}>
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  activeFilter === item.key && styles.activeFilterButtonText,
+                ]}
+              >
                 {item.label}
               </Text>
             </TouchableOpacity>
@@ -276,7 +305,7 @@ export const InvoicesList: React.FC<InvoicesListProps> = ({
 
   const renderFooter = () => {
     if (!loadingMore) return null;
-    
+
     return (
       <View style={styles.loadingMore}>
         <ActivityIndicator size="small" color={theme.colors.text.primary} />
@@ -287,13 +316,16 @@ export const InvoicesList: React.FC<InvoicesListProps> = ({
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <Ionicons name="document-text-outline" size={48} color={theme.colors.text.secondary} />
+      <Ionicons
+        name="document-text-outline"
+        size={48}
+        color={theme.colors.text.secondary}
+      />
       <Text style={styles.emptyStateTitle}>No Invoices Found</Text>
       <Text style={styles.emptyStateSubtitle}>
-        {activeFilter === 'all' 
+        {activeFilter === 'all'
           ? 'No invoices have been generated yet'
-          : `No ${activeFilter} invoices found`
-        }
+          : `No ${activeFilter} invoices found`}
       </Text>
     </View>
   );
@@ -310,7 +342,11 @@ export const InvoicesList: React.FC<InvoicesListProps> = ({
   if (error) {
     return (
       <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle-outline" size={48} color={theme.colors.text.secondary} />
+        <Ionicons
+          name="alert-circle-outline"
+          size={48}
+          color={theme.colors.text.secondary}
+        />
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
           <Text style={styles.retryText}>Try Again</Text>
@@ -322,7 +358,7 @@ export const InvoicesList: React.FC<InvoicesListProps> = ({
   return (
     <View style={styles.container}>
       {renderFilterButtons()}
-      
+
       <FlatList
         data={invoices}
         keyExtractor={item => item.id}
@@ -339,7 +375,9 @@ export const InvoicesList: React.FC<InvoicesListProps> = ({
         ListFooterComponent={renderFooter}
         ListEmptyComponent={renderEmptyState}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={invoices.length === 0 ? styles.emptyContainer : undefined}
+        contentContainerStyle={
+          invoices.length === 0 ? styles.emptyContainer : undefined
+        }
       />
     </View>
   );

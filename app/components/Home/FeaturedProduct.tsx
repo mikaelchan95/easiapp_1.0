@@ -1,10 +1,10 @@
 import React, { useRef, useContext, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  Image, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
   Animated,
   Dimensions,
   ImageSourcePropType,
@@ -24,17 +24,20 @@ interface FeaturedProductProps {
   onPress: (product: Product) => void;
 }
 
-const FeaturedProduct: React.FC<FeaturedProductProps> = ({ product, onPress }) => {
+const FeaturedProduct: React.FC<FeaturedProductProps> = ({
+  product,
+  onPress,
+}) => {
   const { dispatch } = useContext(AppContext);
   const { showCartNotification } = useContext(CartNotificationContext);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
-  
+
   // Animation refs
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const addButtonScaleAnim = useRef(new Animated.Value(1)).current;
   const successAnim = useRef(new Animated.Value(0)).current;
-  
+
   const {
     id,
     name,
@@ -44,7 +47,7 @@ const FeaturedProduct: React.FC<FeaturedProductProps> = ({ product, onPress }) =
     category,
     rating,
     inStock,
-    description
+    description,
   } = product;
 
   const handlePress = () => {
@@ -54,12 +57,12 @@ const FeaturedProduct: React.FC<FeaturedProductProps> = ({ product, onPress }) =
 
   const handleAddToCart = async () => {
     if (!inStock || isAdding) return;
-    
+
     HapticFeedback.medium();
     Animations.heartbeatAnimation(addButtonScaleAnim);
-    
+
     setIsAdding(true);
-  
+
     // Immediate feedback - show loading state
     setTimeout(() => {
       dispatch({
@@ -76,14 +79,14 @@ const FeaturedProduct: React.FC<FeaturedProductProps> = ({ product, onPress }) =
             retailPrice: product.price,
             tradePrice: product.tradePrice,
           },
-          quantity: 1
-        }
+          quantity: 1,
+        },
       });
 
       // Show success state
       setIsAdding(false);
       setJustAdded(true);
-      
+
       // Success animation
       Animated.sequence([
         Animated.spring(successAnim, {
@@ -97,7 +100,7 @@ const FeaturedProduct: React.FC<FeaturedProductProps> = ({ product, onPress }) =
           toValue: 0,
           duration: 200,
           useNativeDriver: true,
-        })
+        }),
       ]).start(() => {
         setJustAdded(false);
       });
@@ -126,10 +129,14 @@ const FeaturedProduct: React.FC<FeaturedProductProps> = ({ product, onPress }) =
   };
 
   const formattedPrice = formatFinancialAmount(price);
-  const formattedOriginalPrice = originalPrice ? formatFinancialAmount(originalPrice) : null;
+  const formattedOriginalPrice = originalPrice
+    ? formatFinancialAmount(originalPrice)
+    : null;
   const hasDiscount = originalPrice !== undefined && originalPrice > price;
-  const discountPercentage = hasDiscount ? Math.round(((originalPrice! - price) / originalPrice!) * 100) : 0;
-  
+  const discountPercentage = hasDiscount
+    ? Math.round(((originalPrice! - price) / originalPrice!) * 100)
+    : 0;
+
   const imageSource: ImageSourcePropType = imageUrl;
 
   // Enhanced button messaging
@@ -146,17 +153,19 @@ const FeaturedProduct: React.FC<FeaturedProductProps> = ({ product, onPress }) =
     if (!inStock) return 'close-circle';
     return 'add-circle';
   };
-  
+
   return (
-    <Animated.View style={[styles.container, { transform: [{ scale: scaleAnim }] }]}>
-      <TouchableOpacity 
+    <Animated.View
+      style={[styles.container, { transform: [{ scale: scaleAnim }] }]}
+    >
+      <TouchableOpacity
         style={styles.touchableContainer}
         onPress={handlePress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         activeOpacity={1}
-    >
-      <View style={styles.content}>
+      >
+        <View style={styles.content}>
           {/* Product Image */}
           <View style={styles.imageContainer}>
             <Image
@@ -164,19 +173,23 @@ const FeaturedProduct: React.FC<FeaturedProductProps> = ({ product, onPress }) =
               style={styles.image}
               resizeMode="contain"
             />
-            
+
             {/* Discount Badge */}
             {hasDiscount && (
               <View style={styles.discountBadge}>
-                <Text style={styles.discountText}>{discountPercentage}% OFF</Text>
+                <Text style={styles.discountText}>
+                  {discountPercentage}% OFF
+                </Text>
               </View>
             )}
-            
+
             {/* Stock Indicator */}
-            <View style={[
-              styles.stockIndicator,
-              { backgroundColor: inStock ? COLORS.success : COLORS.error }
-            ]} />
+            <View
+              style={[
+                styles.stockIndicator,
+                { backgroundColor: inStock ? COLORS.success : COLORS.error },
+              ]}
+            />
 
             {/* Featured Badge */}
             <View style={styles.featuredBadge}>
@@ -189,14 +202,14 @@ const FeaturedProduct: React.FC<FeaturedProductProps> = ({ product, onPress }) =
           <View style={styles.infoContainer}>
             <View style={styles.header}>
               <Text style={styles.category}>{category}</Text>
-              
+
               {/* Rating */}
               {rating && (
-            <View style={styles.ratingContainer}>
+                <View style={styles.ratingContainer}>
                   <Ionicons name="star" size={14} color="#FFD700" />
-              <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
-          </View>
-          )}
+                  <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+                </View>
+              )}
             </View>
 
             <Text style={styles.name} numberOfLines={2}>
@@ -210,28 +223,34 @@ const FeaturedProduct: React.FC<FeaturedProductProps> = ({ product, onPress }) =
             )}
 
             <View style={styles.footer}>
-          <View style={styles.priceContainer}>
-            <Text style={styles.price}>{formattedPrice}</Text>
+              <View style={styles.priceContainer}>
+                <Text style={styles.price}>{formattedPrice}</Text>
                 {hasDiscount && (
-                  <Text style={styles.originalPrice}>{formattedOriginalPrice}</Text>
-            )}
-          </View>
+                  <Text style={styles.originalPrice}>
+                    {formattedOriginalPrice}
+                  </Text>
+                )}
+              </View>
 
-              <Animated.View style={{ 
-                transform: [
-                  { scale: addButtonScaleAnim },
-                  { scale: successAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [1, 1.1]
-                  })}
-                ] 
-              }}>
+              <Animated.View
+                style={{
+                  transform: [
+                    { scale: addButtonScaleAnim },
+                    {
+                      scale: successAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 1.1],
+                      }),
+                    },
+                  ],
+                }}
+              >
                 <TouchableOpacity
                   style={[
                     styles.addButton,
                     isAdding && styles.addButtonLoading,
                     justAdded && styles.addButtonSuccess,
-                    !inStock && styles.addButtonDisabled
+                    !inStock && styles.addButtonDisabled,
                   ]}
                   onPress={handleAddToCart}
                   disabled={!inStock || isAdding}
@@ -242,22 +261,30 @@ const FeaturedProduct: React.FC<FeaturedProductProps> = ({ product, onPress }) =
                     <Ionicons
                       name={getButtonIcon() as any}
                       size={20}
-                      color={!inStock ? COLORS.inactive : justAdded ? COLORS.accent : COLORS.accent}
+                      color={
+                        !inStock
+                          ? COLORS.inactive
+                          : justAdded
+                            ? COLORS.accent
+                            : COLORS.accent
+                      }
                     />
                   )}
-                  <Text style={[
-                    styles.addButtonText,
-                    !inStock && styles.addButtonTextDisabled,
-                    justAdded && styles.addButtonTextSuccess
-                  ]}>
+                  <Text
+                    style={[
+                      styles.addButtonText,
+                      !inStock && styles.addButtonTextDisabled,
+                      justAdded && styles.addButtonTextSuccess,
+                    ]}
+                  >
                     {getButtonText()}
                   </Text>
                 </TouchableOpacity>
               </Animated.View>
             </View>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
     </Animated.View>
   );
 };
@@ -422,4 +449,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FeaturedProduct; 
+export default FeaturedProduct;
