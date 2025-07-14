@@ -8,25 +8,31 @@ jest.mock('../../../services/companyBillingService', () => ({
   __esModule: true,
   default: {
     getCompanyBillingStatus: jest.fn(),
-    formatCurrency: jest.fn((amount) => `$${amount.toFixed(2)}`),
-    formatDate: jest.fn((dateString) => new Date(dateString).toLocaleDateString()),
-    getDaysUntilDue: jest.fn((dateString) => {
+    formatCurrency: jest.fn(amount => `$${amount.toFixed(2)}`),
+    formatDate: jest.fn(dateString =>
+      new Date(dateString).toLocaleDateString()
+    ),
+    getDaysUntilDue: jest.fn(dateString => {
       const dueDate = new Date(dateString);
       const today = new Date();
       const diffTime = dueDate.getTime() - today.getTime();
       return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }),
-    isInvoiceOverdue: jest.fn((dateString) => {
+    isInvoiceOverdue: jest.fn(dateString => {
       const dueDate = new Date(dateString);
       const today = new Date();
       return dueDate < today;
     }),
-    getPaymentStatusColor: jest.fn((status) => {
+    getPaymentStatusColor: jest.fn(status => {
       switch (status) {
-        case 'paid': return '#10B981';
-        case 'pending': return '#F59E0B';
-        case 'overdue': return '#EF4444';
-        default: return '#3B82F6';
+        case 'paid':
+          return '#10B981';
+        case 'pending':
+          return '#F59E0B';
+        case 'overdue':
+          return '#EF4444';
+        default:
+          return '#3B82F6';
       }
     }),
   },
@@ -60,7 +66,9 @@ describe('CompanyCreditOverview', () => {
   });
 
   it('renders loading state correctly', () => {
-    (companyBillingService.getCompanyBillingStatus as jest.Mock).mockImplementation(
+    (
+      companyBillingService.getCompanyBillingStatus as jest.Mock
+    ).mockImplementation(
       () => new Promise(() => {}) // Never resolves
     );
 
@@ -73,7 +81,9 @@ describe('CompanyCreditOverview', () => {
   });
 
   it('renders error state correctly', async () => {
-    (companyBillingService.getCompanyBillingStatus as jest.Mock).mockResolvedValue({
+    (
+      companyBillingService.getCompanyBillingStatus as jest.Mock
+    ).mockResolvedValue({
       error: 'Failed to fetch billing status',
     });
 
@@ -88,7 +98,9 @@ describe('CompanyCreditOverview', () => {
   });
 
   it('renders billing status correctly', async () => {
-    (companyBillingService.getCompanyBillingStatus as jest.Mock).mockResolvedValue({
+    (
+      companyBillingService.getCompanyBillingStatus as jest.Mock
+    ).mockResolvedValue({
       data: mockBillingStatus,
     });
 
@@ -113,7 +125,9 @@ describe('CompanyCreditOverview', () => {
       payment_due_date: '2023-12-01', // Past date
     };
 
-    (companyBillingService.getCompanyBillingStatus as jest.Mock).mockResolvedValue({
+    (
+      companyBillingService.getCompanyBillingStatus as jest.Mock
+    ).mockResolvedValue({
       data: {
         ...mockBillingStatus,
         latest_invoice: overdueInvoice,
@@ -134,8 +148,10 @@ describe('CompanyCreditOverview', () => {
 
   it('calls onPress when pressed', async () => {
     const onPressMock = jest.fn();
-    
-    (companyBillingService.getCompanyBillingStatus as jest.Mock).mockResolvedValue({
+
+    (
+      companyBillingService.getCompanyBillingStatus as jest.Mock
+    ).mockResolvedValue({
       data: mockBillingStatus,
     });
 
@@ -153,13 +169,18 @@ describe('CompanyCreditOverview', () => {
 
   it('calls onRefresh when refresh button is pressed', async () => {
     const onRefreshMock = jest.fn();
-    
-    (companyBillingService.getCompanyBillingStatus as jest.Mock).mockResolvedValue({
+
+    (
+      companyBillingService.getCompanyBillingStatus as jest.Mock
+    ).mockResolvedValue({
       data: mockBillingStatus,
     });
 
     const { getByTestId } = render(
-      <CompanyCreditOverview companyId="test-company" onRefresh={onRefreshMock} />
+      <CompanyCreditOverview
+        companyId="test-company"
+        onRefresh={onRefreshMock}
+      />
     );
 
     await waitFor(() => {
@@ -177,7 +198,9 @@ describe('CompanyCreditOverview', () => {
       billing_status: 'warning' as const,
     };
 
-    (companyBillingService.getCompanyBillingStatus as jest.Mock).mockResolvedValue({
+    (
+      companyBillingService.getCompanyBillingStatus as jest.Mock
+    ).mockResolvedValue({
       data: criticalStatus,
     });
 
@@ -199,7 +222,9 @@ describe('CompanyCreditOverview', () => {
       current_credit: -5000,
     };
 
-    (companyBillingService.getCompanyBillingStatus as jest.Mock).mockResolvedValue({
+    (
+      companyBillingService.getCompanyBillingStatus as jest.Mock
+    ).mockResolvedValue({
       data: overlimitStatus,
     });
 
@@ -219,7 +244,9 @@ describe('CompanyCreditOverview', () => {
       latest_invoice: null,
     };
 
-    (companyBillingService.getCompanyBillingStatus as jest.Mock).mockResolvedValue({
+    (
+      companyBillingService.getCompanyBillingStatus as jest.Mock
+    ).mockResolvedValue({
       data: statusWithoutInvoice,
     });
 

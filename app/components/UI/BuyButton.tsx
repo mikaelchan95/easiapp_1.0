@@ -9,7 +9,7 @@ import {
   ViewStyle,
   TextStyle,
   StyleProp,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -45,91 +45,91 @@ const BuyButton: React.FC<BuyButtonProps> = ({
   onQuantityChange,
   onBuyNow,
   productName,
-  onCartAnimationComplete
+  onCartAnimationComplete,
 }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isPressing, setIsPressing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   const navigation = useNavigation();
   const { showCartNotification } = useContext(CartNotificationContext);
-  
+
   // Animation values
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const expandAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const successOpacity = useRef(new Animated.Value(0)).current;
-  
+
   // Handle press animation
   const handlePressIn = () => {
     setIsPressing(true);
     HapticFeedback.light();
-    
+
     Animated.timing(scaleAnim, {
       toValue: 0.97,
       duration: 100,
       useNativeDriver: true,
-      easing: Easing.out(Easing.quad)
+      easing: Easing.out(Easing.quad),
     }).start();
   };
-  
+
   const handlePressOut = () => {
     setIsPressing(false);
-    
+
     Animated.spring(scaleAnim, {
       toValue: 1,
       friction: 5,
       tension: 300,
-      useNativeDriver: true
+      useNativeDriver: true,
     }).start();
   };
-  
+
   // Handle add to cart with smooth animation
   const handleAddToCart = () => {
     if (inStock && !isAdding && !isSuccess) {
       // Start loading animation
       setIsAdding(true);
-      
+
       // Haptic feedback
       HapticFeedback.success();
-      
+
       // Trigger pulse animation
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1.05,
           duration: 150,
           easing: Easing.out(Easing.quad),
-          useNativeDriver: true
+          useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
           duration: 150,
           easing: Easing.out(Easing.quad),
-          useNativeDriver: true
-        })
+          useNativeDriver: true,
+        }),
       ]).start();
-      
+
       // Call the provided onAddToCart callback
       onAddToCart();
-      
+
       // Simulate API call delay for smooth UX
       setTimeout(() => {
         // Show success state
         setIsAdding(false);
         setIsSuccess(true);
-        
+
         // Show global cart notification with quantity
         showCartNotification(productName, quantity);
-        
+
         // Success opacity animation
         Animated.timing(successOpacity, {
           toValue: 1,
           duration: 300,
           easing: Easing.out(Easing.quad),
-          useNativeDriver: true
+          useNativeDriver: true,
         }).start();
-        
+
         // Reset after delay
         setTimeout(() => {
           setIsSuccess(false);
@@ -137,9 +137,9 @@ const BuyButton: React.FC<BuyButtonProps> = ({
             toValue: 0,
             duration: 300,
             easing: Easing.out(Easing.quad),
-            useNativeDriver: true
+            useNativeDriver: true,
           }).start();
-          
+
           // Call completion callback
           if (onCartAnimationComplete) {
             onCartAnimationComplete();
@@ -148,55 +148,57 @@ const BuyButton: React.FC<BuyButtonProps> = ({
       }, 400);
     }
   };
-  
+
   // Handle buy now
   const handleBuyNow = () => {
     if (inStock && !isAdding && onBuyNow) {
       HapticFeedback.success();
-      
+
       // Trigger pulse animation
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1.05,
           duration: 150,
           easing: Easing.out(Easing.quad),
-          useNativeDriver: true
+          useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
           duration: 150,
           easing: Easing.out(Easing.quad),
-          useNativeDriver: true
-        })
+          useNativeDriver: true,
+        }),
       ]).start();
-      
+
       onBuyNow();
     }
   };
-  
+
   // Toggle expanded state
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
     HapticFeedback.light();
-    
+
     Animated.timing(expandAnim, {
       toValue: isExpanded ? 0 : 1,
       duration: 300,
-      easing: isExpanded ? Easing.in(Easing.quad) : Easing.out(Easing.back(1.1)),
-      useNativeDriver: false
+      easing: isExpanded
+        ? Easing.in(Easing.quad)
+        : Easing.out(Easing.back(1.1)),
+      useNativeDriver: false,
     }).start();
   };
-  
+
   // Handle quantity changes
   const handleQuantityChange = (newQuantity: number) => {
     if (onQuantityChange) {
       onQuantityChange(newQuantity);
     }
   };
-  
+
   // Get background color based on state
   const backgroundColor = isSuccess ? COLORS.success : COLORS.primary;
-  
+
   // Render button content based on state
   const renderButtonContent = () => {
     if (isSuccess) {
@@ -207,39 +209,49 @@ const BuyButton: React.FC<BuyButtonProps> = ({
         </View>
       );
     }
-    
+
     if (isAdding) {
       return (
         <View style={styles.buttonContent}>
-          <ActivityIndicator size="small" color={COLORS.accent} style={styles.loadingIndicator} />
+          <ActivityIndicator
+            size="small"
+            color={COLORS.accent}
+            style={styles.loadingIndicator}
+          />
           <Text style={[styles.buttonText, textStyle]}>Adding...</Text>
         </View>
       );
     }
-    
+
     return (
       <View style={styles.buttonContent}>
         <Ionicons name="cart-outline" size={20} color={COLORS.accent} />
-        <Text style={[styles.buttonText, textStyle]}>Add to Cart • ${(price * quantity).toFixed(0)}</Text>
+        <Text style={[styles.buttonText, textStyle]}>
+          Add to Cart • ${(price * quantity).toFixed(0)}
+        </Text>
       </View>
     );
   };
-  
+
   // Render expanded action buttons (Buy Now)
   const renderExpandedButtons = () => {
     if (!isExpanded) return null;
-    
+
     return (
-      <Animated.View 
+      <Animated.View
         style={[
           styles.expandedButtons,
           {
             opacity: expandAnim,
-            transform: [{ translateY: expandAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [10, 0]
-            })}]
-          }
+            transform: [
+              {
+                translateY: expandAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [10, 0],
+                }),
+              },
+            ],
+          },
         ]}
       >
         <TouchableWithoutFeedback onPress={handleBuyNow}>
@@ -251,7 +263,7 @@ const BuyButton: React.FC<BuyButtonProps> = ({
       </Animated.View>
     );
   };
-  
+
   return (
     <View style={[styles.container, style]}>
       {/* Quantity Selector - Shown when showQuantity is true */}
@@ -265,7 +277,7 @@ const BuyButton: React.FC<BuyButtonProps> = ({
           productName={productName || 'item'}
         />
       )}
-      
+
       {/* Main Buy Button */}
       <TouchableWithoutFeedback
         onPress={handleAddToCart}
@@ -273,24 +285,22 @@ const BuyButton: React.FC<BuyButtonProps> = ({
         onPressOut={handlePressOut}
         onLongPress={toggleExpand}
       >
-        <Animated.View 
+        <Animated.View
           style={[
             styles.button,
             {
               backgroundColor,
-              transform: [
-                { scale: Animated.multiply(scaleAnim, pulseAnim) }
-              ],
-              opacity: isSuccess ? successOpacity : 1
+              transform: [{ scale: Animated.multiply(scaleAnim, pulseAnim) }],
+              opacity: isSuccess ? successOpacity : 1,
             },
             !inStock && styles.buttonDisabled,
-            buttonStyle
+            buttonStyle,
           ]}
         >
           {renderButtonContent()}
         </Animated.View>
       </TouchableWithoutFeedback>
-      
+
       {/* Expanded Actions (Buy Now) */}
       {renderExpandedButtons()}
     </View>
@@ -350,4 +360,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BuyButton; 
+export default BuyButton;

@@ -105,31 +105,45 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({
         };
       }
 
-      const user = await signUp(formData.email.trim(), formData.password, userData);
-      
+      const user = await signUp(
+        formData.email.trim(),
+        formData.password,
+        userData
+      );
+
       if (user) {
         Alert.alert(
-          'Success', 
-          formData.accountType === 'company' 
+          'Success',
+          formData.accountType === 'company'
             ? 'Company account created successfully! You are now the admin. Please check your email to verify your account.'
             : 'Account created successfully! Please check your email to verify your account.',
-          [{ text: 'OK', onPress: () => {
-            console.log('Sign up success - waiting for user to be set in context');
-            // Let the auth state listener handle the transition
-          } }]
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                console.log(
+                  'Sign up success - waiting for user to be set in context'
+                );
+                // Let the auth state listener handle the transition
+              },
+            },
+          ]
         );
       } else {
         Alert.alert('Error', 'Failed to create account. Please try again.');
       }
     } catch (error) {
       console.error('Sign up error:', error);
-      Alert.alert('Error', 'An error occurred while creating your account. Please try again.');
+      Alert.alert(
+        'Error',
+        'An error occurred while creating your account. Please try again.'
+      );
     }
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -142,7 +156,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({
             <TextInput
               style={styles.input}
               value={formData.name}
-              onChangeText={(value) => updateFormData('name', value)}
+              onChangeText={value => updateFormData('name', value)}
               placeholder="Enter your full name"
               placeholderTextColor={COLORS.textSecondary}
               autoCapitalize="words"
@@ -155,7 +169,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({
             <TextInput
               style={styles.input}
               value={formData.email}
-              onChangeText={(value) => updateFormData('email', value)}
+              onChangeText={value => updateFormData('email', value)}
               placeholder="Enter your email"
               placeholderTextColor={COLORS.textSecondary}
               keyboardType="email-address"
@@ -169,7 +183,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({
             <TextInput
               style={styles.input}
               value={formData.phone}
-              onChangeText={(value) => updateFormData('phone', value)}
+              onChangeText={value => updateFormData('phone', value)}
               placeholder="Enter your phone number"
               placeholderTextColor={COLORS.textSecondary}
               keyboardType="phone-pad"
@@ -183,7 +197,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({
               <TextInput
                 style={styles.passwordInput}
                 value={formData.password}
-                onChangeText={(value) => updateFormData('password', value)}
+                onChangeText={value => updateFormData('password', value)}
                 placeholder="Enter your password"
                 placeholderTextColor={COLORS.textSecondary}
                 secureTextEntry={!showPassword}
@@ -207,7 +221,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({
               <TextInput
                 style={styles.passwordInput}
                 value={formData.confirmPassword}
-                onChangeText={(value) => updateFormData('confirmPassword', value)}
+                onChangeText={value => updateFormData('confirmPassword', value)}
                 placeholder="Confirm your password"
                 placeholderTextColor={COLORS.textSecondary}
                 secureTextEntry={!showConfirmPassword}
@@ -231,28 +245,36 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({
               <TouchableOpacity
                 style={[
                   styles.accountTypeOption,
-                  formData.accountType === 'individual' && styles.accountTypeOptionSelected
+                  formData.accountType === 'individual' &&
+                    styles.accountTypeOptionSelected,
                 ]}
                 onPress={() => updateFormData('accountType', 'individual')}
               >
-                <Text style={[
-                  styles.accountTypeText,
-                  formData.accountType === 'individual' && styles.accountTypeTextSelected
-                ]}>
+                <Text
+                  style={[
+                    styles.accountTypeText,
+                    formData.accountType === 'individual' &&
+                      styles.accountTypeTextSelected,
+                  ]}
+                >
                   Individual
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.accountTypeOption,
-                  formData.accountType === 'company' && styles.accountTypeOptionSelected
+                  formData.accountType === 'company' &&
+                    styles.accountTypeOptionSelected,
                 ]}
                 onPress={() => updateFormData('accountType', 'company')}
               >
-                <Text style={[
-                  styles.accountTypeText,
-                  formData.accountType === 'company' && styles.accountTypeTextSelected
-                ]}>
+                <Text
+                  style={[
+                    styles.accountTypeText,
+                    formData.accountType === 'company' &&
+                      styles.accountTypeTextSelected,
+                  ]}
+                >
                   Company
                 </Text>
               </TouchableOpacity>
@@ -262,7 +284,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({
           <View style={styles.termsContainer}>
             <Switch
               value={formData.agreeToTerms}
-              onValueChange={(value) => updateFormData('agreeToTerms', value)}
+              onValueChange={value => updateFormData('agreeToTerms', value)}
               trackColor={{ false: COLORS.border, true: COLORS.text }}
               thumbColor={COLORS.card}
             />
@@ -272,7 +294,10 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({
           </View>
 
           <TouchableOpacity
-            style={[styles.signUpButton, state.loading && styles.disabledButton]}
+            style={[
+              styles.signUpButton,
+              state.loading && styles.disabledButton,
+            ]}
             onPress={handleSignUp}
             disabled={state.loading}
           >

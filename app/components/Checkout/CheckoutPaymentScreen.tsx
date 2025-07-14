@@ -1,14 +1,17 @@
 import React, { useContext } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
-  StatusBar 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  StatusBar,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { AppContext } from '../../context/AppContext';
@@ -39,7 +42,7 @@ export default function CheckoutPaymentScreen() {
       {/* Header Container */}
       <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
         <View style={styles.simpleHeader}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={handleBack}
             activeOpacity={0.7}
@@ -47,51 +50,58 @@ export default function CheckoutPaymentScreen() {
           >
             <Ionicons name="chevron-back" size={24} color={COLORS.text} />
           </TouchableOpacity>
-          
+
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>Payment Method</Text>
           </View>
-          
+
           <View style={styles.headerSpacer} />
         </View>
       </View>
-      
-      <ScrollView 
+
+      <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <PaymentStep 
-          onSelectMethod={(method) => {
+        <PaymentStep
+          onSelectMethod={method => {
             checkoutDispatch({ type: 'SET_PAYMENT_METHOD', payload: method });
           }}
-          total={state.cart.reduce((sum, item) => sum + (item.product.trade_price || item.product.retail_price) * item.quantity, 0)}
+          total={state.cart.reduce(
+            (sum, item) =>
+              sum +
+              (item.product.trade_price || item.product.retail_price) *
+                item.quantity,
+            0
+          )}
         />
       </ScrollView>
 
       {/* Step Indicator */}
-      <CheckoutStepIndicator 
-        currentStep={3}
-        totalSteps={4}
-      />
+      <CheckoutStepIndicator currentStep={3} totalSteps={4} />
 
       {/* Bottom Button */}
-      <View style={[
-        styles.bottomContainer,
-        { paddingBottom: insets.bottom + SPACING.sm } // Just safe area + small padding
-      ]}>
-        <TouchableOpacity 
+      <View
+        style={[
+          styles.bottomContainer,
+          { paddingBottom: insets.bottom + SPACING.sm }, // Just safe area + small padding
+        ]}
+      >
+        <TouchableOpacity
           style={[
             styles.continueButton,
-            !isValid && styles.continueButtonDisabled
+            !isValid && styles.continueButtonDisabled,
           ]}
           onPress={handleContinue}
           disabled={!isValid}
         >
-          <Text style={[
-            styles.continueButtonText,
-            !isValid && styles.continueButtonTextDisabled
-          ]}>
+          <Text
+            style={[
+              styles.continueButtonText,
+              !isValid && styles.continueButtonTextDisabled,
+            ]}
+          >
             Review Order
           </Text>
         </TouchableOpacity>

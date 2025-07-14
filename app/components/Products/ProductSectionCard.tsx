@@ -1,5 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Animated,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import EnhancedProductCard from './EnhancedProductCard';
 import { Product } from '../../utils/pricing';
@@ -21,14 +28,14 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
   iconColor = COLORS.text,
   products,
   onViewAll,
-  onProductPress
+  onProductPress,
 }) => {
   // Animation values
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(10)).current;
   const [isExpanded, setIsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   // Animate component on mount
   useEffect(() => {
     Animated.parallel([
@@ -41,7 +48,7 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
         toValue: 0,
         duration: 400,
         useNativeDriver: true,
-      })
+      }),
     ]).start();
   }, []);
 
@@ -71,7 +78,7 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
   const handleViewAll = async () => {
     if (loading) return;
     setLoading(true);
-    
+
     // Provide immediate feedback
     setTimeout(() => {
       setLoading(false);
@@ -86,27 +93,27 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
   const { displayCount, totalCount } = getItemCount();
   const displayProducts = products.slice(0, displayCount);
   const hasMore = totalCount > displayCount;
-  
+
   if (products.length === 0) return null;
-  
+
   return (
     <View style={styles.container}>
-      <Animated.View 
+      <Animated.View
         style={[
           styles.header,
           {
             opacity: titleOpacity,
-            transform: [{ translateY: titleTranslateY }]
-          }
+            transform: [{ translateY: titleTranslateY }],
+          },
         ]}
       >
         <View style={styles.titleContainer}>
           {icon && (
-            <Ionicons 
-              name={icon as any} 
-              size={20} 
-              color={iconColor} 
-              style={styles.icon} 
+            <Ionicons
+              name={icon as any}
+              size={20}
+              color={iconColor}
+              style={styles.icon}
             />
           )}
           <Text style={styles.title}>{title}</Text>
@@ -114,9 +121,9 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
             <Text style={styles.countText}>{totalCount}</Text>
           </View>
         </View>
-        
-        <TouchableOpacity 
-          onPress={handleViewAll} 
+
+        <TouchableOpacity
+          onPress={handleViewAll}
           style={[styles.viewAllButton, loading && styles.buttonLoading]}
           activeOpacity={0.7}
           disabled={loading}
@@ -130,12 +137,16 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
           ) : (
             <>
               <Text style={styles.viewAllText}>{getActionText()}</Text>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={COLORS.primary}
+              />
             </>
           )}
         </TouchableOpacity>
       </Animated.View>
-      
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -146,18 +157,18 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
       >
         {displayProducts.map((product, index) => (
           <EnhancedProductCard
-            key={product.id} 
-            product={product} 
+            key={product.id}
+            product={product}
             onPress={onProductPress}
             style={styles.productCard}
-            animationDelay={100 + (index * 50)} // Staggered animation
+            animationDelay={100 + index * 50} // Staggered animation
             isCompact={false} // Use same configuration as Explore page
           />
         ))}
-        
+
         {/* Progressive disclosure: Show more button */}
         {hasMore && !isExpanded && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.showMoreCard}
             onPress={handleToggleExpanded}
             activeOpacity={0.8}
@@ -165,7 +176,9 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
             <View style={styles.showMoreContent}>
               <Ionicons name="add" size={24} color={COLORS.primary} />
               <Text style={styles.showMoreText}>Show More</Text>
-              <Text style={styles.showMoreCount}>+{totalCount - displayCount}</Text>
+              <Text style={styles.showMoreCount}>
+                +{totalCount - displayCount}
+              </Text>
             </View>
           </TouchableOpacity>
         )}
@@ -173,7 +186,7 @@ const ProductSectionCard: React.FC<ProductSectionCardProps> = ({
 
       {/* Collapse button when expanded */}
       {isExpanded && hasMore && (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.collapseButton}
           onPress={handleToggleExpanded}
           activeOpacity={0.7}
@@ -315,4 +328,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProductSectionCard; 
+export default ProductSectionCard;

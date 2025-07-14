@@ -1,16 +1,19 @@
 import React, { useState, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   StatusBar,
   Share,
   Clipboard,
-  Alert
+  Alert,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
@@ -25,16 +28,39 @@ const mockReferralData = {
   totalEarned: 2400,
   availableRewards: 1800,
   recentReferrals: [
-    { id: '1', name: 'Sarah Chen', status: 'completed', earned: 200, date: '2024-01-15' },
-    { id: '2', name: 'David Kim', status: 'pending', earned: 0, date: '2024-01-12' },
-    { id: '3', name: 'Emma Wilson', status: 'completed', earned: 200, date: '2024-01-10' },
+    {
+      id: '1',
+      name: 'Sarah Chen',
+      status: 'completed',
+      earned: 200,
+      date: '2024-01-15',
+    },
+    {
+      id: '2',
+      name: 'David Kim',
+      status: 'pending',
+      earned: 0,
+      date: '2024-01-12',
+    },
+    {
+      id: '3',
+      name: 'Emma Wilson',
+      status: 'completed',
+      earned: 200,
+      date: '2024-01-10',
+    },
   ],
   referralTiers: [
     { threshold: 5, reward: 100, title: 'Bronze Referrer', achieved: true },
     { threshold: 10, reward: 250, title: 'Silver Referrer', achieved: true },
     { threshold: 20, reward: 500, title: 'Gold Referrer', achieved: false },
-    { threshold: 50, reward: 1000, title: 'Platinum Referrer', achieved: false },
-  ]
+    {
+      threshold: 50,
+      reward: 1000,
+      title: 'Platinum Referrer',
+      achieved: false,
+    },
+  ],
 };
 
 export default function ReferralScreen() {
@@ -56,12 +82,12 @@ export default function ReferralScreen() {
   const handleShareCode = useCallback(async () => {
     try {
       const message = `Join me on EASI and get premium spirits delivered! Use my referral code ${mockReferralData.referralCode} and we both get rewards. Download the app now!`;
-      
+
       await Share.share({
         message,
         title: 'Join EASI - Premium Spirits Delivered',
       });
-      
+
       HapticFeedback.light();
     } catch (error) {
       console.error('Error sharing:', error);
@@ -69,7 +95,9 @@ export default function ReferralScreen() {
   }, []);
 
   const getCurrentTier = useCallback(() => {
-    const achieved = mockReferralData.referralTiers.filter(tier => tier.achieved);
+    const achieved = mockReferralData.referralTiers.filter(
+      tier => tier.achieved
+    );
     return achieved[achieved.length - 1] || mockReferralData.referralTiers[0];
   }, []);
 
@@ -83,33 +111,42 @@ export default function ReferralScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
-      
+
       {/* Status Bar Background */}
       <View style={[styles.statusBarBackground, { height: insets.top }]} />
-      
+
       {/* Mobile Header */}
-      <MobileHeader 
+      <MobileHeader
         title="Referrals"
         showBackButton={true}
         showCartButton={true}
         showSearch={false}
         showLocationHeader={false}
       />
-      
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Main Stats Widget */}
         <View style={styles.statsWidget}>
           <View style={styles.widgetContainer}>
             <View style={styles.widgetHeader}>
-              <Text style={styles.widgetTitle}>Invite friends & earn rewards</Text>
+              <Text style={styles.widgetTitle}>
+                Invite friends & earn rewards
+              </Text>
               <View style={styles.actionButtons}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.actionButton}
                   onPress={() => navigation.navigate('InviteFriends')}
                 >
-                  <Ionicons name="share-outline" size={18} color={COLORS.text} />
+                  <Ionicons
+                    name="share-outline"
+                    size={18}
+                    color={COLORS.text}
+                  />
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.actionButton}
                   onPress={() => navigation.navigate('ReferralHistory')}
                 >
@@ -122,17 +159,23 @@ export default function ReferralScreen() {
               {/* Stats Row */}
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{mockReferralData.totalReferrals}</Text>
+                  <Text style={styles.statValue}>
+                    {mockReferralData.totalReferrals}
+                  </Text>
                   <Text style={styles.statLabel}>Total Referrals</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>S${mockReferralData.totalEarned}</Text>
+                  <Text style={styles.statValue}>
+                    S${mockReferralData.totalEarned}
+                  </Text>
                   <Text style={styles.statLabel}>Total Earned</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{mockReferralData.pendingReferrals}</Text>
+                  <Text style={styles.statValue}>
+                    {mockReferralData.pendingReferrals}
+                  </Text>
                   <Text style={styles.statLabel}>Pending</Text>
                 </View>
               </View>
@@ -151,9 +194,12 @@ export default function ReferralScreen() {
                 {nextTier && (
                   <View style={styles.nextTierInfo}>
                     <Text style={styles.nextTierText}>
-                      {nextTier.threshold - mockReferralData.totalReferrals} more referrals to {nextTier.title}
+                      {nextTier.threshold - mockReferralData.totalReferrals}{' '}
+                      more referrals to {nextTier.title}
                     </Text>
-                    <Text style={styles.nextTierReward}>+S${nextTier.reward} bonus</Text>
+                    <Text style={styles.nextTierReward}>
+                      +S${nextTier.reward} bonus
+                    </Text>
                   </View>
                 )}
               </View>
@@ -166,28 +212,36 @@ export default function ReferralScreen() {
           <View style={styles.codeContainer}>
             <View style={styles.codeHeader}>
               <Text style={styles.codeTitle}>Your Referral Code</Text>
-              <Text style={styles.codeSubtitle}>Share this code with friends</Text>
+              <Text style={styles.codeSubtitle}>
+                Share this code with friends
+              </Text>
             </View>
-            
+
             <View style={styles.codeDisplay}>
-              <Text style={styles.codeText}>{mockReferralData.referralCode}</Text>
-              <TouchableOpacity 
+              <Text style={styles.codeText}>
+                {mockReferralData.referralCode}
+              </Text>
+              <TouchableOpacity
                 style={styles.copyButton}
                 onPress={handleCopyCode}
               >
-                <Ionicons 
-                  name={copiedCode ? "checkmark" : "copy"} 
-                  size={20} 
-                  color={COLORS.text} 
+                <Ionicons
+                  name={copiedCode ? 'checkmark' : 'copy'}
+                  size={20}
+                  color={COLORS.text}
                 />
               </TouchableOpacity>
             </View>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.shareButton}
               onPress={handleShareCode}
             >
-              <Ionicons name="share-outline" size={20} color={COLORS.buttonText} />
+              <Ionicons
+                name="share-outline"
+                size={20}
+                color={COLORS.buttonText}
+              />
               <Text style={styles.shareButtonText}>Share Code</Text>
             </TouchableOpacity>
           </View>
@@ -203,27 +257,36 @@ export default function ReferralScreen() {
               </View>
               <View style={styles.stepContent}>
                 <Text style={styles.stepTitle}>Share Your Code</Text>
-                <Text style={styles.stepDescription}>Send your referral code to friends via text, email, or social media</Text>
+                <Text style={styles.stepDescription}>
+                  Send your referral code to friends via text, email, or social
+                  media
+                </Text>
               </View>
             </View>
-            
+
             <View style={styles.step}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>2</Text>
               </View>
               <View style={styles.stepContent}>
                 <Text style={styles.stepTitle}>Friend Signs Up</Text>
-                <Text style={styles.stepDescription}>Your friend downloads the app and creates an account with your code</Text>
+                <Text style={styles.stepDescription}>
+                  Your friend downloads the app and creates an account with your
+                  code
+                </Text>
               </View>
             </View>
-            
+
             <View style={styles.step}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>3</Text>
               </View>
               <View style={styles.stepContent}>
                 <Text style={styles.stepTitle}>Both Get Rewards</Text>
-                <Text style={styles.stepDescription}>You both receive S$20 credit after their first purchase of S$100+</Text>
+                <Text style={styles.stepDescription}>
+                  You both receive S$20 credit after their first purchase of
+                  S$100+
+                </Text>
               </View>
             </View>
           </View>
@@ -233,7 +296,7 @@ export default function ReferralScreen() {
         <View style={styles.recentSection}>
           <View style={styles.recentHeader}>
             <Text style={styles.sectionTitle}>Recent Referrals</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.viewAllButton}
               onPress={() => navigation.navigate('ReferralHistory')}
             >
@@ -241,22 +304,30 @@ export default function ReferralScreen() {
               <Ionicons name="arrow-forward" size={16} color={COLORS.text} />
             </TouchableOpacity>
           </View>
-          
-          {mockReferralData.recentReferrals.map((referral) => (
+
+          {mockReferralData.recentReferrals.map(referral => (
             <View key={referral.id} style={styles.referralItem}>
               <View style={styles.referralInfo}>
                 <Text style={styles.referralName}>{referral.name}</Text>
                 <Text style={styles.referralDate}>{referral.date}</Text>
               </View>
               <View style={styles.referralStatus}>
-                <View style={[
-                  styles.statusBadge,
-                  referral.status === 'completed' ? styles.statusCompleted : styles.statusPending
-                ]}>
-                  <Text style={[
-                    styles.statusText,
-                    referral.status === 'completed' ? styles.statusTextCompleted : styles.statusTextPending
-                  ]}>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    referral.status === 'completed'
+                      ? styles.statusCompleted
+                      : styles.statusPending,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.statusText,
+                      referral.status === 'completed'
+                        ? styles.statusTextCompleted
+                        : styles.statusTextPending,
+                    ]}
+                  >
                     {referral.status === 'completed' ? 'Completed' : 'Pending'}
                   </Text>
                 </View>
@@ -267,10 +338,10 @@ export default function ReferralScreen() {
             </View>
           ))}
         </View>
-        
+
         {/* Back to Rewards */}
         <View style={styles.backToRewardsSection}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backToRewardsButton}
             onPress={() => navigation.goBack()}
           >
@@ -278,7 +349,7 @@ export default function ReferralScreen() {
             <Text style={styles.backToRewardsText}>Back to Rewards</Text>
           </TouchableOpacity>
         </View>
-        
+
         {/* Bottom Padding */}
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -297,7 +368,7 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  
+
   // Stats Widget
   statsWidget: {
     marginHorizontal: SPACING.md,
@@ -404,7 +475,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: SPACING.xs,
   },
-  
+
   // Code Section
   codeSection: {
     marginHorizontal: SPACING.md,
@@ -468,7 +539,7 @@ const styles = StyleSheet.create({
     color: COLORS.buttonText,
     fontWeight: '600',
   },
-  
+
   // How It Works
   howItWorksSection: {
     marginHorizontal: SPACING.md,
@@ -515,7 +586,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     lineHeight: 20,
   },
-  
+
   // Recent Referrals
   recentSection: {
     marginHorizontal: SPACING.md,
@@ -591,11 +662,11 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontWeight: '600',
   },
-  
+
   bottomPadding: {
     height: SPACING.xxl,
   },
-  
+
   // Back to Rewards
   backToRewardsSection: {
     marginHorizontal: SPACING.md,
@@ -615,4 +686,4 @@ const styles = StyleSheet.create({
     color: COLORS.buttonText,
     fontWeight: '600',
   },
-}); 
+});

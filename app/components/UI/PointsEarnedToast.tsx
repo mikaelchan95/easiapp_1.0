@@ -1,11 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  Dimensions
-} from 'react-native';
+import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
@@ -28,13 +22,13 @@ export default function PointsEarnedToast({
   tier,
   message,
   duration = 3000,
-  onHide
+  onHide,
 }: PointsEarnedToastProps) {
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(-100)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
-  
+
   useEffect(() => {
     if (visible) {
       // Show animation
@@ -43,72 +37,69 @@ export default function PointsEarnedToast({
           toValue: 0,
           useNativeDriver: true,
           tension: 65,
-          friction: 10
+          friction: 10,
         }),
         Animated.timing(scaleAnim, {
           toValue: 1,
           duration: 300,
-          useNativeDriver: true
+          useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
           duration: 200,
-          useNativeDriver: true
-        })
+          useNativeDriver: true,
+        }),
       ]).start();
-      
+
       // Auto hide after duration
       const timer = setTimeout(() => {
         hideToast();
       }, duration);
-      
+
       return () => clearTimeout(timer);
     }
   }, [visible]);
-  
+
   const hideToast = () => {
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: -100,
         duration: 200,
-        useNativeDriver: true
+        useNativeDriver: true,
       }),
       Animated.timing(scaleAnim, {
         toValue: 0.8,
         duration: 200,
-        useNativeDriver: true
+        useNativeDriver: true,
       }),
       Animated.timing(opacityAnim, {
         toValue: 0,
         duration: 200,
-        useNativeDriver: true
-      })
+        useNativeDriver: true,
+      }),
     ]).start(() => {
       if (onHide) onHide();
     });
   };
-  
+
   if (!visible) return null;
-  
+
   return (
     <Animated.View
       style={[
         styles.container,
         {
           top: insets.top + SPACING.md,
-          transform: [
-            { translateY: slideAnim },
-            { scale: scaleAnim }
-          ],
-          opacity: opacityAnim
-        }
+          transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+          opacity: opacityAnim,
+        },
       ]}
     >
       <View style={styles.content}>
         <View style={styles.iconContainer}>
           <Ionicons name="trophy" size={24} color={COLORS.accent} />
         </View>
-        
+
         <View style={styles.textContainer}>
           <Text style={styles.title}>
             +{formatStatNumber(points)} points earned!
@@ -116,12 +107,10 @@ export default function PointsEarnedToast({
           {message ? (
             <Text style={styles.message}>{message}</Text>
           ) : tier ? (
-            <Text style={styles.message}>
-              {tier} member
-            </Text>
+            <Text style={styles.message}>{tier} member</Text>
           ) : null}
         </View>
-        
+
         <View style={styles.celebration}>
           <Ionicons name="sparkles" size={20} color="#FFD700" />
         </View>

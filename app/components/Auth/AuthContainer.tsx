@@ -11,7 +11,9 @@ interface AuthContainerProps {
   onAuthSuccess: () => void;
 }
 
-export const AuthContainer: React.FC<AuthContainerProps> = ({ onAuthSuccess }) => {
+export const AuthContainer: React.FC<AuthContainerProps> = ({
+  onAuthSuccess,
+}) => {
   const [currentScreen, setCurrentScreen] = useState<AuthScreenType>('signin');
   const { isAuthenticated } = useAppContext();
 
@@ -21,10 +23,12 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({ onAuthSuccess }) =
       const authenticated = await isAuthenticated();
       if (authenticated) {
         // Don't call onAuthSuccess here - let the auth state listener handle it
-        console.log('✅ User already authenticated, letting auth state listener handle transition');
+        console.log(
+          '✅ User already authenticated, letting auth state listener handle transition'
+        );
       }
     };
-    
+
     checkAuth();
   }, []);
 
@@ -45,17 +49,10 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({ onAuthSuccess }) =
         );
       case 'signup':
         return (
-          <SignUpScreen
-            onSignIn={handleSignIn}
-            onSuccess={onAuthSuccess}
-          />
+          <SignUpScreen onSignIn={handleSignIn} onSuccess={onAuthSuccess} />
         );
       case 'forgot-password':
-        return (
-          <ForgotPasswordScreen
-            onBack={handleBack}
-          />
-        );
+        return <ForgotPasswordScreen onBack={handleBack} />;
       default:
         return (
           <SignInScreen
@@ -67,11 +64,7 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({ onAuthSuccess }) =
     }
   };
 
-  return (
-    <View style={styles.container}>
-      {renderScreen()}
-    </View>
-  );
+  return <View style={styles.container}>{renderScreen()}</View>;
 };
 
 const styles = StyleSheet.create({

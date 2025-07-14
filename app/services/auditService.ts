@@ -19,7 +19,12 @@ export interface PointsAuditEntry {
   id?: string;
   userId: string;
   companyId?: string;
-  transactionType: 'earned_purchase' | 'redeemed_voucher' | 'bonus' | 'expired' | 'adjustment';
+  transactionType:
+    | 'earned_purchase'
+    | 'redeemed_voucher'
+    | 'bonus'
+    | 'expired'
+    | 'adjustment';
   points: number;
   previousBalance: number;
   newBalance: number;
@@ -52,7 +57,7 @@ export const auditService = {
         points,
         previousBalance,
         newBalance,
-        orderId
+        orderId,
       });
 
       const auditEntry: PointsAuditEntry = {
@@ -63,9 +68,11 @@ export const auditService = {
         previousBalance,
         newBalance,
         orderId,
-        description: description || `${transactionType.replace('_', ' ')} - ${points} points`,
+        description:
+          description ||
+          `${transactionType.replace('_', ' ')} - ${points} points`,
         createdAt: new Date().toISOString(),
-        metadata: metadata || {}
+        metadata: metadata || {},
       };
 
       const { error } = await supabase
@@ -108,12 +115,10 @@ export const auditService = {
         previousValue,
         newValue,
         metadata: metadata || {},
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
 
-      const { error } = await supabase
-        .from('audit_log')
-        .insert(auditEntry);
+      const { error } = await supabase.from('audit_log').insert(auditEntry);
 
       if (error) {
         console.error('Error logging audit entry:', error);
@@ -201,7 +206,12 @@ export const auditService = {
    */
   async logAuthEvent(
     userId: string,
-    action: 'login' | 'logout' | 'password_change' | 'account_locked' | 'failed_login',
+    action:
+      | 'login'
+      | 'logout'
+      | 'password_change'
+      | 'account_locked'
+      | 'failed_login',
     metadata?: Record<string, any>
   ): Promise<boolean> {
     return this.logAuditEntry(
@@ -222,7 +232,13 @@ export const auditService = {
   async logOrderEvent(
     userId: string,
     orderId: string,
-    action: 'created' | 'updated' | 'cancelled' | 'completed' | 'approved' | 'rejected',
+    action:
+      | 'created'
+      | 'updated'
+      | 'cancelled'
+      | 'completed'
+      | 'approved'
+      | 'rejected',
     previousValue?: any,
     newValue?: any,
     companyId?: string,
@@ -260,7 +276,7 @@ export const auditService = {
       companyId,
       metadata
     );
-  }
+  },
 };
 
 export default auditService;

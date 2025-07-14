@@ -26,12 +26,10 @@ export const CompanyPointsSection: React.FC<CompanyPointsSectionProps> = ({
     return null;
   }
 
-  const {
-    userPoints,
-    companySummary,
-    loading,
-    error,
-  } = useCompanyPoints(user.id, company.id);
+  const { userPoints, companySummary, loading, error } = useCompanyPoints(
+    user.id,
+    company.id
+  );
 
   const handleViewFullDashboard = () => {
     // Navigate to the full company points screen
@@ -46,7 +44,11 @@ export const CompanyPointsSection: React.FC<CompanyPointsSectionProps> = ({
   if (error) {
     return (
       <View style={styles.errorCard}>
-        <Ionicons name="alert-circle-outline" size={24} color={COLORS.textSecondary} />
+        <Ionicons
+          name="alert-circle-outline"
+          size={24}
+          color={COLORS.textSecondary}
+        />
         <Text style={styles.errorText}>Unable to load company points</Text>
       </View>
     );
@@ -70,7 +72,9 @@ export const CompanyPointsSection: React.FC<CompanyPointsSectionProps> = ({
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryValue}>
-                {companySummary ? formatNumber(companySummary.company_total_points) : formatNumber(company.totalPoints || 0)}
+                {companySummary
+                  ? formatNumber(companySummary.company_total_points)
+                  : formatNumber(company.totalPoints || 0)}
               </Text>
               <Text style={styles.summaryLabel}>Company Total</Text>
             </View>
@@ -99,12 +103,16 @@ export const CompanyPointsSection: React.FC<CompanyPointsSectionProps> = ({
             <Ionicons name="receipt-outline" size={20} color={COLORS.primary} />
             <Text style={styles.actionText}>View History</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={styles.actionButton}
             onPress={handleViewFullDashboard}
           >
-            <Ionicons name="analytics-outline" size={20} color={COLORS.primary} />
+            <Ionicons
+              name="analytics-outline"
+              size={20}
+              color={COLORS.primary}
+            />
             <Text style={styles.actionText}>Full Dashboard</Text>
           </TouchableOpacity>
         </View>

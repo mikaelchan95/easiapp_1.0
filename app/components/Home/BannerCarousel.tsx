@@ -1,12 +1,20 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 type BannerCarouselProps = {
   currentBanner: number;
 };
 
-const BannerCarousel: React.FC<BannerCarouselProps> = ({ currentBanner = 0 }) => {
+const BannerCarousel: React.FC<BannerCarouselProps> = ({
+  currentBanner = 0,
+}) => {
   const banners = [
     {
       id: 1,
@@ -38,37 +46,43 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ currentBanner = 0 }) =>
   ];
 
   const currentBannerData = banners[currentBanner];
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.banner}>
         <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Ionicons name={currentBannerData.icon as any} size={18} color="#fff" />
+              <Ionicons
+                name={currentBannerData.icon as any}
+                size={18}
+                color="#fff"
+              />
             </View>
             <View style={styles.titleContainer}>
               <Text style={styles.subtitle}>{currentBannerData.subtitle}</Text>
               <Text style={styles.title}>{currentBannerData.title}</Text>
             </View>
           </View>
-          
-          <Text style={styles.description}>{currentBannerData.description}</Text>
-          
+
+          <Text style={styles.description}>
+            {currentBannerData.description}
+          </Text>
+
           <TouchableOpacity style={styles.cta}>
             <Text style={styles.ctaText}>{currentBannerData.ctaText}</Text>
             <Ionicons name="arrow-forward" size={14} color="#fff" />
           </TouchableOpacity>
         </View>
-        
+
         <View style={styles.indicators}>
           {banners.map((_, index) => (
-            <View 
-              key={index} 
+            <View
+              key={index}
               style={[
-                styles.indicator, 
-                index === currentBanner && styles.activeIndicator
-              ]} 
+                styles.indicator,
+                index === currentBanner && styles.activeIndicator,
+              ]}
             />
           ))}
         </View>
@@ -163,4 +177,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BannerCarousel; 
+export default BannerCarousel;

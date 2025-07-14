@@ -29,7 +29,10 @@ export interface CompanyPointsActions {
 
 // Overloaded function for different use cases
 export function useCompanyPoints(): CompanyPointsData & CompanyPointsActions;
-export function useCompanyPoints(userId: string, companyId: string): {
+export function useCompanyPoints(
+  userId: string,
+  companyId: string
+): {
   userPoints: UserPoints | null;
   companySummary: CompanySummary | null;
   loading: boolean;
@@ -51,10 +54,16 @@ export function useCompanyPoints(userId?: string, companyId?: string) {
 
   // Additional state for compatibility mode
   const [userPoints, setUserPoints] = useState<UserPoints | null>(null);
-  const [companySummary, setCompanySummary] = useState<CompanySummary | null>(null);
+  const [companySummary, setCompanySummary] = useState<CompanySummary | null>(
+    null
+  );
 
   const refreshData = useCallback(async () => {
-    if (!targetUser || !targetCompany || (user && user.accountType !== 'company')) {
+    if (
+      !targetUser ||
+      !targetCompany ||
+      (user && user.accountType !== 'company')
+    ) {
       setError('Company points are only available for company users');
       return;
     }
@@ -63,24 +72,30 @@ export function useCompanyPoints(userId?: string, companyId?: string) {
     setError(null);
 
     try {
-      console.log('📊 Fetching company points summary for:', { userId: targetUser.id, companyId: targetCompany.id });
+      console.log('📊 Fetching company points summary for:', {
+        userId: targetUser.id,
+        companyId: targetCompany.id,
+      });
 
-      const summaryData = await pointsService.getCompanyPointsSummary(targetUser.id, targetCompany.id);
-      
+      const summaryData = await pointsService.getCompanyPointsSummary(
+        targetUser.id,
+        targetCompany.id
+      );
+
       if (summaryData) {
         setSummary(summaryData);
-        
+
         // Set compatibility data
         setUserPoints({
           points_balance: summaryData.currentBalance,
           points_rank: 1, // Mock rank for now
-          lifetime_points: summaryData.lifetimePointsEarned
+          lifetime_points: summaryData.lifetimePointsEarned,
         });
-        
+
         setCompanySummary({
-          company_total_points: summaryData.totalPointsEarned
+          company_total_points: summaryData.totalPointsEarned,
         });
-        
+
         console.log('✅ Company points summary loaded:', summaryData);
       } else {
         // If no summary exists, create a default one
@@ -90,20 +105,20 @@ export function useCompanyPoints(userId?: string, companyId?: string) {
           totalPointsRedeemed: 0,
           currentBalance: 0,
           tierLevel: 'Bronze',
-          lifetimePointsEarned: 0
+          lifetimePointsEarned: 0,
         };
         setSummary(defaultSummary);
-        
+
         setUserPoints({
           points_balance: 0,
           points_rank: 1,
-          lifetime_points: 0
+          lifetime_points: 0,
         });
-        
+
         setCompanySummary({
-          company_total_points: 0
+          company_total_points: 0,
         });
-        
+
         console.log('📋 Using default company points summary');
       }
 
@@ -111,7 +126,6 @@ export function useCompanyPoints(userId?: string, companyId?: string) {
       if (!userId && !companyId) {
         await loadHistory(10);
       }
-
     } catch (err) {
       console.error('❌ Error fetching company points:', err);
       setError('Failed to load company points data');
@@ -120,80 +134,102 @@ export function useCompanyPoints(userId?: string, companyId?: string) {
     }
   }, [targetUser, targetCompany, userId, companyId]);
 
-  const loadHistory = useCallback(async (limit: number = 50) => {
-    if (!targetUser || !targetCompany) return;
+  const loadHistory = useCallback(
+    async (limit: number = 50) => {
+      if (!targetUser || !targetCompany) return;
 
-    try {
-      console.log('📜 Loading company points history:', { userId: targetUser.id, companyId: targetCompany.id, limit });
+      try {
+        console.log('📜 Loading company points history:', {
+          userId: targetUser.id,
+          companyId: targetCompany.id,
+          limit,
+        });
 
-      const historyData = await auditService.getPointsAuditHistory(targetUser.id, targetCompany.id, limit);
-      setHistory(historyData);
-      
-      console.log(`✅ Loaded ${historyData.length} points history entries`);
-    } catch (err) {
-      console.error('❌ Error loading points history:', err);
-      setError('Failed to load points history');
-    }
-  }, [targetUser, targetCompany]);
+        const historyData = await auditService.getPointsAuditHistory(
+          targetUser.id,
+          targetCompany.id,
+          limit
+        );
+        setHistory(historyData);
 
-  const redeemPoints = useCallback(async (points: number, description?: string): Promise<boolean> => {
-    if (!user || !company) {
-      setError('User or company information not available');
-      return false;
-    }
+        console.log(`✅ Loaded ${historyData.length} points history entries`);
+      } catch (err) {
+        console.error('❌ Error loading points history:', err);
+        setError('Failed to load points history');
+      }
+    },
+    [targetUser, targetCompany]
+  );
 
-    if (!summary || summary.currentBalance < points) {
-      setError('Insufficient points for redemption');
-      return false;
-    }
+  const redeemPoints = useCallback(
+    async (points: number, description?: string): Promise<boolean> => {
+      if (!user || !company) {
+        setError('User or company information not available');
+        return false;
+      }
 
-    setIsLoading(true);
-    setError(null);
+      if (!summary || summary.currentBalance < points) {
+        setError('Insufficient points for redemption');
+        return false;
+      }
 
-    try {
-      console.log('💸 Redeeming company points:', { userId: user.id, companyId: company.id, points });
+      setIsLoading(true);
+      setError(null);
 
-      const success = await pointsService.redeemPoints(
-        user.id,
-        company.id,
-        points,
-        description || 'Points redeemed'
-      );
+      try {
+        console.log('💸 Redeeming company points:', {
+          userId: user.id,
+          companyId: company.id,
+          points,
+        });
 
-      if (success) {
-        // Log the redemption in audit trail
-        await auditService.logPointsTransaction(
+        const success = await pointsService.redeemPoints(
           user.id,
           company.id,
-          'redeemed_voucher',
-          -points, // Negative for redemption
-          summary.currentBalance,
-          summary.currentBalance - points,
-          undefined,
+          points,
           description || 'Points redeemed'
         );
 
-        // Refresh data to reflect changes
-        await refreshData();
-        
-        console.log('✅ Points redeemed successfully');
-        return true;
-      } else {
+        if (success) {
+          // Log the redemption in audit trail
+          await auditService.logPointsTransaction(
+            user.id,
+            company.id,
+            'redeemed_voucher',
+            -points, // Negative for redemption
+            summary.currentBalance,
+            summary.currentBalance - points,
+            undefined,
+            description || 'Points redeemed'
+          );
+
+          // Refresh data to reflect changes
+          await refreshData();
+
+          console.log('✅ Points redeemed successfully');
+          return true;
+        } else {
+          setError('Failed to redeem points');
+          return false;
+        }
+      } catch (err) {
+        console.error('❌ Error redeeming points:', err);
         setError('Failed to redeem points');
         return false;
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      console.error('❌ Error redeeming points:', err);
-      setError('Failed to redeem points');
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, company, summary, refreshData]);
+    },
+    [user, company, summary, refreshData]
+  );
 
   // Load data on mount and when user/company changes
   useEffect(() => {
-    if (targetUser && targetCompany && (!user || user.accountType === 'company')) {
+    if (
+      targetUser &&
+      targetCompany &&
+      (!user || user.accountType === 'company')
+    ) {
       refreshData();
     } else {
       setSummary(null);
@@ -206,7 +242,8 @@ export function useCompanyPoints(userId?: string, companyId?: string) {
 
   // Helper functions for component use
   const getTierProgress = useCallback(() => {
-    if (!summary) return { current: 0, next: 50000, percentage: 0, nextTier: 'Silver' };
+    if (!summary)
+      return { current: 0, next: 50000, percentage: 0, nextTier: 'Silver' };
 
     const { lifetimePointsEarned, tierLevel } = summary;
 
@@ -216,21 +253,21 @@ export function useCompanyPoints(userId?: string, companyId?: string) {
           current: lifetimePointsEarned,
           next: 50000,
           percentage: (lifetimePointsEarned / 50000) * 100,
-          nextTier: 'Silver'
+          nextTier: 'Silver',
         };
       case 'Silver':
         return {
           current: lifetimePointsEarned,
           next: 200000,
           percentage: ((lifetimePointsEarned - 50000) / (200000 - 50000)) * 100,
-          nextTier: 'Gold'
+          nextTier: 'Gold',
         };
       case 'Gold':
         return {
           current: lifetimePointsEarned,
           next: lifetimePointsEarned, // No next tier
           percentage: 100,
-          nextTier: null
+          nextTier: null,
         };
       default:
         return { current: 0, next: 50000, percentage: 0, nextTier: 'Silver' };
@@ -257,7 +294,7 @@ export function useCompanyPoints(userId?: string, companyId?: string) {
   const formatPointsHistory = useCallback((entry: PointsAuditEntry) => {
     const isEarned = entry.points > 0;
     const isRedemption = entry.transactionType.includes('redeemed');
-    
+
     return {
       ...entry,
       isEarned,
@@ -265,7 +302,7 @@ export function useCompanyPoints(userId?: string, companyId?: string) {
       formattedPoints: isEarned ? `+${entry.points}` : `${entry.points}`,
       formattedDate: new Date(entry.createdAt || '').toLocaleDateString(),
       icon: isEarned ? 'add-circle' : 'remove-circle',
-      color: isEarned ? '#10B981' : '#EF4444'
+      color: isEarned ? '#10B981' : '#EF4444',
     };
   }, []);
 
@@ -275,7 +312,7 @@ export function useCompanyPoints(userId?: string, companyId?: string) {
       userPoints,
       companySummary,
       loading: isLoading,
-      error
+      error,
     };
   }
 
@@ -295,6 +332,6 @@ export function useCompanyPoints(userId?: string, companyId?: string) {
     // Helper methods
     getTierProgress,
     getPointsUntilNextTier,
-    formatPointsHistory
+    formatPointsHistory,
   };
 }

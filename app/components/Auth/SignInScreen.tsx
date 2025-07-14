@@ -35,8 +35,10 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [biometricTypeName, setBiometricTypeName] = useState('Biometric Authentication');
-  
+  const [biometricTypeName, setBiometricTypeName] = useState(
+    'Biometric Authentication'
+  );
+
   // Check biometric availability on component mount
   useEffect(() => {
     const checkBiometricAvailability = async () => {
@@ -44,12 +46,16 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
         const isAvailable = await biometricService.isBiometricAvailable();
         const isEnabled = await biometricService.isBiometricEnabled();
         const typeName = await biometricService.getBiometricTypeName();
-        
+
         setBiometricAvailable(isAvailable);
         setBiometricEnabled(isEnabled);
         setBiometricTypeName(typeName);
-        
-        console.log('🔐 Biometric status:', { isAvailable, isEnabled, typeName });
+
+        console.log('🔐 Biometric status:', {
+          isAvailable,
+          isEnabled,
+          typeName,
+        });
       } catch (error) {
         console.error('❌ Error checking biometric availability:', error);
       }
@@ -103,48 +109,61 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
 
     try {
       console.log('🔐 Attempting sign in with AppContext signIn method...');
-      
+
       // Use AppContext signIn method instead of direct Supabase call
       const user = await signIn(email.toLowerCase().trim(), password);
 
       if (user) {
         console.log('✅ SignIn successful via AppContext:', user.email);
         console.log('Auth success - user loaded, authentication complete');
-        
+
         // Set up biometric authentication if available but not enabled
         if (biometricAvailable && !biometricEnabled) {
           try {
             await biometricService.storeCredentials(email, email);
-            console.log('✅ Credentials stored for future biometric authentication');
+            console.log(
+              '✅ Credentials stored for future biometric authentication'
+            );
           } catch (error) {
-            console.error('❌ Failed to store credentials for biometric auth:', error);
+            console.error(
+              '❌ Failed to store credentials for biometric auth:',
+              error
+            );
           }
         }
-        
+
         // Clear local loading state - auth state listener will handle navigation
         setIsLoading(false);
       } else {
         console.error('❌ SignIn failed via AppContext');
-        Alert.alert('Sign In Failed', 'Invalid email or password. Please check your credentials.');
+        Alert.alert(
+          'Sign In Failed',
+          'Invalid email or password. Please check your credentials.'
+        );
         setIsLoading(false);
       }
     } catch (error: any) {
       console.error('❌ Sign in error:', error);
-      Alert.alert('Sign In Error', 'An unexpected error occurred. Please try again.');
+      Alert.alert(
+        'Sign In Error',
+        'An unexpected error occurred. Please try again.'
+      );
       setIsLoading(false);
     }
   };
 
   const handleBiometricSignIn = async () => {
     if (isLoading) return;
-    
+
     setIsLoading(true);
-    
+
     try {
       // Check if biometric auth is available and enabled
       if (!biometricAvailable || !biometricEnabled) {
-        Alert.alert('Biometric Authentication Unavailable', 
-          'Please set up biometric authentication first or use your email and password.');
+        Alert.alert(
+          'Biometric Authentication Unavailable',
+          'Please set up biometric authentication first or use your email and password.'
+        );
         setIsLoading(false);
         return;
       }
@@ -152,8 +171,10 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
       // Get stored credentials
       const storedCredentials = await biometricService.getStoredCredentials();
       if (!storedCredentials) {
-        Alert.alert('No Stored Credentials', 
-          'Please sign in with your email and password first to enable biometric authentication.');
+        Alert.alert(
+          'No Stored Credentials',
+          'Please sign in with your email and password first to enable biometric authentication.'
+        );
         setIsLoading(false);
         return;
       }
@@ -168,29 +189,38 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
 
       // Sign in with stored credentials
       console.log('🔐 Biometric authentication successful, signing in...');
-      
+
       // For demo purposes, we'll use the stored email to sign in
       // In a real app, you'd store and decrypt the full authentication token
       const user = await signIn(storedCredentials.email, 'demo_password');
-      
+
       if (user) {
         console.log('✅ Biometric sign-in successful');
         setIsLoading(false);
       } else {
         console.error('❌ Biometric sign-in failed');
-        Alert.alert('Sign In Failed', 'Biometric authentication succeeded but sign-in failed. Please try again.');
+        Alert.alert(
+          'Sign In Failed',
+          'Biometric authentication succeeded but sign-in failed. Please try again.'
+        );
         setIsLoading(false);
       }
     } catch (error) {
       console.error('❌ Biometric sign-in error:', error);
-      Alert.alert('Biometric Sign In Error', 'An unexpected error occurred. Please try again.');
+      Alert.alert(
+        'Biometric Sign In Error',
+        'An unexpected error occurred. Please try again.'
+      );
       setIsLoading(false);
     }
   };
 
   const handleSetupBiometric = async () => {
     if (!email || !password) {
-      Alert.alert('Setup Required', 'Please enter your email and password first, then sign in successfully before setting up biometric authentication.');
+      Alert.alert(
+        'Setup Required',
+        'Please enter your email and password first, then sign in successfully before setting up biometric authentication.'
+      );
       return;
     }
 
@@ -203,23 +233,31 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
       const setupResult = await biometricService.setupBiometricAuth(email);
       if (setupResult.success) {
         setBiometricEnabled(true);
-        Alert.alert('Success', `${biometricTypeName} has been set up successfully! You can now use it to sign in.`);
+        Alert.alert(
+          'Success',
+          `${biometricTypeName} has been set up successfully! You can now use it to sign in.`
+        );
       } else {
-        Alert.alert('Setup Failed', setupResult.error || 'Failed to set up biometric authentication.');
+        Alert.alert(
+          'Setup Failed',
+          setupResult.error || 'Failed to set up biometric authentication.'
+        );
       }
     } catch (error) {
       console.error('❌ Error setting up biometric authentication:', error);
-      Alert.alert('Setup Error', 'An unexpected error occurred while setting up biometric authentication.');
+      Alert.alert(
+        'Setup Error',
+        'An unexpected error occurred while setting up biometric authentication.'
+      );
     }
   };
 
-
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -239,10 +277,10 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email Address</Text>
               <View style={styles.inputWrapper}>
-                <Ionicons 
-                  name="mail-outline" 
-                  size={20} 
-                  color={COLORS.textSecondary} 
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color={COLORS.textSecondary}
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -263,10 +301,10 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Password</Text>
               <View style={styles.inputWrapper}>
-                <Ionicons 
-                  name="lock-closed-outline" 
-                  size={20} 
-                  color={COLORS.textSecondary} 
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={COLORS.textSecondary}
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -287,7 +325,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
                   disabled={isLoading}
                 >
                   <Ionicons
-                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                     size={20}
                     color={COLORS.textSecondary}
                   />
@@ -329,7 +367,11 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
                     activeOpacity={0.8}
                   >
                     <Ionicons
-                      name={biometricTypeName === 'Face ID' ? 'face-id' : 'finger-print'}
+                      name={
+                        biometricTypeName === 'Face ID'
+                          ? 'face-id'
+                          : 'finger-print'
+                      }
                       size={24}
                       color={COLORS.text}
                       style={styles.biometricIcon}

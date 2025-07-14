@@ -1,6 +1,6 @@
 /**
  * Credit Payment Screen Tests
- * 
+ *
  * Tests the credit payment functionality including payment method selection,
  * amount calculation, and payment processing flow.
  */
@@ -79,7 +79,7 @@ describe('CreditPaymentScreen', () => {
       const creditLimit = 100000;
       const availableCredit = 75000;
       const usedCredit = creditLimit - availableCredit;
-      
+
       expect(usedCredit).toBe(25000);
     });
 
@@ -88,7 +88,7 @@ describe('CreditPaymentScreen', () => {
       const processingFeePercent = 2.9;
       const processingFee = (usedCredit * processingFeePercent) / 100;
       const totalAmount = usedCredit + processingFee;
-      
+
       expect(processingFee).toBe(725);
       expect(totalAmount).toBe(25725);
     });
@@ -98,7 +98,7 @@ describe('CreditPaymentScreen', () => {
       const processingFeePercent = 0;
       const processingFee = (usedCredit * processingFeePercent) / 100;
       const totalAmount = usedCredit + processingFee;
-      
+
       expect(processingFee).toBe(0);
       expect(totalAmount).toBe(25000);
     });
@@ -112,23 +112,23 @@ describe('CreditPaymentScreen', () => {
           type: 'credit_card',
           name: 'Credit Card',
           processing_fee: 2.9,
-          estimated_time: 'Instant'
+          estimated_time: 'Instant',
         },
         {
           id: 'bank_transfer',
           type: 'bank_transfer',
           name: 'Bank Transfer',
-          estimated_time: '1-3 business days'
+          estimated_time: '1-3 business days',
         },
         {
           id: 'paypal',
           type: 'paypal',
           name: 'PayPal',
           processing_fee: 3.4,
-          estimated_time: 'Instant'
-        }
+          estimated_time: 'Instant',
+        },
       ];
-      
+
       expect(paymentMethods).toHaveLength(3);
       expect(paymentMethods[0].processing_fee).toBeDefined();
       expect(paymentMethods[1].processing_fee).toBeUndefined();
@@ -139,9 +139,9 @@ describe('CreditPaymentScreen', () => {
         id: 'credit_card',
         type: 'credit_card' as const,
         name: 'Credit Card',
-        processing_fee: 2.9
+        processing_fee: 2.9,
       };
-      
+
       expect(selectedPaymentMethod.id).toBe('credit_card');
       expect(selectedPaymentMethod.processing_fee).toBe(2.9);
     });
@@ -154,9 +154,9 @@ describe('CreditPaymentScreen', () => {
         amount: 25725,
         paymentMethod: 'credit_card',
         creditPaid: 25000,
-        processingFee: 725
+        processingFee: 725,
       };
-      
+
       // Simulate async payment processing
       const processPayment = async (data: typeof paymentData) => {
         return new Promise(resolve => {
@@ -164,12 +164,12 @@ describe('CreditPaymentScreen', () => {
             resolve({
               success: true,
               transactionId: 'TXN-123456',
-              ...data
+              ...data,
             });
           }, 100);
         });
       };
-      
+
       const result = await processPayment(paymentData);
       expect(result).toHaveProperty('success', true);
       expect(result).toHaveProperty('transactionId');
@@ -183,7 +183,7 @@ describe('CreditPaymentScreen', () => {
           }, 100);
         });
       };
-      
+
       try {
         await processFailedPayment();
       } catch (error) {
@@ -206,9 +206,9 @@ describe('CreditPaymentScreen', () => {
     it('should handle individual users correctly', () => {
       const individualUser = {
         accountType: 'individual' as const,
-        permissions: {}
+        permissions: {},
       };
-      
+
       expect(individualUser.accountType).toBe('individual');
       expect(Object.keys(individualUser.permissions)).toHaveLength(0);
     });
@@ -219,18 +219,20 @@ describe('CreditPaymentScreen', () => {
       const summaryData = {
         creditUsed: 25000,
         processingFee: 725,
-        totalAmount: 25725
+        totalAmount: 25725,
       };
-      
+
       expect(summaryData.creditUsed).toBeGreaterThan(0);
-      expect(summaryData.totalAmount).toBe(summaryData.creditUsed + summaryData.processingFee);
+      expect(summaryData.totalAmount).toBe(
+        summaryData.creditUsed + summaryData.processingFee
+      );
     });
 
     it('should show empty state when no credit is used', () => {
       const creditLimit = 100000;
       const availableCredit = 100000; // Full credit available
       const usedCredit = creditLimit - availableCredit;
-      
+
       expect(usedCredit).toBe(0);
     });
 
@@ -238,9 +240,9 @@ describe('CreditPaymentScreen', () => {
       const securityFeatures = {
         encryption: true,
         noStoredPaymentDetails: true,
-        secureProcessing: true
+        secureProcessing: true,
       };
-      
+
       expect(securityFeatures.encryption).toBe(true);
       expect(securityFeatures.noStoredPaymentDetails).toBe(true);
     });
@@ -251,9 +253,9 @@ describe('CreditPaymentScreen', () => {
       const navigationOptions = [
         'View Receipt',
         'Back to Profile',
-        'View Billing Dashboard'
+        'View Billing Dashboard',
       ];
-      
+
       expect(navigationOptions).toContain('View Receipt');
       expect(navigationOptions).toContain('Back to Profile');
     });
@@ -262,7 +264,7 @@ describe('CreditPaymentScreen', () => {
       const backNavigation = () => {
         return 'goBack';
       };
-      
+
       expect(backNavigation()).toBe('goBack');
     });
   });

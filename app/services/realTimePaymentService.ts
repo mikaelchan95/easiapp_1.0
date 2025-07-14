@@ -2,7 +2,11 @@ import { supabase } from '../../utils/supabase';
 
 // Types and Interfaces
 export interface BalanceUpdate {
-  update_type: 'payment_received' | 'payment_allocated' | 'credit_adjustment' | 'invoice_created';
+  update_type:
+    | 'payment_received'
+    | 'payment_allocated'
+    | 'credit_adjustment'
+    | 'invoice_created';
   amount: number;
   new_balance: number;
   timestamp: string;
@@ -110,23 +114,30 @@ class RealTimePaymentService {
             allocations: [],
             total_allocated: 0,
             remaining_payment: paymentAmount,
-            strategy_used: strategy
-          }
+            strategy_used: strategy,
+          },
         };
       }
 
       // Apply allocation strategy
-      const allocations = this.applyAllocationStrategy(invoices, paymentAmount, strategy);
-      const totalAllocated = allocations.reduce((sum, allocation) => sum + allocation.allocated_amount, 0);
+      const allocations = this.applyAllocationStrategy(
+        invoices,
+        paymentAmount,
+        strategy
+      );
+      const totalAllocated = allocations.reduce(
+        (sum, allocation) => sum + allocation.allocated_amount,
+        0
+      );
 
       return {
         data: {
           allocations,
           total_allocated: totalAllocated,
           remaining_payment: paymentAmount - totalAllocated,
-          strategy_used: strategy
+          strategy_used: strategy,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       console.error('Error calculating payment allocation:', error);
@@ -172,8 +183,8 @@ class RealTimePaymentService {
           data: {
             valid: false,
             errors,
-            warnings
-          }
+            warnings,
+          },
         };
       }
 
@@ -191,7 +202,9 @@ class RealTimePaymentService {
       }
 
       if (paymentAmount > 50000) {
-        warnings.push('Large payment amount - additional verification may be required');
+        warnings.push(
+          'Large payment amount - additional verification may be required'
+        );
       }
 
       return {
@@ -200,9 +213,9 @@ class RealTimePaymentService {
           errors,
           warnings,
           available_credit: availableCredit,
-          current_balance: currentBalance
+          current_balance: currentBalance,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       console.error('Error validating payment:', error);
@@ -226,8 +239,11 @@ class RealTimePaymentService {
       );
 
       if (validation.error || !validation.data?.valid) {
-        return { 
-          error: validation.error || validation.data?.errors.join(', ') || 'Payment validation failed' 
+        return {
+          error:
+            validation.error ||
+            validation.data?.errors.join(', ') ||
+            'Payment validation failed',
         };
       }
 
@@ -258,7 +274,7 @@ class RealTimePaymentService {
           bank_reference: paymentRequest.bank_reference,
           status: 'processing',
           notes: paymentRequest.notes,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         })
         .select()
         .single();
@@ -276,7 +292,7 @@ class RealTimePaymentService {
         timestamp: new Date().toISOString(),
         transaction_id: payment.id,
         reference: paymentRequest.payment_reference,
-        description: `Payment received: ${paymentRequest.payment_reference}`
+        description: `Payment received: ${paymentRequest.payment_reference}`,
       };
 
       onProgress?.(initialUpdate);
@@ -293,21 +309,20 @@ class RealTimePaymentService {
             .update({
               paid_amount: allocation.allocated_amount,
               remaining_amount: allocation.remaining_amount,
-              status: allocation.remaining_amount <= 0 ? 'paid' : 'partial_paid',
-              updated_at: new Date().toISOString()
+              status:
+                allocation.remaining_amount <= 0 ? 'paid' : 'partial_paid',
+              updated_at: new Date().toISOString(),
             })
             .eq('id', allocation.invoice_id);
 
           if (!invoiceError) {
             // Create payment allocation record
-            await supabase
-              .from('payment_allocations')
-              .insert({
-                payment_id: payment.id,
-                invoice_id: allocation.invoice_id,
-                allocated_amount: allocation.allocated_amount,
-                created_at: new Date().toISOString()
-              });
+            await supabase.from('payment_allocations').insert({
+              payment_id: payment.id,
+              invoice_id: allocation.invoice_id,
+              allocated_amount: allocation.allocated_amount,
+              created_at: new Date().toISOString(),
+            });
 
             totalAllocated += allocation.allocated_amount;
             allocatedInvoices++;
@@ -320,7 +335,7 @@ class RealTimePaymentService {
               timestamp: new Date().toISOString(),
               transaction_id: payment.id,
               invoice_id: allocation.invoice_id,
-              description: `Payment allocated to ${allocation.invoice_number}`
+              description: `Payment allocated to ${allocation.invoice_number}`,
             };
 
             onProgress?.(allocationUpdate);
@@ -332,7 +347,7 @@ class RealTimePaymentService {
       const { error: creditError } = await supabase
         .from('companies')
         .update({
-          credit_used: validation.data.current_balance! - totalAllocated
+          credit_used: validation.data.current_balance! - totalAllocated,
         })
         .eq('id', paymentRequest.company_id);
 
@@ -345,7 +360,7 @@ class RealTimePaymentService {
         .from('company_payments')
         .update({
           status: 'completed',
-          processed_at: new Date().toISOString()
+          processed_at: new Date().toISOString(),
         })
         .eq('id', payment.id);
 
@@ -356,7 +371,7 @@ class RealTimePaymentService {
         new_balance: validation.data.current_balance! - totalAllocated,
         timestamp: new Date().toISOString(),
         transaction_id: payment.id,
-        reference: paymentRequest.payment_reference
+        reference: paymentRequest.payment_reference,
       });
 
       return {
@@ -366,9 +381,9 @@ class RealTimePaymentService {
           transaction_id: payment.id,
           allocated_invoices: allocatedInvoices,
           total_allocated: totalAllocated,
-          remaining_balance: validation.data.current_balance! - totalAllocated
+          remaining_balance: validation.data.current_balance! - totalAllocated,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       console.error('Error processing payment:', error);
@@ -397,9 +412,9 @@ class RealTimePaymentService {
             event: '*',
             schema: 'public',
             table: 'company_payments',
-            filter: `company_id=eq.${companyId}`
+            filter: `company_id=eq.${companyId}`,
           },
-          (payload) => {
+          payload => {
             this.handlePaymentUpdate(payload, onUpdate);
           }
         )
@@ -409,20 +424,29 @@ class RealTimePaymentService {
             event: '*',
             schema: 'public',
             table: 'companies',
-            filter: `id=eq.${companyId}`
+            filter: `id=eq.${companyId}`,
           },
-          (payload) => {
+          payload => {
             this.handleCompanyUpdate(payload, onUpdate);
           }
         )
-        .subscribe((status) => {
+        .subscribe(status => {
           if (status === 'SUBSCRIBED') {
-            console.log('✅ Real-time monitoring started for company:', companyId);
+            console.log(
+              '✅ Real-time monitoring started for company:',
+              companyId
+            );
           } else if (status === 'CLOSED') {
-            console.log('🔌 Real-time connection closed for company:', companyId);
+            console.log(
+              '🔌 Real-time connection closed for company:',
+              companyId
+            );
             this.handleReconnection(companyId, onUpdate, onError);
           } else if (status === 'CHANNEL_ERROR') {
-            console.error('❌ Real-time subscription error for company:', companyId);
+            console.error(
+              '❌ Real-time subscription error for company:',
+              companyId
+            );
             onError?.('Real-time connection error');
           }
         });
@@ -479,36 +503,37 @@ class RealTimePaymentService {
       company_id: companyId,
       status: subscription.state === 'joined' ? 'connected' : 'disconnected',
       last_heartbeat: new Date().toISOString(),
-      connection_count: this.subscriptions.size
+      connection_count: this.subscriptions.size,
     };
   }
 
   /**
    * Broadcast balance update to all subscribers
    */
-  private async broadcastBalanceUpdate(companyId: string, update: BalanceUpdate): Promise<void> {
+  private async broadcastBalanceUpdate(
+    companyId: string,
+    update: BalanceUpdate
+  ): Promise<void> {
     try {
       // Store the update in the database for persistence
-      await supabase
-        .from('balance_updates')
-        .insert({
-          company_id: companyId,
-          update_type: update.update_type,
-          amount: update.amount,
-          new_balance: update.new_balance,
-          transaction_id: update.transaction_id,
-          invoice_id: update.invoice_id,
-          reference: update.reference,
-          description: update.description,
-          timestamp: update.timestamp
-        });
+      await supabase.from('balance_updates').insert({
+        company_id: companyId,
+        update_type: update.update_type,
+        amount: update.amount,
+        new_balance: update.new_balance,
+        transaction_id: update.transaction_id,
+        invoice_id: update.invoice_id,
+        reference: update.reference,
+        description: update.description,
+        timestamp: update.timestamp,
+      });
 
       // Send real-time broadcast
       const channel = supabase.channel(`balance_updates_${companyId}`);
       await channel.send({
         type: 'broadcast',
         event: 'balance_update',
-        payload: update
+        payload: update,
       });
     } catch (error) {
       console.error('Error broadcasting balance update:', error);
@@ -530,7 +555,10 @@ class RealTimePaymentService {
     let sortedInvoices = [...invoices];
     switch (strategy) {
       case 'oldest_first':
-        sortedInvoices.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        sortedInvoices.sort(
+          (a, b) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
         break;
       case 'largest_first':
         sortedInvoices.sort((a, b) => b.total_amount - a.total_amount);
@@ -540,10 +568,11 @@ class RealTimePaymentService {
         sortedInvoices.forEach(invoice => {
           allocations.push({
             invoice_id: invoice.id,
-            invoice_number: invoice.invoice_number || `INV-${invoice.id.slice(-6)}`,
+            invoice_number:
+              invoice.invoice_number || `INV-${invoice.id.slice(-6)}`,
             original_amount: invoice.total_amount,
             allocated_amount: 0,
-            remaining_amount: invoice.total_amount
+            remaining_amount: invoice.total_amount,
           });
         });
         return allocations;
@@ -561,7 +590,7 @@ class RealTimePaymentService {
         invoice_number: invoice.invoice_number || `INV-${invoice.id.slice(-6)}`,
         original_amount: invoiceAmount,
         allocated_amount: allocatedAmount,
-        remaining_amount: invoiceAmount - allocatedAmount
+        remaining_amount: invoiceAmount - allocatedAmount,
       });
 
       remainingAmount -= allocatedAmount;
@@ -573,7 +602,10 @@ class RealTimePaymentService {
   /**
    * Handle payment table updates
    */
-  private handlePaymentUpdate(payload: any, onUpdate: (update: BalanceUpdate) => void): void {
+  private handlePaymentUpdate(
+    payload: any,
+    onUpdate: (update: BalanceUpdate) => void
+  ): void {
     try {
       const { eventType, new: newRecord, old: oldRecord } = payload;
 
@@ -585,7 +617,7 @@ class RealTimePaymentService {
           timestamp: newRecord.created_at || new Date().toISOString(),
           transaction_id: newRecord.id,
           reference: newRecord.reference,
-          description: `Payment received: ${newRecord.reference || newRecord.id}`
+          description: `Payment received: ${newRecord.reference || newRecord.id}`,
         };
         onUpdate(update);
       }
@@ -597,19 +629,25 @@ class RealTimePaymentService {
   /**
    * Handle company table updates (credit changes)
    */
-  private handleCompanyUpdate(payload: any, onUpdate: (update: BalanceUpdate) => void): void {
+  private handleCompanyUpdate(
+    payload: any,
+    onUpdate: (update: BalanceUpdate) => void
+  ): void {
     try {
       const { eventType, new: newRecord, old: oldRecord } = payload;
 
       if (eventType === 'UPDATE' && newRecord && oldRecord) {
-        const creditChange = (oldRecord.credit_used || 0) - (newRecord.credit_used || 0);
-        if (Math.abs(creditChange) > 0.01) { // Avoid floating point issues
+        const creditChange =
+          (oldRecord.credit_used || 0) - (newRecord.credit_used || 0);
+        if (Math.abs(creditChange) > 0.01) {
+          // Avoid floating point issues
           const update: BalanceUpdate = {
             update_type: 'credit_adjustment',
             amount: creditChange,
-            new_balance: (newRecord.credit_limit || 0) - (newRecord.credit_used || 0),
+            new_balance:
+              (newRecord.credit_limit || 0) - (newRecord.credit_used || 0),
             timestamp: new Date().toISOString(),
-            description: creditChange > 0 ? 'Credit increased' : 'Credit used'
+            description: creditChange > 0 ? 'Credit increased' : 'Credit used',
           };
           onUpdate(update);
         }
@@ -630,7 +668,7 @@ class RealTimePaymentService {
         subscription.send({
           type: 'broadcast',
           event: 'heartbeat',
-          payload: { timestamp: new Date().toISOString() }
+          payload: { timestamp: new Date().toISOString() },
         });
       }
     }, this.HEARTBEAT_INTERVAL);
@@ -647,7 +685,7 @@ class RealTimePaymentService {
     onError?: (error: string) => void
   ): Promise<void> {
     const attempts = this.reconnectAttempts.get(companyId) || 0;
-    
+
     if (attempts >= this.MAX_RECONNECT_ATTEMPTS) {
       onError?.('Maximum reconnection attempts exceeded');
       return;
@@ -655,18 +693,28 @@ class RealTimePaymentService {
 
     this.reconnectAttempts.set(companyId, attempts + 1);
 
-    setTimeout(async () => {
-      const success = await this.startRealTimeMonitoring(companyId, onUpdate, onError);
-      if (success) {
-        this.reconnectAttempts.delete(companyId);
-      }
-    }, this.RECONNECT_DELAY * (attempts + 1)); // Exponential backoff
+    setTimeout(
+      async () => {
+        const success = await this.startRealTimeMonitoring(
+          companyId,
+          onUpdate,
+          onError
+        );
+        if (success) {
+          this.reconnectAttempts.delete(companyId);
+        }
+      },
+      this.RECONNECT_DELAY * (attempts + 1)
+    ); // Exponential backoff
   }
 
   /**
    * Get recent balance updates for a company
    */
-  async getRecentBalanceUpdates(companyId: string, limit: number = 10): Promise<ServiceResult<BalanceUpdate[]>> {
+  async getRecentBalanceUpdates(
+    companyId: string,
+    limit: number = 10
+  ): Promise<ServiceResult<BalanceUpdate[]>> {
     try {
       const { data, error } = await supabase
         .from('balance_updates')
@@ -682,7 +730,7 @@ class RealTimePaymentService {
 
       return {
         data: data || [],
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       console.error('Error getting recent balance updates:', error);

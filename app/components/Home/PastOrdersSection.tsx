@@ -1,14 +1,21 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
   ScrollView,
-  Image 
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SHADOWS, SPACING, FONT_SIZES, FONT_WEIGHTS, TYPOGRAPHY } from '../../utils/theme';
+import {
+  COLORS,
+  SHADOWS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  TYPOGRAPHY,
+} from '../../utils/theme';
 import { HapticFeedback } from '../../utils/haptics';
 import { supabaseService, Order } from '../../services/supabaseService';
 import { AppContext } from '../../context/AppContext';
@@ -18,7 +25,15 @@ interface PastOrder {
   id: string;
   orderNumber: string;
   date: string;
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'out_for_delivery' | 'delivered' | 'cancelled' | 'returned';
+  status:
+    | 'pending'
+    | 'confirmed'
+    | 'preparing'
+    | 'ready'
+    | 'out_for_delivery'
+    | 'delivered'
+    | 'cancelled'
+    | 'returned';
   total: number;
   itemCount: number;
   firstItemName: string;
@@ -34,17 +49,19 @@ const RECENT_ORDERS: PastOrder[] = [
     total: 145.99,
     itemCount: 1,
     firstItemName: 'Macallan 18 Year Old',
-    firstItemImage: 'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-18-sherry-oak.webp'
+    firstItemImage:
+      'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-18-sherry-oak.webp',
   },
   {
     id: '2',
     orderNumber: 'ORD-2024-002',
     date: '2024-01-20',
     status: 'delivered',
-    total: 289.50,
+    total: 289.5,
     itemCount: 2,
     firstItemName: 'Dom Pérignon 2013',
-    firstItemImage: 'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/dom-perignon-2013.webp'
+    firstItemImage:
+      'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/dom-perignon-2013.webp',
   },
   {
     id: '3',
@@ -54,8 +71,9 @@ const RECENT_ORDERS: PastOrder[] = [
     total: 199.99,
     itemCount: 1,
     firstItemName: 'Macallan 25 Year Old',
-    firstItemImage: 'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-25-sherry-oak.webp'
-  }
+    firstItemImage:
+      'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-25-sherry-oak.webp',
+  },
 ];
 
 interface PastOrdersSectionProps {
@@ -64,7 +82,11 @@ interface PastOrdersSectionProps {
   onReorderPress: (order: PastOrder) => void;
 }
 
-export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPress }: PastOrdersSectionProps) {
+export default function PastOrdersSection({
+  onOrderPress,
+  onViewAll,
+  onReorderPress,
+}: PastOrdersSectionProps) {
   const { state } = useContext(AppContext);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,23 +94,29 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
   // Load recent orders on component mount and set up real-time subscription
   useEffect(() => {
     loadRecentOrders();
-    
+
     // Set up real-time subscription for order updates
     let orderSubscription: any = null;
-    
+
     if (state.user) {
-      console.log('Setting up real-time order subscription for past orders section');
+      console.log(
+        'Setting up real-time order subscription for past orders section'
+      );
       orderSubscription = supabaseService.subscribeToUserOrders(
         state.user.id,
-        (updatedOrders) => {
-          console.log('📦 Real-time order update in past orders:', updatedOrders.length, 'orders');
+        updatedOrders => {
+          console.log(
+            '📦 Real-time order update in past orders:',
+            updatedOrders.length,
+            'orders'
+          );
           // Get the 3 most recent orders
           const recentOrders = updatedOrders.slice(0, 3);
           setRecentOrders(recentOrders);
         }
       );
     }
-    
+
     // Cleanup subscription on unmount
     return () => {
       if (orderSubscription) {
@@ -102,7 +130,8 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
     try {
       setLoading(true);
       // Use context user (now live user) or try to get from Supabase
-      const currentUser = state.user || await supabaseService.getCurrentUser();
+      const currentUser =
+        state.user || (await supabaseService.getCurrentUser());
       if (currentUser) {
         console.log('Loading recent orders for user:', currentUser.name);
         const orders = await supabaseService.getRecentOrders(currentUser.id, 3);
@@ -134,35 +163,51 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'delivered': return COLORS.success;
-      case 'out_for_delivery': return '#2196F3';
-      case 'preparing': return '#FF9800';
-      case 'confirmed': return '#4CAF50';
-      case 'ready': return '#9C27B0';
-      case 'pending': return '#795548';
-      case 'returned': return '#607D8B';
-      default: return COLORS.textSecondary;
+      case 'delivered':
+        return COLORS.success;
+      case 'out_for_delivery':
+        return '#2196F3';
+      case 'preparing':
+        return '#FF9800';
+      case 'confirmed':
+        return '#4CAF50';
+      case 'ready':
+        return '#9C27B0';
+      case 'pending':
+        return '#795548';
+      case 'returned':
+        return '#607D8B';
+      default:
+        return COLORS.textSecondary;
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'delivered': return 'checkmark-circle';
-      case 'out_for_delivery': return 'airplane';
-      case 'preparing': return 'time';
-      case 'confirmed': return 'checkmark-circle';
-      case 'ready': return 'cube';
-      case 'pending': return 'hourglass';
-      case 'returned': return 'return-up-back';
-      default: return 'help-circle';
+      case 'delivered':
+        return 'checkmark-circle';
+      case 'out_for_delivery':
+        return 'airplane';
+      case 'preparing':
+        return 'time';
+      case 'confirmed':
+        return 'checkmark-circle';
+      case 'ready':
+        return 'cube';
+      case 'pending':
+        return 'hourglass';
+      case 'returned':
+        return 'return-up-back';
+      default:
+        return 'help-circle';
     }
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
     });
   };
 
@@ -179,7 +224,10 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
       {/* Product Image */}
       <View style={styles.orderImageContainer}>
         {order.firstItemImage ? (
-          <Image source={{ uri: order.firstItemImage }} style={styles.orderImage} />
+          <Image
+            source={{ uri: order.firstItemImage }}
+            style={styles.orderImage}
+          />
         ) : (
           <View style={styles.placeholderImage}>
             <Ionicons name="wine" size={24} color={COLORS.textSecondary} />
@@ -198,27 +246,28 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
           <Text style={styles.orderNumber} numberOfLines={1}>
             {order.orderNumber}
           </Text>
-          <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(order.status)}15` }]}>
-            <Ionicons 
-              name={getStatusIcon(order.status) as any} 
-              size={12} 
-              color={getStatusColor(order.status)} 
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: `${getStatusColor(order.status)}15` },
+            ]}
+          >
+            <Ionicons
+              name={getStatusIcon(order.status) as any}
+              size={12}
+              color={getStatusColor(order.status)}
             />
           </View>
         </View>
-        
+
         <Text style={styles.orderItemName} numberOfLines={1}>
           {order.firstItemName}
           {order.itemCount > 1 && ` +${order.itemCount - 1} more`}
         </Text>
-        
+
         <View style={styles.orderFooter}>
-          <Text style={styles.orderDate}>
-            {formatDate(order.date)}
-          </Text>
-          <Text style={styles.orderTotal}>
-            ${order.total.toFixed(2)}
-          </Text>
+          <Text style={styles.orderDate}>{formatDate(order.date)}</Text>
+          <Text style={styles.orderTotal}>${order.total.toFixed(2)}</Text>
         </View>
       </View>
 
@@ -241,13 +290,18 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
       {/* Section Header - Match ProductSectionCard pattern */}
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Ionicons name="receipt" size={20} color={COLORS.primary} style={styles.icon} />
+          <Ionicons
+            name="receipt"
+            size={20}
+            color={COLORS.primary}
+            style={styles.icon}
+          />
           <Text style={styles.title}>Past Orders</Text>
           <View style={styles.countBadge}>
             <Text style={styles.countText}>{recentOrders.length}</Text>
           </View>
         </View>
-        
+
         <TouchableOpacity
           style={styles.viewAllButton}
           onPress={handleViewAllPress}
@@ -262,8 +316,8 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
       </View>
 
       {/* Orders List */}
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.ordersContainer}
         style={styles.ordersScrollView}
@@ -277,16 +331,18 @@ export default function PastOrdersSection({ onOrderPress, onViewAll, onReorderPr
             <Text style={styles.emptyText}>No recent orders</Text>
           </View>
         ) : (
-          recentOrders.map(order => renderOrderCard({
-            id: order.id,
-            orderNumber: order.orderNumber,
-            date: order.date,
-            status: order.status,
-            total: order.total,
-            itemCount: order.items.length,
-            firstItemName: order.items[0]?.name || 'Unknown Item',
-            firstItemImage: order.items[0]?.image || ''
-          }))
+          recentOrders.map(order =>
+            renderOrderCard({
+              id: order.id,
+              orderNumber: order.orderNumber,
+              date: order.date,
+              status: order.status,
+              total: order.total,
+              itemCount: order.items.length,
+              firstItemName: order.items[0]?.name || 'Unknown Item',
+              firstItemImage: order.items[0]?.image || '',
+            })
+          )
         )}
       </ScrollView>
     </View>
@@ -448,26 +504,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  
+
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: SPACING.lg,
   },
-  
+
   loadingText: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
   },
-  
+
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: SPACING.lg,
   },
-  
+
   emptyText: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,

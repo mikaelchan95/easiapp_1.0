@@ -11,7 +11,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../utils/theme';
-import companyBillingService, { CompanyPayment } from '../../services/companyBillingService';
+import companyBillingService, {
+  CompanyPayment,
+} from '../../services/companyBillingService';
 
 interface PaymentHistoryProps {
   companyId: string;
@@ -43,56 +45,63 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
     loadPayments(true);
   }, [companyId, activeFilter]);
 
-  const loadPayments = useCallback(async (reset = false) => {
-    const isInitialLoad = reset || currentPage === 0;
-    
-    if (isInitialLoad) {
-      setLoading(true);
-      setError(null);
-    } else {
-      setLoadingMore(true);
-    }
+  const loadPayments = useCallback(
+    async (reset = false) => {
+      const isInitialLoad = reset || currentPage === 0;
 
-    try {
-      const offset = isInitialLoad ? 0 : currentPage * pageSize;
-      const status = activeFilter === 'all' ? undefined : activeFilter;
+      if (isInitialLoad) {
+        setLoading(true);
+        setError(null);
+      } else {
+        setLoadingMore(true);
+      }
 
-      const { data, error: fetchError, count } = await companyBillingService.getCompanyPayments(
-        companyId,
-        {
+      try {
+        const offset = isInitialLoad ? 0 : currentPage * pageSize;
+        const status = activeFilter === 'all' ? undefined : activeFilter;
+
+        const {
+          data,
+          error: fetchError,
+          count,
+        } = await companyBillingService.getCompanyPayments(companyId, {
           limit: pageSize,
           offset,
           status,
+        });
+
+        if (fetchError) {
+          setError(fetchError);
+          return;
         }
-      );
 
-      if (fetchError) {
-        setError(fetchError);
-        return;
+        const newPayments = data || [];
+
+        if (isInitialLoad) {
+          setPayments(newPayments);
+          setCurrentPage(1);
+        } else {
+          setPayments(prev => [...prev, ...newPayments]);
+          setCurrentPage(prev => prev + 1);
+        }
+
+        // Check if there are more items
+        const totalLoaded = isInitialLoad
+          ? newPayments.length
+          : payments.length + newPayments.length;
+        setHasMore(
+          count ? totalLoaded < count : newPayments.length === pageSize
+        );
+      } catch (err) {
+        setError('Failed to load payment history');
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+        setRefreshing(false);
       }
-
-      const newPayments = data || [];
-      
-      if (isInitialLoad) {
-        setPayments(newPayments);
-        setCurrentPage(1);
-      } else {
-        setPayments(prev => [...prev, ...newPayments]);
-        setCurrentPage(prev => prev + 1);
-      }
-
-      // Check if there are more items
-      const totalLoaded = isInitialLoad ? newPayments.length : payments.length + newPayments.length;
-      setHasMore(count ? totalLoaded < count : newPayments.length === pageSize);
-
-    } catch (err) {
-      setError('Failed to load payment history');
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-      setRefreshing(false);
-    }
-  }, [companyId, currentPage, pageSize, activeFilter, payments.length]);
+    },
+    [companyId, currentPage, pageSize, activeFilter, payments.length]
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -157,10 +166,10 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
       Alert.alert(
         'Payment Details',
         `Amount: ${companyBillingService.formatCurrency(payment.payment_amount)}\n` +
-        `Method: ${payment.payment_method.replace('_', ' ').toUpperCase()}\n` +
-        `Status: ${payment.status.toUpperCase()}\n` +
-        `Date: ${companyBillingService.formatDate(payment.payment_date)}\n` +
-        `Reference: ${payment.payment_reference || 'N/A'}`,
+          `Method: ${payment.payment_method.replace('_', ' ').toUpperCase()}\n` +
+          `Status: ${payment.status.toUpperCase()}\n` +
+          `Date: ${companyBillingService.formatDate(payment.payment_date)}\n` +
+          `Reference: ${payment.payment_reference || 'N/A'}`,
         [{ text: 'OK' }]
       );
     }
@@ -168,8 +177,9 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
 
   const renderPaymentItem = ({ item }: { item: CompanyPayment }) => {
     const paymentDate = new Date(item.payment_date);
-    const isRecent = (Date.now() - paymentDate.getTime()) < (7 * 24 * 60 * 60 * 1000); // Last 7 days
-    
+    const isRecent =
+      Date.now() - paymentDate.getTime() < 7 * 24 * 60 * 60 * 1000; // Last 7 days
+
     return (
       <TouchableOpacity
         style={styles.paymentItem}
@@ -178,7 +188,12 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
       >
         <View style={styles.paymentHeader}>
           <View style={styles.paymentIconSection}>
-            <View style={[styles.paymentIcon, { backgroundColor: getPaymentStatusColor(item.status) + '20' }]}>
+            <View
+              style={[
+                styles.paymentIcon,
+                { backgroundColor: getPaymentStatusColor(item.status) + '20' },
+              ]}
+            >
               <Ionicons
                 name={getPaymentMethodIcon(item.payment_method)}
                 size={20}
@@ -191,7 +206,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
               </View>
             )}
           </View>
-          
+
           <View style={styles.paymentDetails}>
             <View style={styles.paymentMainInfo}>
               <Text style={styles.paymentAmount}>
@@ -203,12 +218,17 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
                   size={12}
                   color={getPaymentStatusColor(item.status)}
                 />
-                <Text style={[styles.statusText, { color: getPaymentStatusColor(item.status) }]}>
+                <Text
+                  style={[
+                    styles.statusText,
+                    { color: getPaymentStatusColor(item.status) },
+                  ]}
+                >
                   {item.status.toUpperCase()}
                 </Text>
               </View>
             </View>
-            
+
             <View style={styles.paymentMeta}>
               <Text style={styles.paymentMethod}>
                 {item.payment_method.replace('_', ' ').toUpperCase()}
@@ -229,7 +249,11 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
 
         {item.invoice_id && (
           <View style={styles.invoiceSection}>
-            <Ionicons name="document-text-outline" size={14} color={theme.colors.text.secondary} />
+            <Ionicons
+              name="document-text-outline"
+              size={14}
+              color={theme.colors.text.secondary}
+            />
             <Text style={styles.invoiceText}>Applied to invoice</Text>
           </View>
         )}
@@ -242,7 +266,11 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
         )}
 
         <View style={styles.actionIndicator}>
-          <Ionicons name="chevron-forward" size={16} color={theme.colors.text.secondary} />
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={theme.colors.text.secondary}
+          />
         </View>
       </TouchableOpacity>
     );
@@ -270,14 +298,16 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
             <TouchableOpacity
               style={[
                 styles.filterButton,
-                activeFilter === item.key && styles.activeFilterButton
+                activeFilter === item.key && styles.activeFilterButton,
               ]}
               onPress={() => handleFilterPress(item.key)}
             >
-              <Text style={[
-                styles.filterButtonText,
-                activeFilter === item.key && styles.activeFilterButtonText
-              ]}>
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  activeFilter === item.key && styles.activeFilterButtonText,
+                ]}
+              >
                 {item.label}
               </Text>
             </TouchableOpacity>
@@ -289,7 +319,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
 
   const renderFooter = () => {
     if (!loadingMore) return null;
-    
+
     return (
       <View style={styles.loadingMore}>
         <ActivityIndicator size="small" color={theme.colors.text.primary} />
@@ -300,13 +330,16 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <Ionicons name="card-outline" size={48} color={theme.colors.text.secondary} />
+      <Ionicons
+        name="card-outline"
+        size={48}
+        color={theme.colors.text.secondary}
+      />
       <Text style={styles.emptyStateTitle}>No Payments Found</Text>
       <Text style={styles.emptyStateSubtitle}>
-        {activeFilter === 'all' 
+        {activeFilter === 'all'
           ? 'No payments have been recorded yet'
-          : `No ${activeFilter} payments found`
-        }
+          : `No ${activeFilter} payments found`}
       </Text>
     </View>
   );
@@ -314,22 +347,33 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
   // Summary stats for payments
   const getSummaryStats = () => {
     const totalAmount = payments.reduce((sum, payment) => {
-      return payment.status === 'confirmed' ? sum + payment.payment_amount : sum;
+      return payment.status === 'confirmed'
+        ? sum + payment.payment_amount
+        : sum;
     }, 0);
-    
+
     const thisMonth = new Date();
     thisMonth.setDate(1);
-    const thisMonthPayments = payments.filter(payment => 
-      payment.status === 'confirmed' && new Date(payment.payment_date) >= thisMonth
+    const thisMonthPayments = payments.filter(
+      payment =>
+        payment.status === 'confirmed' &&
+        new Date(payment.payment_date) >= thisMonth
     );
-    const thisMonthAmount = thisMonthPayments.reduce((sum, payment) => sum + payment.payment_amount, 0);
+    const thisMonthAmount = thisMonthPayments.reduce(
+      (sum, payment) => sum + payment.payment_amount,
+      0
+    );
 
-    return { totalAmount, thisMonthAmount, thisMonthCount: thisMonthPayments.length };
+    return {
+      totalAmount,
+      thisMonthAmount,
+      thisMonthCount: thisMonthPayments.length,
+    };
   };
 
   const renderSummaryStats = () => {
     const { totalAmount, thisMonthAmount, thisMonthCount } = getSummaryStats();
-    
+
     return (
       <View style={styles.summaryContainer}>
         <View style={styles.summaryCard}>
@@ -343,7 +387,9 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
             {companyBillingService.formatCurrency(thisMonthAmount)}
           </Text>
           <Text style={styles.summaryLabel}>This Month</Text>
-          <Text style={styles.summarySubLabel}>{String(thisMonthCount)} payments</Text>
+          <Text style={styles.summarySubLabel}>
+            {String(thisMonthCount)} payments
+          </Text>
         </View>
       </View>
     );
@@ -361,7 +407,11 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
   if (error) {
     return (
       <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle-outline" size={48} color={theme.colors.text.secondary} />
+        <Ionicons
+          name="alert-circle-outline"
+          size={48}
+          color={theme.colors.text.secondary}
+        />
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
           <Text style={styles.retryText}>Try Again</Text>
@@ -374,7 +424,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
     <View style={styles.container}>
       {payments.length > 0 && renderSummaryStats()}
       {renderFilterButtons()}
-      
+
       <FlatList
         data={payments}
         keyExtractor={item => item.id}
@@ -391,7 +441,9 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
         ListFooterComponent={renderFooter}
         ListEmptyComponent={renderEmptyState}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={payments.length === 0 ? styles.emptyContainer : undefined}
+        contentContainerStyle={
+          payments.length === 0 ? styles.emptyContainer : undefined
+        }
       />
     </View>
   );

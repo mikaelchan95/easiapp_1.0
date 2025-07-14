@@ -29,11 +29,11 @@ export interface DeliverySlot {
   isSpecialLocation?: boolean;
 }
 
-export type PaymentMethodType = 
-  | 'credit_card' 
-  | 'debit_card' 
-  | 'paypal' 
-  | 'apple_pay' 
+export type PaymentMethodType =
+  | 'credit_card'
+  | 'debit_card'
+  | 'paypal'
+  | 'apple_pay'
   | 'google_pay'
   | 'COD'
   | 'NET7'

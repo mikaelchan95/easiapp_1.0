@@ -8,7 +8,7 @@ import {
   Animated,
   TextInput,
   Dimensions,
-  Image
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -40,47 +40,51 @@ const MOCK_WISHLIST: WishlistItem[] = [
     name: 'Macallan 18 Year Old',
     price: 145.99,
     originalPrice: 169.99,
-    imageUrl: 'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-18-sherry-oak.webp',
+    imageUrl:
+      'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-18-sherry-oak.webp',
     category: 'Whiskey',
     inStock: true,
     rating: 4.8,
     dateAdded: '2024-01-10',
-    description: 'Aged in sherry oak casks for 18 years'
+    description: 'Aged in sherry oak casks for 18 years',
   },
   {
     id: '2',
     name: 'Dom Pérignon 2013',
-    price: 189.50,
-    imageUrl: 'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/dom-perignon-2013.webp',
+    price: 189.5,
+    imageUrl:
+      'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/dom-perignon-2013.webp',
     category: 'Champagne',
     inStock: true,
     rating: 4.9,
     dateAdded: '2024-01-08',
-    description: 'Vintage champagne from the prestigious Dom Pérignon house'
+    description: 'Vintage champagne from the prestigious Dom Pérignon house',
   },
   {
     id: '3',
     name: 'Macallan 25 Year Old',
     price: 299.99,
     originalPrice: 349.99,
-    imageUrl: 'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-25-sherry-oak.webp',
+    imageUrl:
+      'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-25-sherry-oak.webp',
     category: 'Whiskey',
     inStock: false,
     rating: 4.9,
     dateAdded: '2024-01-05',
-    description: 'Premium aged whiskey with complex flavor profile'
+    description: 'Premium aged whiskey with complex flavor profile',
   },
   {
     id: '4',
     name: 'Macallan 30 Year Old',
     price: 799.99,
-    imageUrl: 'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-30-sherry-oak.webp',
+    imageUrl:
+      'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-30-sherry-oak.webp',
     category: 'Whiskey',
     inStock: true,
     rating: 5.0,
     dateAdded: '2024-01-02',
-    description: 'Ultra-premium 30-year aged single malt whiskey'
-  }
+    description: 'Ultra-premium 30-year aged single malt whiskey',
+  },
 ];
 
 const SORT_OPTIONS = [
@@ -88,7 +92,7 @@ const SORT_OPTIONS = [
   { id: 'priceAsc', label: 'Price: Low to High', icon: 'arrow-up-outline' },
   { id: 'priceDesc', label: 'Price: High to Low', icon: 'arrow-down-outline' },
   { id: 'name', label: 'Name A-Z', icon: 'text-outline' },
-  { id: 'rating', label: 'Highest Rated', icon: 'star-outline' }
+  { id: 'rating', label: 'Highest Rated', icon: 'star-outline' },
 ];
 
 export default function WishlistScreen() {
@@ -96,11 +100,11 @@ export default function WishlistScreen() {
   const insets = useSafeAreaInsets();
   const { dispatch } = useContext(AppContext);
   const { showCartNotification } = useContext(CartNotificationContext);
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const headerAnim = useRef(new Animated.Value(0)).current;
-  
+
   // State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSort, setSelectedSort] = useState('dateAdded');
@@ -108,7 +112,7 @@ export default function WishlistScreen() {
   const [wishlistItems, setWishlistItems] = useState(MOCK_WISHLIST);
   const [filteredItems, setFilteredItems] = useState(MOCK_WISHLIST);
   const [showSortModal, setShowSortModal] = useState(false);
-  
+
   useEffect(() => {
     // Initial animation
     Animated.parallel([
@@ -116,29 +120,30 @@ export default function WishlistScreen() {
         toValue: 1,
         duration: 600,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
+        easing: Animations.TIMING.easeOut,
       }),
       Animated.timing(headerAnim, {
         toValue: 1,
         duration: 400,
         delay: 200,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
-      })
+        easing: Animations.TIMING.easeOut,
+      }),
     ]).start();
   }, []);
-  
+
   useEffect(() => {
     // Filter and sort items
     let filtered = wishlistItems;
-    
+
     if (searchQuery) {
-      filtered = filtered.filter(item => 
-        item.name.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1 ||
-        item.category.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1
+      filtered = filtered.filter(
+        item =>
+          item.name.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1 ||
+          item.category.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1
       );
     }
-    
+
     // Sort items
     filtered = [...filtered].sort((a, b) => {
       switch (selectedSort) {
@@ -152,19 +157,20 @@ export default function WishlistScreen() {
           return b.rating - a.rating;
         case 'dateAdded':
         default:
-          return new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime();
+          return (
+            new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime()
+          );
       }
     });
-    
+
     setFilteredItems(filtered);
   }, [searchQuery, selectedSort, wishlistItems]);
-  
+
   const handleRemoveFromWishlist = (itemId: string) => {
     setWishlistItems(prev => prev.filter(item => item.id !== itemId));
   };
-  
+
   const handleAddToCart = (item: WishlistItem) => {
-    
     dispatch({
       type: 'ADD_TO_CART',
       payload: {
@@ -172,35 +178,43 @@ export default function WishlistScreen() {
         name: item.name,
         price: item.price,
         imageUrl: item.imageUrl,
-        category: item.category
-      }
+        category: item.category,
+      },
     });
-    
-          showCartNotification(item.name, 1);
+
+    showCartNotification(item.name, 1);
   };
-  
+
   const handleProductPress = (item: WishlistItem) => {
     navigation.navigate('ProductDetail', { productId: item.id });
   };
-  
-  const renderWishlistItem = ({ item, index }: { item: WishlistItem; index: number }) => {
+
+  const renderWishlistItem = ({
+    item,
+    index,
+  }: {
+    item: WishlistItem;
+    index: number;
+  }) => {
     const cardAnim = useRef(new Animated.Value(0)).current;
-    
+
     useEffect(() => {
       Animated.timing(cardAnim, {
         toValue: 1,
         duration: 400,
         delay: index * 100,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
+        easing: Animations.TIMING.easeOut,
       }).start();
     }, []);
-    
+
     const hasDiscount = item.originalPrice && item.originalPrice > item.price;
-    const discountPercent = hasDiscount 
-      ? Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)
+    const discountPercent = hasDiscount
+      ? Math.round(
+          ((item.originalPrice - item.price) / item.originalPrice) * 100
+        )
       : 0;
-    
+
     return (
       <Animated.View
         style={[
@@ -211,17 +225,17 @@ export default function WishlistScreen() {
               {
                 translateY: cardAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [30, 0]
-                })
+                  outputRange: [30, 0],
+                }),
               },
               {
                 scale: cardAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0.9, 1]
-                })
-              }
-            ]
-          }
+                  outputRange: [0.9, 1],
+                }),
+              },
+            ],
+          },
         ]}
       >
         <TouchableOpacity
@@ -234,22 +248,26 @@ export default function WishlistScreen() {
         >
           {/* Product Image */}
           <View style={styles.imageContainer}>
-            <Image source={{ uri: item.imageUrl }} style={styles.productImage} resizeMode="contain" />
-            
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={styles.productImage}
+              resizeMode="contain"
+            />
+
             {/* Discount Badge */}
             {hasDiscount && (
               <View style={styles.discountBadge}>
                 <Text style={styles.discountText}>{discountPercent}% OFF</Text>
               </View>
             )}
-            
+
             {/* Stock Status */}
             {!item.inStock && (
               <View style={styles.outOfStockOverlay}>
                 <Text style={styles.outOfStockText}>Out of Stock</Text>
               </View>
             )}
-            
+
             {/* Wishlist Remove Button */}
             <TouchableOpacity
               style={styles.removeButton}
@@ -261,47 +279,53 @@ export default function WishlistScreen() {
               <Ionicons name="heart" size={20} color="#E91E63" />
             </TouchableOpacity>
           </View>
-          
+
           {/* Product Info */}
           <View style={styles.productInfo}>
             <Text style={styles.categoryText}>{item.category}</Text>
-            <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
-            
+            <Text style={styles.productName} numberOfLines={2}>
+              {item.name}
+            </Text>
+
             {/* Rating */}
             <View style={styles.ratingContainer}>
               <Ionicons name="star" size={14} color="#FFD700" />
               <Text style={styles.ratingText}>{item.rating}</Text>
             </View>
-            
+
             {/* Price */}
             <View style={styles.priceContainer}>
               <Text style={styles.currentPrice}>${item.price.toFixed(2)}</Text>
               {hasDiscount && (
-                <Text style={styles.originalPrice}>${item.originalPrice?.toFixed(2)}</Text>
+                <Text style={styles.originalPrice}>
+                  ${item.originalPrice?.toFixed(2)}
+                </Text>
               )}
             </View>
-            
+
             {/* Add to Cart Button */}
             <TouchableOpacity
               style={[
                 styles.addToCartButton,
-                !item.inStock && styles.addToCartButtonDisabled
+                !item.inStock && styles.addToCartButtonDisabled,
               ]}
               onPress={() => handleAddToCart(item)}
               disabled={!item.inStock}
               accessible={true}
               accessibilityRole="button"
-              accessibilityLabel={item.inStock ? "Add to cart" : "Out of stock"}
+              accessibilityLabel={item.inStock ? 'Add to cart' : 'Out of stock'}
             >
-              <Ionicons 
-                name={item.inStock ? "cart-outline" : "close-circle-outline"} 
-                size={16} 
-                color={item.inStock ? COLORS.accent : COLORS.inactive} 
+              <Ionicons
+                name={item.inStock ? 'cart-outline' : 'close-circle-outline'}
+                size={16}
+                color={item.inStock ? COLORS.accent : COLORS.inactive}
               />
-              <Text style={[
-                styles.addToCartText,
-                !item.inStock && styles.addToCartTextDisabled
-              ]}>
+              <Text
+                style={[
+                  styles.addToCartText,
+                  !item.inStock && styles.addToCartTextDisabled,
+                ]}
+              >
                 {item.inStock ? 'Add to Cart' : 'Out of Stock'}
               </Text>
             </TouchableOpacity>
@@ -310,16 +334,15 @@ export default function WishlistScreen() {
       </Animated.View>
     );
   };
-  
+
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="heart-outline" size={64} color={COLORS.inactive} />
       <Text style={styles.emptyStateTitle}>Your Wishlist is Empty</Text>
       <Text style={styles.emptyStateText}>
-        {searchQuery 
+        {searchQuery
           ? 'No items match your search. Try a different keyword.'
-          : 'Save items you love to your wishlist and shop them later!'
-        }
+          : 'Save items you love to your wishlist and shop them later!'}
       </Text>
       {!searchQuery && (
         <TouchableOpacity
@@ -335,24 +358,24 @@ export default function WishlistScreen() {
       )}
     </View>
   );
-  
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.header,
-          { 
+          {
             opacity: headerAnim,
             transform: [
               {
                 translateY: headerAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [-20, 0]
-                })
-              }
-            ]
-          }
+                  outputRange: [-20, 0],
+                }),
+              },
+            ],
+          },
         ]}
       >
         <TouchableOpacity
@@ -364,14 +387,15 @@ export default function WishlistScreen() {
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        
+
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Wishlist</Text>
           <Text style={styles.headerSubtitle}>
-            {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''} saved
+            {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}{' '}
+            saved
           </Text>
         </View>
-        
+
         <TouchableOpacity
           style={styles.sortButton}
           onPress={() => setShowSortModal(true)}
@@ -382,18 +406,15 @@ export default function WishlistScreen() {
           <Ionicons name="funnel-outline" size={20} color={COLORS.text} />
         </TouchableOpacity>
       </Animated.View>
-      
+
       {/* Search Bar */}
-      <Animated.View 
-        style={[
-          styles.searchSection,
-          { opacity: fadeAnim }
-        ]}
-      >
-        <View style={[
-          styles.searchContainer,
-          isSearchFocused && styles.searchContainerFocused
-        ]}>
+      <Animated.View style={[styles.searchSection, { opacity: fadeAnim }]}>
+        <View
+          style={[
+            styles.searchContainer,
+            isSearchFocused && styles.searchContainerFocused,
+          ]}
+        >
           <Ionicons name="search-outline" size={20} color={COLORS.inactive} />
           <TextInput
             style={styles.searchInput}
@@ -419,12 +440,12 @@ export default function WishlistScreen() {
           )}
         </View>
       </Animated.View>
-      
+
       {/* Wishlist Grid */}
       <FlatList
         data={filteredItems}
         renderItem={renderWishlistItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         numColumns={2}
         contentContainerStyle={styles.wishlistGrid}
         columnWrapperStyle={styles.row}

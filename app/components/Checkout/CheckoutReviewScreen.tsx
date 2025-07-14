@@ -1,15 +1,18 @@
 import React, { useContext, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
   StatusBar,
-  Alert 
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { AppContext } from '../../context/AppContext';
@@ -28,14 +31,18 @@ const DEFAULT_ADDRESS = {
   unitNumber: '',
   postalCode: '',
   phone: '',
-  isDefault: false
+  isDefault: false,
 };
 
 export default function CheckoutReviewScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { state, dispatch } = useContext(AppContext);
-  const { state: checkoutState, dispatch: checkoutDispatch, isCheckoutComplete } = useCheckout();
+  const {
+    state: checkoutState,
+    dispatch: checkoutDispatch,
+    isCheckoutComplete,
+  } = useCheckout();
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   const handlePlaceOrder = async () => {
@@ -61,12 +68,15 @@ export default function CheckoutReviewScreen() {
       // Create order
       const orderData = {
         user_id: state.user?.id,
-        company_id: state.user?.account_type === 'company' ? state.company?.id : null,
+        company_id:
+          state.user?.account_type === 'company' ? state.company?.id : null,
         items: state.cart.map(item => ({
           product_id: item.product.id,
           quantity: item.quantity,
           unit_price: item.product.trade_price || item.product.retail_price,
-          total_price: (item.product.trade_price || item.product.retail_price) * item.quantity
+          total_price:
+            (item.product.trade_price || item.product.retail_price) *
+            item.quantity,
         })),
         delivery_address: checkoutState.deliveryAddress,
         delivery_slot: checkoutState.deliverySlot,
@@ -76,11 +86,11 @@ export default function CheckoutReviewScreen() {
         delivery_fee: orderSummary.deliveryFee,
         gst: orderSummary.gst,
         total_amount: orderSummary.total,
-        status: 'pending'
+        status: 'pending',
       };
 
       const result = await supabaseService.createOrder(orderData);
-      
+
       if (result && result.orderId && result.orderNumber) {
         // Clear cart and checkout state
         dispatch({ type: 'CLEAR_CART' });
@@ -93,7 +103,7 @@ export default function CheckoutReviewScreen() {
             orderNumber: result.orderNumber,
             total: orderSummary.total,
             deliveryDate: checkoutState.deliverySlot?.date,
-            deliveryTime: checkoutState.deliverySlot?.timeSlot
+            deliveryTime: checkoutState.deliverySlot?.timeSlot,
           });
         }, 2000);
       } else {
@@ -121,7 +131,7 @@ export default function CheckoutReviewScreen() {
       {/* Header Container */}
       <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
         <View style={styles.simpleHeader}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={handleBack}
             activeOpacity={0.7}
@@ -129,21 +139,21 @@ export default function CheckoutReviewScreen() {
           >
             <Ionicons name="chevron-back" size={24} color={COLORS.text} />
           </TouchableOpacity>
-          
+
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>Review Order</Text>
           </View>
-          
+
           <View style={styles.headerSpacer} />
         </View>
       </View>
-      
-      <ScrollView 
+
+      <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <ReviewStep 
+        <ReviewStep
           cart={state.cart}
           address={checkoutState.deliveryAddress || DEFAULT_ADDRESS}
           deliverySlot={checkoutState.deliverySlot}
@@ -156,33 +166,38 @@ export default function CheckoutReviewScreen() {
       </ScrollView>
 
       {/* Step Indicator */}
-      <CheckoutStepIndicator 
-        currentStep={4}
-        totalSteps={4}
-      />
+      <CheckoutStepIndicator currentStep={4} totalSteps={4} />
 
       {/* Bottom Button */}
-      <View style={[
-        styles.bottomContainer,
-        { paddingBottom: insets.bottom + SPACING.sm } // Just safe area + small padding
-      ]}>
+      <View
+        style={[
+          styles.bottomContainer,
+          { paddingBottom: insets.bottom + SPACING.sm }, // Just safe area + small padding
+        ]}
+      >
         <View style={styles.totalContainer}>
           <Text style={styles.totalLabel}>Total Amount</Text>
-          <Text style={styles.totalAmount}>${orderSummary.total.toFixed(2)}</Text>
+          <Text style={styles.totalAmount}>
+            ${orderSummary.total.toFixed(2)}
+          </Text>
         </View>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={[
             styles.placeOrderButton,
-            (!isCheckoutComplete() || isPlacingOrder) && styles.placeOrderButtonDisabled
+            (!isCheckoutComplete() || isPlacingOrder) &&
+              styles.placeOrderButtonDisabled,
           ]}
           onPress={handlePlaceOrder}
           disabled={!isCheckoutComplete() || isPlacingOrder}
         >
-          <Text style={[
-            styles.placeOrderButtonText,
-            (!isCheckoutComplete() || isPlacingOrder) && styles.placeOrderButtonTextDisabled
-          ]}>
+          <Text
+            style={[
+              styles.placeOrderButtonText,
+              (!isCheckoutComplete() || isPlacingOrder) &&
+                styles.placeOrderButtonTextDisabled,
+            ]}
+          >
             {isPlacingOrder ? 'Placing Order...' : 'Place Order'}
           </Text>
         </TouchableOpacity>

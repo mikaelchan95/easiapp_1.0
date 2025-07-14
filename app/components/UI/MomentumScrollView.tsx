@@ -48,7 +48,8 @@ const MomentumScrollView: React.FC<MomentumScrollViewProps> = ({
   // Enhanced bounce detection
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+      const { contentOffset, contentSize, layoutMeasurement } =
+        event.nativeEvent;
       const currentY = contentOffset.y;
       const maxY = contentSize.height - layoutMeasurement.height;
 
@@ -62,7 +63,7 @@ const MomentumScrollView: React.FC<MomentumScrollViewProps> = ({
           onBounce();
         }
       }
-      
+
       // Detect bottom bounce
       else if (currentY > maxY && !bounceTriggered.current) {
         bounceTriggered.current = true;
@@ -73,7 +74,7 @@ const MomentumScrollView: React.FC<MomentumScrollViewProps> = ({
           onBounce();
         }
       }
-      
+
       // Reset bounce trigger when back in normal range
       else if (currentY >= 0 && currentY <= maxY) {
         bounceTriggered.current = false;
@@ -135,29 +136,32 @@ const MomentumScrollView: React.FC<MomentumScrollViewProps> = ({
   );
 
   // iOS-specific enhancements
-  const iosProps = Platform.OS === 'ios' ? {
-    // Better scroll physics
-    decelerationRate: momentumDecelerationRate,
-    directionalLockEnabled: true,
-    
-    // Visual enhancements
-    indicatorStyle: 'black' as const,
-    scrollIndicatorInsets: scrollIndicatorInsets || { right: 1 },
-    
-    // Bounce configuration
-    bounces: true,
-    bouncesZoom: true,
-    alwaysBounceVertical: bounceIntensity > 0,
-    alwaysBounceHorizontal: false,
-    
-    // Performance optimizations
-    scrollEventThrottle: 16,
-    removeClippedSubviews: true,
-    
-    // Keyboard handling
-    keyboardDismissMode: 'interactive' as const,
-    keyboardShouldPersistTaps: 'handled' as const,
-  } : {};
+  const iosProps =
+    Platform.OS === 'ios'
+      ? {
+          // Better scroll physics
+          decelerationRate: momentumDecelerationRate,
+          directionalLockEnabled: true,
+
+          // Visual enhancements
+          indicatorStyle: 'black' as const,
+          scrollIndicatorInsets: scrollIndicatorInsets || { right: 1 },
+
+          // Bounce configuration
+          bounces: true,
+          bouncesZoom: true,
+          alwaysBounceVertical: bounceIntensity > 0,
+          alwaysBounceHorizontal: false,
+
+          // Performance optimizations
+          scrollEventThrottle: 16,
+          removeClippedSubviews: true,
+
+          // Keyboard handling
+          keyboardDismissMode: 'interactive' as const,
+          keyboardShouldPersistTaps: 'handled' as const,
+        }
+      : {};
 
   return (
     <Animated.ScrollView

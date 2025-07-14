@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  TextInput, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,34 +35,39 @@ const SUPPORT_CATEGORIES: ChatSupportCategory[] = [
     id: 'orders',
     title: 'Orders & Delivery',
     description: 'Track orders, delivery issues, returns',
-    icon: 'bag-outline'
+    icon: 'bag-outline',
   },
   {
     id: 'products',
     title: 'Product Support',
     description: 'Product questions, availability, recommendations',
-    icon: 'cube-outline'
+    icon: 'cube-outline',
   },
   {
     id: 'billing',
     title: 'Billing & Payments',
     description: 'Payment issues, invoices, billing questions',
-    icon: 'card-outline'
+    icon: 'card-outline',
   },
   {
     id: 'account',
     title: 'Account & Settings',
     description: 'Profile updates, password reset, preferences',
-    icon: 'person-outline'
-  }
+    icon: 'person-outline',
+  },
 ];
 
 const AUTO_RESPONSES = {
-  orders: "Hi! I can help you with your orders. You can track your current orders in the Orders section or ask me about delivery times, returns, and order modifications.",
-  products: "Hello! I'm here to help with product questions. I can provide information about availability, specifications, and recommendations based on your needs.",
-  billing: "Hi there! For billing questions, I can help you understand your invoices, payment methods, and billing cycles. For urgent payment issues, I'll connect you with our billing team.",
-  account: "Hello! I can assist with account settings, profile updates, and general app navigation. What would you like help with today?",
-  general: "Hi! I'm your EASI support assistant. I can help with orders, products, billing, and account questions. How can I assist you today?"
+  orders:
+    'Hi! I can help you with your orders. You can track your current orders in the Orders section or ask me about delivery times, returns, and order modifications.',
+  products:
+    "Hello! I'm here to help with product questions. I can provide information about availability, specifications, and recommendations based on your needs.",
+  billing:
+    "Hi there! For billing questions, I can help you understand your invoices, payment methods, and billing cycles. For urgent payment issues, I'll connect you with our billing team.",
+  account:
+    'Hello! I can assist with account settings, profile updates, and general app navigation. What would you like help with today?',
+  general:
+    "Hi! I'm your EASI support assistant. I can help with orders, products, billing, and account questions. How can I assist you today?",
 };
 
 export default function ChatScreen() {
@@ -80,25 +85,25 @@ export default function ChatScreen() {
       text: "👋 Welcome to EASI Support! I'm here to help you with orders, products, billing, and account questions. Choose a category below or type your question.",
       timestamp: new Date(),
       isUser: false,
-      status: 'delivered'
+      status: 'delivered',
     };
     setMessages([welcomeMessage]);
   }, []);
 
   const handleCategorySelect = (category: ChatSupportCategory) => {
     setShowCategories(false);
-    
+
     // Add user message
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       text: `I need help with ${category.title}`,
       timestamp: new Date(),
       isUser: true,
-      status: 'sent'
+      status: 'sent',
     };
-    
+
     setMessages(prev => [...prev, userMessage]);
-    
+
     // Simulate typing and auto-response
     setTimeout(() => {
       setIsTyping(true);
@@ -109,7 +114,7 @@ export default function ChatScreen() {
           text: AUTO_RESPONSES[category.id as keyof typeof AUTO_RESPONSES],
           timestamp: new Date(),
           isUser: false,
-          status: 'delivered'
+          status: 'delivered',
         };
         setMessages(prev => [...prev, botResponse]);
       }, 1500);
@@ -124,7 +129,7 @@ export default function ChatScreen() {
       text: inputText.trim(),
       timestamp: new Date(),
       isUser: true,
-      status: 'sending'
+      status: 'sending',
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -133,11 +138,9 @@ export default function ChatScreen() {
 
     // Simulate message delivery
     setTimeout(() => {
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === userMessage.id 
-            ? { ...msg, status: 'sent' }
-            : msg
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === userMessage.id ? { ...msg, status: 'sent' } : msg
         )
       );
     }, 500);
@@ -149,10 +152,10 @@ export default function ChatScreen() {
         setIsTyping(false);
         const botResponse: ChatMessage = {
           id: (Date.now() + 1).toString(),
-          text: "Thanks for your message! Our support team will respond shortly. In the meantime, you can check our FAQ section or browse your order history for quick answers.",
+          text: 'Thanks for your message! Our support team will respond shortly. In the meantime, you can check our FAQ section or browse your order history for quick answers.',
           timestamp: new Date(),
           isUser: false,
-          status: 'delivered'
+          status: 'delivered',
         };
         setMessages(prev => [...prev, botResponse]);
       }, 2000);
@@ -160,44 +163,56 @@ export default function ChatScreen() {
   };
 
   const handleCallSupport = () => {
-    Alert.alert(
-      'Call Support',
-      'Would you like to call our support team?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Call Now', 
-          onPress: () => {
-            // In a real app, this would use Linking.openURL('tel:+1234567890')
-            Alert.alert('Feature Coming Soon', 'Phone support will be available in the next update.');
-          }
-        }
-      ]
-    );
+    Alert.alert('Call Support', 'Would you like to call our support team?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Call Now',
+        onPress: () => {
+          // In a real app, this would use Linking.openURL('tel:+1234567890')
+          Alert.alert(
+            'Feature Coming Soon',
+            'Phone support will be available in the next update.'
+          );
+        },
+      },
+    ]);
   };
 
   const renderMessage = ({ item }: { item: ChatMessage }) => (
-    <View style={[
-      styles.messageContainer,
-      item.isUser ? styles.userMessage : styles.botMessage
-    ]}>
-      <Text style={[
-        styles.messageText,
-        item.isUser ? styles.userMessageText : styles.botMessageText
-      ]}>
+    <View
+      style={[
+        styles.messageContainer,
+        item.isUser ? styles.userMessage : styles.botMessage,
+      ]}
+    >
+      <Text
+        style={[
+          styles.messageText,
+          item.isUser ? styles.userMessageText : styles.botMessageText,
+        ]}
+      >
         {item.text}
       </Text>
       <View style={styles.messageFooter}>
-        <Text style={[
-          styles.timestamp,
-          item.isUser ? styles.userTimestamp : styles.botTimestamp
-        ]}>
-          {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        <Text
+          style={[
+            styles.timestamp,
+            item.isUser ? styles.userTimestamp : styles.botTimestamp,
+          ]}
+        >
+          {item.timestamp.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
         </Text>
         {item.isUser && (
-          <Ionicons 
-            name={item.status === 'sending' ? 'time-outline' : 'checkmark-done-outline'} 
-            size={12} 
+          <Ionicons
+            name={
+              item.status === 'sending'
+                ? 'time-outline'
+                : 'checkmark-done-outline'
+            }
+            size={12}
             color={item.isUser ? COLORS.accent : COLORS.textSecondary}
             style={styles.statusIcon}
           />
@@ -217,7 +232,7 @@ export default function ChatScreen() {
   );
 
   const renderCategoryCard = ({ item }: { item: ChatSupportCategory }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.categoryCard}
       onPress={() => handleCategorySelect(item)}
     >
@@ -233,21 +248,24 @@ export default function ChatScreen() {
   );
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {/* Status Bar Background */}
       <View style={[styles.statusBarBackground, { height: insets.top }]} />
-      
+
       {/* Header */}
-      <MobileHeader 
-        title="Support Chat" 
-        showBackButton={false} 
+      <MobileHeader
+        title="Support Chat"
+        showBackButton={false}
         showSearch={false}
         showCartButton={false}
         rightButton={
-          <TouchableOpacity onPress={handleCallSupport} style={styles.callButton}>
+          <TouchableOpacity
+            onPress={handleCallSupport}
+            style={styles.callButton}
+          >
             <Ionicons name="call" size={20} color={COLORS.primary} />
           </TouchableOpacity>
         }
@@ -259,9 +277,11 @@ export default function ChatScreen() {
           ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           contentContainerStyle={styles.messagesList}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          onContentSizeChange={() =>
+            flatListRef.current?.scrollToEnd({ animated: true })
+          }
           onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
           ListFooterComponent={isTyping ? renderTypingIndicator : null}
         />
@@ -273,14 +293,19 @@ export default function ChatScreen() {
             <FlatList
               data={SUPPORT_CATEGORIES}
               renderItem={renderCategoryCard}
-              keyExtractor={(item) => item.id}
+              keyExtractor={item => item.id}
               scrollEnabled={false}
             />
           </View>
         )}
 
         {/* Input Container */}
-        <View style={[styles.inputContainer, { paddingBottom: insets.bottom + SPACING.md }]}>
+        <View
+          style={[
+            styles.inputContainer,
+            { paddingBottom: insets.bottom + SPACING.md },
+          ]}
+        >
           <View style={styles.inputWrapper}>
             <TextInput
               style={styles.textInput}
@@ -291,19 +316,19 @@ export default function ChatScreen() {
               multiline
               maxLength={500}
             />
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.sendButton,
-                { backgroundColor: inputText.trim() ? COLORS.primary : COLORS.textSecondary }
+                {
+                  backgroundColor: inputText.trim()
+                    ? COLORS.primary
+                    : COLORS.textSecondary,
+                },
               ]}
               onPress={handleSendMessage}
               disabled={!inputText.trim()}
             >
-              <Ionicons 
-                name="send" 
-                size={20} 
-                color={COLORS.accent} 
-              />
+              <Ionicons name="send" size={20} color={COLORS.accent} />
             </TouchableOpacity>
           </View>
         </View>

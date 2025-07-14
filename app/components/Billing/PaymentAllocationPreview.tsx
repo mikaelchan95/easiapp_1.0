@@ -33,13 +33,15 @@ export default function PaymentAllocationPreview({
   paymentAmount,
   allocationStrategy,
   onAllocationChange,
-  editable = false
+  editable = false,
 }: PaymentAllocationPreviewProps) {
   const [loading, setLoading] = useState(false);
   const [allocations, setAllocations] = useState<PaymentAllocation[]>([]);
   const [totalAllocated, setTotalAllocated] = useState(0);
   const [remainingPayment, setRemainingPayment] = useState(0);
-  const [manualAllocations, setManualAllocations] = useState<{ [key: string]: string }>({});
+  const [manualAllocations, setManualAllocations] = useState<{
+    [key: string]: string;
+  }>({});
 
   useEffect(() => {
     if (paymentAmount > 0) {
@@ -70,12 +72,13 @@ export default function PaymentAllocationPreview({
         setAllocations(calculatedAllocations);
         setTotalAllocated(result.data.total_allocated);
         setRemainingPayment(result.data.remaining_payment);
-        
+
         // Initialize manual allocations for editable mode
         if (editable && allocationStrategy === 'manual') {
           const manualAmounts: { [key: string]: string } = {};
           calculatedAllocations.forEach(allocation => {
-            manualAmounts[allocation.invoice_id] = allocation.allocated_amount.toString();
+            manualAmounts[allocation.invoice_id] =
+              allocation.allocated_amount.toString();
           });
           setManualAllocations(manualAmounts);
         }
@@ -93,18 +96,21 @@ export default function PaymentAllocationPreview({
   const updateManualAllocation = (invoiceId: string, amount: string) => {
     const numericAmount = parseFloat(amount) || 0;
     const invoice = allocations.find(a => a.invoice_id === invoiceId);
-    
+
     if (!invoice) return;
 
     // Validate amount doesn't exceed original invoice amount
     if (numericAmount > invoice.original_amount) {
-      Alert.alert('Invalid Amount', `Amount cannot exceed invoice total of ${formatCurrency(invoice.original_amount)}`);
+      Alert.alert(
+        'Invalid Amount',
+        `Amount cannot exceed invoice total of ${formatCurrency(invoice.original_amount)}`
+      );
       return;
     }
 
     setManualAllocations(prev => ({
       ...prev,
-      [invoiceId]: amount
+      [invoiceId]: amount,
     }));
 
     // Recalculate totals
@@ -113,13 +119,16 @@ export default function PaymentAllocationPreview({
         return {
           ...allocation,
           allocated_amount: numericAmount,
-          remaining_amount: allocation.original_amount - numericAmount
+          remaining_amount: allocation.original_amount - numericAmount,
         };
       }
       return allocation;
     });
 
-    const newTotalAllocated = updatedAllocations.reduce((sum, a) => sum + a.allocated_amount, 0);
+    const newTotalAllocated = updatedAllocations.reduce(
+      (sum, a) => sum + a.allocated_amount,
+      0
+    );
     const newRemainingPayment = paymentAmount - newTotalAllocated;
 
     setAllocations(updatedAllocations);
@@ -145,7 +154,8 @@ export default function PaymentAllocationPreview({
         allocation.allocated_amount = remaining;
         remaining = 0;
       }
-      allocation.remaining_amount = allocation.original_amount - allocation.allocated_amount;
+      allocation.remaining_amount =
+        allocation.original_amount - allocation.allocated_amount;
     });
 
     setAllocations(updatedAllocations);
@@ -155,7 +165,8 @@ export default function PaymentAllocationPreview({
     // Update manual allocations state
     const newManualAllocations: { [key: string]: string } = {};
     updatedAllocations.forEach(allocation => {
-      newManualAllocations[allocation.invoice_id] = allocation.allocated_amount.toString();
+      newManualAllocations[allocation.invoice_id] =
+        allocation.allocated_amount.toString();
     });
     setManualAllocations(newManualAllocations);
 
@@ -166,7 +177,7 @@ export default function PaymentAllocationPreview({
     const clearedAllocations = allocations.map(allocation => ({
       ...allocation,
       allocated_amount: 0,
-      remaining_amount: allocation.original_amount
+      remaining_amount: allocation.original_amount,
     }));
 
     setAllocations(clearedAllocations);
@@ -186,7 +197,7 @@ export default function PaymentAllocationPreview({
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('en-SG', {
       style: 'currency',
-      currency: 'SGD'
+      currency: 'SGD',
     }).format(amount);
   };
 
@@ -199,10 +210,14 @@ export default function PaymentAllocationPreview({
   const getStatusColor = () => {
     const status = getAllocationStatus();
     switch (status) {
-      case 'fully_allocated': return theme.colors.success;
-      case 'under_allocated': return theme.colors.warning;
-      case 'over_allocated': return theme.colors.error;
-      default: return theme.colors.textSecondary;
+      case 'fully_allocated':
+        return theme.colors.success;
+      case 'under_allocated':
+        return theme.colors.warning;
+      case 'over_allocated':
+        return theme.colors.error;
+      default:
+        return theme.colors.textSecondary;
     }
   };
 
@@ -218,7 +233,9 @@ export default function PaymentAllocationPreview({
   if (allocations.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No outstanding invoices to allocate payment to</Text>
+        <Text style={styles.emptyText}>
+          No outstanding invoices to allocate payment to
+        </Text>
       </View>
     );
   }
@@ -237,7 +254,9 @@ export default function PaymentAllocationPreview({
       <View style={styles.summaryCard}>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Payment Amount:</Text>
-          <Text style={styles.summaryValue}>{formatCurrency(paymentAmount)}</Text>
+          <Text style={styles.summaryValue}>
+            {formatCurrency(paymentAmount)}
+          </Text>
         </View>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Total Allocated:</Text>
@@ -247,10 +266,17 @@ export default function PaymentAllocationPreview({
         </View>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Remaining:</Text>
-          <Text style={[
-            styles.summaryValue,
-            { color: remainingPayment === 0 ? theme.colors.success : theme.colors.warning }
-          ]}>
+          <Text
+            style={[
+              styles.summaryValue,
+              {
+                color:
+                  remainingPayment === 0
+                    ? theme.colors.success
+                    : theme.colors.warning,
+              },
+            ]}
+          >
             {formatCurrency(remainingPayment)}
           </Text>
         </View>
@@ -258,14 +284,19 @@ export default function PaymentAllocationPreview({
 
       {editable && allocationStrategy === 'manual' && (
         <View style={styles.controls}>
-          <TouchableOpacity style={styles.controlButton} onPress={autoAllocateRemaining}>
+          <TouchableOpacity
+            style={styles.controlButton}
+            onPress={autoAllocateRemaining}
+          >
             <Text style={styles.controlButtonText}>Auto Allocate</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.controlButton, styles.clearButton]}
             onPress={clearAllAllocations}
           >
-            <Text style={[styles.controlButtonText, styles.clearButtonText]}>Clear All</Text>
+            <Text style={[styles.controlButtonText, styles.clearButtonText]}>
+              Clear All
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -275,7 +306,9 @@ export default function PaymentAllocationPreview({
           <View key={allocation.invoice_id} style={styles.allocationCard}>
             <View style={styles.allocationHeader}>
               <View style={styles.invoiceInfo}>
-                <Text style={styles.invoiceNumber}>{allocation.invoice_number}</Text>
+                <Text style={styles.invoiceNumber}>
+                  {allocation.invoice_number}
+                </Text>
                 <Text style={styles.originalAmount}>
                   Original: {formatCurrency(allocation.original_amount)}
                 </Text>
@@ -285,7 +318,9 @@ export default function PaymentAllocationPreview({
                   <TextInput
                     style={styles.amountInput}
                     value={manualAllocations[allocation.invoice_id] || '0'}
-                    onChangeText={(text) => updateManualAllocation(allocation.invoice_id, text)}
+                    onChangeText={text =>
+                      updateManualAllocation(allocation.invoice_id, text)
+                    }
                     keyboardType="numeric"
                     placeholder="0.00"
                   />
@@ -304,10 +339,12 @@ export default function PaymentAllocationPreview({
                     styles.progressFill,
                     {
                       width: `${Math.min((allocation.allocated_amount / allocation.original_amount) * 100, 100)}%`,
-                      backgroundColor: allocation.allocated_amount === allocation.original_amount
-                        ? theme.colors.success
-                        : theme.colors.primary
-                    }
+                      backgroundColor:
+                        allocation.allocated_amount ===
+                        allocation.original_amount
+                          ? theme.colors.success
+                          : theme.colors.primary,
+                    },
                   ]}
                 />
               </View>
@@ -328,7 +365,12 @@ export default function PaymentAllocationPreview({
       </ScrollView>
 
       <View style={styles.footer}>
-        <View style={[styles.statusIndicator, { backgroundColor: getStatusColor() }]}>
+        <View
+          style={[
+            styles.statusIndicator,
+            { backgroundColor: getStatusColor() },
+          ]}
+        >
           <Text style={styles.statusText}>
             {getAllocationStatus().replace('_', ' ').toUpperCase()}
           </Text>

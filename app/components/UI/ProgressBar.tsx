@@ -1,14 +1,14 @@
 import React, { useEffect, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Animated, 
-  ViewStyle, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  ViewStyle,
   TextStyle,
   StyleProp,
   Easing,
-  DimensionValue
+  DimensionValue,
 } from 'react-native';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
@@ -56,49 +56,55 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
   streakCount = 0,
   streakEnabled = false,
   streakColor = '#FFD700', // Gold color for streaks
-  showStreakAnimation = false
+  showStreakAnimation = false,
 }) => {
   // Animation values
   const progressAnim = useRef(
-    progress instanceof Animated.Value 
-      ? progress 
-      : new Animated.Value(initialRender ? 0 : typeof progress === 'number' ? progress : 0)
+    progress instanceof Animated.Value
+      ? progress
+      : new Animated.Value(
+          initialRender ? 0 : typeof progress === 'number' ? progress : 0
+        )
   ).current;
-  
+
   // Separate animation value for native driver animations
   const nativeAnim = useRef(new Animated.Value(0)).current;
   const streakAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Format the label text
   const getLabelText = () => {
     if (totalValue !== undefined && currentValue !== undefined) {
       return `${valuePrefix}${currentValue}${valueSuffix} / ${valuePrefix}${totalValue}${valueSuffix}`;
     }
-    
+
     // If progress is an Animated.Value, use a default percentage
     if (progress instanceof Animated.Value) {
       return '...%';
     }
-    
+
     return `${Math.round(progress * 100)}%`;
   };
-  
+
   // Animate progress when it changes
   useEffect(() => {
-    if (animated && !(progress instanceof Animated.Value) && typeof progress === 'number') {
+    if (
+      animated &&
+      !(progress instanceof Animated.Value) &&
+      typeof progress === 'number'
+    ) {
       Animated.timing(progressAnim, {
         toValue: progress,
         duration,
         easing: Animations.TIMING.easeOut,
-        useNativeDriver: false
+        useNativeDriver: false,
       }).start();
-      
+
       // Fade in with native driver
       Animated.timing(opacityAnim, {
         toValue: 1,
         duration: 300,
-        useNativeDriver: true
+        useNativeDriver: true,
       }).start();
     } else if (!(progress instanceof Animated.Value)) {
       progressAnim.setValue(typeof progress === 'number' ? progress : 0);
@@ -108,32 +114,32 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
       Animated.timing(opacityAnim, {
         toValue: 1,
         duration: 300,
-        useNativeDriver: true
+        useNativeDriver: true,
       }).start();
     }
   }, [progress, animated, duration]);
-  
+
   // Animate streaks when enabled
   useEffect(() => {
     if (streakEnabled && showStreakAnimation && streakCount > 0) {
       // Reset animation
       streakAnim.setValue(0);
-      
+
       // Run animation
       Animated.sequence([
         Animated.timing(streakAnim, {
           toValue: 1,
           duration: 400,
           easing: Animations.TIMING.easeOut,
-          useNativeDriver: true
+          useNativeDriver: true,
         }),
         Animated.timing(streakAnim, {
           toValue: 0,
           duration: 300,
           delay: 1000,
           easing: Animations.TIMING.easeIn,
-          useNativeDriver: true
-        })
+          useNativeDriver: true,
+        }),
       ]).start();
     }
   }, [streakCount, streakEnabled, showStreakAnimation]);
@@ -147,24 +153,26 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
   // Render streak indicator
   const renderStreakIndicator = () => {
     if (!streakEnabled || streakCount === 0) return null;
-    
+
     return (
       <View style={styles.streakContainer}>
-        <Animated.View 
+        <Animated.View
           style={[
             styles.streakBadge,
             {
               backgroundColor: streakColor,
               opacity: showStreakAnimation ? streakAnim : 1,
               transform: [
-                { scale: showStreakAnimation ? 
-                  streakAnim.interpolate({
-                    inputRange: [0, 0.5, 1],
-                    outputRange: [0.8, 1.2, 1]
-                  }) : 1 
-                }
-              ]
-            }
+                {
+                  scale: showStreakAnimation
+                    ? streakAnim.interpolate({
+                        inputRange: [0, 0.5, 1],
+                        outputRange: [0.8, 1.2, 1],
+                      })
+                    : 1,
+                },
+              ],
+            },
           ]}
         >
           <Text style={styles.streakText}>🔥 {streakCount}</Text>
@@ -174,41 +182,47 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
   };
 
   return (
-    <Animated.View style={[
-      styles.container, 
-      labelPosition === 'bottom' && styles.containerReverse,
-      { opacity: opacityAnim },
-      containerStyle
-    ]}>
+    <Animated.View
+      style={[
+        styles.container,
+        labelPosition === 'bottom' && styles.containerReverse,
+        { opacity: opacityAnim },
+        containerStyle,
+      ]}
+    >
       {/* Label above or below */}
       {showLabel && labelPosition !== 'right' && (
-        <Text style={[
-          styles.label, 
-          labelPosition === 'bottom' ? { marginTop: 4 } : { marginBottom: 4 },
-          labelStyle
-        ]}>
+        <Text
+          style={[
+            styles.label,
+            labelPosition === 'bottom' ? { marginTop: 4 } : { marginBottom: 4 },
+            labelStyle,
+          ]}
+        >
           {getLabelText()}
         </Text>
       )}
-      
-      <View style={[
-        styles.progressContainer, 
-        { 
-          height, 
-          width, 
-          backgroundColor 
-        }
-      ]}>
-        <Animated.View 
+
+      <View
+        style={[
+          styles.progressContainer,
+          {
+            height,
+            width,
+            backgroundColor,
+          },
+        ]}
+      >
+        <Animated.View
           style={[
-            styles.progressFill, 
-            { 
+            styles.progressFill,
+            {
               width: widthInterpolation,
               backgroundColor: fillColor,
-            }
+            },
           ]}
         />
-        
+
         {/* Tick marks for milestones */}
         {streakEnabled && streakCount > 0 && (
           <>
@@ -218,14 +232,14 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
           </>
         )}
       </View>
-      
+
       {/* Label on right */}
       {showLabel && labelPosition === 'right' && (
         <Text style={[styles.label, { marginLeft: 8 }, labelStyle]}>
           {getLabelText()}
         </Text>
       )}
-      
+
       {/* Streak indicator */}
       {renderStreakIndicator()}
     </Animated.View>
@@ -277,7 +291,7 @@ const styles = StyleSheet.create({
     width: 2,
     height: '100%',
     backgroundColor: 'rgba(255,255,255,0.5)',
-  }
+  },
 });
 
-export default ProgressBar; 
+export default ProgressBar;

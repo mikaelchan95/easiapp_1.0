@@ -9,15 +9,15 @@ import {
   FlatList,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform
+  Platform,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { HapticFeedback } from '../../utils/haptics';
-import { 
-  LocationSuggestion, 
+import {
+  LocationSuggestion,
   SavedAddress,
   LocationSelectionUIProps,
-  DeliveryDetails
+  DeliveryDetails,
 } from '../../types/location';
 import { GoogleMapsService } from '../../services/googleMapsService';
 import PostalCodeInput from './PostalCodeInput';
@@ -29,37 +29,43 @@ function LocationSelectionUI({
   onAddressDetailsSubmit,
   onSaveAddress,
   initialLocation,
-  savedAddresses = []
+  savedAddresses = [],
 }: LocationSelectionUIProps) {
   // Component states
-  const [currentStep, setCurrentStep] = useState<'selection' | 'details' | 'save' | 'search' | 'postal'>('selection');
+  const [currentStep, setCurrentStep] = useState<
+    'selection' | 'details' | 'save' | 'search' | 'postal'
+  >('selection');
   const [searchText, setSearchText] = useState('');
   const [searchResults, setSearchResults] = useState<LocationSuggestion[]>([]);
-  const [selectedLocation, setSelectedLocation] = useState<LocationSuggestion | null>(initialLocation || null);
-  const [recentLocations, setRecentLocations] = useState<LocationSuggestion[]>([]);
+  const [selectedLocation, setSelectedLocation] =
+    useState<LocationSuggestion | null>(initialLocation || null);
+  const [recentLocations, setRecentLocations] = useState<LocationSuggestion[]>(
+    []
+  );
   const [isLoadingCurrent, setIsLoadingCurrent] = useState(false);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
   const [postalCode, setPostalCode] = useState('');
   const [postalCodeError, setPostalCodeError] = useState<string | undefined>();
   const [isLoadingPostal, setIsLoadingPostal] = useState(false);
-  
+
   // Load recent locations on mount
   useEffect(() => {
     const loadRecentLocations = async () => {
       const recent = await GoogleMapsService.getRecentLocations();
       setRecentLocations(recent);
     };
-    
+
     loadRecentLocations();
   }, []);
-  
+
   // Search for locations when search text changes
   useEffect(() => {
     const searchTimeout = setTimeout(async () => {
       if (searchText.length > 2) {
         setIsLoadingResults(true);
         try {
-          const results = await GoogleMapsService.getAutocompleteSuggestions(searchText);
+          const results =
+            await GoogleMapsService.getAutocompleteSuggestions(searchText);
           setSearchResults(results);
         } catch (error) {
           console.error('Search error:', error);
@@ -70,10 +76,10 @@ function LocationSelectionUI({
         setSearchResults([]);
       }
     }, 300);
-    
+
     return () => clearTimeout(searchTimeout);
   }, [searchText]);
-  
+
   // Get current location
   const getCurrentLocation = async () => {
     HapticFeedback.medium();
@@ -89,58 +95,58 @@ function LocationSelectionUI({
       setIsLoadingCurrent(false);
     }
   };
-    // Handle location selection
+  // Handle location selection
   const handleLocationSelect = (location: LocationSuggestion) => {
     HapticFeedback.light();
     setSelectedLocation(location);
-    
+
     // Add to recent locations
     GoogleMapsService.addToRecentLocations(location);
-    
+
     // Move to details step
     setCurrentStep('details');
-    
+
     // If external handler provided, call it
     if (onLocationSelect) {
       onLocationSelect(location);
     }
   };
-  
+
   // Search input handler
   const handleSearchTextChange = (text: string) => {
     setSearchText(text);
   };
-  
+
   // Navigate to postal code search
   const goToPostalCodeSearch = () => {
     setCurrentStep('postal');
   };
-  
+
   // Clear search
   const clearSearch = () => {
     setSearchText('');
     setSearchResults([]);
   };
-  
+
   // Back to selection screen
   const goBackToSelection = () => {
     setCurrentStep('selection');
   };
-  
+
   // Handle address details submission
   const handleDetailsSubmit = (details: any) => {
     if (onAddressDetailsSubmit) {
       onAddressDetailsSubmit(details);
     }
   };
-  
+
   // Handle saving address
   const handleSaveAddress = (address: any) => {
     if (onSaveAddress) {
       onSaveAddress(address);
     }
   };
-  
+
   // Quick action buttons for location selection methods
   const quickActions = [
     {
@@ -171,7 +177,7 @@ function LocationSelectionUI({
   const searchByPostalCode = async (code: string) => {
     setIsLoadingPostal(true);
     setPostalCodeError(undefined);
-    
+
     try {
       const location = await GoogleMapsService.getAddressByPostalCode(code);
       if (location) {
@@ -194,14 +200,19 @@ function LocationSelectionUI({
         return (
           <View style={styles.container}>
             <View style={styles.searchHeader}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.backButton}
                 onPress={goBackToSelection}
               >
                 <MaterialIcons name="arrow-back" size={24} color="#000" />
               </TouchableOpacity>
               <View style={styles.searchInputContainer}>
-                <MaterialIcons name="search" size={20} color="#555" style={styles.searchIcon} />
+                <MaterialIcons
+                  name="search"
+                  size={20}
+                  color="#555"
+                  style={styles.searchIcon}
+                />
                 <TextInput
                   style={styles.searchInput}
                   placeholder="Search for an address"
@@ -210,13 +221,16 @@ function LocationSelectionUI({
                   autoFocus
                 />
                 {searchText ? (
-                  <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+                  <TouchableOpacity
+                    onPress={clearSearch}
+                    style={styles.clearButton}
+                  >
                     <MaterialIcons name="clear" size={20} color="#555" />
                   </TouchableOpacity>
                 ) : null}
               </View>
             </View>
-            
+
             {isLoadingResults ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#000" />
@@ -224,13 +238,18 @@ function LocationSelectionUI({
             ) : (
               <FlatList
                 data={searchResults}
-                keyExtractor={(item) => item.id}
+                keyExtractor={item => item.id}
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={styles.resultItem}
                     onPress={() => handleLocationSelect(item)}
                   >
-                    <MaterialIcons name="location-on" size={20} color="#555" style={styles.resultIcon} />
+                    <MaterialIcons
+                      name="location-on"
+                      size={20}
+                      color="#555"
+                      style={styles.resultIcon}
+                    />
                     <View style={styles.resultContent}>
                       <Text style={styles.resultTitle}>{item.title}</Text>
                       <Text style={styles.resultSubtitle}>{item.subtitle}</Text>
@@ -241,7 +260,9 @@ function LocationSelectionUI({
                 ListEmptyComponent={
                   searchText.length > 2 ? (
                     <View style={styles.emptyResults}>
-                      <Text style={styles.emptyResultsText}>No results found</Text>
+                      <Text style={styles.emptyResultsText}>
+                        No results found
+                      </Text>
                     </View>
                   ) : null
                 }
@@ -249,12 +270,12 @@ function LocationSelectionUI({
             )}
           </View>
         );
-        
+
       case 'postal':
         return (
           <View style={styles.container}>
             <View style={styles.header}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.backButton}
                 onPress={goBackToSelection}
               >
@@ -262,7 +283,7 @@ function LocationSelectionUI({
               </TouchableOpacity>
               <Text style={styles.headerTitle}>Enter Postal Code</Text>
             </View>
-            
+
             <View style={styles.contentContainer}>
               <PostalCodeInput
                 value={postalCode}
@@ -277,7 +298,7 @@ function LocationSelectionUI({
             </View>
           </View>
         );
-        
+
       case 'details':
         return (
           <View style={styles.container}>
@@ -292,7 +313,7 @@ function LocationSelectionUI({
             )}
           </View>
         );
-        
+
       case 'save':
         return (
           <View style={styles.container}>
@@ -307,116 +328,131 @@ function LocationSelectionUI({
             )}
           </View>
         );
-        
+
       default:
         // Selection screen (default)
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Choose Location Method</Text>
-        <View style={styles.quickActions}>
-          {quickActions.map((action, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.quickActionCard}
-              onPress={action.onPress}
-              disabled={action.loading}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: `${action.color}15` }]}>
+        return (
+          <ScrollView
+            style={styles.container}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Choose Location Method</Text>
+              <View style={styles.quickActions}>
+                {quickActions.map((action, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.quickActionCard}
+                    onPress={action.onPress}
+                    disabled={action.loading}
+                  >
+                    <View
+                      style={[
+                        styles.quickActionIcon,
+                        { backgroundColor: `${action.color}15` },
+                      ]}
+                    >
                       <MaterialIcons
-                  name={action.icon as any}
-                  size={24}
-                  color={action.color}
-                />
-              </View>
-              <View style={styles.quickActionContent}>
-                <Text style={styles.quickActionTitle}>{action.title}</Text>
-                <Text style={styles.quickActionSubtitle}>{action.subtitle}</Text>
-              </View>
+                        name={action.icon as any}
+                        size={24}
+                        color={action.color}
+                      />
+                    </View>
+                    <View style={styles.quickActionContent}>
+                      <Text style={styles.quickActionTitle}>
+                        {action.title}
+                      </Text>
+                      <Text style={styles.quickActionSubtitle}>
+                        {action.subtitle}
+                      </Text>
+                    </View>
                     <MaterialIcons
                       name="chevron-right"
-                size={20}
+                      size={20}
                       color="#777"
-              />
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
 
-      {/* Saved Locations */}
+            {/* Saved Locations */}
             {savedAddresses.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Saved Locations</Text>
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Saved Locations</Text>
                   <TouchableOpacity onPress={() => setCurrentStep('selection')}>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.savedLocationsScroll}
-          >
-                  {savedAddresses.slice(0, 3).map((address) => (
-              <TouchableOpacity
+                    <Text style={styles.seeAllText}>See All</Text>
+                  </TouchableOpacity>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.savedLocationsScroll}
+                >
+                  {savedAddresses.slice(0, 3).map(address => (
+                    <TouchableOpacity
                       key={address.id}
-                style={styles.savedLocationCard}
+                      style={styles.savedLocationCard}
                       onPress={() => handleLocationSelect(address.location)}
-              >
-                      <View 
+                    >
+                      <View
                         style={[
                           styles.savedLocationIcon,
-                          { backgroundColor: address.color || '#4CAF50' }
+                          { backgroundColor: address.color || '#4CAF50' },
                         ]}
                       >
                         <MaterialIcons
                           name={(address.icon || 'place') as any}
-                    size={20}
+                          size={20}
                           color="white"
-                  />
-                </View>
-                      <Text style={styles.savedLocationLabel}>{address.label}</Text>
-                <Text style={styles.savedLocationAddress} numberOfLines={1}>
+                        />
+                      </View>
+                      <Text style={styles.savedLocationLabel}>
+                        {address.label}
+                      </Text>
+                      <Text
+                        style={styles.savedLocationAddress}
+                        numberOfLines={1}
+                      >
                         {address.location.title}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
 
-      {/* Recent Locations */}
-      {recentLocations.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Locations</Text>
-          <View style={styles.recentLocations}>
-            {recentLocations.slice(0, 5).map((location) => (
-              <TouchableOpacity
-                key={location.id}
-                style={styles.recentLocationItem}
+            {/* Recent Locations */}
+            {recentLocations.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Recent Locations</Text>
+                <View style={styles.recentLocations}>
+                  {recentLocations.slice(0, 5).map(location => (
+                    <TouchableOpacity
+                      key={location.id}
+                      style={styles.recentLocationItem}
                       onPress={() => handleLocationSelect(location)}
-              >
-                <View style={styles.recentLocationIcon}>
-                        <MaterialIcons
-                          name="history"
-                    size={18}
-                          color="#777"
-                  />
+                    >
+                      <View style={styles.recentLocationIcon}>
+                        <MaterialIcons name="history" size={18} color="#777" />
+                      </View>
+                      <View style={styles.recentLocationContent}>
+                        <Text style={styles.recentLocationTitle}>
+                          {location.title}
+                        </Text>
+                        {location.subtitle && (
+                          <Text style={styles.recentLocationSubtitle}>
+                            {location.subtitle}
+                          </Text>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
                 </View>
-                <View style={styles.recentLocationContent}>
-                  <Text style={styles.recentLocationTitle}>{location.title}</Text>
-                  {location.subtitle && (
-                    <Text style={styles.recentLocationSubtitle}>
-                      {location.subtitle}
-                    </Text>
-                  )}
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      )}
-    </ScrollView>
+              </View>
+            )}
+          </ScrollView>
         );
     }
   };
@@ -429,7 +465,7 @@ function LocationSelectionUI({
       {renderContent()}
     </KeyboardAvoidingView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -469,7 +505,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: 'hsl(0, 0%, 90%)',
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 1,
@@ -510,7 +546,7 @@ const styles = StyleSheet.create({
     width: 140,
     borderWidth: 1,
     borderColor: 'hsl(0, 0%, 90%)',
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 1,
@@ -544,7 +580,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'hsl(0, 0%, 90%)',
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 1,

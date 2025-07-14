@@ -8,7 +8,7 @@ import {
   Animated,
   Modal,
   FlatList,
-  Dimensions
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -39,41 +39,41 @@ const DeliveryLocationHeader: React.FC<DeliveryLocationHeaderProps> = ({
   style,
 }) => {
   const navigation = useNavigation();
-  const { 
-    getShortAddress, 
-    hasDeliveryLocation, 
-    savedAddresses, 
-    setDeliveryLocation, 
-    isCurrentLocationSaved 
+  const {
+    getShortAddress,
+    hasDeliveryLocation,
+    savedAddresses,
+    setDeliveryLocation,
+    isCurrentLocationSaved,
   } = useDeliveryLocation();
-  
+
   const [showDropdown, setShowDropdown] = useState(false);
   const [deliveryTimeInfo, setDeliveryTimeInfo] = useState<string | null>(null);
   const [deliveryFeeInfo, setDeliveryFeeInfo] = useState<string | null>(null);
-  
+
   // Check if using black theme based on style prop
   const isBlackTheme = style?.backgroundColor === '#000';
-  
+
   // Animation for the arrow
   const arrowRotation = useRef(new Animated.Value(0)).current;
   const dropdownOpacity = useRef(new Animated.Value(0)).current;
   const dropdownHeight = useRef(new Animated.Value(0)).current;
-  
+
   const rotateInterpolation = arrowRotation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '180deg']
+    outputRange: ['0deg', '180deg'],
   });
 
   // Get delivery info if available
   useEffect(() => {
     if (
-      showDeliveryInfo && 
-      location?.deliveryInfo?.estimatedTime && 
+      showDeliveryInfo &&
+      location?.deliveryInfo?.estimatedTime &&
       location?.deliveryInfo?.deliveryFee !== undefined
     ) {
       setDeliveryTimeInfo(location.deliveryInfo.estimatedTime);
       setDeliveryFeeInfo(
-        location.deliveryInfo.deliveryFee > 0 
+        location.deliveryInfo.deliveryFee > 0
           ? `$${location.deliveryInfo.deliveryFee.toFixed(2)}`
           : 'FREE'
       );
@@ -89,7 +89,9 @@ const DeliveryLocationHeader: React.FC<DeliveryLocationHeaderProps> = ({
     }
 
     const newValue = showDropdown ? 0 : 1;
-    const toHeight = showDropdown ? 0 : Math.min(savedAddresses.length * 60 + 80, 300);
+    const toHeight = showDropdown
+      ? 0
+      : Math.min(savedAddresses.length * 60 + 80, 300);
 
     setShowDropdown(!showDropdown);
 
@@ -97,18 +99,18 @@ const DeliveryLocationHeader: React.FC<DeliveryLocationHeaderProps> = ({
       Animated.timing(arrowRotation, {
         toValue: newValue,
         duration: 200,
-        useNativeDriver: true
+        useNativeDriver: true,
       }),
       Animated.timing(dropdownOpacity, {
         toValue: newValue,
         duration: 200,
-        useNativeDriver: false
+        useNativeDriver: false,
       }),
       Animated.timing(dropdownHeight, {
         toValue: toHeight,
         duration: 200,
-        useNativeDriver: false
-      })
+        useNativeDriver: false,
+      }),
     ]).start();
   };
 
@@ -138,11 +140,11 @@ const DeliveryLocationHeader: React.FC<DeliveryLocationHeaderProps> = ({
     // Update the delivery location
     const locationWithSavedType = {
       ...savedAddress.location,
-      type: 'saved' as const
+      type: 'saved' as const,
     };
-    
+
     await setDeliveryLocation(locationWithSavedType);
-    
+
     // Close dropdown
     toggleDropdown();
   };
@@ -153,7 +155,7 @@ const DeliveryLocationHeader: React.FC<DeliveryLocationHeaderProps> = ({
     }
 
     setShowDropdown(false);
-    
+
     if (onPress) {
       onPress();
     } else {
@@ -177,11 +179,16 @@ const DeliveryLocationHeader: React.FC<DeliveryLocationHeaderProps> = ({
       onPress={() => handleLocationSelect(item)}
       activeOpacity={0.7}
     >
-      <View style={[styles.savedLocationIcon, { backgroundColor: item.color || COLORS.primary }]}>
-        <Ionicons 
-          name={item.icon as any || 'location'} 
-          size={16} 
-          color={COLORS.card} 
+      <View
+        style={[
+          styles.savedLocationIcon,
+          { backgroundColor: item.color || COLORS.primary },
+        ]}
+      >
+        <Ionicons
+          name={(item.icon as any) || 'location'}
+          size={16}
+          color={COLORS.card}
         />
       </View>
       <View style={styles.savedLocationInfo}>
@@ -209,59 +216,97 @@ const DeliveryLocationHeader: React.FC<DeliveryLocationHeaderProps> = ({
         activeOpacity={0.7}
         accessible={true}
         accessibilityLabel={
-          location 
+          location
             ? `Current delivery location: ${location.title}. Tap to change.`
-            : "No delivery location set. Tap to choose location."
+            : 'No delivery location set. Tap to choose location.'
         }
         accessibilityRole="button"
         accessibilityHint="Double tap to change your delivery address"
       >
         <View style={styles.content}>
           {/* Location Icon */}
-          <View style={[styles.iconContainer, isBlackTheme && styles.blackThemeIconContainer]}>
-            <Ionicons 
-              name="location" 
-              size={20} 
-              color={isBlackTheme ? '#fff' : COLORS.primary} 
+          <View
+            style={[
+              styles.iconContainer,
+              isBlackTheme && styles.blackThemeIconContainer,
+            ]}
+          >
+            <Ionicons
+              name="location"
+              size={20}
+              color={isBlackTheme ? '#fff' : COLORS.primary}
             />
           </View>
 
           {/* Location Info */}
           <View style={styles.locationInfo}>
-            <Text style={[styles.label, isBlackTheme && styles.whiteText]}>Deliver to</Text>
-            
+            <Text style={[styles.label, isBlackTheme && styles.whiteText]}>
+              Deliver to
+            </Text>
+
             {isLoading ? (
-              <Text style={[styles.loadingText, isBlackTheme && styles.whiteText]}>Loading...</Text>
+              <Text
+                style={[styles.loadingText, isBlackTheme && styles.whiteText]}
+              >
+                Loading...
+              </Text>
             ) : location ? (
               <>
-                <Text style={[styles.locationTitle, isBlackTheme && styles.whiteText]} numberOfLines={1}>
+                <Text
+                  style={[
+                    styles.locationTitle,
+                    isBlackTheme && styles.whiteText,
+                  ]}
+                  numberOfLines={1}
+                >
                   {location.title}
                 </Text>
                 {location.subtitle && (
-                  <Text style={[styles.locationSubtitle, isBlackTheme && styles.whiteText]} numberOfLines={1}>
+                  <Text
+                    style={[
+                      styles.locationSubtitle,
+                      isBlackTheme && styles.whiteText,
+                    ]}
+                    numberOfLines={1}
+                  >
                     {location.subtitle}
                   </Text>
                 )}
                 {/* Show delivery info if available and requested */}
                 {showDeliveryInfo && (location as any).deliveryInfo && (
                   <View style={styles.deliveryInfo}>
-                    <Text style={[styles.deliveryInfoText, isBlackTheme && styles.whiteText]}>
-                      <Ionicons name="time-outline" size={12} /> {deliveryTimeInfo}
+                    <Text
+                      style={[
+                        styles.deliveryInfoText,
+                        isBlackTheme && styles.whiteText,
+                      ]}
+                    >
+                      <Ionicons name="time-outline" size={12} />{' '}
+                      {deliveryTimeInfo}
                       {deliveryFeeInfo && (
-                        <Text>  •  <Text style={[
-                          styles.deliveryInfoText, 
-                          isBlackTheme && styles.whiteText,
-                          deliveryFeeInfo === 'FREE' && styles.freeDeliveryText
-                        ]}>
-                          {deliveryFeeInfo}
-                        </Text></Text>
+                        <Text>
+                          {' '}
+                          •{' '}
+                          <Text
+                            style={[
+                              styles.deliveryInfoText,
+                              isBlackTheme && styles.whiteText,
+                              deliveryFeeInfo === 'FREE' &&
+                                styles.freeDeliveryText,
+                            ]}
+                          >
+                            {deliveryFeeInfo}
+                          </Text>
+                        </Text>
                       )}
                     </Text>
                   </View>
                 )}
               </>
             ) : (
-              <Text style={[styles.placeholder, isBlackTheme && styles.whiteText]}>
+              <Text
+                style={[styles.placeholder, isBlackTheme && styles.whiteText]}
+              >
                 Set delivery address
               </Text>
             )}
@@ -272,24 +317,33 @@ const DeliveryLocationHeader: React.FC<DeliveryLocationHeaderProps> = ({
             <View style={styles.changeButton}>
               {showSavedLocations && savedAddresses.length > 0 ? (
                 <View style={styles.dropdownIndicator}>
-                  <Animated.View style={[
-                    styles.arrowContainer, 
-                    { transform: [{ rotate: rotateInterpolation }] }
-                  ]}>
-                    <Ionicons 
-                      name="chevron-down" 
-                      size={16} 
-                      color={isBlackTheme ? '#fff' : COLORS.primary} 
+                  <Animated.View
+                    style={[
+                      styles.arrowContainer,
+                      { transform: [{ rotate: rotateInterpolation }] },
+                    ]}
+                  >
+                    <Ionicons
+                      name="chevron-down"
+                      size={16}
+                      color={isBlackTheme ? '#fff' : COLORS.primary}
                     />
                   </Animated.View>
                 </View>
               ) : (
                 <>
-                  <Text style={[styles.changeButtonText, isBlackTheme && styles.whiteText]}>Change</Text>
-                  <Ionicons 
-                    name="chevron-forward" 
-                    size={16} 
-                    color={isBlackTheme ? '#fff' : COLORS.primary} 
+                  <Text
+                    style={[
+                      styles.changeButtonText,
+                      isBlackTheme && styles.whiteText,
+                    ]}
+                  >
+                    Change
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={isBlackTheme ? '#fff' : COLORS.primary}
                   />
                 </>
               )}
@@ -300,16 +354,18 @@ const DeliveryLocationHeader: React.FC<DeliveryLocationHeaderProps> = ({
 
       {/* Saved Locations Dropdown */}
       {showSavedLocations && (
-        <Animated.View style={[
-          styles.dropdown,
-          {
-            opacity: dropdownOpacity,
-            height: dropdownHeight,
-          }
-        ]}>
+        <Animated.View
+          style={[
+            styles.dropdown,
+            {
+              opacity: dropdownOpacity,
+              height: dropdownHeight,
+            },
+          ]}
+        >
           <View style={styles.dropdownContent}>
             <Text style={styles.dropdownTitle}>Quick Select</Text>
-            
+
             {savedAddresses.slice(0, 4).map(item => (
               <TouchableOpacity
                 key={item.id}
@@ -317,11 +373,16 @@ const DeliveryLocationHeader: React.FC<DeliveryLocationHeaderProps> = ({
                 onPress={() => handleLocationSelect(item)}
                 activeOpacity={0.7}
               >
-                <View style={[styles.savedLocationIcon, { backgroundColor: item.color || COLORS.primary }]}>
-                  <Ionicons 
-                    name={item.icon as any || 'location'} 
-                    size={16} 
-                    color={COLORS.card} 
+                <View
+                  style={[
+                    styles.savedLocationIcon,
+                    { backgroundColor: item.color || COLORS.primary },
+                  ]}
+                >
+                  <Ionicons
+                    name={(item.icon as any) || 'location'}
+                    size={16}
+                    color={COLORS.card}
                   />
                 </View>
                 <View style={styles.savedLocationInfo}>
@@ -339,13 +400,17 @@ const DeliveryLocationHeader: React.FC<DeliveryLocationHeaderProps> = ({
                 )}
               </TouchableOpacity>
             ))}
-            
+
             <TouchableOpacity
               style={styles.addNewLocationButton}
               onPress={handleAddNewLocation}
               activeOpacity={0.7}
             >
-              <Ionicons name="add-circle-outline" size={20} color={COLORS.primary} />
+              <Ionicons
+                name="add-circle-outline"
+                size={20}
+                color={COLORS.primary}
+              />
               <Text style={styles.addNewLocationText}>Add new location</Text>
             </TouchableOpacity>
           </View>
@@ -459,7 +524,7 @@ const styles = StyleSheet.create({
   blackThemeIconContainer: {
     backgroundColor: '#333',
   },
-  
+
   // Dropdown styles
   dropdown: {
     overflow: 'hidden',

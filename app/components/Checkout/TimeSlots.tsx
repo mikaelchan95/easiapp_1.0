@@ -13,115 +13,133 @@ const TIME_SLOTS = [
 
 interface TimeSlotsProps {
   selectedTimeSlot: string | null;
-  onSelectTimeSlot: (timeSlotId: string, timeSlot: string, queueCount: number) => void;
+  onSelectTimeSlot: (
+    timeSlotId: string,
+    timeSlot: string,
+    queueCount: number
+  ) => void;
   isSameDay: boolean;
   isSpecialLocation?: boolean;
 }
 
 // Using memo to prevent unnecessary re-renders
-const TimeSlots: React.FC<TimeSlotsProps> = memo(({
-  selectedTimeSlot,
-  onSelectTimeSlot,
-  isSameDay,
-  isSpecialLocation = false
-}) => {
-  // Get current hour only once per render
-  const currentHour = useMemo(() => new Date().getHours(), []);
-  
-  // Memoize the disabled slot calculations
-  const disabledSlots = useMemo(() => {
-    if (!isSameDay) return {};
-    
-    return {
-      '1': currentHour >= 9,
-      '2': currentHour >= 12,
-      '3': currentHour >= 15,
-      '4': currentHour >= 18
-    };
-  }, [isSameDay, currentHour]);
-  
-  // Memoize the rendered time slots to prevent recreation
-  const timeSlotItems = useMemo(() => {
-    return TIME_SLOTS.map((slot) => {
-      // Check if this time slot is disabled
-      const isDisabled = isSameDay && disabledSlots[slot.id];
-      const isSelected = selectedTimeSlot === slot.id;
-      
-      return (
-        <TouchableOpacity
-          key={slot.id}
-          style={[
-            styles.timeSlot,
-            isSelected && styles.selectedTimeSlot,
-            isDisabled && styles.disabledTimeSlot
-          ]}
-          onPress={() => !isDisabled && onSelectTimeSlot(slot.id, slot.time, 0)}
-          disabled={isDisabled}
-        >
-          <View style={styles.timeInfo}>
-            <View style={styles.timeHeader}>
-              <View style={styles.timeContent}>
-                <Text 
-                  style={[
-                    styles.timeText,
-                    isSelected && styles.selectedTimeText,
-                    isDisabled && styles.disabledTimeText
-                  ]}
-                >
-                  {slot.time}
-                </Text>
-                <Text 
-                  style={[
-                    styles.timeLabelText,
-                    isSelected && styles.selectedTimeText,
-                    isDisabled && styles.disabledTimeText
-                  ]}
-                >
-                  {slot.label}
-                </Text>
+const TimeSlots: React.FC<TimeSlotsProps> = memo(
+  ({
+    selectedTimeSlot,
+    onSelectTimeSlot,
+    isSameDay,
+    isSpecialLocation = false,
+  }) => {
+    // Get current hour only once per render
+    const currentHour = useMemo(() => new Date().getHours(), []);
+
+    // Memoize the disabled slot calculations
+    const disabledSlots = useMemo(() => {
+      if (!isSameDay) return {};
+
+      return {
+        '1': currentHour >= 9,
+        '2': currentHour >= 12,
+        '3': currentHour >= 15,
+        '4': currentHour >= 18,
+      };
+    }, [isSameDay, currentHour]);
+
+    // Memoize the rendered time slots to prevent recreation
+    const timeSlotItems = useMemo(() => {
+      return TIME_SLOTS.map(slot => {
+        // Check if this time slot is disabled
+        const isDisabled = isSameDay && disabledSlots[slot.id];
+        const isSelected = selectedTimeSlot === slot.id;
+
+        return (
+          <TouchableOpacity
+            key={slot.id}
+            style={[
+              styles.timeSlot,
+              isSelected && styles.selectedTimeSlot,
+              isDisabled && styles.disabledTimeSlot,
+            ]}
+            onPress={() =>
+              !isDisabled && onSelectTimeSlot(slot.id, slot.time, 0)
+            }
+            disabled={isDisabled}
+          >
+            <View style={styles.timeInfo}>
+              <View style={styles.timeHeader}>
+                <View style={styles.timeContent}>
+                  <Text
+                    style={[
+                      styles.timeText,
+                      isSelected && styles.selectedTimeText,
+                      isDisabled && styles.disabledTimeText,
+                    ]}
+                  >
+                    {slot.time}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.timeLabelText,
+                      isSelected && styles.selectedTimeText,
+                      isDisabled && styles.disabledTimeText,
+                    ]}
+                  >
+                    {slot.label}
+                  </Text>
+                </View>
+                {isSpecialLocation && (
+                  <View style={styles.priorityBadge}>
+                    <Ionicons name="flash" size={12} color="#FF9500" />
+                    <Text style={styles.priorityText}>Priority</Text>
+                  </View>
+                )}
               </View>
-              {isSpecialLocation && (
-                <View style={styles.priorityBadge}>
-                  <Ionicons name="flash" size={12} color="#FF9500" />
-                  <Text style={styles.priorityText}>Priority</Text>
+              {isDisabled && (
+                <View style={styles.unavailableContainer}>
+                  <Ionicons
+                    name="time-outline"
+                    size={14}
+                    color={COLORS.textSecondary}
+                  />
+                  <Text style={styles.unavailableText}>
+                    No longer available today
+                  </Text>
                 </View>
               )}
             </View>
-            {isDisabled && (
-              <View style={styles.unavailableContainer}>
-                <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
-                <Text style={styles.unavailableText}>No longer available today</Text>
+            {isSelected && (
+              <View style={styles.checkmark}>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={24}
+                  color={COLORS.card}
+                />
               </View>
             )}
-          </View>
-          {isSelected && (
-            <View style={styles.checkmark}>
-              <Ionicons name="checkmark-circle" size={24} color={COLORS.card} />
+          </TouchableOpacity>
+        );
+      });
+    }, [selectedTimeSlot, isSameDay, disabledSlots, onSelectTimeSlot]);
+
+    return (
+      <View style={styles.container}>
+        <View style={styles.slotsContainer}>{timeSlotItems}</View>
+
+        {isSameDay && (
+          <View style={styles.sameDayInfo}>
+            <View style={styles.sameDayBadge}>
+              <Ionicons name="flash" size={16} color="#FF9500" />
+              <Text style={styles.sameDayText}>Same-day delivery</Text>
             </View>
-          )}
-        </TouchableOpacity>
-      );
-    });
-  }, [selectedTimeSlot, isSameDay, disabledSlots, onSelectTimeSlot]);
-  
-  return (
-    <View style={styles.container}>
-      <View style={styles.slotsContainer}>
-        {timeSlotItems}
-      </View>
-      
-      {isSameDay && (
-        <View style={styles.sameDayInfo}>
-          <View style={styles.sameDayBadge}>
-            <Ionicons name="flash" size={16} color="#FF9500" />
-            <Text style={styles.sameDayText}>Same-day delivery</Text>
+            <Text style={styles.sameDaySubtext}>
+              Premium delivery option - arrives today
+            </Text>
           </View>
-          <Text style={styles.sameDaySubtext}>Premium delivery option - arrives today</Text>
-        </View>
-      )}
-    </View>
-  );
-});
+        )}
+      </View>
+    );
+  }
+);
 
 // For better debugging
 TimeSlots.displayName = 'TimeSlots';
@@ -240,4 +258,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TimeSlots; 
+export default TimeSlots;

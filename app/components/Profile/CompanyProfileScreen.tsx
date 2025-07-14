@@ -1,46 +1,54 @@
 import React, { useContext, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
   StatusBar,
   Alert,
   Switch,
-  Linking
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { AppContext } from '../../context/AppContext';
 import MobileHeader from '../Layout/MobileHeader';
 import { isCompanyUser } from '../../types/user';
 import { formatStatCurrency, formatPercentage } from '../../utils/formatting';
 import { HapticFeedback } from '../../utils/haptics';
-import BreadcrumbNavigation, { createBreadcrumbs } from '../Navigation/BreadcrumbNavigation';
+import BreadcrumbNavigation, {
+  createBreadcrumbs,
+} from '../Navigation/BreadcrumbNavigation';
 
 export default function CompanyProfileScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { state, updateCompanyProfile } = useContext(AppContext);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
-  
+
   const { user, company } = state;
 
   const toggleSection = (section: string) => {
     HapticFeedback.light();
-    setExpandedSections(prev => 
-      prev.includes(section) 
+    setExpandedSections(prev =>
+      prev.includes(section)
         ? prev.filter(s => s !== section)
         : [...prev, section]
     );
   };
 
-  const handleContactPress = async (type: 'email' | 'phone' | 'address', value: string) => {
+  const handleContactPress = async (
+    type: 'email' | 'phone' | 'address',
+    value: string
+  ) => {
     HapticFeedback.light();
-    
+
     if (type === 'email') {
       const emailUrl = `mailto:${value}`;
       const canOpen = await Linking.canOpenURL(emailUrl);
@@ -68,8 +76,8 @@ export default function CompanyProfileScreen() {
         <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
         <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
           <View style={styles.profileHeader}>
-            <TouchableOpacity 
-              style={styles.backButton} 
+            <TouchableOpacity
+              style={styles.backButton}
               onPress={() => navigation.goBack()}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
@@ -80,7 +88,9 @@ export default function CompanyProfileScreen() {
           </View>
         </View>
         <View style={styles.loadingContainer}>
-          <Text style={styles.noDataText}>No company information available</Text>
+          <Text style={styles.noDataText}>
+            No company information available
+          </Text>
         </View>
       </View>
     );
@@ -89,17 +99,18 @@ export default function CompanyProfileScreen() {
   // currentCredit is what's AVAILABLE, not used
   const availableCredit = company.currentCredit || 0;
   const usedCredit = (company.creditLimit || 0) - availableCredit;
-  const creditUtilization = company.creditLimit ? 
-    (usedCredit / company.creditLimit) * 100 : 0;
+  const creditUtilization = company.creditLimit
+    ? (usedCredit / company.creditLimit) * 100
+    : 0;
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
-      
+
       <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
         <View style={styles.profileHeader}>
-          <TouchableOpacity 
-            style={styles.backButton} 
+          <TouchableOpacity
+            style={styles.backButton}
             onPress={() => navigation.goBack()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
@@ -108,13 +119,13 @@ export default function CompanyProfileScreen() {
           <Text style={styles.headerTitle}>Company Profile</Text>
           <View style={styles.headerRight} />
         </View>
-        
+
         {/* Breadcrumb Navigation */}
         <BreadcrumbNavigation
           items={createBreadcrumbs('CompanyProfile')}
           showBackButton={false}
         />
-        
+
         {/* Company Header Card - Now in header like ProfileScreen */}
         <View style={styles.headerCard}>
           <View style={styles.companyHeader}>
@@ -130,34 +141,49 @@ export default function CompanyProfileScreen() {
               </View>
             </View>
           </View>
-          
+
           <View style={styles.companyMeta}>
             <View style={styles.metaRow}>
               <View style={styles.metaItem}>
                 <Text style={styles.metaLabel}>UEN</Text>
-                <Text style={styles.metaValue} numberOfLines={1} ellipsizeMode="tail">{company.uen}</Text>
+                <Text
+                  style={styles.metaValue}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {company.uen}
+                </Text>
               </View>
               <View style={styles.metaItem}>
                 <Text style={styles.metaLabel}>Status</Text>
-                <Text style={[styles.metaValue, styles.statusActive]} numberOfLines={1} ellipsizeMode="tail">
+                <Text
+                  style={[styles.metaValue, styles.statusActive]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
                   {company.status === 'active' ? 'Active' : 'Inactive'}
                 </Text>
               </View>
               <View style={styles.metaItem}>
                 <Text style={styles.metaLabel}>Terms</Text>
-                <Text style={styles.metaValue} numberOfLines={1} ellipsizeMode="tail">{company.paymentTerms}</Text>
+                <Text
+                  style={styles.metaValue}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {company.paymentTerms}
+                </Text>
               </View>
             </View>
           </View>
         </View>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollContainer}
-        contentContainerStyle={styles.scrollContent} 
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-
         {/* Enhanced Credit Overview */}
         <View style={styles.creditWidget}>
           <View style={styles.creditHeader}>
@@ -166,30 +192,48 @@ export default function CompanyProfileScreen() {
               <Text style={styles.widgetTitle}>Credit Overview</Text>
             </View>
             <View style={styles.creditStatus}>
-              <View style={[styles.statusDot, { 
-                backgroundColor: creditUtilization > 80 ? '#FF6B6B' : 
-                               creditUtilization > 60 ? '#FFA500' : '#4CAF50'
-              }]} />
+              <View
+                style={[
+                  styles.statusDot,
+                  {
+                    backgroundColor:
+                      creditUtilization > 80
+                        ? '#FF6B6B'
+                        : creditUtilization > 60
+                          ? '#FFA500'
+                          : '#4CAF50',
+                  },
+                ]}
+              />
               <Text style={styles.statusText}>
-                {creditUtilization > 80 ? 'High Usage' : 
-                 creditUtilization > 60 ? 'Moderate' : 'Healthy'}
+                {creditUtilization > 80
+                  ? 'High Usage'
+                  : creditUtilization > 60
+                    ? 'Moderate'
+                    : 'Healthy'}
               </Text>
             </View>
           </View>
-          
+
           <View style={styles.creditStatsRow}>
             <View style={styles.creditStat}>
-              <Text style={styles.creditAmount}>{formatStatCurrency(availableCredit)}</Text>
+              <Text style={styles.creditAmount}>
+                {formatStatCurrency(availableCredit)}
+              </Text>
               <Text style={styles.creditLabel}>Available</Text>
             </View>
             <View style={styles.creditStatDivider} />
             <View style={styles.creditStat}>
-              <Text style={styles.creditAmount}>{formatStatCurrency(usedCredit)}</Text>
+              <Text style={styles.creditAmount}>
+                {formatStatCurrency(usedCredit)}
+              </Text>
               <Text style={styles.creditLabel}>Used</Text>
             </View>
             <View style={styles.creditStatDivider} />
             <View style={styles.creditStat}>
-              <Text style={styles.creditAmount}>{formatStatCurrency(company.creditLimit || 0)}</Text>
+              <Text style={styles.creditAmount}>
+                {formatStatCurrency(company.creditLimit || 0)}
+              </Text>
               <Text style={styles.creditLabel}>Total Limit</Text>
             </View>
           </View>
@@ -197,15 +241,19 @@ export default function CompanyProfileScreen() {
           {/* Enhanced Progress Bar */}
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View 
+              <View
                 style={[
-                  styles.progressFill, 
-                  { 
+                  styles.progressFill,
+                  {
                     width: `${Math.min(creditUtilization, 100)}%`,
-                    backgroundColor: creditUtilization > 80 ? '#FF6B6B' : 
-                                   creditUtilization > 60 ? '#FFA500' : '#4CAF50'
-                  }
-                ]} 
+                    backgroundColor:
+                      creditUtilization > 80
+                        ? '#FF6B6B'
+                        : creditUtilization > 60
+                          ? '#FFA500'
+                          : '#4CAF50',
+                  },
+                ]}
               />
             </View>
             <Text style={styles.progressText}>
@@ -216,7 +264,7 @@ export default function CompanyProfileScreen() {
           {/* Credit Payment Actions */}
           {usedCredit > 0 && (
             <View style={styles.creditActions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.paymentButton}
                 onPress={() => {
                   HapticFeedback.medium();
@@ -229,8 +277,8 @@ export default function CompanyProfileScreen() {
                   Pay Credit Balance ({formatStatCurrency(usedCredit)})
                 </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.billingButton}
                 onPress={() => {
                   HapticFeedback.light();
@@ -238,7 +286,11 @@ export default function CompanyProfileScreen() {
                 }}
                 activeOpacity={0.8}
               >
-                <Ionicons name="receipt" size={16} color={COLORS.textSecondary} />
+                <Ionicons
+                  name="receipt"
+                  size={16}
+                  color={COLORS.textSecondary}
+                />
                 <Text style={styles.billingButtonText}>View Billing</Text>
               </TouchableOpacity>
             </View>
@@ -249,7 +301,7 @@ export default function CompanyProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Contact Information</Text>
           <View style={styles.contactGrid}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.contactItem}
               onPress={() => handleContactPress('address', company.address)}
               activeOpacity={0.7}
@@ -261,11 +313,15 @@ export default function CompanyProfileScreen() {
                 <Text style={styles.contactLabel}>Address</Text>
                 <Text style={styles.contactValue}>{company.address}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={COLORS.textSecondary}
+              />
             </TouchableOpacity>
-            
+
             {company.phone && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.contactItem}
                 onPress={() => handleContactPress('phone', company.phone)}
                 activeOpacity={0.7}
@@ -277,12 +333,16 @@ export default function CompanyProfileScreen() {
                   <Text style={styles.contactLabel}>Phone</Text>
                   <Text style={styles.contactValue}>{company.phone}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={COLORS.textSecondary}
+                />
               </TouchableOpacity>
             )}
-            
+
             {company.email && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.contactItem}
                 onPress={() => handleContactPress('email', company.email)}
                 activeOpacity={0.7}
@@ -294,7 +354,11 @@ export default function CompanyProfileScreen() {
                   <Text style={styles.contactLabel}>Email</Text>
                   <Text style={styles.contactValue}>{company.email}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={COLORS.textSecondary}
+                />
               </TouchableOpacity>
             )}
           </View>
@@ -302,19 +366,23 @@ export default function CompanyProfileScreen() {
 
         {/* Enhanced Order Approval Settings */}
         <View style={styles.section}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.sectionHeader}
             onPress={() => toggleSection('approvals')}
             activeOpacity={0.7}
           >
             <Text style={styles.sectionTitle}>Order Approval Settings</Text>
-            <Ionicons 
-              name={expandedSections.includes('approvals') ? 'chevron-up' : 'chevron-down'} 
-              size={20} 
-              color={COLORS.textSecondary} 
+            <Ionicons
+              name={
+                expandedSections.includes('approvals')
+                  ? 'chevron-up'
+                  : 'chevron-down'
+              }
+              size={20}
+              color={COLORS.textSecondary}
             />
           </TouchableOpacity>
-          
+
           <View style={styles.settingsCard}>
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
@@ -325,45 +393,73 @@ export default function CompanyProfileScreen() {
               </View>
               <Switch
                 value={company.approvalSettings.requireApproval}
-                onValueChange={() => Alert.alert('Info', 'Contact support to change this setting')}
+                onValueChange={() =>
+                  Alert.alert('Info', 'Contact support to change this setting')
+                }
                 trackColor={{ false: '#E5E5E5', true: '#4CAF50' }}
                 thumbColor="#FFFFFF"
               />
             </View>
-            
-            {expandedSections.includes('approvals') && company.approvalSettings.requireApproval && (
-              <View style={styles.approvalDetails}>
-                <View style={styles.approvalItem}>
-                  <View style={styles.approvalInfo}>
-                    <Text style={styles.approvalLabel}>Approval Threshold</Text>
-                    <Text style={styles.approvalDescription}>Orders above this amount need approval</Text>
+
+            {expandedSections.includes('approvals') &&
+              company.approvalSettings.requireApproval && (
+                <View style={styles.approvalDetails}>
+                  <View style={styles.approvalItem}>
+                    <View style={styles.approvalInfo}>
+                      <Text style={styles.approvalLabel}>
+                        Approval Threshold
+                      </Text>
+                      <Text style={styles.approvalDescription}>
+                        Orders above this amount need approval
+                      </Text>
+                    </View>
+                    <Text style={styles.approvalValue}>
+                      {formatStatCurrency(
+                        company.approvalSettings.approvalThreshold || 0
+                      )}
+                    </Text>
                   </View>
-                  <Text style={styles.approvalValue}>
-                    {formatStatCurrency(company.approvalSettings.approvalThreshold || 0)}
-                  </Text>
-                </View>
-                <View style={styles.approvalItem}>
-                  <View style={styles.approvalInfo}>
-                    <Text style={styles.approvalLabel}>Auto-Approve Below</Text>
-                    <Text style={styles.approvalDescription}>Orders below this amount are auto-approved</Text>
+                  <View style={styles.approvalItem}>
+                    <View style={styles.approvalInfo}>
+                      <Text style={styles.approvalLabel}>
+                        Auto-Approve Below
+                      </Text>
+                      <Text style={styles.approvalDescription}>
+                        Orders below this amount are auto-approved
+                      </Text>
+                    </View>
+                    <Text style={styles.approvalValue}>
+                      {formatStatCurrency(
+                        company.approvalSettings.autoApproveBelow || 0
+                      )}
+                    </Text>
                   </View>
-                  <Text style={styles.approvalValue}>
-                    {formatStatCurrency(company.approvalSettings.autoApproveBelow || 0)}
-                  </Text>
-                </View>
-                <View style={styles.approvalItem}>
-                  <View style={styles.approvalInfo}>
-                    <Text style={styles.approvalLabel}>Multi-Level Approval</Text>
-                    <Text style={styles.approvalDescription}>Requires multiple approvers</Text>
+                  <View style={styles.approvalItem}>
+                    <View style={styles.approvalInfo}>
+                      <Text style={styles.approvalLabel}>
+                        Multi-Level Approval
+                      </Text>
+                      <Text style={styles.approvalDescription}>
+                        Requires multiple approvers
+                      </Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.approvalValue,
+                        {
+                          color: company.approvalSettings.multiLevelApproval
+                            ? '#4CAF50'
+                            : COLORS.textSecondary,
+                        },
+                      ]}
+                    >
+                      {company.approvalSettings.multiLevelApproval
+                        ? 'Enabled'
+                        : 'Disabled'}
+                    </Text>
                   </View>
-                  <Text style={[styles.approvalValue, { 
-                    color: company.approvalSettings.multiLevelApproval ? '#4CAF50' : COLORS.textSecondary 
-                  }]}>
-                    {company.approvalSettings.multiLevelApproval ? 'Enabled' : 'Disabled'}
-                  </Text>
                 </View>
-              </View>
-            )}
+              )}
           </View>
         </View>
 
@@ -372,7 +468,7 @@ export default function CompanyProfileScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
             <View style={styles.actionsGrid}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.actionCard}
                 onPress={() => {
                   HapticFeedback.medium();
@@ -381,13 +477,19 @@ export default function CompanyProfileScreen() {
                 activeOpacity={0.8}
               >
                 <View style={styles.actionIconContainer}>
-                  <Ionicons name="create-outline" size={24} color={COLORS.text} />
+                  <Ionicons
+                    name="create-outline"
+                    size={24}
+                    color={COLORS.text}
+                  />
                 </View>
                 <Text style={styles.actionText}>Edit Info</Text>
-                <Text style={styles.actionDescription}>Update company details</Text>
+                <Text style={styles.actionDescription}>
+                  Update company details
+                </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.actionCard}
                 onPress={() => {
                   HapticFeedback.medium();
@@ -396,13 +498,19 @@ export default function CompanyProfileScreen() {
                 activeOpacity={0.8}
               >
                 <View style={styles.actionIconContainer}>
-                  <Ionicons name="people-outline" size={24} color={COLORS.text} />
+                  <Ionicons
+                    name="people-outline"
+                    size={24}
+                    color={COLORS.text}
+                  />
                 </View>
                 <Text style={styles.actionText}>Team</Text>
-                <Text style={styles.actionDescription}>Manage team members</Text>
+                <Text style={styles.actionDescription}>
+                  Manage team members
+                </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.actionCard}
                 onPress={() => {
                   HapticFeedback.medium();
@@ -411,7 +519,11 @@ export default function CompanyProfileScreen() {
                 activeOpacity={0.8}
               >
                 <View style={styles.actionIconContainer}>
-                  <Ionicons name="bar-chart-outline" size={24} color={COLORS.text} />
+                  <Ionicons
+                    name="bar-chart-outline"
+                    size={24}
+                    color={COLORS.text}
+                  />
                 </View>
                 <Text style={styles.actionText}>Reports</Text>
                 <Text style={styles.actionDescription}>View analytics</Text>
@@ -419,7 +531,7 @@ export default function CompanyProfileScreen() {
 
               {/* Admin Billing Dashboard - Only for users with billing permissions */}
               {user?.permissions?.canManageBilling && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.actionCard, styles.adminActionCard]}
                   onPress={() => {
                     HapticFeedback.medium();
@@ -427,11 +539,26 @@ export default function CompanyProfileScreen() {
                   }}
                   activeOpacity={0.8}
                 >
-                  <View style={[styles.actionIconContainer, styles.adminActionIcon]}>
-                    <Ionicons name="card-outline" size={24} color={COLORS.accent} />
+                  <View
+                    style={[styles.actionIconContainer, styles.adminActionIcon]}
+                  >
+                    <Ionicons
+                      name="card-outline"
+                      size={24}
+                      color={COLORS.accent}
+                    />
                   </View>
-                  <Text style={[styles.actionText, styles.adminActionText]}>Admin Billing</Text>
-                  <Text style={[styles.actionDescription, styles.adminActionDescription]}>Manage billing & invoices</Text>
+                  <Text style={[styles.actionText, styles.adminActionText]}>
+                    Admin Billing
+                  </Text>
+                  <Text
+                    style={[
+                      styles.actionDescription,
+                      styles.adminActionDescription,
+                    ]}
+                  >
+                    Manage billing & invoices
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -501,7 +628,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
   },
-  
+
   // Header Card
   headerCard: {
     backgroundColor: 'transparent',

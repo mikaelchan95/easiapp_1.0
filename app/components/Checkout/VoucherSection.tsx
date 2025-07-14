@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Modal,
   FlatList,
-  ScrollView
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,38 +20,44 @@ interface VoucherSectionProps {
   appliedVoucherId?: string | null;
 }
 
-export default function VoucherSection({ 
-  subtotal, 
-  onApplyVoucher, 
-  appliedVoucherId 
+export default function VoucherSection({
+  subtotal,
+  onApplyVoucher,
+  appliedVoucherId,
 }: VoucherSectionProps) {
   const { state, dispatch } = useRewards();
   const [showVoucherModal, setShowVoucherModal] = useState(false);
-  const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(appliedVoucherId || null);
-  
-  const availableVouchers = state.userRewards.availableVouchers.filter(v => !v.used);
-  const selectedVoucher = availableVouchers.find(v => v.id === selectedVoucherId);
-  
+  const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(
+    appliedVoucherId || null
+  );
+
+  const availableVouchers = state.userRewards.availableVouchers.filter(
+    v => !v.used
+  );
+  const selectedVoucher = availableVouchers.find(
+    v => v.id === selectedVoucherId
+  );
+
   const handleSelectVoucher = (voucherId: string, value: number) => {
     setSelectedVoucherId(voucherId);
     onApplyVoucher(voucherId, value);
     setShowVoucherModal(false);
   };
-  
+
   const handleRemoveVoucher = () => {
     setSelectedVoucherId(null);
     onApplyVoucher('', 0);
   };
-  
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-SG', { 
-      day: 'numeric', 
-      month: 'short', 
-      year: 'numeric' 
+    return date.toLocaleDateString('en-SG', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
     });
   };
-  
+
   return (
     <>
       <View style={styles.container}>
@@ -66,35 +72,44 @@ export default function VoucherSection({
             </TouchableOpacity>
           )}
         </View>
-        
+
         {selectedVoucher ? (
           <View style={styles.appliedVoucher}>
             <View style={styles.voucherInfo}>
-              <Text style={styles.voucherValue}>-S${selectedVoucher.value}</Text>
+              <Text style={styles.voucherValue}>
+                -S${selectedVoucher.value}
+              </Text>
               <Text style={styles.voucherExpiry}>
                 Expires {formatDate(selectedVoucher.expiryDate)}
               </Text>
             </View>
-            <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
+            <Ionicons
+              name="checkmark-circle"
+              size={24}
+              color={COLORS.success}
+            />
           </View>
         ) : (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.addVoucherButton}
             onPress={() => setShowVoucherModal(true)}
           >
             <Text style={styles.addVoucherText}>
-              {availableVouchers.length > 0 
+              {availableVouchers.length > 0
                 ? `${availableVouchers.length} voucher${availableVouchers.length > 1 ? 's' : ''} available`
-                : 'No vouchers available'
-              }
+                : 'No vouchers available'}
             </Text>
             {availableVouchers.length > 0 && (
-              <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={COLORS.primary}
+              />
             )}
           </TouchableOpacity>
         )}
       </View>
-      
+
       {/* Voucher Selection Modal */}
       <Modal
         visible={showVoucherModal}
@@ -105,18 +120,22 @@ export default function VoucherSection({
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Select Voucher</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => setShowVoucherModal(false)}
               style={styles.closeButton}
             >
               <Ionicons name="close" size={24} color={COLORS.text} />
             </TouchableOpacity>
           </View>
-          
+
           <ScrollView style={styles.modalContent}>
             {availableVouchers.length === 0 ? (
               <View style={styles.emptyState}>
-                <Ionicons name="pricetag-outline" size={48} color={COLORS.border} />
+                <Ionicons
+                  name="pricetag-outline"
+                  size={48}
+                  color={COLORS.border}
+                />
                 <Text style={styles.emptyText}>No vouchers available</Text>
                 <Text style={styles.emptySubtext}>
                   Earn more rewards points to redeem vouchers
@@ -133,37 +152,47 @@ export default function VoucherSection({
                     <TouchableOpacity
                       style={[
                         styles.voucherCard,
-                        !canUse && styles.voucherCardDisabled
+                        !canUse && styles.voucherCardDisabled,
                       ]}
-                      onPress={() => canUse && handleSelectVoucher(item.id, item.value)}
+                      onPress={() =>
+                        canUse && handleSelectVoucher(item.id, item.value)
+                      }
                       disabled={!canUse}
                     >
                       <View style={styles.voucherCardContent}>
                         <View style={styles.voucherValueContainer}>
-                          <Text style={[
-                            styles.voucherCardValue,
-                            !canUse && styles.textDisabled
-                          ]}>
+                          <Text
+                            style={[
+                              styles.voucherCardValue,
+                              !canUse && styles.textDisabled,
+                            ]}
+                          >
                             S${item.value}
                           </Text>
-                          <Text style={[
-                            styles.voucherCardLabel,
-                            !canUse && styles.textDisabled
-                          ]}>
+                          <Text
+                            style={[
+                              styles.voucherCardLabel,
+                              !canUse && styles.textDisabled,
+                            ]}
+                          >
                             OFF
                           </Text>
                         </View>
                         <View style={styles.voucherDetails}>
-                          <Text style={[
-                            styles.voucherCardTitle,
-                            !canUse && styles.textDisabled
-                          ]}>
+                          <Text
+                            style={[
+                              styles.voucherCardTitle,
+                              !canUse && styles.textDisabled,
+                            ]}
+                          >
                             Rewards Voucher
                           </Text>
-                          <Text style={[
-                            styles.voucherCardExpiry,
-                            !canUse && styles.textDisabled
-                          ]}>
+                          <Text
+                            style={[
+                              styles.voucherCardExpiry,
+                              !canUse && styles.textDisabled,
+                            ]}
+                          >
                             Valid till {formatDate(item.expiryDate)}
                           </Text>
                           {!canUse && (
@@ -174,10 +203,10 @@ export default function VoucherSection({
                         </View>
                       </View>
                       {canUse && (
-                        <Ionicons 
-                          name="chevron-forward" 
-                          size={20} 
-                          color={COLORS.textSecondary} 
+                        <Ionicons
+                          name="chevron-forward"
+                          size={20}
+                          color={COLORS.textSecondary}
                         />
                       )}
                     </TouchableOpacity>
@@ -186,7 +215,7 @@ export default function VoucherSection({
               />
             )}
           </ScrollView>
-          
+
           <View style={styles.modalFooter}>
             <AnimatedButton
               label="Close"
@@ -255,7 +284,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.primary,
   },
-  
+
   // Modal Styles
   modalContainer: {
     flex: 1,
@@ -286,7 +315,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
-  
+
   // Empty State
   emptyState: {
     alignItems: 'center',
@@ -301,7 +330,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     textAlign: 'center',
   },
-  
+
   // Voucher Card
   voucherCard: {
     backgroundColor: COLORS.card,

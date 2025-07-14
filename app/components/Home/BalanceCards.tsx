@@ -1,8 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  ActivityIndicator,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
-import { formatStatCurrency, formatStatNumber, formatFinancialAmount, formatPoints, cleanText } from '../../utils/formatting';
+import {
+  formatStatCurrency,
+  formatStatNumber,
+  formatFinancialAmount,
+  formatPoints,
+  cleanText,
+} from '../../utils/formatting';
 import { useRewards } from '../../context/RewardsContext';
 import { useAppContext } from '../../context/AppContext';
 import { isCompanyUser } from '../../types/user';
@@ -14,27 +27,27 @@ type BalanceCardsProps = {
   isLoggedIn?: boolean;
 };
 
-const BalanceCards: React.FC<BalanceCardsProps> = ({ 
-  onCreditClick, 
-  onRewardsClick, 
+const BalanceCards: React.FC<BalanceCardsProps> = ({
+  onCreditClick,
+  onRewardsClick,
   onSignIn,
-  isLoggedIn = true
+  isLoggedIn = true,
 }) => {
   const [loadingCredit, setLoadingCredit] = useState(false);
   const [loadingRewards, setLoadingRewards] = useState(false);
-  
+
   // Get actual data from contexts
   const { state: rewardsState } = useRewards();
   const { state: appState } = useAppContext();
-  
+
   // Get user-specific data from Supabase/AppContext
   const user = appState.user;
   const company = appState.company;
-  
+
   // Calculate account balance based on user type
   const getAccountBalance = () => {
     if (!user) return 0;
-    
+
     if (isCompanyUser(user) && company) {
       // For company users, show company's current credit
       return company.currentCredit || 0;
@@ -43,27 +56,27 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
       return user.walletBalance || 0;
     }
   };
-  
+
   // Get credit label based on user type
   const getCreditLabel = () => {
     if (!user) return 'Balance';
-    
+
     if (isCompanyUser(user)) {
       return 'Credit';
     } else {
       return 'Balance';
     }
   };
-  
+
   // Get credit subtext based on user type
   const getCreditSubtext = () => {
     return 'Available';
   };
-  
+
   // Use real data from contexts
   const accountBalance = getAccountBalance();
   const rewardPoints = rewardsState.userRewards?.points || 0; // Actual points from rewards context
-  
+
   // Log user data for debugging (behind the scenes)
   useEffect(() => {
     if (user) {
@@ -72,7 +85,7 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
         type: user.accountType,
         balance: accountBalance,
         company: company?.name,
-        credit: company?.currentCredit
+        credit: company?.currentCredit,
       });
     }
   }, [user, company, accountBalance]);
@@ -98,8 +111,8 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
   if (!isLoggedIn || !user) {
     return (
       <View style={styles.container}>
-        <TouchableOpacity 
-          style={styles.signInCard} 
+        <TouchableOpacity
+          style={styles.signInCard}
           onPress={onSignIn}
           activeOpacity={0.95}
         >
@@ -109,22 +122,28 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
             </View>
             <View style={styles.signInText}>
               <Text style={styles.signInTitle}>Sign in to view balance</Text>
-              <Text style={styles.signInSubtitle}>Access account & rewards</Text>
+              <Text style={styles.signInSubtitle}>
+                Access account & rewards
+              </Text>
             </View>
             <View style={styles.signInAction}>
-              <Ionicons name="chevron-forward" size={18} color={COLORS.textSecondary} />
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={COLORS.textSecondary}
+              />
             </View>
           </View>
         </TouchableOpacity>
       </View>
     );
   }
-  
+
   return (
     <View style={styles.container}>
       {/* Account Balance/Credit Card */}
-      <TouchableOpacity 
-        style={[styles.balanceCard, loadingCredit && styles.cardLoading]} 
+      <TouchableOpacity
+        style={[styles.balanceCard, loadingCredit && styles.cardLoading]}
         onPress={handleCreditPress}
         disabled={loadingCredit}
         activeOpacity={0.95}
@@ -136,32 +155,38 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
               {loadingCredit ? (
                 <ActivityIndicator size="small" color={COLORS.textSecondary} />
               ) : (
-                <Ionicons 
-                  name={isCompanyUser(user) ? "business" : "wallet"} 
-                  size={16} 
-                  color={COLORS.textSecondary} 
+                <Ionicons
+                  name={isCompanyUser(user) ? 'business' : 'wallet'}
+                  size={16}
+                  color={COLORS.textSecondary}
                 />
               )}
             </View>
             <Text style={styles.balanceCardLabel}>{getCreditLabel()}</Text>
             <View style={styles.actionIndicator}>
-              <Ionicons name="chevron-forward" size={14} color={COLORS.inactive} />
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={COLORS.inactive}
+              />
             </View>
           </View>
-          
+
           {/* Amount */}
           <View style={styles.amountContainer}>
-            <Text style={styles.balanceAmount}>{formatStatCurrency(accountBalance)}</Text>
+            <Text style={styles.balanceAmount}>
+              {formatStatCurrency(accountBalance)}
+            </Text>
           </View>
-          
+
           {/* Subtext */}
           <Text style={styles.balanceSubtext}>{getCreditSubtext()}</Text>
         </View>
       </TouchableOpacity>
 
       {/* Rewards Points Card */}
-      <TouchableOpacity 
-        style={[styles.rewardsCard, loadingRewards && styles.cardLoading]} 
+      <TouchableOpacity
+        style={[styles.rewardsCard, loadingRewards && styles.cardLoading]}
         onPress={handleRewardsPress}
         disabled={loadingRewards}
         activeOpacity={0.95}
@@ -178,15 +203,21 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
             </View>
             <Text style={styles.rewardsCardLabel}>Points</Text>
             <View style={styles.actionIndicator}>
-              <Ionicons name="chevron-forward" size={14} color={COLORS.inactive} />
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={COLORS.inactive}
+              />
             </View>
           </View>
-          
+
           {/* Amount */}
           <View style={styles.amountContainer}>
-            <Text style={styles.rewardsAmount}>{formatStatNumber(rewardPoints)}</Text>
+            <Text style={styles.rewardsAmount}>
+              {formatStatNumber(rewardPoints)}
+            </Text>
           </View>
-          
+
           {/* Subtext */}
           <Text style={styles.rewardsSubtext}>Ready to use</Text>
         </View>
@@ -337,4 +368,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BalanceCards; 
+export default BalanceCards;

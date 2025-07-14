@@ -1,11 +1,11 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
   Pressable,
-  TextInput
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -16,10 +16,13 @@ import SmartSearchDropdown from '../UI/SmartSearchDropdown';
 // Cart Badge Component
 const CartBadge: React.FC = () => {
   const { state } = useAppContext();
-  const cartItemCount = state.cart.reduce((total, item) => total + item.quantity, 0);
-  
+  const cartItemCount = state.cart.reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
+
   if (cartItemCount === 0) return null;
-  
+
   return (
     <View style={styles.cartBadge}>
       <Text style={styles.cartBadgeText}>
@@ -43,7 +46,7 @@ interface MobileHeaderProps {
   };
 }
 
-const MobileHeader: React.FC<MobileHeaderProps> = ({ 
+const MobileHeader: React.FC<MobileHeaderProps> = ({
   title,
   showBackButton = false,
   showCartButton = true,
@@ -52,10 +55,10 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
   onAddressPress,
   onCartPress,
   onBackPress,
-  currentAddress = { name: 'Marina Bay' } 
+  currentAddress = { name: 'Marina Bay' },
 }) => {
   const navigation = useNavigation();
-  
+
   const handleBackPress = () => {
     if (onBackPress) {
       onBackPress();
@@ -63,7 +66,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
       navigation.goBack();
     }
   };
-  
+
   const handleCartPress = () => {
     if (onCartPress) {
       onCartPress();
@@ -71,25 +74,27 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
       navigation.navigate('Main', { screen: 'Cart' });
     }
   };
-  
+
   if (showBackButton) {
     return (
       <View style={styles.simpleHeader}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           onPress={handleBackPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        
+
         {title && (
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
         )}
-        
+
         {showCartButton && (
-          <TouchableOpacity 
-            style={styles.cartButton} 
+          <TouchableOpacity
+            style={styles.cartButton}
             onPress={handleCartPress}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
@@ -100,13 +105,13 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
       </View>
     );
   }
-  
+
   return (
     <View style={styles.container}>
       {/* Delivery Address */}
       {showLocationHeader && (
         <View style={styles.addressContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.addressButton}
             onPress={onAddressPress}
             activeOpacity={0.7}
@@ -120,7 +125,11 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
                 <Text style={styles.addressName}>{currentAddress.name}</Text>
               </View>
             </View>
-            <Ionicons name="chevron-down" size={22} color={COLORS.textSecondary} />
+            <Ionicons
+              name="chevron-down"
+              size={22}
+              color={COLORS.textSecondary}
+            />
           </TouchableOpacity>
         </View>
       )}
@@ -242,4 +251,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MobileHeader; 
+export default MobileHeader;

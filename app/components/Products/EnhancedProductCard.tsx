@@ -1,15 +1,15 @@
 import React, { useRef, useState, useContext, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  Image, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
   Dimensions,
   StyleProp,
   ViewStyle,
   Animated,
-  Easing
+  Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Product } from '../../utils/pricing';
@@ -19,7 +19,10 @@ import { AppContext } from '../../context/AppContext';
 import { CartNotificationContext } from '../../context/CartNotificationContext';
 import ProgressBar from '../UI/ProgressBar';
 import { HapticFeedback, HapticPatterns } from '../../utils/haptics';
-import { getProductImageSource, getProductFallbackImage } from '../../utils/imageUtils';
+import {
+  getProductImageSource,
+  getProductFallbackImage,
+} from '../../utils/imageUtils';
 import { formatFinancialAmount } from '../../utils/formatting';
 
 interface EnhancedProductCardProps {
@@ -35,21 +38,14 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
   onPress,
   isCompact = false,
   style,
-  animationDelay = 0
+  animationDelay = 0,
 }) => {
-  const {
-    id, 
-    name, 
-    price, 
-    originalPrice,
-    imageUrl, 
-    category,
-    rating
-  } = product;
+  const { id, name, price, originalPrice, imageUrl, category, rating } =
+    product;
 
   // Get app context for cart functionality
   const { state, dispatch } = useContext(AppContext);
-  
+
   // Get cart notification context
   const { showCartNotification } = useContext(CartNotificationContext);
 
@@ -60,14 +56,14 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
   const addButtonScaleAnim = useRef(new Animated.Value(1)).current;
   const addProgressAnim = useRef(new Animated.Value(0)).current;
   const streakAnim = useRef(new Animated.Value(0)).current;
-  
+
   // State variables
   const [isAdding, setIsAdding] = useState(false);
   const [showAddProgress, setShowAddProgress] = useState(false);
   const [purchaseCount, setPurchaseCount] = useState(0);
   const [streakCount, setStreakCount] = useState(0);
   const [showStreakAnimation, setShowStreakAnimation] = useState(false);
-  
+
   // Check if this product is in the cart and its quantity
   useEffect(() => {
     const cartItem = state.cart.find(item => item.product.id === id);
@@ -75,51 +71,51 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
       setPurchaseCount(cartItem.quantity);
     }
   }, [state.cart, id]);
-  
+
   // Increment streak count when purchase count changes
   useEffect(() => {
     if (purchaseCount > 0 && purchaseCount % 3 === 0) {
       // Every 3 purchases, increment streak
       setStreakCount(prevStreak => prevStreak + 1);
       setShowStreakAnimation(true);
-      
+
       // Hide streak animation after delay
       setTimeout(() => {
         setShowStreakAnimation(false);
       }, 3000);
     }
   }, [purchaseCount]);
-  
+
   // Start entrance animation
   useEffect(() => {
     // Delay based on provided prop
     const delay = animationDelay;
-    
+
     Animated.parallel([
       Animated.timing(opacityAnim, {
         toValue: 1,
         duration: 300,
         delay,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
+        easing: Animations.TIMING.easeOut,
       }),
       Animated.timing(translateYAnim, {
         toValue: 0,
         duration: 300,
         delay,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
+        easing: Animations.TIMING.easeOut,
       }),
       Animated.spring(scaleAnim, {
         toValue: 1,
         friction: 8,
         tension: 40,
         delay,
-        useNativeDriver: true
-      })
+        useNativeDriver: true,
+      }),
     ]).start();
   }, []);
-  
+
   // Handle press animation
   const handlePressIn = () => {
     HapticFeedback.light();
@@ -127,45 +123,44 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
       toValue: 0.97,
       duration: 150,
       useNativeDriver: true,
-      easing: Animations.TIMING.easeOut
+      easing: Animations.TIMING.easeOut,
     }).start();
   };
-  
+
   const handlePressOut = () => {
     Animated.spring(scaleAnim, {
       toValue: 1,
       friction: 5,
       tension: 40,
-      useNativeDriver: true
+      useNativeDriver: true,
     }).start();
   };
-  
+
   // Handle add button animation
   const handleAddButtonPress = () => {
-    
     // Haptic feedback for add to cart
     HapticPatterns.addToCart();
-    
+
     // Show progress UI
     setShowAddProgress(true);
     setIsAdding(true);
-    
+
     // Animate add button
     Animations.heartbeatAnimation(addButtonScaleAnim);
-    
+
     // Animate progress bar
     addProgressAnim.setValue(0);
     Animated.timing(addProgressAnim, {
       toValue: 1,
       duration: 800,
       easing: Animations.TIMING.easeOut,
-      useNativeDriver: false
+      useNativeDriver: false,
     }).start(({ finished }) => {
       if (finished) {
         // Add to cart after progress completes
-        dispatch({ 
-          type: 'ADD_TO_CART', 
-          payload: { 
+        dispatch({
+          type: 'ADD_TO_CART',
+          payload: {
             product: {
               id: product.id,
               name: product.name,
@@ -176,14 +171,14 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
               sku: product.id,
               retailPrice: product.price || product.retailPrice || 0,
               tradePrice: product.tradePrice || (product.price || 0) * 0.9,
-            }, 
-            quantity: 1 
-          } 
+            },
+            quantity: 1,
+          },
         });
-        
+
         // Show cart notification with quantity
         showCartNotification(name, 1);
-        
+
         // Reset UI state
         setTimeout(() => {
           setIsAdding(false);
@@ -194,33 +189,34 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
   };
 
   const formattedPrice = formatFinancialAmount(price || 0);
-  const formattedOriginalPrice = originalPrice ? formatFinancialAmount(originalPrice) : null;
-  
+  const formattedOriginalPrice = originalPrice
+    ? formatFinancialAmount(originalPrice)
+    : null;
+
   // Calculate discount logic
-  const hasDiscount = originalPrice !== undefined && originalPrice > (price || 0);
-  
+  const hasDiscount =
+    originalPrice !== undefined && originalPrice > (price || 0);
+
   // Progress calculations
-  const nextStreakProgress = purchaseCount % 3 / 3;
-  
+  const nextStreakProgress = (purchaseCount % 3) / 3;
+
   // Handle both string URLs (Supabase) and require() statements
-  const imageSource = getProductImageSource(imageUrl, name) || getProductFallbackImage();
+  const imageSource =
+    getProductImageSource(imageUrl, name) || getProductFallbackImage();
 
   return (
     <Animated.View
       style={[
-        styles.container, 
+        styles.container,
         isCompact ? styles.compactContainer : null,
         style,
         {
           opacity: opacityAnim,
-          transform: [
-            { scale: scaleAnim },
-            { translateY: translateYAnim }
-          ]
-        }
+          transform: [{ scale: scaleAnim }, { translateY: translateYAnim }],
+        },
       ]}
     >
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.touchableContainer}
         onPress={() => onPress(product)}
         onPressIn={handlePressIn}
@@ -229,14 +225,12 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
       >
         {/* Product Image */}
         <View style={styles.imageContainer}>
-          <Image 
+          <Image
             source={imageSource}
             style={styles.image}
             resizeMode="contain"
           />
-          
 
-          
           {/* Purchase count badge */}
           {purchaseCount > 0 && (
             <View style={styles.purchaseCountBadge}>
@@ -244,12 +238,16 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
             </View>
           )}
         </View>
-        
+
         {/* Product Info */}
         <View style={styles.infoContainer}>
-          <Text style={styles.category} numberOfLines={1}>{category}</Text>
-          <Text style={styles.name} numberOfLines={2}>{name}</Text>
-          
+          <Text style={styles.category} numberOfLines={1}>
+            {category}
+          </Text>
+          <Text style={styles.name} numberOfLines={2}>
+            {name}
+          </Text>
+
           {/* Streak Progress Bar */}
           {purchaseCount > 0 && (
             <View style={styles.progressContainer}>
@@ -270,34 +268,35 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
               )}
             </View>
           )}
-          
+
           <View style={styles.footer}>
             <View style={styles.priceContainer}>
               <Text style={styles.price}>{formattedPrice}</Text>
               {hasDiscount && (
-                <Text style={styles.originalPrice}>{formattedOriginalPrice}</Text>
+                <Text style={styles.originalPrice}>
+                  {formattedOriginalPrice}
+                </Text>
               )}
             </View>
-            
-            <TouchableOpacity 
-              style={[
-                styles.addButton,
-                isAdding && styles.addButtonActive
-              ]}
+
+            <TouchableOpacity
+              style={[styles.addButton, isAdding && styles.addButtonActive]}
               onPress={handleAddButtonPress}
               disabled={isAdding}
             >
               {isAdding ? (
                 <Ionicons name="checkmark" size={18} color={COLORS.accent} />
               ) : (
-                <Animated.View style={{ transform: [{ scale: addButtonScaleAnim }] }}>
+                <Animated.View
+                  style={{ transform: [{ scale: addButtonScaleAnim }] }}
+                >
                   <Ionicons name="add" size={18} color={COLORS.accent} />
                 </Animated.View>
               )}
             </TouchableOpacity>
           </View>
         </View>
-        
+
         {/* Add to cart progress overlay */}
         {showAddProgress && (
           <View style={styles.progressOverlay}>
@@ -320,7 +319,7 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
 };
 
 const { width } = Dimensions.get('window');
-const cardWidth = (width - (SPACING.md * 3)) / 2; // 2 cards per row with margins
+const cardWidth = (width - SPACING.md * 3) / 2; // 2 cards per row with margins
 
 const styles = StyleSheet.create({
   container: {
@@ -464,7 +463,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     marginTop: 8,
-  }
+  },
 });
 
-export default EnhancedProductCard; 
+export default EnhancedProductCard;

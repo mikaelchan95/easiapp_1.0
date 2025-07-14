@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Animated, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  Animated,
+  TouchableOpacity,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../utils/theme';
@@ -14,7 +21,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
   const [step, setStep] = useState(1);
   const [isComplete, setIsComplete] = useState(false);
   const totalSteps = 4;
-  
+
   // Animation values
   const fadeAnim = useState(new Animated.Value(0))[0];
   const pulseAnim = useState(new Animated.Value(1))[0];
@@ -23,7 +30,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
     Array.from({ length: totalSteps }, () => new Animated.Value(0))
   )[0];
   const completeAnim = useState(new Animated.Value(0))[0];
-  
+
   // Mount animation
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -31,7 +38,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
       duration: 600,
       useNativeDriver: true,
     }).start();
-    
+
     // Pulse animation for the main loading indicator
     const pulseAnimation = Animated.loop(
       Animated.sequence([
@@ -48,24 +55,24 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
       ])
     );
     pulseAnimation.start();
-    
+
     return () => pulseAnimation.stop();
   }, []);
-  
+
   // Simulate processing steps with progress animation
   useEffect(() => {
     const timer = setInterval(() => {
       setStep(prevStep => {
         if (prevStep < totalSteps) {
           const newStep = prevStep + 1;
-          
+
           // Animate progress bar
           Animated.timing(progressAnim, {
             toValue: newStep / totalSteps,
             duration: 500,
             useNativeDriver: false,
           }).start();
-          
+
           // Animate step completion
           Animated.spring(stepAnimations[newStep - 1], {
             toValue: 1,
@@ -73,7 +80,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
             tension: 150,
             friction: 8,
           }).start();
-          
+
           return newStep;
         } else if (prevStep === totalSteps && !isComplete) {
           // All steps complete - show completion animation
@@ -93,52 +100,54 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
         return prevStep;
       });
     }, 2000);
-    
+
     return () => clearInterval(timer);
   }, [isComplete]);
-  
+
   const getStepColor = (stepNumber: number) => {
     if (stepNumber < step) return COLORS.success; // Completed
     if (stepNumber === step) return COLORS.success; // Current (green)
     return COLORS.textSecondary; // Upcoming
   };
-  
+
   const getStepBackgroundColor = (stepNumber: number) => {
     if (stepNumber < step) return COLORS.success;
     if (stepNumber === step) return COLORS.success;
     return COLORS.border;
   };
-  
+
   return (
     <>
       <View style={styles.wrapper}>
-        <Animated.View 
+        <Animated.View
           style={[
             styles.container,
             {
               opacity: fadeAnim,
               paddingBottom: 140, // Space for bottom nav
-            }
+            },
           ]}
         >
           <View style={styles.stepsContainer}>
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.step,
                 {
                   opacity: step >= 1 ? 1 : 0.5,
-                  transform: [{ 
-                    scale: stepAnimations[0].interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.95, 1.02]
-                    })
-                  }]
-                }
+                  transform: [
+                    {
+                      scale: stepAnimations[0].interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.95, 1.02],
+                      }),
+                    },
+                  ],
+                },
               ]}
             >
-              <Animated.View 
+              <Animated.View
                 style={[
-                  styles.stepIcon, 
+                  styles.stepIcon,
                   { backgroundColor: getStepBackgroundColor(1) },
                   step >= 1 && {
                     shadowColor: COLORS.success,
@@ -146,7 +155,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
                     shadowOpacity: 0.3,
                     shadowRadius: 4,
                     elevation: 4,
-                  }
+                  },
                 ]}
               >
                 {step > 1 ? (
@@ -167,41 +176,47 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
                 )}
               </Animated.View>
               <View style={styles.stepContent}>
-                <Text style={[styles.stepText, { color: getStepColor(1) }]}>Verifying Order</Text>
-                <Text style={styles.stepDescription}>Checking product availability and stock</Text>
+                <Text style={[styles.stepText, { color: getStepColor(1) }]}>
+                  Verifying Order
+                </Text>
+                <Text style={styles.stepDescription}>
+                  Checking product availability and stock
+                </Text>
               </View>
             </Animated.View>
-            
-            <Animated.View 
+
+            <Animated.View
               style={[
-                styles.stepConnector, 
-                { 
+                styles.stepConnector,
+                {
                   backgroundColor: step > 1 ? COLORS.success : COLORS.border,
                   opacity: stepAnimations[0].interpolate({
                     inputRange: [0, 1],
-                    outputRange: [0.3, 1]
-                  })
-                }
-              ]} 
+                    outputRange: [0.3, 1],
+                  }),
+                },
+              ]}
             />
-            
-            <Animated.View 
+
+            <Animated.View
               style={[
                 styles.step,
                 {
                   opacity: step >= 2 ? 1 : 0.5,
-                  transform: [{ 
-                    scale: stepAnimations[1].interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.95, 1.02]
-                    })
-                  }]
-                }
+                  transform: [
+                    {
+                      scale: stepAnimations[1].interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.95, 1.02],
+                      }),
+                    },
+                  ],
+                },
               ]}
             >
-              <Animated.View 
+              <Animated.View
                 style={[
-                  styles.stepIcon, 
+                  styles.stepIcon,
                   { backgroundColor: getStepBackgroundColor(2) },
                   step >= 2 && {
                     shadowColor: COLORS.success,
@@ -209,7 +224,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
                     shadowOpacity: 0.3,
                     shadowRadius: 4,
                     elevation: 4,
-                  }
+                  },
                 ]}
               >
                 {step > 2 ? (
@@ -230,41 +245,47 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
                 )}
               </Animated.View>
               <View style={styles.stepContent}>
-                <Text style={[styles.stepText, { color: getStepColor(2) }]}>Processing Payment</Text>
-                <Text style={styles.stepDescription}>Securely processing your payment method</Text>
+                <Text style={[styles.stepText, { color: getStepColor(2) }]}>
+                  Processing Payment
+                </Text>
+                <Text style={styles.stepDescription}>
+                  Securely processing your payment method
+                </Text>
               </View>
             </Animated.View>
-            
-            <Animated.View 
+
+            <Animated.View
               style={[
-                styles.stepConnector, 
-                { 
+                styles.stepConnector,
+                {
                   backgroundColor: step > 2 ? COLORS.success : COLORS.border,
                   opacity: stepAnimations[1].interpolate({
                     inputRange: [0, 1],
-                    outputRange: [0.3, 1]
-                  })
-                }
-              ]} 
+                    outputRange: [0.3, 1],
+                  }),
+                },
+              ]}
             />
-            
-            <Animated.View 
+
+            <Animated.View
               style={[
                 styles.step,
                 {
                   opacity: step >= 3 ? 1 : 0.5,
-                  transform: [{ 
-                    scale: stepAnimations[2].interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.95, 1.02]
-                    })
-                  }]
-                }
+                  transform: [
+                    {
+                      scale: stepAnimations[2].interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.95, 1.02],
+                      }),
+                    },
+                  ],
+                },
               ]}
             >
-              <Animated.View 
+              <Animated.View
                 style={[
-                  styles.stepIcon, 
+                  styles.stepIcon,
                   { backgroundColor: getStepBackgroundColor(3) },
                   step >= 3 && {
                     shadowColor: COLORS.success,
@@ -272,7 +293,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
                     shadowOpacity: 0.3,
                     shadowRadius: 4,
                     elevation: 4,
-                  }
+                  },
                 ]}
               >
                 {step > 3 ? (
@@ -293,41 +314,47 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
                 )}
               </Animated.View>
               <View style={styles.stepContent}>
-                <Text style={[styles.stepText, { color: getStepColor(3) }]}>Confirming Delivery</Text>
-                <Text style={styles.stepDescription}>Scheduling your delivery slot</Text>
+                <Text style={[styles.stepText, { color: getStepColor(3) }]}>
+                  Confirming Delivery
+                </Text>
+                <Text style={styles.stepDescription}>
+                  Scheduling your delivery slot
+                </Text>
               </View>
             </Animated.View>
-            
-            <Animated.View 
+
+            <Animated.View
               style={[
-                styles.stepConnector, 
-                { 
+                styles.stepConnector,
+                {
                   backgroundColor: step > 3 ? COLORS.success : COLORS.border,
                   opacity: stepAnimations[2].interpolate({
                     inputRange: [0, 1],
-                    outputRange: [0.3, 1]
-                  })
-                }
-              ]} 
+                    outputRange: [0.3, 1],
+                  }),
+                },
+              ]}
             />
-            
-            <Animated.View 
+
+            <Animated.View
               style={[
                 styles.step,
                 {
                   opacity: step >= 4 ? 1 : 0.5,
-                  transform: [{ 
-                    scale: stepAnimations[3].interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.95, 1.02]
-                    })
-                  }]
-                }
+                  transform: [
+                    {
+                      scale: stepAnimations[3].interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.95, 1.02],
+                      }),
+                    },
+                  ],
+                },
               ]}
             >
-              <Animated.View 
+              <Animated.View
                 style={[
-                  styles.stepIcon, 
+                  styles.stepIcon,
                   { backgroundColor: getStepBackgroundColor(4) },
                   step >= 4 && {
                     shadowColor: COLORS.success,
@@ -335,7 +362,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
                     shadowOpacity: 0.3,
                     shadowRadius: 4,
                     elevation: 4,
-                  }
+                  },
                 ]}
               >
                 {step > 4 ? (
@@ -356,72 +383,87 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
                 )}
               </Animated.View>
               <View style={styles.stepContent}>
-                <Text style={[styles.stepText, { color: getStepColor(4) }]}>Finalizing Order</Text>
-                <Text style={styles.stepDescription}>Preparing your order confirmation</Text>
+                <Text style={[styles.stepText, { color: getStepColor(4) }]}>
+                  Finalizing Order
+                </Text>
+                <Text style={styles.stepDescription}>
+                  Preparing your order confirmation
+                </Text>
               </View>
             </Animated.View>
           </View>
         </Animated.View>
       </View>
-      
+
       {/* Bottom Navigation Bar - Fixed to screen bottom */}
-      <View style={[styles.bottomContainer, { paddingBottom: Math.max(insets.bottom, SPACING.md) }]}>
+      <View
+        style={[
+          styles.bottomContainer,
+          { paddingBottom: Math.max(insets.bottom, SPACING.md) },
+        ]}
+      >
         {/* Progress Bar */}
         <View style={styles.bottomProgressContainer}>
           <View style={styles.progressTrack}>
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.progressBar,
                 {
                   width: progressAnim.interpolate({
                     inputRange: [0, 1],
                     outputRange: ['0%', '100%'],
-                  })
-                }
-              ]} 
+                  }),
+                },
+              ]}
             />
           </View>
-          
+
           {/* Step indicators */}
           <View style={styles.stepIndicators}>
             {Array.from({ length: totalSteps }, (_, index) => {
               const isActive = index + 1 === step;
               const isCompleted = index + 1 < step;
               const isInactive = index + 1 > step;
-              
+
               return (
                 <React.Fragment key={index}>
-                  <Animated.View 
+                  <Animated.View
                     style={[
                       styles.stepDot,
                       isCompleted && styles.completedStepDot,
                       isActive && styles.activeStepDot,
                       isInactive && styles.inactiveStepDot,
                       {
-                        transform: [{
-                          scale: stepAnimations[index].interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0.8, 1.1],
-                          })
-                        }]
-                      }
+                        transform: [
+                          {
+                            scale: stepAnimations[index].interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [0.8, 1.1],
+                            }),
+                          },
+                        ],
+                      },
                     ]}
                   >
                     {isCompleted && (
                       <Animated.View
                         style={{
                           opacity: stepAnimations[index],
-                          transform: [{ scale: stepAnimations[index] }]
+                          transform: [{ scale: stepAnimations[index] }],
                         }}
                       >
-                        <Ionicons name="checkmark" size={14} color={COLORS.card} />
+                        <Ionicons
+                          name="checkmark"
+                          size={14}
+                          color={COLORS.card}
+                        />
                       </Animated.View>
                     )}
                     {isActive && (
                       <Animated.View
                         style={{
                           opacity: stepAnimations[index],
-                          transform: [{ scale: stepAnimations[index] }]
+                          transform: [{ scale: stepAnimations[index] }],
                         }}
                       >
                         <View style={styles.activeStepIndicator} />
@@ -429,7 +471,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
                     )}
                   </Animated.View>
                   {index < totalSteps - 1 && (
-                    <Animated.View 
+                    <Animated.View
                       style={[
                         styles.stepLine,
                         isCompleted && styles.completedStepLine,
@@ -437,9 +479,9 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
                           opacity: stepAnimations[index].interpolate({
                             inputRange: [0, 1],
                             outputRange: [0.3, 1],
-                          })
-                        }
-                      ]} 
+                          }),
+                        },
+                      ]}
                     />
                   )}
                 </React.Fragment>
@@ -447,7 +489,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ onComplete }) => {
             })}
           </View>
         </View>
-        
+
         {/* Status Text */}
         <View style={styles.footer}>
           <Text style={styles.statusText}>
@@ -619,7 +661,6 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontWeight: '600',
   },
-
 });
 
-export default ProcessingStep; 
+export default ProcessingStep;

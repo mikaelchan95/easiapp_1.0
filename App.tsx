@@ -1,18 +1,22 @@
 import React, { useRef, useEffect, useMemo } from 'react';
-import { NavigationContainer, DefaultTheme, useNavigationContainerRef } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  DefaultTheme,
+  useNavigationContainerRef,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  StyleSheet,
   Pressable,
   Animated,
   TouchableWithoutFeedback,
-  Platform
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -20,7 +24,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // Import app context
 import { AppProvider, AppContext } from './app/context/AppContext';
 import { TransitionProvider } from './app/context/TransitionContext';
-import CartNotificationProvider, { CartNotificationContext } from './app/context/CartNotificationContext';
+import CartNotificationProvider, {
+  CartNotificationContext,
+} from './app/context/CartNotificationContext';
 import { RewardsProvider } from './app/context/RewardsContext';
 import { CheckoutProvider } from './app/context/CheckoutContext';
 
@@ -100,7 +106,13 @@ import RewardsAnalyticsScreen from './app/components/Rewards/RewardsAnalyticsScr
 
 // Import types and theme
 import { RootStackParamList, MainTabParamList } from './app/types/navigation';
-import { COLORS, SHADOWS, TYPOGRAPHY, SPACING, FONT_WEIGHTS } from './app/utils/theme';
+import {
+  COLORS,
+  SHADOWS,
+  TYPOGRAPHY,
+  SPACING,
+  FONT_WEIGHTS,
+} from './app/utils/theme';
 // Import reusable components
 import AnimatedFeedback from './app/components/UI/AnimatedFeedback';
 import CartNotification from './app/components/UI/CartNotification';
@@ -128,7 +140,7 @@ function AnimatedCartBadge({ count }: { count: number }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const bounceAnim = useRef(new Animated.Value(1)).current;
   const prevCount = useRef(count);
-  
+
   useEffect(() => {
     if (count > prevCount.current) {
       // Item added - bounce animation
@@ -144,9 +156,9 @@ function AnimatedCartBadge({ count }: { count: number }) {
           friction: 4,
           tension: 300,
           useNativeDriver: true,
-        })
+        }),
       ]).start();
-      
+
       // Bounce effect
       Animated.sequence([
         Animated.timing(bounceAnim, {
@@ -158,27 +170,22 @@ function AnimatedCartBadge({ count }: { count: number }) {
           toValue: 1,
           duration: 200,
           useNativeDriver: true,
-        })
+        }),
       ]).start();
     }
     prevCount.current = count;
   }, [count]);
-  
+
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.cartBadge,
         {
-          transform: [
-            { scale: scaleAnim },
-            { scale: bounceAnim }
-          ]
-        }
+          transform: [{ scale: scaleAnim }, { scale: bounceAnim }],
+        },
       ]}
     >
-      <Text style={styles.cartBadgeText}>
-        {count > 99 ? '99+' : count}
-      </Text>
+      <Text style={styles.cartBadgeText}>{count > 99 ? '99+' : count}</Text>
     </Animated.View>
   );
 }
@@ -188,7 +195,7 @@ function TabBarButton({ onPress, children, isActive, route }: any) {
   // Animation values
   const scaleValue = useRef(new Animated.Value(1)).current;
   const opacityValue = useRef(new Animated.Value(isActive ? 1 : 0.7)).current;
-  
+
   // Handle press animations with modern spring physics
   const handlePressIn = () => {
     Animated.spring(scaleValue, {
@@ -198,7 +205,7 @@ function TabBarButton({ onPress, children, isActive, route }: any) {
       friction: 10,
     }).start();
   };
-  
+
   const handlePressOut = () => {
     Animated.spring(scaleValue, {
       toValue: 1,
@@ -207,7 +214,7 @@ function TabBarButton({ onPress, children, isActive, route }: any) {
       friction: 10,
     }).start();
   };
-  
+
   // Handle active state animation
   useEffect(() => {
     Animated.spring(opacityValue, {
@@ -217,7 +224,7 @@ function TabBarButton({ onPress, children, isActive, route }: any) {
       friction: 10,
     }).start();
   }, [isActive]);
-  
+
   return (
     <TouchableWithoutFeedback
       onPress={onPress}
@@ -227,10 +234,12 @@ function TabBarButton({ onPress, children, isActive, route }: any) {
       accessibilityState={{ selected: isActive }}
       accessibilityLabel={`${route.name} tab`}
     >
-      <Animated.View style={{ 
-        transform: [{ scale: scaleValue }],
-        opacity: opacityValue
-      }}>
+      <Animated.View
+        style={{
+          transform: [{ scale: scaleValue }],
+          opacity: opacityValue,
+        }}
+      >
         {children}
       </Animated.View>
     </TouchableWithoutFeedback>
@@ -238,9 +247,15 @@ function TabBarButton({ onPress, children, isActive, route }: any) {
 }
 
 // Animated profile icon with jiggle effect
-function AnimatedProfileIcon({ hasNotification, isFocused }: { hasNotification: boolean; isFocused: boolean }) {
+function AnimatedProfileIcon({
+  hasNotification,
+  isFocused,
+}: {
+  hasNotification: boolean;
+  isFocused: boolean;
+}) {
   const jiggleAnim = useRef(new Animated.Value(0)).current;
-  
+
   useEffect(() => {
     if (hasNotification && !isFocused) {
       // Start jiggle animation
@@ -271,13 +286,13 @@ function AnimatedProfileIcon({ hasNotification, isFocused }: { hasNotification: 
           setTimeout(jiggle, 3000);
         });
       };
-      
+
       jiggle();
     } else {
       jiggleAnim.setValue(0);
     }
   }, [hasNotification, isFocused, jiggleAnim]);
-  
+
   return (
     <Animated.View
       style={{
@@ -291,14 +306,12 @@ function AnimatedProfileIcon({ hasNotification, isFocused }: { hasNotification: 
         ],
       }}
     >
-      <Ionicons 
-        name="person-outline" 
-        size={22} 
-        color={isFocused ? COLORS.accent : COLORS.inactive} 
+      <Ionicons
+        name="person-outline"
+        size={22}
+        color={isFocused ? COLORS.accent : COLORS.inactive}
       />
-      {hasNotification && (
-        <View style={styles.notificationDot} />
-      )}
+      {hasNotification && <View style={styles.notificationDot} />}
     </Animated.View>
   );
 }
@@ -307,19 +320,24 @@ function AnimatedProfileIcon({ hasNotification, isFocused }: { hasNotification: 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const insets = useSafeAreaInsets();
   const { state: appState } = React.useContext(AppContext);
-  const cartItemCount = appState.cart.reduce((count, item) => count + item.quantity, 0);
-  
+  const cartItemCount = appState.cart.reduce(
+    (count, item) => count + item.quantity,
+    0
+  );
+
   // Mock notification states - in a real app, these would come from context/state
   const hasProfileNotifications = true; // New features, updates, etc.
-  
+
   return (
-    <View style={[
-      styles.tabBarWrapper,
-      { 
-        paddingBottom: Math.max(insets.bottom, 12),
-        paddingTop: 8
-      }
-    ]}>
+    <View
+      style={[
+        styles.tabBarWrapper,
+        {
+          paddingBottom: Math.max(insets.bottom, 12),
+          paddingTop: 8,
+        },
+      ]}
+    >
       {/* Main navbar container */}
       <View style={styles.navbarContainer}>
         {/* Menu wrapper */}
@@ -331,7 +349,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
             // Icon mapping
             let iconName: string = 'help-circle-outline';
             let label: string = route.name;
-            
+
             if (route.name === 'Home') {
               iconName = 'home-outline';
               label = 'Home';
@@ -370,26 +388,28 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                 route={route}
               >
                 <View style={styles.tabItemWrapper}>
-                  <View style={[
-                    styles.menuButtonContainer,
-                    isFocused && styles.activeMenuButton
-                  ]}>
+                  <View
+                    style={[
+                      styles.menuButtonContainer,
+                      isFocused && styles.activeMenuButton,
+                    ]}
+                  >
                     <View style={styles.menuButton}>
                       <View style={styles.iconContainer}>
                         {/* Special handling for Profile tab with jiggle animation */}
                         {route.name === 'Profile' ? (
-                          <AnimatedProfileIcon 
-                            hasNotification={hasProfileNotifications} 
-                            isFocused={isFocused} 
+                          <AnimatedProfileIcon
+                            hasNotification={hasProfileNotifications}
+                            isFocused={isFocused}
                           />
                         ) : (
-                          <Ionicons 
-                            name={iconName as any} 
-                            size={22} 
-                            color={isFocused ? COLORS.accent : COLORS.inactive} 
+                          <Ionicons
+                            name={iconName as any}
+                            size={22}
+                            color={isFocused ? COLORS.accent : COLORS.inactive}
                           />
                         )}
-                        
+
                         {/* Cart badge with animation */}
                         {route.name === 'Cart' && cartItemCount > 0 && (
                           <AnimatedCartBadge count={cartItemCount} />
@@ -397,12 +417,14 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                       </View>
                     </View>
                   </View>
-                  
+
                   {/* Tab label */}
-                  <Text style={[
-                    styles.tabLabel,
-                    isFocused && styles.activeTabLabel
-                  ]}>
+                  <Text
+                    style={[
+                      styles.tabLabel,
+                      isFocused && styles.activeTabLabel,
+                    ]}
+                  >
                     {label}
                   </Text>
                 </View>
@@ -418,38 +440,29 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 // Main tab navigator
 function MainTabs() {
   const { state } = React.useContext(AppContext);
-  const cartItemCount = state.cart.reduce((count, item) => count + item.quantity, 0);
-  
+  const cartItemCount = state.cart.reduce(
+    (count, item) => count + item.quantity,
+    0
+  );
+
   return (
     // @ts-ignore - Ignore ID requirement
     <Tab.Navigator
-      tabBar={(props) => <CustomTabBar {...props} />}
+      tabBar={props => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
         tabBarHideOnKeyboard: true,
       }}
     >
-      <Tab.Screen 
-        name="Home" 
-        component={HomeScreen}
-      />
-      <Tab.Screen 
-        name="Products" 
-        component={ProductsScreen}
-      />
-      <Tab.Screen 
-        name="Cart" 
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Products" component={ProductsScreen} />
+      <Tab.Screen
+        name="Cart"
         component={CartScreen}
         initialParams={{ count: cartItemCount }}
       />
-      <Tab.Screen 
-        name="Rewards" 
-        component={RewardsScreen}
-      />
-      <Tab.Screen 
-        name="Profile" 
-        component={ProfileScreen}
-      />
+      <Tab.Screen name="Rewards" component={RewardsScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
@@ -457,15 +470,15 @@ function MainTabs() {
 // Auth-aware navigation wrapper
 function AuthNavigator() {
   const { state } = React.useContext(AppContext);
-  
+
   React.useEffect(() => {
     console.log('🔄 AuthNavigator state change:', {
       hasUser: !!state.user,
       userName: state.user?.name,
-      loading: state.loading
+      loading: state.loading,
     });
   }, [state.user, state.loading]);
-  
+
   // Show loading during app initialization or auth loading
   if (state.loading) {
     console.log('🔄 AuthNavigator showing loading screen (app loading)');
@@ -478,24 +491,24 @@ function AuthNavigator() {
       </View>
     );
   }
-  
+
   // Show auth screen if no user
   if (!state.user) {
     console.log('🔄 AuthNavigator showing auth screen');
     return (
-      <AuthContainer 
+      <AuthContainer
         onAuthSuccess={() => {
           // This callback is no longer used - auth state listener handles everything
         }}
       />
     );
   }
-  
+
   console.log('🔄 AuthNavigator showing main app for user:', state.user.name);
-  
+
   return (
     // @ts-ignore - Ignore ID requirement
-    <Stack.Navigator 
+    <Stack.Navigator
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
@@ -507,153 +520,93 @@ function AuthNavigator() {
       <Stack.Screen name="Main" component={MainTabs} />
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
       <Stack.Screen name="SmartSearch" component={SmartSearchScreen} />
-      <Stack.Screen 
-        name="Checkout" 
-        component={CheckoutScreen}
-      />
-      <Stack.Screen 
-        name="OrderSuccess" 
+      <Stack.Screen name="Checkout" component={CheckoutScreen} />
+      <Stack.Screen
+        name="OrderSuccess"
         component={OrderSuccessScreen}
-        options={{ 
+        options={{
           animation: 'fade',
-          gestureEnabled: false
+          gestureEnabled: false,
         }}
       />
-      <Stack.Screen 
-        name="OrderTracking" 
-        component={OrderTrackingScreen}
-      />
+      <Stack.Screen name="OrderTracking" component={OrderTrackingScreen} />
       {/* <Stack.Screen 
         name="MomentumShowcase" 
         component={MomentumShowcase}
       /> */}
-      <Stack.Screen 
-        name="OrderHistory" 
-        component={OrderHistoryScreen}
-      />
-      <Stack.Screen 
-        name="OrderDetails" 
-        component={OrderTrackingScreen}
-      />
-      <Stack.Screen 
-        name="Wishlist" 
-        component={WishlistScreen}
-      />
-      <Stack.Screen 
-        name="Reviews" 
-        component={ReviewsScreen}
-      />
-      <Stack.Screen 
-        name="Support" 
-        component={SupportScreen}
-      />
-      <Stack.Screen 
-        name="Rewards" 
-        component={RewardsScreen}
-      />
-      <Stack.Screen 
-        name="VoucherTracking" 
-        component={VoucherTrackingScreen}
-      />
-      <Stack.Screen 
-        name="RewardsFAQ" 
-        component={RewardsFAQScreen}
-      />
-      <Stack.Screen 
-        name="ReferralScreen" 
-        component={ReferralScreen}
-      />
-      <Stack.Screen 
-        name="ReferralHistory" 
-        component={ReferralHistoryScreen}
-      />
-      <Stack.Screen 
-        name="InviteFriends" 
-        component={InviteFriendsScreen}
-      />
-      <Stack.Screen 
-        name="AchievementsScreen" 
-        component={AchievementsScreen}
-      />
-      <Stack.Screen 
-        name="MilestonesScreen" 
-        component={MilestonesScreen}
-      />
-      <Stack.Screen 
-        name="RewardsAnalytics" 
+      <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
+      <Stack.Screen name="OrderDetails" component={OrderTrackingScreen} />
+      <Stack.Screen name="Wishlist" component={WishlistScreen} />
+      <Stack.Screen name="Reviews" component={ReviewsScreen} />
+      <Stack.Screen name="Support" component={SupportScreen} />
+      <Stack.Screen name="Rewards" component={RewardsScreen} />
+      <Stack.Screen name="VoucherTracking" component={VoucherTrackingScreen} />
+      <Stack.Screen name="RewardsFAQ" component={RewardsFAQScreen} />
+      <Stack.Screen name="ReferralScreen" component={ReferralScreen} />
+      <Stack.Screen name="ReferralHistory" component={ReferralHistoryScreen} />
+      <Stack.Screen name="InviteFriends" component={InviteFriendsScreen} />
+      <Stack.Screen name="AchievementsScreen" component={AchievementsScreen} />
+      <Stack.Screen name="MilestonesScreen" component={MilestonesScreen} />
+      <Stack.Screen
+        name="RewardsAnalytics"
         component={RewardsAnalyticsScreen}
       />
       {/* <Stack.Screen 
         name="TierBenefitsScreen" 
         component={TierBenefitsScreen}
       /> */}
-      <Stack.Screen 
-        name="Referrals" 
-        component={ActivitiesScreen}
-      />
+      <Stack.Screen name="Referrals" component={ActivitiesScreen} />
       {/* <Stack.Screen 
         name="LocationPickerDemo" 
         component={LocationPickerDemo}
       /> */}
-      <Stack.Screen 
-        name="LocationPickerScreen" 
+      <Stack.Screen
+        name="LocationPickerScreen"
         component={LocationPickerScreen}
       />
-      <Stack.Screen 
-        name="UberStyleLocationScreen" 
+      <Stack.Screen
+        name="UberStyleLocationScreen"
         component={UberStyleLocationScreen}
       />
-      <Stack.Screen 
-        name="DeliveryLocationScreen" 
+      <Stack.Screen
+        name="DeliveryLocationScreen"
         component={UberStyleLocationScreen}
       />
-      <Stack.Screen 
-        name="SavedLocations" 
-        component={SavedLocationsScreen}
-      />
-      <Stack.Screen 
-        name="CompanyProfile" 
-        component={CompanyProfileScreen}
-      />
-      <Stack.Screen 
-        name="TeamManagement" 
-        component={TeamManagementScreen}
-      />
-      <Stack.Screen 
-        name="Settings" 
-        component={SettingsScreen}
-      />
+      <Stack.Screen name="SavedLocations" component={SavedLocationsScreen} />
+      <Stack.Screen name="CompanyProfile" component={CompanyProfileScreen} />
+      <Stack.Screen name="TeamManagement" component={TeamManagementScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
       {/* Checkout flow screens */}
-      <Stack.Screen 
-        name="CheckoutAddress" 
+      <Stack.Screen
+        name="CheckoutAddress"
         component={CheckoutAddressScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="CheckoutDelivery" 
+      <Stack.Screen
+        name="CheckoutDelivery"
         component={CheckoutDeliveryScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="CheckoutPayment" 
+      <Stack.Screen
+        name="CheckoutPayment"
         component={CheckoutPaymentScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="CheckoutReview" 
+      <Stack.Screen
+        name="CheckoutReview"
         component={CheckoutReviewScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="CheckoutProcessing" 
+      <Stack.Screen
+        name="CheckoutProcessing"
         component={CheckoutProcessingScreen}
         options={{
           headerShown: false,
@@ -774,36 +727,36 @@ function AuthNavigator() {
           headerShown: false,
         }}
       /> */}
-      <Stack.Screen 
-        name="BillingDashboard" 
+      <Stack.Screen
+        name="BillingDashboard"
         component={BillingDashboardScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="CreditPayment" 
+      <Stack.Screen
+        name="CreditPayment"
         component={CreditPaymentScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="BillingSettings" 
+      <Stack.Screen
+        name="BillingSettings"
         component={BillingSettingsScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="InvoiceGeneration" 
+      <Stack.Screen
+        name="InvoiceGeneration"
         component={InvoiceGeneration}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="InvoiceViewer" 
+      <Stack.Screen
+        name="InvoiceViewer"
         component={InvoiceViewer}
         options={{
           headerShown: false,
@@ -814,27 +767,27 @@ function AuthNavigator() {
 }
 
 // Global Achievement Notification Wrapper
-const GlobalAchievementWrapper: React.FC<{ 
+const GlobalAchievementWrapper: React.FC<{
   children: React.ReactNode;
   navigationRef?: any;
 }> = ({ children, navigationRef }) => {
   const { state, dispatch } = React.useContext(AppContext);
-  
+
   const handleViewOrder = () => {
     // Navigate to profile page with order highlight
     if (navigationRef?.isReady()) {
-      navigationRef.navigate('Main', { 
+      navigationRef.navigate('Main', {
         screen: 'Profile',
-        params: { highlightRecentOrder: true }
+        params: { highlightRecentOrder: true },
       });
     }
     dispatch({ type: 'HIDE_PURCHASE_ACHIEVEMENT' });
   };
-  
+
   const handleDismiss = () => {
     dispatch({ type: 'HIDE_PURCHASE_ACHIEVEMENT' });
   };
-  
+
   return (
     <>
       {children}
@@ -854,7 +807,7 @@ const GlobalAchievementWrapper: React.FC<{
 
 function AppContent() {
   const navigationRef = useNavigationContainerRef();
-  
+
   // Initialize notifications
   React.useEffect(() => {
     let notificationSubscription: (() => void) | null = null;
@@ -862,20 +815,26 @@ function AppContent() {
     const initializeNotifications = async () => {
       try {
         await notificationService.initialize();
-        
+
         // Add notification listeners
         notificationSubscription = notificationService.addNotificationListener(
-          (notification) => {
+          notification => {
             console.log('📱 Notification received:', notification);
           },
-          (response) => {
+          response => {
             console.log('📱 Notification response:', response);
             const data = response.notification.request.content.data;
-            
+
             // Handle order update notifications
-            if (data?.type === 'order_update' && data?.orderId && typeof data.orderId === 'string') {
+            if (
+              data?.type === 'order_update' &&
+              data?.orderId &&
+              typeof data.orderId === 'string'
+            ) {
               if (navigationRef.isReady()) {
-                navigationRef.navigate('OrderTracking', { orderId: data.orderId });
+                navigationRef.navigate('OrderTracking', {
+                  orderId: data.orderId,
+                });
               }
             }
           }
@@ -893,7 +852,7 @@ function AppContent() {
       }
     };
   }, [navigationRef]);
-  
+
   // Global feedback state
   const [feedbackState, setFeedbackState] = React.useState<{
     visible: boolean;
@@ -902,17 +861,20 @@ function AppContent() {
   }>({
     visible: false,
     type: 'success',
-    message: ''
+    message: '',
   });
-  
+
   // Show feedback function
-  const showFeedback = (type: 'success' | 'error' | 'info' | 'loading', message: string): void => {
+  const showFeedback = (
+    type: 'success' | 'error' | 'info' | 'loading',
+    message: string
+  ): void => {
     setFeedbackState({
       visible: true,
       type,
-      message
+      message,
     });
-    
+
     // Auto-hide after 2 seconds for non-loading feedback
     if (type !== 'loading') {
       setTimeout(() => {
@@ -920,19 +882,19 @@ function AppContent() {
       }, 2000);
     }
   };
-  
+
   // Hide feedback function
   const hideFeedback = () => {
     setFeedbackState(prev => ({ ...prev, visible: false }));
   };
-  
+
   // Function to navigate to cart
   const navigateToCart = () => {
     if (navigationRef.isReady()) {
       navigationRef.navigate('Main', { screen: 'Cart' });
     }
   };
-  
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -941,23 +903,25 @@ function AppContent() {
             <CheckoutProvider>
               <CartNotificationProvider>
                 <TransitionProvider>
-                <StatusBar style="dark" />
-                <GlobalAchievementWrapper navigationRef={navigationRef}>
-                  <NavigationContainer ref={navigationRef} theme={MyTheme}>
-                    <AuthNavigator />
-                    
-                    {/* Global cart notification with navigation ref */}
-                    <CartNotificationConsumer navigateToCart={navigateToCart} />
-                  </NavigationContainer>
-                </GlobalAchievementWrapper>
-                
-                {/* Global feedback component */}
-                <AnimatedFeedback
-                  type={feedbackState.type}
-                  message={feedbackState.message}
-                  visible={feedbackState.visible}
-                  onHide={hideFeedback}
-                />
+                  <StatusBar style="dark" />
+                  <GlobalAchievementWrapper navigationRef={navigationRef}>
+                    <NavigationContainer ref={navigationRef} theme={MyTheme}>
+                      <AuthNavigator />
+
+                      {/* Global cart notification with navigation ref */}
+                      <CartNotificationConsumer
+                        navigateToCart={navigateToCart}
+                      />
+                    </NavigationContainer>
+                  </GlobalAchievementWrapper>
+
+                  {/* Global feedback component */}
+                  <AnimatedFeedback
+                    type={feedbackState.type}
+                    message={feedbackState.message}
+                    visible={feedbackState.visible}
+                    onHide={hideFeedback}
+                  />
                 </TransitionProvider>
               </CartNotificationProvider>
             </CheckoutProvider>
@@ -969,24 +933,27 @@ function AppContent() {
 }
 
 // Separate component to consume the CartNotificationContext
-const CartNotificationConsumer = React.memo(({ navigateToCart }: { navigateToCart: () => void }) => {
-  const { visible, itemCount, lastItemName, hideCartNotification } = React.useContext(CartNotificationContext);
-  
-  // Memoize the onViewCart callback to prevent re-renders
-  const handleViewCart = React.useCallback(() => {
-    navigateToCart();
-  }, [navigateToCart]);
-  
-  return (
-    <CartNotification
-      visible={visible}
-      itemCount={itemCount}
-      lastItemName={lastItemName}
-      onHide={hideCartNotification}
-      onViewCart={handleViewCart}
-    />
-  );
-});
+const CartNotificationConsumer = React.memo(
+  ({ navigateToCart }: { navigateToCart: () => void }) => {
+    const { visible, itemCount, lastItemName, hideCartNotification } =
+      React.useContext(CartNotificationContext);
+
+    // Memoize the onViewCart callback to prevent re-renders
+    const handleViewCart = React.useCallback(() => {
+      navigateToCart();
+    }, [navigateToCart]);
+
+    return (
+      <CartNotification
+        visible={visible}
+        itemCount={itemCount}
+        lastItemName={lastItemName}
+        onHide={hideCartNotification}
+        onViewCart={handleViewCart}
+      />
+    );
+  }
+);
 
 // Give the component a display name for debugging
 CartNotificationConsumer.displayName = 'CartNotificationConsumer';
@@ -1143,4 +1110,4 @@ export default function App() {
       </GestureHandlerRootView>
     </ErrorBoundary>
   );
-} 
+}

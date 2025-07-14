@@ -1,5 +1,10 @@
 import { supabase } from '../../utils/supabase';
-import { realTimePaymentService, BalanceUpdate, PartialPaymentRequest, PaymentResult } from './realTimePaymentService';
+import {
+  realTimePaymentService,
+  BalanceUpdate,
+  PartialPaymentRequest,
+  PaymentResult,
+} from './realTimePaymentService';
 
 // Types and Interfaces
 export interface DashboardMetrics {
@@ -42,7 +47,11 @@ export interface PaymentCalendarEvent {
 
 export interface CreditAlert {
   id: string;
-  type: 'utilization_high' | 'credit_low' | 'payment_overdue' | 'credit_limit_exceeded';
+  type:
+    | 'utilization_high'
+    | 'credit_low'
+    | 'payment_overdue'
+    | 'credit_limit_exceeded';
   severity: 'info' | 'warning' | 'critical';
   title: string;
   message: string;
@@ -93,13 +102,16 @@ export interface ServiceResult<T> {
 
 class EnhancedBillingService {
   private activeSubscriptions: Map<string, any> = new Map();
-  private cache: Map<string, { data: any; timestamp: number; ttl: number }> = new Map();
+  private cache: Map<string, { data: any; timestamp: number; ttl: number }> =
+    new Map();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   /**
    * Get live dashboard data with real-time metrics
    */
-  async getLiveDashboard(companyId: string): Promise<ServiceResult<LiveDashboardData>> {
+  async getLiveDashboard(
+    companyId: string
+  ): Promise<ServiceResult<LiveDashboardData>> {
     try {
       if (!companyId) {
         return { error: 'Company ID is required' };
@@ -124,9 +136,10 @@ class EnhancedBillingService {
 
       // Build dashboard metrics
       const metrics = await this.buildDashboardMetrics(companyId, company);
-      
+
       // Get recent updates
-      const recentUpdatesResult = await realTimePaymentService.getRecentBalanceUpdates(companyId, 5);
+      const recentUpdatesResult =
+        await realTimePaymentService.getRecentBalanceUpdates(companyId, 5);
       const recentUpdates = recentUpdatesResult.data || [];
 
       // Get upcoming events
@@ -141,7 +154,7 @@ class EnhancedBillingService {
         upcoming_events: upcomingEvents,
         active_alerts: activeAlerts,
         is_live: this.activeSubscriptions.has(companyId),
-        last_updated: new Date().toISOString()
+        last_updated: new Date().toISOString(),
       };
 
       // Cache the result
@@ -149,7 +162,7 @@ class EnhancedBillingService {
 
       return {
         data: dashboardData,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       console.error('Error getting live dashboard:', error);
@@ -233,7 +246,9 @@ class EnhancedBillingService {
   /**
    * Get credit alerts for a company
    */
-  async getCreditAlerts(companyId: string): Promise<ServiceResult<CreditAlert[]>> {
+  async getCreditAlerts(
+    companyId: string
+  ): Promise<ServiceResult<CreditAlert[]>> {
     try {
       if (!companyId) {
         return { error: 'Company ID is required' };
@@ -258,7 +273,8 @@ class EnhancedBillingService {
 
       const alerts: CreditAlert[] = [];
       const availableCredit = company.credit_limit - company.credit_used;
-      const utilizationPercentage = (company.credit_used / company.credit_limit) * 100;
+      const utilizationPercentage =
+        (company.credit_used / company.credit_limit) * 100;
 
       // High utilization alert
       if (utilizationPercentage >= 90) {
@@ -272,7 +288,7 @@ class EnhancedBillingService {
           created_at: new Date().toISOString(),
           acknowledged: false,
           action_required: true,
-          action_url: '/billing/payments'
+          action_url: '/billing/payments',
         });
       } else if (utilizationPercentage >= 75) {
         alerts.push({
@@ -284,7 +300,7 @@ class EnhancedBillingService {
           amount: company.credit_used,
           created_at: new Date().toISOString(),
           acknowledged: false,
-          action_required: false
+          action_required: false,
         });
       }
 
@@ -300,7 +316,7 @@ class EnhancedBillingService {
           created_at: new Date().toISOString(),
           acknowledged: false,
           action_required: true,
-          action_url: '/billing/payments'
+          action_url: '/billing/payments',
         });
       }
 
@@ -316,7 +332,7 @@ class EnhancedBillingService {
           created_at: new Date().toISOString(),
           acknowledged: false,
           action_required: true,
-          action_url: '/billing/payments'
+          action_url: '/billing/payments',
         });
       }
 
@@ -328,7 +344,10 @@ class EnhancedBillingService {
         .eq('status', 'overdue');
 
       if (overdueInvoices && overdueInvoices.length > 0) {
-        const totalOverdue = overdueInvoices.reduce((sum, invoice) => sum + invoice.total_amount, 0);
+        const totalOverdue = overdueInvoices.reduce(
+          (sum, invoice) => sum + invoice.total_amount,
+          0
+        );
         alerts.push({
           id: `overdue_${companyId}_${Date.now()}`,
           type: 'payment_overdue',
@@ -339,7 +358,7 @@ class EnhancedBillingService {
           created_at: new Date().toISOString(),
           acknowledged: false,
           action_required: true,
-          action_url: '/billing/invoices'
+          action_url: '/billing/invoices',
         });
       }
 
@@ -348,7 +367,7 @@ class EnhancedBillingService {
 
       return {
         data: alerts,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       console.error('Error getting credit alerts:', error);
@@ -359,7 +378,9 @@ class EnhancedBillingService {
   /**
    * Get billing preferences for a company
    */
-  async getBillingPreferences(companyId: string): Promise<ServiceResult<BillingPreferences>> {
+  async getBillingPreferences(
+    companyId: string
+  ): Promise<ServiceResult<BillingPreferences>> {
     try {
       const { data, error } = await supabase
         .from('company_billing_preferences')
@@ -367,7 +388,8 @@ class EnhancedBillingService {
         .eq('company_id', companyId)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // Not found error
+      if (error && error.code !== 'PGRST116') {
+        // Not found error
         console.error('Error getting billing preferences:', error);
         return { error: 'Failed to load billing preferences' };
       }
@@ -379,27 +401,29 @@ class EnhancedBillingService {
           sms_notifications: false,
           push_notifications: true,
           payment_reminders: true,
-          credit_alerts: true
+          credit_alerts: true,
         },
         payment_settings: {
           auto_pay_enabled: false,
           auto_pay_threshold: 1000,
           preferred_payment_method: 'bank_transfer',
-          payment_terms: 'NET30'
+          payment_terms: 'NET30',
         },
         report_settings: {
           monthly_statements: true,
           payment_confirmations: true,
           credit_reports: false,
-          detailed_invoices: true
-        }
+          detailed_invoices: true,
+        },
       };
 
-      const preferences = data ? { ...defaultPreferences, ...data.preferences } : defaultPreferences;
+      const preferences = data
+        ? { ...defaultPreferences, ...data.preferences }
+        : defaultPreferences;
 
       return {
         data: preferences,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       console.error('Error getting billing preferences:', error);
@@ -420,7 +444,7 @@ class EnhancedBillingService {
         .upsert({
           company_id: companyId,
           preferences,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .select()
         .single();
@@ -432,7 +456,7 @@ class EnhancedBillingService {
 
       return {
         data: data.preferences,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       console.error('Error updating billing preferences:', error);
@@ -443,10 +467,14 @@ class EnhancedBillingService {
   /**
    * Build comprehensive dashboard metrics
    */
-  private async buildDashboardMetrics(companyId: string, company: any): Promise<DashboardMetrics> {
+  private async buildDashboardMetrics(
+    companyId: string,
+    company: any
+  ): Promise<DashboardMetrics> {
     try {
       const availableCredit = company.credit_limit - company.credit_used;
-      const utilizationPercentage = (company.credit_used / company.credit_limit) * 100;
+      const utilizationPercentage =
+        (company.credit_used / company.credit_limit) * 100;
 
       // Credit summary
       const creditSummary = {
@@ -454,13 +482,17 @@ class EnhancedBillingService {
         credit_used: company.credit_used,
         available_credit: availableCredit,
         utilization_percentage: utilizationPercentage,
-        status: this.getCreditStatus(utilizationPercentage)
+        status: this.getCreditStatus(utilizationPercentage),
       };
 
       // Payment summary
       const currentMonth = new Date();
-      const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-      
+      const firstDayOfMonth = new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth(),
+        1
+      );
+
       const { data: monthlyPayments } = await supabase
         .from('company_payments')
         .select('amount')
@@ -468,7 +500,8 @@ class EnhancedBillingService {
         .gte('created_at', firstDayOfMonth.toISOString())
         .eq('status', 'completed');
 
-      const totalPaymentsThisMonth = monthlyPayments?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
+      const totalPaymentsThisMonth =
+        monthlyPayments?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
 
       const { data: pendingPayments } = await supabase
         .from('company_payments')
@@ -484,7 +517,11 @@ class EnhancedBillingService {
         .eq('company_id', companyId)
         .eq('status', 'overdue');
 
-      const overdueAmount = overdueInvoices?.reduce((sum, invoice) => sum + invoice.total_amount, 0) || 0;
+      const overdueAmount =
+        overdueInvoices?.reduce(
+          (sum, invoice) => sum + invoice.total_amount,
+          0
+        ) || 0;
 
       const { data: nextDueInvoice } = await supabase
         .from('company_invoices')
@@ -498,7 +535,7 @@ class EnhancedBillingService {
         total_payments_this_month: totalPaymentsThisMonth,
         pending_payments: pendingPaymentsCount,
         overdue_amount: overdueAmount,
-        next_payment_due: nextDueInvoice?.[0]?.due_date || null
+        next_payment_due: nextDueInvoice?.[0]?.due_date || null,
       };
 
       // Invoice summary
@@ -508,41 +545,52 @@ class EnhancedBillingService {
         .eq('company_id', companyId)
         .in('status', ['outstanding', 'partial_paid']);
 
-      const totalOutstanding = outstandingInvoices?.reduce((sum, invoice) => sum + invoice.total_amount, 0) || 0;
+      const totalOutstanding =
+        outstandingInvoices?.reduce(
+          (sum, invoice) => sum + invoice.total_amount,
+          0
+        ) || 0;
       const invoiceCount = outstandingInvoices?.length || 0;
-      
-      const averageInvoiceAge = outstandingInvoices?.length > 0 
-        ? outstandingInvoices.reduce((sum, invoice) => {
-            const daysDiff = Math.floor((Date.now() - new Date(invoice.created_at).getTime()) / (1000 * 60 * 60 * 24));
-            return sum + daysDiff;
-          }, 0) / outstandingInvoices.length
-        : 0;
 
-      const oldestInvoiceDate = outstandingInvoices?.length > 0
-        ? outstandingInvoices.reduce((oldest, invoice) => {
-            return new Date(invoice.created_at) < new Date(oldest.created_at) ? invoice : oldest;
-          }).created_at
-        : null;
+      const averageInvoiceAge =
+        outstandingInvoices?.length > 0
+          ? outstandingInvoices.reduce((sum, invoice) => {
+              const daysDiff = Math.floor(
+                (Date.now() - new Date(invoice.created_at).getTime()) /
+                  (1000 * 60 * 60 * 24)
+              );
+              return sum + daysDiff;
+            }, 0) / outstandingInvoices.length
+          : 0;
+
+      const oldestInvoiceDate =
+        outstandingInvoices?.length > 0
+          ? outstandingInvoices.reduce((oldest, invoice) => {
+              return new Date(invoice.created_at) < new Date(oldest.created_at)
+                ? invoice
+                : oldest;
+            }).created_at
+          : null;
 
       const invoiceSummary = {
         total_outstanding: totalOutstanding,
         invoice_count: invoiceCount,
         average_invoice_age: averageInvoiceAge,
-        oldest_invoice_date: oldestInvoiceDate
+        oldest_invoice_date: oldestInvoiceDate,
       };
 
       // Trends (simplified for now)
       const trends = {
         payment_velocity: averageInvoiceAge, // Simplified
         credit_utilization_trend: this.getCreditTrend(utilizationPercentage),
-        monthly_spending_trend: 0 // Simplified - would need historical data
+        monthly_spending_trend: 0, // Simplified - would need historical data
       };
 
       return {
         creditSummary,
         paymentSummary,
         invoiceSummary,
-        trends
+        trends,
       };
     } catch (error) {
       console.error('Error building dashboard metrics:', error);
@@ -551,27 +599,28 @@ class EnhancedBillingService {
         creditSummary: {
           credit_limit: company.credit_limit || 0,
           credit_used: company.credit_used || 0,
-          available_credit: (company.credit_limit || 0) - (company.credit_used || 0),
+          available_credit:
+            (company.credit_limit || 0) - (company.credit_used || 0),
           utilization_percentage: 0,
-          status: 'good'
+          status: 'good',
         },
         paymentSummary: {
           total_payments_this_month: 0,
           pending_payments: 0,
           overdue_amount: 0,
-          next_payment_due: null
+          next_payment_due: null,
         },
         invoiceSummary: {
           total_outstanding: 0,
           invoice_count: 0,
           average_invoice_age: 0,
-          oldest_invoice_date: null
+          oldest_invoice_date: null,
         },
         trends: {
           payment_velocity: 0,
           credit_utilization_trend: 'stable',
-          monthly_spending_trend: 0
-        }
+          monthly_spending_trend: 0,
+        },
       };
     }
   }
@@ -579,11 +628,15 @@ class EnhancedBillingService {
   /**
    * Get upcoming payment events
    */
-  private async getUpcomingEvents(companyId: string): Promise<PaymentCalendarEvent[]> {
+  private async getUpcomingEvents(
+    companyId: string
+  ): Promise<PaymentCalendarEvent[]> {
     try {
       const events: PaymentCalendarEvent[] = [];
       const now = new Date();
-      const thirtyDaysFromNow = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+      const thirtyDaysFromNow = new Date(
+        now.getTime() + 30 * 24 * 60 * 60 * 1000
+      );
 
       // Get upcoming invoice due dates
       const { data: upcomingInvoices } = await supabase
@@ -603,7 +656,7 @@ class EnhancedBillingService {
           amount: invoice.total_amount,
           description: `Invoice ${invoice.invoice_number || invoice.id} due`,
           status: 'pending',
-          invoice_id: invoice.id
+          invoice_id: invoice.id,
         });
       });
 
@@ -612,7 +665,10 @@ class EnhancedBillingService {
         .from('company_payments')
         .select('*')
         .eq('company_id', companyId)
-        .gte('created_at', new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)).toISOString())
+        .gte(
+          'created_at',
+          new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        )
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -624,11 +680,13 @@ class EnhancedBillingService {
           amount: payment.amount,
           description: `Payment received: ${payment.reference || payment.id}`,
           status: payment.status === 'completed' ? 'completed' : 'pending',
-          payment_id: payment.id
+          payment_id: payment.id,
         });
       });
 
-      return events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      return events.sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
     } catch (error) {
       console.error('Error getting upcoming events:', error);
       return [];
@@ -646,7 +704,9 @@ class EnhancedBillingService {
   /**
    * Get credit status based on utilization percentage
    */
-  private getCreditStatus(utilization: number): 'good' | 'warning' | 'critical' {
+  private getCreditStatus(
+    utilization: number
+  ): 'good' | 'warning' | 'critical' {
     if (utilization >= 90) return 'critical';
     if (utilization >= 75) return 'warning';
     return 'good';
@@ -655,7 +715,9 @@ class EnhancedBillingService {
   /**
    * Get credit trend based on utilization
    */
-  private getCreditTrend(utilization: number): 'increasing' | 'decreasing' | 'stable' {
+  private getCreditTrend(
+    utilization: number
+  ): 'increasing' | 'decreasing' | 'stable' {
     // Simplified - in real implementation, would compare with historical data
     return 'stable';
   }
@@ -666,7 +728,7 @@ class EnhancedBillingService {
   private formatCurrency(amount: number): string {
     return new Intl.NumberFormat('en-SG', {
       style: 'currency',
-      currency: 'SGD'
+      currency: 'SGD',
     }).format(amount);
   }
 
@@ -686,12 +748,14 @@ class EnhancedBillingService {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
-      ttl
+      ttl,
     });
   }
 
   private clearCacheForCompany(companyId: string): void {
-    const keysToDelete = Array.from(this.cache.keys()).filter(key => key.includes(companyId));
+    const keysToDelete = Array.from(this.cache.keys()).filter(key =>
+      key.includes(companyId)
+    );
     keysToDelete.forEach(key => this.cache.delete(key));
   }
 

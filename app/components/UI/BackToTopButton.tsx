@@ -1,13 +1,19 @@
 import React, { useEffect, useRef } from 'react';
-import { 
-  TouchableOpacity, 
-  StyleSheet, 
+import {
+  TouchableOpacity,
+  StyleSheet,
   Animated,
   View,
-  Text
+  Text,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SHADOWS, SPACING, FONT_SIZES, FONT_WEIGHTS } from '../../utils/theme';
+import {
+  COLORS,
+  SHADOWS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+} from '../../utils/theme';
 import { HapticFeedback } from '../../utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,7 +22,10 @@ interface BackToTopButtonProps {
   onPress: () => void;
 }
 
-export default function BackToTopButton({ visible, onPress }: BackToTopButtonProps) {
+export default function BackToTopButton({
+  visible,
+  onPress,
+}: BackToTopButtonProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const insets = useSafeAreaInsets();
@@ -34,7 +43,7 @@ export default function BackToTopButton({ visible, onPress }: BackToTopButtonPro
           friction: 8,
           tension: 100,
           useNativeDriver: true,
-        })
+        }),
       ]).start();
     } else {
       Animated.parallel([
@@ -47,7 +56,7 @@ export default function BackToTopButton({ visible, onPress }: BackToTopButtonPro
           toValue: 0.8,
           duration: 200,
           useNativeDriver: true,
-        })
+        }),
       ]).start();
     }
   }, [visible, fadeAnim, scaleAnim]);
@@ -60,14 +69,14 @@ export default function BackToTopButton({ visible, onPress }: BackToTopButtonPro
   if (!visible) return null;
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.container,
         {
           opacity: fadeAnim,
           transform: [{ scale: scaleAnim }],
           bottom: 120 + insets.bottom, // Position safely above tab bar + safe area
-        }
+        },
       ]}
     >
       <TouchableOpacity
@@ -79,10 +88,10 @@ export default function BackToTopButton({ visible, onPress }: BackToTopButtonPro
         accessibilityLabel="Back to top"
         accessibilityHint="Scrolls to the top of the page"
       >
-        <Ionicons 
-          name="chevron-up" 
-          size={18} 
-          color={COLORS.card} 
+        <Ionicons
+          name="chevron-up"
+          size={18}
+          color={COLORS.card}
           style={styles.icon}
         />
         <Text style={styles.buttonText}>Back to Top</Text>
@@ -119,4 +128,4 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.medium,
     color: COLORS.card,
   },
-}); 
+});

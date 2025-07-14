@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   StatusBar,
   Dimensions,
-  Animated
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,7 +27,7 @@ const mockAnalytics = {
     averageOrderValue: 185,
     totalOrders: 10,
     referralEarnings: 400,
-    achievementPoints: 850
+    achievementPoints: 850,
   },
   monthlyData: [
     { month: 'Jan', earned: 450, redeemed: 0, spent: 450 },
@@ -44,13 +44,13 @@ const mockAnalytics = {
     { category: 'Champagne', percentage: 25, amount: 462.5, color: '#2196F3' },
     { category: 'Gin', percentage: 15, amount: 277.5, color: '#4CAF50' },
     { category: 'Vodka', percentage: 10, amount: 185, color: '#9C27B0' },
-    { category: 'Other', percentage: 5, amount: 92.5, color: '#607D8B' }
+    { category: 'Other', percentage: 5, amount: 92.5, color: '#607D8B' },
   ],
   rewardSources: [
     { source: 'Purchases', points: 1850, percentage: 57 },
     { source: 'Achievements', points: 850, percentage: 26 },
     { source: 'Referrals', points: 400, percentage: 12 },
-    { source: 'Bonuses', points: 150, percentage: 5 }
+    { source: 'Bonuses', points: 150, percentage: 5 },
   ],
   insights: [
     {
@@ -59,15 +59,16 @@ const mockAnalytics = {
       title: 'Peak Spending Month',
       description: 'January was your highest spending month with S$450',
       icon: 'trending-up',
-      color: '#4CAF50'
+      color: '#4CAF50',
     },
     {
       id: '2',
       type: 'category',
       title: 'Whisky Preference',
-      description: 'Whisky makes up 45% of your purchases - you have great taste!',
+      description:
+        'Whisky makes up 45% of your purchases - you have great taste!',
       icon: 'wine',
-      color: '#FF9800'
+      color: '#FF9800',
     },
     {
       id: '3',
@@ -75,24 +76,24 @@ const mockAnalytics = {
       title: 'Point Efficiency',
       description: 'You earn an average of 17.6 points per dollar spent',
       icon: 'calculator',
-      color: '#2196F3'
+      color: '#2196F3',
     },
     {
       id: '4',
       type: 'achievement',
       title: 'Achievement Hunter',
-      description: 'You\'ve unlocked 4 out of 8 achievements - keep going!',
+      description: "You've unlocked 4 out of 8 achievements - keep going!",
       icon: 'trophy',
-      color: '#9C27B0'
-    }
-  ]
+      color: '#9C27B0',
+    },
+  ],
 };
 
 const timePeriods = [
   { id: 'month', label: 'This Month' },
   { id: 'quarter', label: 'Quarter' },
   { id: 'year', label: 'Year' },
-  { id: 'all', label: 'All Time' }
+  { id: 'all', label: 'All Time' },
 ];
 
 export default function RewardsAnalyticsScreen() {
@@ -100,15 +101,17 @@ export default function RewardsAnalyticsScreen() {
   const insets = useSafeAreaInsets();
   const [selectedPeriod, setSelectedPeriod] = useState('year');
   const [selectedTab, setSelectedTab] = useState('overview');
-  const progressAnims = useRef(mockAnalytics.categoryBreakdown.map(() => new Animated.Value(0))).current;
+  const progressAnims = useRef(
+    mockAnalytics.categoryBreakdown.map(() => new Animated.Value(0))
+  ).current;
 
   useEffect(() => {
     // Animate category breakdown
     mockAnalytics.categoryBreakdown.forEach((category, index) => {
       Animated.timing(progressAnims[index], {
         toValue: category.percentage,
-        duration: 1000 + (index * 100),
-        useNativeDriver: false
+        duration: 1000 + index * 100,
+        useNativeDriver: false,
       }).start();
     });
   }, []);
@@ -116,7 +119,7 @@ export default function RewardsAnalyticsScreen() {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: 'analytics' },
     { id: 'spending', label: 'Spending', icon: 'card' },
-    { id: 'insights', label: 'Insights', icon: 'bulb' }
+    { id: 'insights', label: 'Insights', icon: 'bulb' },
   ];
 
   const renderOverview = () => (
@@ -124,38 +127,48 @@ export default function RewardsAnalyticsScreen() {
       {/* Key Metrics */}
       <View style={styles.metricsGrid}>
         <View style={styles.metricCard}>
-          <Text style={styles.metricValue}>{mockAnalytics.overview.currentBalance.toLocaleString()}</Text>
+          <Text style={styles.metricValue}>
+            {mockAnalytics.overview.currentBalance.toLocaleString()}
+          </Text>
           <Text style={styles.metricLabel}>Current Points</Text>
           <View style={styles.metricChange}>
             <Ionicons name="arrow-up" size={12} color={COLORS.success} />
             <Text style={styles.metricChangeText}>+15%</Text>
           </View>
         </View>
-        
+
         <View style={styles.metricCard}>
-          <Text style={styles.metricValue}>S${mockAnalytics.overview.totalSpent.toLocaleString()}</Text>
+          <Text style={styles.metricValue}>
+            S${mockAnalytics.overview.totalSpent.toLocaleString()}
+          </Text>
           <Text style={styles.metricLabel}>Total Spent</Text>
           <View style={styles.metricChange}>
             <Ionicons name="arrow-up" size={12} color={COLORS.success} />
             <Text style={styles.metricChangeText}>+8%</Text>
           </View>
         </View>
-        
+
         <View style={styles.metricCard}>
-          <Text style={styles.metricValue}>{mockAnalytics.overview.totalOrders}</Text>
+          <Text style={styles.metricValue}>
+            {mockAnalytics.overview.totalOrders}
+          </Text>
           <Text style={styles.metricLabel}>Orders</Text>
           <View style={styles.metricChange}>
             <Ionicons name="arrow-up" size={12} color={COLORS.success} />
             <Text style={styles.metricChangeText}>+2</Text>
           </View>
         </View>
-        
+
         <View style={styles.metricCard}>
-          <Text style={styles.metricValue}>S${mockAnalytics.overview.averageOrderValue}</Text>
+          <Text style={styles.metricValue}>
+            S${mockAnalytics.overview.averageOrderValue}
+          </Text>
           <Text style={styles.metricLabel}>Avg Order</Text>
           <View style={styles.metricChange}>
             <Ionicons name="arrow-down" size={12} color={COLORS.error} />
-            <Text style={[styles.metricChangeText, { color: COLORS.error }]}>-5%</Text>
+            <Text style={[styles.metricChangeText, { color: COLORS.error }]}>
+              -5%
+            </Text>
           </View>
         </View>
       </View>
@@ -167,14 +180,16 @@ export default function RewardsAnalyticsScreen() {
           <View key={index} style={styles.sourceItem}>
             <View style={styles.sourceInfo}>
               <Text style={styles.sourceName}>{source.source}</Text>
-              <Text style={styles.sourcePoints}>{source.points.toLocaleString()} pts</Text>
+              <Text style={styles.sourcePoints}>
+                {source.points.toLocaleString()} pts
+              </Text>
             </View>
             <View style={styles.sourceProgress}>
               <View style={styles.sourceProgressBar}>
-                <View 
+                <View
                   style={[
                     styles.sourceProgressFill,
-                    { width: `${source.percentage}%` }
+                    { width: `${source.percentage}%` },
                   ]}
                 />
               </View>
@@ -195,22 +210,22 @@ export default function RewardsAnalyticsScreen() {
           {mockAnalytics.monthlyData.map((item, index) => (
             <View key={index} style={styles.chartColumn}>
               <View style={styles.chartBars}>
-                <View 
+                <View
                   style={[
                     styles.chartBar,
-                    { 
+                    {
                       height: `${(item.earned / 500) * 100}%`,
-                      backgroundColor: COLORS.success
-                    }
+                      backgroundColor: COLORS.success,
+                    },
                   ]}
                 />
-                <View 
+                <View
                   style={[
                     styles.chartBar,
-                    { 
+                    {
                       height: `${(item.redeemed / 500) * 100}%`,
-                      backgroundColor: COLORS.error
-                    }
+                      backgroundColor: COLORS.error,
+                    },
                   ]}
                 />
               </View>
@@ -220,11 +235,15 @@ export default function RewardsAnalyticsScreen() {
         </View>
         <View style={styles.chartLegend}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: COLORS.success }]} />
+            <View
+              style={[styles.legendColor, { backgroundColor: COLORS.success }]}
+            />
             <Text style={styles.legendText}>Earned</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: COLORS.error }]} />
+            <View
+              style={[styles.legendColor, { backgroundColor: COLORS.error }]}
+            />
             <Text style={styles.legendText}>Redeemed</Text>
           </View>
         </View>
@@ -237,27 +256,36 @@ export default function RewardsAnalyticsScreen() {
           <View key={index} style={styles.categoryItem}>
             <View style={styles.categoryHeader}>
               <View style={styles.categoryInfo}>
-                <View style={[styles.categoryDot, { backgroundColor: category.color }]} />
+                <View
+                  style={[
+                    styles.categoryDot,
+                    { backgroundColor: category.color },
+                  ]}
+                />
                 <Text style={styles.categoryName}>{category.category}</Text>
               </View>
-              <Text style={styles.categoryAmount}>S${category.amount.toLocaleString()}</Text>
+              <Text style={styles.categoryAmount}>
+                S${category.amount.toLocaleString()}
+              </Text>
             </View>
             <View style={styles.categoryProgress}>
               <View style={styles.categoryProgressBar}>
-                <Animated.View 
+                <Animated.View
                   style={[
                     styles.categoryProgressFill,
                     {
                       backgroundColor: category.color,
                       width: progressAnims[index].interpolate({
                         inputRange: [0, 100],
-                        outputRange: ['0%', '100%']
-                      })
-                    }
+                        outputRange: ['0%', '100%'],
+                      }),
+                    },
                   ]}
                 />
               </View>
-              <Text style={styles.categoryPercentage}>{category.percentage}%</Text>
+              <Text style={styles.categoryPercentage}>
+                {category.percentage}%
+              </Text>
             </View>
           </View>
         ))}
@@ -268,17 +296,26 @@ export default function RewardsAnalyticsScreen() {
   const renderInsights = () => (
     <View style={styles.tabContent}>
       <View style={styles.insightsGrid}>
-        {mockAnalytics.insights.map((insight) => (
+        {mockAnalytics.insights.map(insight => (
           <View key={insight.id} style={styles.insightCard}>
-            <View style={[styles.insightIcon, { backgroundColor: `${insight.color}15` }]}>
-              <Ionicons name={insight.icon as any} size={24} color={insight.color} />
+            <View
+              style={[
+                styles.insightIcon,
+                { backgroundColor: `${insight.color}15` },
+              ]}
+            >
+              <Ionicons
+                name={insight.icon as any}
+                size={24}
+                color={insight.color}
+              />
             </View>
             <Text style={styles.insightTitle}>{insight.title}</Text>
             <Text style={styles.insightDescription}>{insight.description}</Text>
           </View>
         ))}
       </View>
-      
+
       {/* Recommendations */}
       <View style={styles.sectionCard}>
         <Text style={styles.sectionTitle}>Recommendations</Text>
@@ -322,23 +359,23 @@ export default function RewardsAnalyticsScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
-      
+
       {/* Status Bar Background */}
       <View style={[styles.statusBarBackground, { height: insets.top }]} />
-      
+
       {/* Mobile Header */}
-      <MobileHeader 
+      <MobileHeader
         title="Analytics"
         showBackButton={true}
         showCartButton={true}
         showSearch={false}
         showLocationHeader={false}
       />
-      
+
       {/* Time Period Filter */}
       <View style={styles.filterContainer}>
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterScroll}
         >
@@ -347,14 +384,16 @@ export default function RewardsAnalyticsScreen() {
               key={period.id}
               style={[
                 styles.periodButton,
-                selectedPeriod === period.id && styles.periodButtonActive
+                selectedPeriod === period.id && styles.periodButtonActive,
               ]}
               onPress={() => setSelectedPeriod(period.id)}
             >
-              <Text style={[
-                styles.periodButtonText,
-                selectedPeriod === period.id && styles.periodButtonTextActive
-              ]}>
+              <Text
+                style={[
+                  styles.periodButtonText,
+                  selectedPeriod === period.id && styles.periodButtonTextActive,
+                ]}
+              >
                 {period.label}
               </Text>
             </TouchableOpacity>
@@ -369,19 +408,21 @@ export default function RewardsAnalyticsScreen() {
             key={tab.id}
             style={[
               styles.tabButton,
-              selectedTab === tab.id && styles.tabButtonActive
+              selectedTab === tab.id && styles.tabButtonActive,
             ]}
             onPress={() => setSelectedTab(tab.id)}
           >
-            <Ionicons 
-              name={tab.icon as any} 
-              size={20} 
-              color={selectedTab === tab.id ? COLORS.buttonText : COLORS.text} 
+            <Ionicons
+              name={tab.icon as any}
+              size={20}
+              color={selectedTab === tab.id ? COLORS.buttonText : COLORS.text}
             />
-            <Text style={[
-              styles.tabButtonText,
-              selectedTab === tab.id && styles.tabButtonTextActive
-            ]}>
+            <Text
+              style={[
+                styles.tabButtonText,
+                selectedTab === tab.id && styles.tabButtonTextActive,
+              ]}
+            >
               {tab.label}
             </Text>
           </TouchableOpacity>
@@ -389,7 +430,10 @@ export default function RewardsAnalyticsScreen() {
       </View>
 
       {/* Tab Content */}
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         {renderTabContent()}
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -408,7 +452,7 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  
+
   // Filter Container
   filterContainer: {
     marginBottom: SPACING.md,
@@ -437,7 +481,7 @@ const styles = StyleSheet.create({
   periodButtonTextActive: {
     color: COLORS.buttonText,
   },
-  
+
   // Tab Container
   tabContainer: {
     flexDirection: 'row',
@@ -468,12 +512,12 @@ const styles = StyleSheet.create({
   tabButtonTextActive: {
     color: COLORS.buttonText,
   },
-  
+
   // Tab Content
   tabContent: {
     marginHorizontal: SPACING.md,
   },
-  
+
   // Metrics Grid
   metricsGrid: {
     flexDirection: 'row',
@@ -512,7 +556,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 11,
   },
-  
+
   // Section Card
   sectionCard: {
     backgroundColor: COLORS.card,
@@ -527,7 +571,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: SPACING.md,
   },
-  
+
   // Sources
   sourceItem: {
     marginBottom: SPACING.md,
@@ -570,7 +614,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     minWidth: 30,
   },
-  
+
   // Chart
   chart: {
     flexDirection: 'row',
@@ -621,7 +665,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
   },
-  
+
   // Category
   categoryItem: {
     marginBottom: SPACING.md,
@@ -673,7 +717,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     minWidth: 30,
   },
-  
+
   // Insights
   insightsGrid: {
     gap: SPACING.md,
@@ -707,7 +751,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
   },
-  
+
   // Recommendations
   recommendationsList: {
     gap: SPACING.md,
@@ -726,8 +770,8 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 18,
   },
-  
+
   bottomPadding: {
     height: SPACING.xxl,
   },
-}); 
+});

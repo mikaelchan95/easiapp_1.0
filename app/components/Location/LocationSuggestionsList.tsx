@@ -1,19 +1,22 @@
 import React, { useRef, useState, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
   Pressable,
   Animated,
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 
-import { LocationSuggestionsListProps, LocationSuggestion } from '../../types/location';
+import {
+  LocationSuggestionsListProps,
+  LocationSuggestion,
+} from '../../types/location';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
 
@@ -25,11 +28,11 @@ interface SwipeableRowProps {
 }
 
 // Swipeable row component for recent locations
-const SwipeableRow: React.FC<SwipeableRowProps> = ({ 
-  item, 
-  onSelect, 
-  onDelete, 
-  showDeleteButton = false 
+const SwipeableRow: React.FC<SwipeableRowProps> = ({
+  item,
+  onSelect,
+  onDelete,
+  showDeleteButton = false,
 }) => {
   const translateX = useRef(new Animated.Value(0)).current;
   const deleteButtonOpacity = useRef(new Animated.Value(0)).current;
@@ -41,46 +44,49 @@ const SwipeableRow: React.FC<SwipeableRowProps> = ({
     { useNativeDriver: false }
   );
 
-  const onHandlerStateChange = useCallback((event: any) => {
-    if (event.nativeEvent.oldState === State.ACTIVE) {
-      const { translationX } = event.nativeEvent;
-      
-      // Only allow left swipe and only for recent items
-      if (translationX < -50 && item.type === 'recent' && showDeleteButton) {
-        // Reveal delete button
-        setIsRevealed(true);
-        Animated.parallel([
-          Animated.spring(translateX, {
-            toValue: -80,
-            friction: 8,
-            tension: 100,
-            useNativeDriver: false
-          }),
-          Animated.timing(deleteButtonOpacity, {
-            toValue: 1,
-            duration: Animations.DURATION.short,
-            useNativeDriver: true
-          })
-        ]).start();
-      } else {
-        // Snap back
-        setIsRevealed(false);
-        Animated.parallel([
-          Animated.spring(translateX, {
-            toValue: 0,
-            friction: 8,
-            tension: 100,
-            useNativeDriver: false
-          }),
-          Animated.timing(deleteButtonOpacity, {
-            toValue: 0,
-            duration: Animations.DURATION.short,
-            useNativeDriver: true
-          })
-        ]).start();
+  const onHandlerStateChange = useCallback(
+    (event: any) => {
+      if (event.nativeEvent.oldState === State.ACTIVE) {
+        const { translationX } = event.nativeEvent;
+
+        // Only allow left swipe and only for recent items
+        if (translationX < -50 && item.type === 'recent' && showDeleteButton) {
+          // Reveal delete button
+          setIsRevealed(true);
+          Animated.parallel([
+            Animated.spring(translateX, {
+              toValue: -80,
+              friction: 8,
+              tension: 100,
+              useNativeDriver: false,
+            }),
+            Animated.timing(deleteButtonOpacity, {
+              toValue: 1,
+              duration: Animations.DURATION.short,
+              useNativeDriver: true,
+            }),
+          ]).start();
+        } else {
+          // Snap back
+          setIsRevealed(false);
+          Animated.parallel([
+            Animated.spring(translateX, {
+              toValue: 0,
+              friction: 8,
+              tension: 100,
+              useNativeDriver: false,
+            }),
+            Animated.timing(deleteButtonOpacity, {
+              toValue: 0,
+              duration: Animations.DURATION.short,
+              useNativeDriver: true,
+            }),
+          ]).start();
+        }
       }
-    }
-  }, [translateX, deleteButtonOpacity, item.type, showDeleteButton]);
+    },
+    [translateX, deleteButtonOpacity, item.type, showDeleteButton]
+  );
 
   const handleDelete = useCallback(async () => {
     if (!onDelete) return;
@@ -97,14 +103,14 @@ const SwipeableRow: React.FC<SwipeableRowProps> = ({
       Animated.timing(rowOpacity, {
         toValue: 0,
         duration: Animations.DURATION.medium,
-        useNativeDriver: true
+        useNativeDriver: true,
       }),
       Animated.timing(translateX, {
         toValue: -300,
         duration: Animations.DURATION.medium,
         easing: Animations.TIMING.easeIn,
-        useNativeDriver: false
-      })
+        useNativeDriver: false,
+      }),
     ]).start(() => {
       onDelete(item.id);
     });
@@ -119,13 +125,13 @@ const SwipeableRow: React.FC<SwipeableRowProps> = ({
           toValue: 0,
           friction: 8,
           tension: 100,
-          useNativeDriver: false
+          useNativeDriver: false,
         }),
         Animated.timing(deleteButtonOpacity, {
           toValue: 0,
           duration: Animations.DURATION.short,
-          useNativeDriver: true
-        })
+          useNativeDriver: true,
+        }),
       ]).start();
     } else {
       onSelect(item);
@@ -139,8 +145,8 @@ const SwipeableRow: React.FC<SwipeableRowProps> = ({
         style={[
           styles.deleteContainer,
           {
-            opacity: deleteButtonOpacity
-          }
+            opacity: deleteButtonOpacity,
+          },
         ]}
       >
         <Pressable
@@ -165,8 +171,8 @@ const SwipeableRow: React.FC<SwipeableRowProps> = ({
             styles.rowContainer,
             {
               transform: [{ translateX }],
-              opacity: rowOpacity
-            }
+              opacity: rowOpacity,
+            },
           ]}
         >
           <LocationRow item={item} onPress={handlePress} />
@@ -192,14 +198,14 @@ const LocationRow: React.FC<LocationRowProps> = ({ item, onPress }) => {
         toValue: 0.98,
         duration: Animations.DURATION.short,
         easing: Animations.TIMING.easeOut,
-        useNativeDriver: true
+        useNativeDriver: true,
       }),
       Animated.timing(backgroundOpacity, {
         toValue: 1,
         duration: Animations.DURATION.short,
         easing: Animations.TIMING.easeOut,
-        useNativeDriver: true
-      })
+        useNativeDriver: true,
+      }),
     ]).start();
   }, [scaleValue, backgroundOpacity]);
 
@@ -209,14 +215,14 @@ const LocationRow: React.FC<LocationRowProps> = ({ item, onPress }) => {
         toValue: 1,
         friction: 5,
         tension: 300,
-        useNativeDriver: true
+        useNativeDriver: true,
       }),
       Animated.timing(backgroundOpacity, {
         toValue: 0,
         duration: 200, // Fade out over 200ms as specified
         easing: Animations.TIMING.easeOut,
-        useNativeDriver: true
-      })
+        useNativeDriver: true,
+      }),
     ]).start();
   }, [scaleValue, backgroundOpacity]);
 
@@ -236,8 +242,8 @@ const LocationRow: React.FC<LocationRowProps> = ({ item, onPress }) => {
       style={[
         styles.row,
         {
-          transform: [{ scale: scaleValue }]
-        }
+          transform: [{ scale: scaleValue }],
+        },
       ]}
     >
       <Pressable
@@ -254,18 +260,20 @@ const LocationRow: React.FC<LocationRowProps> = ({ item, onPress }) => {
           style={[
             styles.highlightBackground,
             {
-              opacity: backgroundOpacity
-            }
+              opacity: backgroundOpacity,
+            },
           ]}
         />
 
         <View style={styles.rowContent}>
           {/* Icon */}
           <View style={styles.iconContainer}>
-            <Ionicons 
-              name={getIcon()} 
-              size={20} 
-              color={item.type === 'current' ? COLORS.primary : COLORS.textSecondary} 
+            <Ionicons
+              name={getIcon()}
+              size={20}
+              color={
+                item.type === 'current' ? COLORS.primary : COLORS.textSecondary
+              }
             />
           </View>
 
@@ -283,10 +291,10 @@ const LocationRow: React.FC<LocationRowProps> = ({ item, onPress }) => {
 
           {/* Arrow icon */}
           <View style={styles.arrowContainer}>
-            <Ionicons 
-              name="chevron-forward" 
-              size={16} 
-              color={COLORS.inactive} 
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={COLORS.inactive}
             />
           </View>
         </View>
@@ -303,30 +311,33 @@ const LocationSuggestionsList: React.FC<LocationSuggestionsListProps> = ({
   onLocationSelect,
   onDeleteRecent,
   isLoadingCurrent,
-  onRefreshLocation
+  onRefreshLocation,
 }) => {
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     onRefreshLocation();
-    
+
     // Wait for loading to complete
     setTimeout(() => {
       setRefreshing(false);
     }, 1500);
   }, [onRefreshLocation]);
 
-  const handleLocationSelect = useCallback(async (location: LocationSuggestion) => {
-    // Provide haptic feedback
-    try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch (error) {
-      // Haptics might not be available on all devices
-    }
-    
-    onLocationSelect(location);
-  }, [onLocationSelect]);
+  const handleLocationSelect = useCallback(
+    async (location: LocationSuggestion) => {
+      // Provide haptic feedback
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (error) {
+        // Haptics might not be available on all devices
+      }
+
+      onLocationSelect(location);
+    },
+    [onLocationSelect]
+  );
 
   return (
     <ScrollView
@@ -369,7 +380,7 @@ const LocationSuggestionsList: React.FC<LocationSuggestionsListProps> = ({
       {recentLocations.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent</Text>
-          {recentLocations.map((location) => (
+          {recentLocations.map(location => (
             <SwipeableRow
               key={location.id}
               item={location}
@@ -385,7 +396,7 @@ const LocationSuggestionsList: React.FC<LocationSuggestionsListProps> = ({
       {suggestions.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Suggestions</Text>
-          {suggestions.map((location) => (
+          {suggestions.map(location => (
             <SwipeableRow
               key={location.id}
               item={location}
@@ -397,33 +408,42 @@ const LocationSuggestionsList: React.FC<LocationSuggestionsListProps> = ({
       )}
 
       {/* Empty state */}
-      {suggestions.length === 0 && recentLocations.length === 0 && !currentLocation && !isLoadingCurrent && (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="location-outline" size={48} color={COLORS.inactive} />
-          <Text style={styles.emptyTitle}>No locations found</Text>
-          <Text style={styles.emptySubtitle}>Try searching for an address or place</Text>
-        </View>
-      )}
+      {suggestions.length === 0 &&
+        recentLocations.length === 0 &&
+        !currentLocation &&
+        !isLoadingCurrent && (
+          <View style={styles.emptyContainer}>
+            <Ionicons
+              name="location-outline"
+              size={48}
+              color={COLORS.inactive}
+            />
+            <Text style={styles.emptyTitle}>No locations found</Text>
+            <Text style={styles.emptySubtitle}>
+              Try searching for an address or place
+            </Text>
+          </View>
+        )}
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1
+    flex: 1,
   },
   section: {
-    marginBottom: SPACING.lg
+    marginBottom: SPACING.lg,
   },
   sectionTitle: {
     ...TYPOGRAPHY.h4,
     color: COLORS.text,
     marginBottom: SPACING.sm,
-    paddingHorizontal: SPACING.xs
+    paddingHorizontal: SPACING.xs,
   },
   swipeContainer: {
     position: 'relative',
-    marginBottom: SPACING.xs
+    marginBottom: SPACING.xs,
   },
   deleteContainer: {
     position: 'absolute',
@@ -434,32 +454,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.error,
-    borderRadius: 12
+    borderRadius: 12,
   },
   deleteButton: {
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
-    width: '100%'
+    width: '100%',
   },
   deleteText: {
     color: COLORS.card,
     fontSize: 12,
     fontWeight: '600',
-    marginTop: 4
+    marginTop: 4,
   },
   rowContainer: {
-    backgroundColor: COLORS.card
+    backgroundColor: COLORS.card,
   },
   row: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
     marginBottom: SPACING.xs,
-    overflow: 'hidden'
+    overflow: 'hidden',
   },
   rowPressable: {
     position: 'relative',
-    minHeight: 56 // Ensuring proper touch target
+    minHeight: 56, // Ensuring proper touch target
   },
   highlightBackground: {
     position: 'absolute',
@@ -468,41 +488,41 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: COLORS.background,
-    borderRadius: 12
+    borderRadius: 12,
   },
   rowContent: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
-    minHeight: 56
+    minHeight: 56,
   },
   iconContainer: {
     width: 32,
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.sm
+    marginRight: SPACING.sm,
   },
   textContent: {
     flex: 1,
-    marginRight: SPACING.sm
+    marginRight: SPACING.sm,
   },
   title: {
     ...TYPOGRAPHY.body,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 2
+    marginBottom: 2,
   },
   subtitle: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary
+    color: COLORS.textSecondary,
   },
   arrowContainer: {
     width: 16,
     height: 16,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -511,29 +531,29 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.card,
     borderRadius: 12,
-    marginBottom: SPACING.xs
+    marginBottom: SPACING.xs,
   },
   loadingText: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
-    marginLeft: SPACING.sm
+    marginLeft: SPACING.sm,
   },
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: SPACING.xxl,
-    paddingHorizontal: SPACING.md
+    paddingHorizontal: SPACING.md,
   },
   emptyTitle: {
     ...TYPOGRAPHY.h3,
     color: COLORS.textSecondary,
     marginTop: SPACING.md,
-    marginBottom: SPACING.xs
+    marginBottom: SPACING.xs,
   },
   emptySubtitle: {
     ...TYPOGRAPHY.caption,
     color: COLORS.inactive,
-    textAlign: 'center'
-  }
+    textAlign: 'center',
+  },
 });
 
 export default LocationSuggestionsList;

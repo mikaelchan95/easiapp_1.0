@@ -43,7 +43,11 @@ interface InvoicePreview {
   notes: string;
 }
 
-export default function InvoiceGeneration({ companyId, companyName, onInvoiceGenerated }: InvoiceGenerationProps) {
+export default function InvoiceGeneration({
+  companyId,
+  companyName,
+  onInvoiceGenerated,
+}: InvoiceGenerationProps) {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { state } = useContext(AppContext);
@@ -51,8 +55,12 @@ export default function InvoiceGeneration({ companyId, companyName, onInvoiceGen
 
   const [loading, setLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState<'current' | 'previous' | 'custom'>('current');
-  const [invoicePreview, setInvoicePreview] = useState<InvoicePreview | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<
+    'current' | 'previous' | 'custom'
+  >('current');
+  const [invoicePreview, setInvoicePreview] = useState<InvoicePreview | null>(
+    null
+  );
 
   // Mock data for demonstration
   const mockLineItems: InvoiceLineItem[] = [
@@ -60,33 +68,33 @@ export default function InvoiceGeneration({ companyId, companyName, onInvoiceGen
       id: '1',
       description: 'Industrial Equipment Order #ORD-2024-001234',
       quantity: 15,
-      unitPrice: 245.00,
-      total: 3675.00,
-      date: '2024-12-01'
+      unitPrice: 245.0,
+      total: 3675.0,
+      date: '2024-12-01',
     },
     {
-      id: '2', 
+      id: '2',
       description: 'Premium Tools Package #ORD-2024-001235',
       quantity: 8,
-      unitPrice: 189.50,
-      total: 1516.00,
-      date: '2024-12-03'
+      unitPrice: 189.5,
+      total: 1516.0,
+      date: '2024-12-03',
     },
     {
       id: '3',
       description: 'Safety Equipment Bulk Order #ORD-2024-001236',
       quantity: 25,
-      unitPrice: 67.80,
-      total: 1695.00,
-      date: '2024-12-05'
+      unitPrice: 67.8,
+      total: 1695.0,
+      date: '2024-12-05',
     },
     {
       id: '4',
       description: 'Maintenance Supplies #ORD-2024-001237',
       quantity: 12,
       unitPrice: 134.25,
-      total: 1611.00,
-      date: '2024-12-08'
+      total: 1611.0,
+      date: '2024-12-08',
     },
   ];
 
@@ -95,22 +103,24 @@ export default function InvoiceGeneration({ companyId, companyName, onInvoiceGen
     try {
       // Simulate API call to generate invoice
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       const subtotal = mockLineItems.reduce((sum, item) => sum + item.total, 0);
       const tax = subtotal * 0.08; // 8% tax
       const total = subtotal + tax;
-      
+
       const preview: InvoicePreview = {
         invoiceNumber: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
         issueDate: new Date().toISOString().split('T')[0],
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split('T')[0], // 30 days from now
         lineItems: mockLineItems,
         subtotal,
         tax,
         total,
-        notes: `Invoice for ${selectedPeriod} period orders. Payment terms: NET 30 days.`
+        notes: `Invoice for ${selectedPeriod} period orders. Payment terms: NET 30 days.`,
       };
-      
+
       setInvoicePreview(preview);
       setShowPreview(true);
     } catch (error) {
@@ -123,12 +133,12 @@ export default function InvoiceGeneration({ companyId, companyName, onInvoiceGen
 
   const confirmInvoiceGeneration = async () => {
     if (!invoicePreview) return;
-    
+
     setLoading(true);
     try {
       // Simulate API call to create actual invoice
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       Alert.alert(
         'Invoice Generated',
         `Invoice ${invoicePreview.invoiceNumber} has been generated successfully.`,
@@ -137,10 +147,13 @@ export default function InvoiceGeneration({ companyId, companyName, onInvoiceGen
             text: 'View Invoice',
             onPress: () => {
               setShowPreview(false);
-              navigation.navigate('InvoiceViewer' as never, { 
-                invoiceId: invoicePreview.invoiceNumber 
-              } as never);
-            }
+              navigation.navigate(
+                'InvoiceViewer' as never,
+                {
+                  invoiceId: invoicePreview.invoiceNumber,
+                } as never
+              );
+            },
           },
           {
             text: 'Done',
@@ -150,8 +163,8 @@ export default function InvoiceGeneration({ companyId, companyName, onInvoiceGen
                 onInvoiceGenerated(invoicePreview.invoiceNumber);
               }
               navigation.goBack();
-            }
-          }
+            },
+          },
         ]
       );
     } catch (error) {
@@ -165,56 +178,97 @@ export default function InvoiceGeneration({ companyId, companyName, onInvoiceGen
   const renderPeriodSelector = () => (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Billing Period</Text>
-      <Text style={styles.sectionDescription}>Select the period for which to generate the invoice</Text>
-      
+      <Text style={styles.sectionDescription}>
+        Select the period for which to generate the invoice
+      </Text>
+
       <View style={styles.periodOptions}>
         <TouchableOpacity
-          style={[styles.periodOption, selectedPeriod === 'current' && styles.selectedPeriodOption]}
+          style={[
+            styles.periodOption,
+            selectedPeriod === 'current' && styles.selectedPeriodOption,
+          ]}
           onPress={() => setSelectedPeriod('current')}
         >
           <View style={styles.periodOptionContent}>
-            <Ionicons 
-              name={selectedPeriod === 'current' ? 'radio-button-on' : 'radio-button-off'} 
-              size={20} 
-              color={selectedPeriod === 'current' ? theme.colors.text.primary : theme.colors.text.secondary} 
+            <Ionicons
+              name={
+                selectedPeriod === 'current'
+                  ? 'radio-button-on'
+                  : 'radio-button-off'
+              }
+              size={20}
+              color={
+                selectedPeriod === 'current'
+                  ? theme.colors.text.primary
+                  : theme.colors.text.secondary
+              }
             />
             <View style={styles.periodOptionText}>
               <Text style={styles.periodOptionTitle}>Current Month</Text>
-              <Text style={styles.periodOptionSubtitle}>December 2024 (In Progress)</Text>
+              <Text style={styles.periodOptionSubtitle}>
+                December 2024 (In Progress)
+              </Text>
             </View>
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.periodOption, selectedPeriod === 'previous' && styles.selectedPeriodOption]}
+          style={[
+            styles.periodOption,
+            selectedPeriod === 'previous' && styles.selectedPeriodOption,
+          ]}
           onPress={() => setSelectedPeriod('previous')}
         >
           <View style={styles.periodOptionContent}>
-            <Ionicons 
-              name={selectedPeriod === 'previous' ? 'radio-button-on' : 'radio-button-off'} 
-              size={20} 
-              color={selectedPeriod === 'previous' ? theme.colors.text.primary : theme.colors.text.secondary} 
+            <Ionicons
+              name={
+                selectedPeriod === 'previous'
+                  ? 'radio-button-on'
+                  : 'radio-button-off'
+              }
+              size={20}
+              color={
+                selectedPeriod === 'previous'
+                  ? theme.colors.text.primary
+                  : theme.colors.text.secondary
+              }
             />
             <View style={styles.periodOptionText}>
               <Text style={styles.periodOptionTitle}>Previous Month</Text>
-              <Text style={styles.periodOptionSubtitle}>November 2024 (Completed)</Text>
+              <Text style={styles.periodOptionSubtitle}>
+                November 2024 (Completed)
+              </Text>
             </View>
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.periodOption, selectedPeriod === 'custom' && styles.selectedPeriodOption]}
+          style={[
+            styles.periodOption,
+            selectedPeriod === 'custom' && styles.selectedPeriodOption,
+          ]}
           onPress={() => setSelectedPeriod('custom')}
         >
           <View style={styles.periodOptionContent}>
-            <Ionicons 
-              name={selectedPeriod === 'custom' ? 'radio-button-on' : 'radio-button-off'} 
-              size={20} 
-              color={selectedPeriod === 'custom' ? theme.colors.text.primary : theme.colors.text.secondary} 
+            <Ionicons
+              name={
+                selectedPeriod === 'custom'
+                  ? 'radio-button-on'
+                  : 'radio-button-off'
+              }
+              size={20}
+              color={
+                selectedPeriod === 'custom'
+                  ? theme.colors.text.primary
+                  : theme.colors.text.secondary
+              }
             />
             <View style={styles.periodOptionText}>
               <Text style={styles.periodOptionTitle}>Custom Range</Text>
-              <Text style={styles.periodOptionSubtitle}>Select specific date range</Text>
+              <Text style={styles.periodOptionSubtitle}>
+                Select specific date range
+              </Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -223,18 +277,26 @@ export default function InvoiceGeneration({ companyId, companyName, onInvoiceGen
   );
 
   const renderInvoicePreviewModal = () => (
-    <Modal visible={showPreview} animationType="slide" presentationStyle="pageSheet">
+    <Modal
+      visible={showPreview}
+      animationType="slide"
+      presentationStyle="pageSheet"
+    >
       <View style={styles.modalContainer}>
         <StatusBar barStyle="dark-content" />
-        
+
         {/* Modal Header */}
         <View style={[styles.modalHeader, { paddingTop: insets.top }]}>
           <View style={styles.modalHeaderContent}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setShowPreview(false)}
             >
-              <Ionicons name="close" size={24} color={theme.colors.text.primary} />
+              <Ionicons
+                name="close"
+                size={24}
+                color={theme.colors.text.primary}
+              />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Invoice Preview</Text>
             <View style={styles.headerRight} />
@@ -242,13 +304,22 @@ export default function InvoiceGeneration({ companyId, companyName, onInvoiceGen
         </View>
 
         {invoicePreview && (
-          <ScrollView style={styles.previewContent} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.previewContent}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Invoice Header */}
             <View style={styles.invoiceHeader}>
               <View style={styles.invoiceHeaderLeft}>
-                <Text style={styles.invoiceNumber}>{invoicePreview.invoiceNumber}</Text>
-                <Text style={styles.invoiceDate}>Issue Date: {invoicePreview.issueDate}</Text>
-                <Text style={styles.invoiceDate}>Due Date: {invoicePreview.dueDate}</Text>
+                <Text style={styles.invoiceNumber}>
+                  {invoicePreview.invoiceNumber}
+                </Text>
+                <Text style={styles.invoiceDate}>
+                  Issue Date: {invoicePreview.issueDate}
+                </Text>
+                <Text style={styles.invoiceDate}>
+                  Due Date: {invoicePreview.dueDate}
+                </Text>
               </View>
               <View style={styles.invoiceHeaderRight}>
                 <Text style={styles.companyNameLarge}>{companyName}</Text>
@@ -259,16 +330,24 @@ export default function InvoiceGeneration({ companyId, companyName, onInvoiceGen
             {/* Line Items */}
             <View style={styles.lineItemsSection}>
               <Text style={styles.lineItemsTitle}>Items & Services</Text>
-              {invoicePreview.lineItems.map((item) => (
+              {invoicePreview.lineItems.map(item => (
                 <View key={item.id} style={styles.lineItem}>
                   <View style={styles.lineItemMain}>
-                    <Text style={styles.lineItemDescription}>{item.description}</Text>
+                    <Text style={styles.lineItemDescription}>
+                      {item.description}
+                    </Text>
                     <Text style={styles.lineItemDate}>{item.date}</Text>
                   </View>
                   <View style={styles.lineItemAmounts}>
-                    <Text style={styles.lineItemQuantity}>Qty: {item.quantity}</Text>
-                    <Text style={styles.lineItemPrice}>${item.unitPrice.toFixed(2)} ea</Text>
-                    <Text style={styles.lineItemTotal}>${item.total.toFixed(2)}</Text>
+                    <Text style={styles.lineItemQuantity}>
+                      Qty: {item.quantity}
+                    </Text>
+                    <Text style={styles.lineItemPrice}>
+                      ${item.unitPrice.toFixed(2)} ea
+                    </Text>
+                    <Text style={styles.lineItemTotal}>
+                      ${item.total.toFixed(2)}
+                    </Text>
                   </View>
                 </View>
               ))}
@@ -278,15 +357,21 @@ export default function InvoiceGeneration({ companyId, companyName, onInvoiceGen
             <View style={styles.totalsSection}>
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Subtotal</Text>
-                <Text style={styles.totalAmount}>${invoicePreview.subtotal.toFixed(2)}</Text>
+                <Text style={styles.totalAmount}>
+                  ${invoicePreview.subtotal.toFixed(2)}
+                </Text>
               </View>
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Tax (8%)</Text>
-                <Text style={styles.totalAmount}>${invoicePreview.tax.toFixed(2)}</Text>
+                <Text style={styles.totalAmount}>
+                  ${invoicePreview.tax.toFixed(2)}
+                </Text>
               </View>
               <View style={[styles.totalRow, styles.grandTotalRow]}>
                 <Text style={styles.grandTotalLabel}>Total</Text>
-                <Text style={styles.grandTotalAmount}>${invoicePreview.total.toFixed(2)}</Text>
+                <Text style={styles.grandTotalAmount}>
+                  ${invoicePreview.total.toFixed(2)}
+                </Text>
               </View>
             </View>
 
@@ -306,7 +391,7 @@ export default function InvoiceGeneration({ companyId, companyName, onInvoiceGen
           >
             <Text style={styles.previewButtonText}>Edit</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={styles.generateButton}
             onPress={confirmInvoiceGeneration}
@@ -326,23 +411,32 @@ export default function InvoiceGeneration({ companyId, companyName, onInvoiceGen
   if (!user || !isCompanyUser(user) || !company) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>Access denied. Company account required.</Text>
+        <Text style={styles.errorText}>
+          Access denied. Company account required.
+        </Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.canvas} />
-      
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={theme.colors.canvas}
+      />
+
       {/* Header */}
       <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton} 
+          <TouchableOpacity
+            style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
+            <Ionicons
+              name="chevron-back"
+              size={24}
+              color={theme.colors.text.primary}
+            />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Generate Invoice</Text>
           <View style={styles.headerRight} />
@@ -397,11 +491,13 @@ export default function InvoiceGeneration({ companyId, companyName, onInvoiceGen
             ) : (
               <>
                 <Ionicons name="eye" size={20} color={theme.colors.canvas} />
-                <Text style={styles.previewInvoiceButtonText}>Preview Invoice</Text>
+                <Text style={styles.previewInvoiceButtonText}>
+                  Preview Invoice
+                </Text>
               </>
             )}
           </TouchableOpacity>
-          
+
           <Text style={styles.actionNote}>
             Review the invoice details before generating the final invoice
           </Text>
@@ -588,7 +684,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingHorizontal: 20,
   },
-  
+
   // Modal Styles
   modalContainer: {
     flex: 1,
@@ -624,7 +720,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
-  
+
   // Invoice Preview Styles
   invoiceHeader: {
     flexDirection: 'row',

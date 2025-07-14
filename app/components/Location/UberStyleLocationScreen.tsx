@@ -11,23 +11,26 @@ interface UberStyleLocationScreenProps {
 }
 
 const UberStyleLocationScreen: React.FC<UberStyleLocationScreenProps> = ({
-  onLocationSelect
+  onLocationSelect,
 }) => {
   const navigation = useNavigation();
 
-  const handleLocationSelect = useCallback((location: LocationSuggestion) => {
-    console.log('Location selected:', location);
-    
-    // If callback provided, call it
-    if (onLocationSelect) {
-      onLocationSelect(location);
-    }
-    
-    // Navigate back
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    }
-  }, [navigation, onLocationSelect]);
+  const handleLocationSelect = useCallback(
+    (location: LocationSuggestion) => {
+      console.log('Location selected:', location);
+
+      // If callback provided, call it
+      if (onLocationSelect) {
+        onLocationSelect(location);
+      }
+
+      // Navigate back
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      }
+    },
+    [navigation, onLocationSelect]
+  );
 
   return (
     <View style={styles.container}>
@@ -43,4 +46,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default UberStyleLocationScreen; 
+export default UberStyleLocationScreen;

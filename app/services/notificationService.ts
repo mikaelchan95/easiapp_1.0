@@ -3,10 +3,10 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../utils/supabase';
-import { 
-  NotificationData, 
-  NotificationSettings, 
-  NotificationFilters, 
+import {
+  NotificationData,
+  NotificationSettings,
+  NotificationFilters,
   NotificationBatch,
   NotificationType,
   NotificationPriority,
@@ -14,7 +14,7 @@ import {
   PaymentNotificationData,
   ApprovalNotificationData,
   CreditAlertNotificationData,
-  BillingNotificationData
+  BillingNotificationData,
 } from '../types/notification';
 
 // Configure how notifications are handled when the app is in foreground
@@ -64,14 +64,15 @@ class NotificationService {
 
     try {
       // Request permissions
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
-      
+
       if (existingStatus !== 'granted') {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
       }
-      
+
       if (finalStatus !== 'granted') {
         console.warn('Failed to get push token for push notification!');
         return false;
@@ -97,7 +98,10 @@ class NotificationService {
     }
   }
 
-  async scheduleOrderNotification(notification: OrderNotification, delaySeconds = 0): Promise<string | null> {
+  async scheduleOrderNotification(
+    notification: OrderNotification,
+    delaySeconds = 0
+  ): Promise<string | null> {
     try {
       await this.initialize();
 
@@ -116,12 +120,13 @@ class NotificationService {
             channelId: 'order-updates',
           }),
         },
-        trigger: delaySeconds > 0 
-          ? {
-              type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-              seconds: delaySeconds,
-            }
-          : null, // null means immediate
+        trigger:
+          delaySeconds > 0
+            ? {
+                type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+                seconds: delaySeconds,
+              }
+            : null, // null means immediate
       });
 
       console.log('📱 Scheduled notification:', identifier);
@@ -132,8 +137,15 @@ class NotificationService {
     }
   }
 
-  async scheduleOrderStatusUpdate(orderId: string, status: OrderNotification['status'], delaySeconds = 0): Promise<string | null> {
-    const notifications: Record<OrderNotification['status'], Omit<OrderNotification, 'orderId' | 'status'>> = {
+  async scheduleOrderStatusUpdate(
+    orderId: string,
+    status: OrderNotification['status'],
+    delaySeconds = 0
+  ): Promise<string | null> {
+    const notifications: Record<
+      OrderNotification['status'],
+      Omit<OrderNotification, 'orderId' | 'status'>
+    > = {
       confirmed: {
         title: '✅ Order Confirmed',
         body: 'Your order has been confirmed and is being prepared.',
@@ -158,11 +170,14 @@ class NotificationService {
       return null;
     }
 
-    return this.scheduleOrderNotification({
-      orderId,
-      status,
-      ...notificationData,
-    }, delaySeconds);
+    return this.scheduleOrderNotification(
+      {
+        orderId,
+        status,
+        ...notificationData,
+      },
+      delaySeconds
+    );
   }
 
   async cancelNotification(identifier: string): Promise<void> {
@@ -191,8 +206,11 @@ class NotificationService {
       await this.scheduleOrderStatusUpdate(orderId, 'preparing', 10); // 10 seconds later
       await this.scheduleOrderStatusUpdate(orderId, 'out_for_delivery', 20); // 20 seconds later
       await this.scheduleOrderStatusUpdate(orderId, 'delivered', 30); // 30 seconds later
-      
-      console.log('🔔 Simulated order progress notifications scheduled for order:', orderId);
+
+      console.log(
+        '🔔 Simulated order progress notifications scheduled for order:',
+        orderId
+      );
     } catch (error) {
       console.error('Error simulating order progress:', error);
     }
@@ -201,10 +219,17 @@ class NotificationService {
   // Add notification listeners
   addNotificationListener(
     onNotificationReceived: (notification: Notifications.Notification) => void,
-    onNotificationResponse: (response: Notifications.NotificationResponse) => void
+    onNotificationResponse: (
+      response: Notifications.NotificationResponse
+    ) => void
   ): () => void {
-    const receivedSubscription = Notifications.addNotificationReceivedListener(onNotificationReceived);
-    const responseSubscription = Notifications.addNotificationResponseReceivedListener(onNotificationResponse);
+    const receivedSubscription = Notifications.addNotificationReceivedListener(
+      onNotificationReceived
+    );
+    const responseSubscription =
+      Notifications.addNotificationResponseReceivedListener(
+        onNotificationResponse
+      );
 
     return () => {
       receivedSubscription.remove();
@@ -255,7 +280,8 @@ class NotificationService {
         return this.getLocalNotifications(userId, filters, limit, offset);
       }
 
-      const notifications: NotificationData[] = data?.map(this.mapDatabaseToNotification) || [];
+      const notifications: NotificationData[] =
+        data?.map(this.mapDatabaseToNotification) || [];
       const unreadCount = await this.getUnreadCount(userId);
 
       return {
@@ -278,26 +304,55 @@ class NotificationService {
     offset: number = 0
   ): Promise<NotificationBatch> {
     try {
-      const storageData = await AsyncStorage.getItem(`${this.storageKey}:${userId}`);
-      let allNotifications: NotificationData[] = storageData ? JSON.parse(storageData) : [];
+      const storageData = await AsyncStorage.getItem(
+        `${this.storageKey}:${userId}`
+      );
+      let allNotifications: NotificationData[] = storageData
+        ? JSON.parse(storageData)
+        : [];
 
       // Apply filters
       if (filters) {
         allNotifications = allNotifications.filter(notification => {
-          if (filters.types?.length && !filters.types.includes(notification.type)) return false;
-          if (filters.priorities?.length && !filters.priorities.includes(notification.priority)) return false;
-          if (filters.status?.length && !filters.status.includes(notification.status)) return false;
-          if (filters.fromDate && new Date(notification.timestamp) < filters.fromDate) return false;
-          if (filters.toDate && new Date(notification.timestamp) > filters.toDate) return false;
+          if (
+            filters.types?.length &&
+            !filters.types.includes(notification.type)
+          )
+            return false;
+          if (
+            filters.priorities?.length &&
+            !filters.priorities.includes(notification.priority)
+          )
+            return false;
+          if (
+            filters.status?.length &&
+            !filters.status.includes(notification.status)
+          )
+            return false;
+          if (
+            filters.fromDate &&
+            new Date(notification.timestamp) < filters.fromDate
+          )
+            return false;
+          if (
+            filters.toDate &&
+            new Date(notification.timestamp) > filters.toDate
+          )
+            return false;
           return true;
         });
       }
 
       // Sort by timestamp (newest first)
-      allNotifications.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      allNotifications.sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
 
       const notifications = allNotifications.slice(offset, offset + limit);
-      const unreadCount = allNotifications.filter(n => n.status === 'unread').length;
+      const unreadCount = allNotifications.filter(
+        n => n.status === 'unread'
+      ).length;
 
       return {
         notifications,
@@ -307,7 +362,12 @@ class NotificationService {
       };
     } catch (error) {
       console.error('Error getting local notifications:', error);
-      return { notifications: [], totalCount: 0, unreadCount: 0, hasMore: false };
+      return {
+        notifications: [],
+        totalCount: 0,
+        unreadCount: 0,
+        hasMore: false,
+      };
     }
   }
 
@@ -323,8 +383,12 @@ class NotificationService {
       if (error) {
         console.error('Error getting unread count from Supabase:', error);
         // Fallback to local storage
-        const storageData = await AsyncStorage.getItem(`${this.storageKey}:${userId}`);
-        const notifications: NotificationData[] = storageData ? JSON.parse(storageData) : [];
+        const storageData = await AsyncStorage.getItem(
+          `${this.storageKey}:${userId}`
+        );
+        const notifications: NotificationData[] = storageData
+          ? JSON.parse(storageData)
+          : [];
         return notifications.filter(n => n.status === 'unread').length;
       }
 
@@ -336,7 +400,9 @@ class NotificationService {
   }
 
   // Create a new notification
-  async createNotification(notification: Omit<NotificationData, 'id' | 'timestamp'>): Promise<NotificationData> {
+  async createNotification(
+    notification: Omit<NotificationData, 'id' | 'timestamp'>
+  ): Promise<NotificationData> {
     const newNotification: NotificationData = {
       ...notification,
       id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -382,7 +448,11 @@ class NotificationService {
       }
 
       // Update local storage
-      await this.updateNotificationStatusLocally(userId, notificationId, 'read');
+      await this.updateNotificationStatusLocally(
+        userId,
+        notificationId,
+        'read'
+      );
       return true;
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -391,7 +461,10 @@ class NotificationService {
   }
 
   // Mark notification as dismissed
-  async markAsDismissed(userId: string, notificationId: string): Promise<boolean> {
+  async markAsDismissed(
+    userId: string,
+    notificationId: string
+  ): Promise<boolean> {
     try {
       // Update in Supabase
       const { error } = await supabase
@@ -401,11 +474,18 @@ class NotificationService {
         .eq('user_id', userId);
 
       if (error) {
-        console.error('Error marking notification as dismissed in Supabase:', error);
+        console.error(
+          'Error marking notification as dismissed in Supabase:',
+          error
+        );
       }
 
       // Update local storage
-      await this.updateNotificationStatusLocally(userId, notificationId, 'dismissed');
+      await this.updateNotificationStatusLocally(
+        userId,
+        notificationId,
+        'dismissed'
+      );
       return true;
     } catch (error) {
       console.error('Error marking notification as dismissed:', error);
@@ -424,17 +504,25 @@ class NotificationService {
         .eq('status', 'unread');
 
       if (error) {
-        console.error('Error marking all notifications as read in Supabase:', error);
+        console.error(
+          'Error marking all notifications as read in Supabase:',
+          error
+        );
       }
 
       // Update local storage
-      const storageData = await AsyncStorage.getItem(`${this.storageKey}:${userId}`);
+      const storageData = await AsyncStorage.getItem(
+        `${this.storageKey}:${userId}`
+      );
       if (storageData) {
         const notifications: NotificationData[] = JSON.parse(storageData);
-        const updatedNotifications = notifications.map(n => 
+        const updatedNotifications = notifications.map(n =>
           n.status === 'unread' ? { ...n, status: 'read' as const } : n
         );
-        await AsyncStorage.setItem(`${this.storageKey}:${userId}`, JSON.stringify(updatedNotifications));
+        await AsyncStorage.setItem(
+          `${this.storageKey}:${userId}`,
+          JSON.stringify(updatedNotifications)
+        );
       }
 
       return true;
@@ -445,7 +533,10 @@ class NotificationService {
   }
 
   // Delete notification
-  async deleteNotification(userId: string, notificationId: string): Promise<boolean> {
+  async deleteNotification(
+    userId: string,
+    notificationId: string
+  ): Promise<boolean> {
     try {
       // Delete from Supabase
       const { error } = await supabase
@@ -459,11 +550,18 @@ class NotificationService {
       }
 
       // Delete from local storage
-      const storageData = await AsyncStorage.getItem(`${this.storageKey}:${userId}`);
+      const storageData = await AsyncStorage.getItem(
+        `${this.storageKey}:${userId}`
+      );
       if (storageData) {
         const notifications: NotificationData[] = JSON.parse(storageData);
-        const filteredNotifications = notifications.filter(n => n.id !== notificationId);
-        await AsyncStorage.setItem(`${this.storageKey}:${userId}`, JSON.stringify(filteredNotifications));
+        const filteredNotifications = notifications.filter(
+          n => n.id !== notificationId
+        );
+        await AsyncStorage.setItem(
+          `${this.storageKey}:${userId}`,
+          JSON.stringify(filteredNotifications)
+        );
       }
 
       return true;
@@ -476,7 +574,9 @@ class NotificationService {
   // Get notification settings
   async getSettings(userId: string): Promise<NotificationSettings> {
     try {
-      const storageData = await AsyncStorage.getItem(`${this.settingsKey}:${userId}`);
+      const storageData = await AsyncStorage.getItem(
+        `${this.settingsKey}:${userId}`
+      );
       if (storageData) {
         return { ...this.defaultSettings, ...JSON.parse(storageData) };
       }
@@ -488,11 +588,17 @@ class NotificationService {
   }
 
   // Update notification settings
-  async updateSettings(userId: string, settings: Partial<NotificationSettings>): Promise<boolean> {
+  async updateSettings(
+    userId: string,
+    settings: Partial<NotificationSettings>
+  ): Promise<boolean> {
     try {
       const currentSettings = await this.getSettings(userId);
       const updatedSettings = { ...currentSettings, ...settings };
-      await AsyncStorage.setItem(`${this.settingsKey}:${userId}`, JSON.stringify(updatedSettings));
+      await AsyncStorage.setItem(
+        `${this.settingsKey}:${userId}`,
+        JSON.stringify(updatedSettings)
+      );
       return true;
     } catch (error) {
       console.error('Error updating notification settings:', error);
@@ -515,7 +621,7 @@ class NotificationService {
           table: 'notifications',
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
+        payload => {
           const notification = this.mapDatabaseToNotification(payload.new);
           callback(notification);
         }
@@ -541,7 +647,7 @@ class NotificationService {
           table: 'orders',
           filter: `user_id=eq.${userId}`,
         },
-        async (payload) => {
+        async payload => {
           if (payload.old.status !== payload.new.status) {
             const notification = await this.createOrderStatusNotification(
               payload.new,
@@ -572,7 +678,7 @@ class NotificationService {
           table: 'companies',
           filter: `id=eq.${companyId}`,
         },
-        async (payload) => {
+        async payload => {
           const { credit_limit, credit_used } = payload.new;
           const availableCredit = credit_limit - credit_used;
           const utilizationPercent = (credit_used / credit_limit) * 100;
@@ -611,15 +717,24 @@ class NotificationService {
   }
 
   // Helper methods
-  private async saveNotificationLocally(notification: NotificationData): Promise<void> {
+  private async saveNotificationLocally(
+    notification: NotificationData
+  ): Promise<void> {
     try {
-      const storageData = await AsyncStorage.getItem(`${this.storageKey}:${notification.userId}`);
-      const notifications: NotificationData[] = storageData ? JSON.parse(storageData) : [];
+      const storageData = await AsyncStorage.getItem(
+        `${this.storageKey}:${notification.userId}`
+      );
+      const notifications: NotificationData[] = storageData
+        ? JSON.parse(storageData)
+        : [];
       notifications.unshift(notification); // Add to beginning
-      
+
       // Keep only last 100 notifications to prevent storage bloat
       const trimmedNotifications = notifications.slice(0, 100);
-      await AsyncStorage.setItem(`${this.storageKey}:${notification.userId}`, JSON.stringify(trimmedNotifications));
+      await AsyncStorage.setItem(
+        `${this.storageKey}:${notification.userId}`,
+        JSON.stringify(trimmedNotifications)
+      );
     } catch (error) {
       console.error('Error saving notification locally:', error);
     }
@@ -631,13 +746,18 @@ class NotificationService {
     status: 'read' | 'dismissed'
   ): Promise<void> {
     try {
-      const storageData = await AsyncStorage.getItem(`${this.storageKey}:${userId}`);
+      const storageData = await AsyncStorage.getItem(
+        `${this.storageKey}:${userId}`
+      );
       if (storageData) {
         const notifications: NotificationData[] = JSON.parse(storageData);
         const updatedNotifications = notifications.map(n =>
           n.id === notificationId ? { ...n, status } : n
         );
-        await AsyncStorage.setItem(`${this.storageKey}:${userId}`, JSON.stringify(updatedNotifications));
+        await AsyncStorage.setItem(
+          `${this.storageKey}:${userId}`,
+          JSON.stringify(updatedNotifications)
+        );
       }
     } catch (error) {
       console.error('Error updating notification status locally:', error);
@@ -655,7 +775,9 @@ class NotificationService {
       timestamp: new Date(dbRecord.created_at),
       userId: dbRecord.user_id,
       companyId: dbRecord.company_id,
-      expiresAt: dbRecord.expires_at ? new Date(dbRecord.expires_at) : undefined,
+      expiresAt: dbRecord.expires_at
+        ? new Date(dbRecord.expires_at)
+        : undefined,
       metadata: dbRecord.metadata || {},
     };
   }
@@ -695,7 +817,9 @@ class NotificationService {
       priority: orderData.status === 'delivered' ? 'medium' : 'low',
       status: 'unread',
       title: `Order ${orderData.order_number} Update`,
-      message: statusMessages[orderData.status] || 'Your order status has been updated',
+      message:
+        statusMessages[orderData.status] ||
+        'Your order status has been updated',
       userId: orderData.user_id,
       companyId: orderData.company_id,
       metadata: {
@@ -713,15 +837,19 @@ class NotificationService {
     alertType: 'low_balance' | 'limit_exceeded'
   ): Promise<NotificationData> {
     const availableCredit = companyData.credit_limit - companyData.credit_used;
-    
+
     return this.createNotification({
       type: 'credit_alert',
       priority: alertType === 'limit_exceeded' ? 'urgent' : 'high',
       status: 'unread',
-      title: alertType === 'limit_exceeded' ? 'Credit Limit Exceeded' : 'Low Credit Balance',
-      message: alertType === 'limit_exceeded' 
-        ? `Your company has exceeded its credit limit of $${companyData.credit_limit.toLocaleString()}`
-        : `Your company credit balance is low: $${availableCredit.toLocaleString()} remaining`,
+      title:
+        alertType === 'limit_exceeded'
+          ? 'Credit Limit Exceeded'
+          : 'Low Credit Balance',
+      message:
+        alertType === 'limit_exceeded'
+          ? `Your company has exceeded its credit limit of $${companyData.credit_limit.toLocaleString()}`
+          : `Your company credit balance is low: $${availableCredit.toLocaleString()} remaining`,
       userId: companyData.primary_contact_id, // Notify primary contact
       companyId: companyData.id,
       metadata: {

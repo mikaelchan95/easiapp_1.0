@@ -1,15 +1,15 @@
 import React, { useState, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   StatusBar,
   TextInput,
   Alert,
   Share,
-  Linking
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,43 +26,43 @@ const shareOptions = [
     title: 'Text Message',
     icon: 'chatbubble-outline',
     color: '#4CAF50',
-    action: 'sms'
+    action: 'sms',
   },
   {
     id: 'email',
     title: 'Email',
     icon: 'mail-outline',
     color: '#2196F3',
-    action: 'email'
+    action: 'email',
   },
   {
     id: 'whatsapp',
     title: 'WhatsApp',
     icon: 'logo-whatsapp',
     color: '#25D366',
-    action: 'whatsapp'
+    action: 'whatsapp',
   },
   {
     id: 'social',
     title: 'Social Media',
     icon: 'share-social-outline',
     color: '#9C27B0',
-    action: 'social'
+    action: 'social',
   },
   {
     id: 'copy',
     title: 'Copy Link',
     icon: 'copy-outline',
     color: '#FF9800',
-    action: 'copy'
+    action: 'copy',
   },
   {
     id: 'more',
     title: 'More Options',
     icon: 'ellipsis-horizontal',
     color: '#607D8B',
-    action: 'more'
-  }
+    action: 'more',
+  },
 ];
 
 export default function InviteFriendsScreen() {
@@ -73,38 +73,45 @@ export default function InviteFriendsScreen() {
 
   const defaultMessage = `Hey! I've been using EASI for premium spirit deliveries and thought you'd love it too! Use my referral code ${mockReferralCode} when you sign up and we both get S$20 credit. Download the app: [App Store Link]`;
 
-  const handleShareOption = useCallback(async (option: typeof shareOptions[0]) => {
-    const message = customMessage || defaultMessage;
-    
-    try {
-      switch (option.action) {
-        case 'sms':
-          await Linking.openURL(`sms:?body=${encodeURIComponent(message)}`);
-          break;
-        case 'email':
-          await Linking.openURL(`mailto:?subject=${encodeURIComponent('Join me on EASI!')}&body=${encodeURIComponent(message)}`);
-          break;
-        case 'whatsapp':
-          await Linking.openURL(`whatsapp://send?text=${encodeURIComponent(message)}`);
-          break;
-        case 'social':
-        case 'more':
-          await Share.share({
-            message,
-            title: 'Join EASI - Premium Spirits Delivered',
-          });
-          break;
-        case 'copy':
-          // In a real app, this would copy to clipboard
-          Alert.alert('Copied!', 'Referral message copied to clipboard');
-          break;
+  const handleShareOption = useCallback(
+    async (option: (typeof shareOptions)[0]) => {
+      const message = customMessage || defaultMessage;
+
+      try {
+        switch (option.action) {
+          case 'sms':
+            await Linking.openURL(`sms:?body=${encodeURIComponent(message)}`);
+            break;
+          case 'email':
+            await Linking.openURL(
+              `mailto:?subject=${encodeURIComponent('Join me on EASI!')}&body=${encodeURIComponent(message)}`
+            );
+            break;
+          case 'whatsapp':
+            await Linking.openURL(
+              `whatsapp://send?text=${encodeURIComponent(message)}`
+            );
+            break;
+          case 'social':
+          case 'more':
+            await Share.share({
+              message,
+              title: 'Join EASI - Premium Spirits Delivered',
+            });
+            break;
+          case 'copy':
+            // In a real app, this would copy to clipboard
+            Alert.alert('Copied!', 'Referral message copied to clipboard');
+            break;
+        }
+        HapticFeedback.light();
+      } catch (error) {
+        console.error('Error sharing:', error);
+        Alert.alert('Error', 'Unable to share at this time');
       }
-      HapticFeedback.light();
-    } catch (error) {
-      console.error('Error sharing:', error);
-      Alert.alert('Error', 'Unable to share at this time');
-    }
-  }, [customMessage, defaultMessage]);
+    },
+    [customMessage, defaultMessage]
+  );
 
   const handleBulkInvite = useCallback(() => {
     Alert.alert(
@@ -125,20 +132,23 @@ export default function InviteFriendsScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
-      
+
       {/* Status Bar Background */}
       <View style={[styles.statusBarBackground, { height: insets.top }]} />
-      
+
       {/* Mobile Header */}
-      <MobileHeader 
+      <MobileHeader
         title="Invite Friends"
         showBackButton={true}
         showCartButton={true}
         showSearch={false}
         showLocationHeader={false}
       />
-      
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Referral Code Section */}
         <View style={styles.codeSection}>
           <View style={styles.codeContainer}>
@@ -147,7 +157,8 @@ export default function InviteFriendsScreen() {
               <Text style={styles.codeValue}>{mockReferralCode}</Text>
             </View>
             <Text style={styles.codeDescription}>
-              Share this code with friends to earn S$20 credit for both of you when they make their first purchase of S$100+
+              Share this code with friends to earn S$20 credit for both of you
+              when they make their first purchase of S$100+
             </Text>
           </View>
         </View>
@@ -166,7 +177,7 @@ export default function InviteFriendsScreen() {
               textAlignVertical="top"
               placeholderTextColor={COLORS.textSecondary}
             />
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.resetButton}
               onPress={() => setCustomMessage('')}
             >
@@ -179,13 +190,18 @@ export default function InviteFriendsScreen() {
         <View style={styles.shareSection}>
           <Text style={styles.sectionTitle}>Share With Friends</Text>
           <View style={styles.shareGrid}>
-            {shareOptions.map((option) => (
+            {shareOptions.map(option => (
               <TouchableOpacity
                 key={option.id}
                 style={styles.shareOption}
                 onPress={() => handleShareOption(option)}
               >
-                <View style={[styles.shareIcon, { backgroundColor: `${option.color}15` }]}>
+                <View
+                  style={[
+                    styles.shareIcon,
+                    { backgroundColor: `${option.color}15` },
+                  ]}
+                >
                   <Ionicons name={option.icon} size={24} color={option.color} />
                 </View>
                 <Text style={styles.shareTitle}>{option.title}</Text>
@@ -197,8 +213,8 @@ export default function InviteFriendsScreen() {
         {/* Quick Actions */}
         <View style={styles.actionsSection}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.actionCard}
             onPress={handleBulkInvite}
           >
@@ -207,12 +223,18 @@ export default function InviteFriendsScreen() {
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Bulk Invite</Text>
-              <Text style={styles.actionDescription}>Import contacts and send multiple invitations at once</Text>
+              <Text style={styles.actionDescription}>
+                Import contacts and send multiple invitations at once
+              </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={COLORS.textSecondary}
+            />
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.actionCard}
             onPress={handlePersonalizedInvite}
           >
@@ -221,23 +243,39 @@ export default function InviteFriendsScreen() {
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Personalized Invites</Text>
-              <Text style={styles.actionDescription}>Create custom messages for specific friends</Text>
+              <Text style={styles.actionDescription}>
+                Create custom messages for specific friends
+              </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={COLORS.textSecondary}
+            />
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.actionCard}
             onPress={() => navigation.navigate('ReferralHistory')}
           >
             <View style={styles.actionIcon}>
-              <Ionicons name="analytics-outline" size={24} color={COLORS.text} />
+              <Ionicons
+                name="analytics-outline"
+                size={24}
+                color={COLORS.text}
+              />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Track Performance</Text>
-              <Text style={styles.actionDescription}>See who you've invited and your earnings</Text>
+              <Text style={styles.actionDescription}>
+                See who you've invited and your earnings
+              </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={COLORS.textSecondary}
+            />
           </TouchableOpacity>
         </View>
 
@@ -250,30 +288,33 @@ export default function InviteFriendsScreen() {
                 <Ionicons name="bulb-outline" size={20} color={COLORS.text} />
               </View>
               <Text style={styles.tipText}>
-                Personal messages work better than generic ones. Mention why you love the app!
+                Personal messages work better than generic ones. Mention why you
+                love the app!
               </Text>
             </View>
-            
+
             <View style={styles.tip}>
               <View style={styles.tipIcon}>
                 <Ionicons name="time-outline" size={20} color={COLORS.text} />
               </View>
               <Text style={styles.tipText}>
-                Follow up with friends after they sign up to help them make their first purchase
+                Follow up with friends after they sign up to help them make
+                their first purchase
               </Text>
             </View>
-            
+
             <View style={styles.tip}>
               <View style={styles.tipIcon}>
                 <Ionicons name="gift-outline" size={20} color={COLORS.text} />
               </View>
               <Text style={styles.tipText}>
-                Remind them about the S$20 credit they'll get - it's a great incentive!
+                Remind them about the S$20 credit they'll get - it's a great
+                incentive!
               </Text>
             </View>
           </View>
         </View>
-        
+
         {/* Bottom Padding */}
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -292,7 +333,7 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  
+
   // Code Section
   codeSection: {
     marginHorizontal: SPACING.md,
@@ -331,7 +372,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  
+
   // Message Section
   messageSection: {
     marginHorizontal: SPACING.md,
@@ -371,7 +412,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontWeight: '500',
   },
-  
+
   // Share Section
   shareSection: {
     marginHorizontal: SPACING.md,
@@ -405,7 +446,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
   },
-  
+
   // Actions Section
   actionsSection: {
     marginHorizontal: SPACING.md,
@@ -442,7 +483,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: SPACING.xs,
   },
-  
+
   // Tips Section
   tipsSection: {
     marginHorizontal: SPACING.md,
@@ -474,8 +515,8 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 20,
   },
-  
+
   bottomPadding: {
     height: SPACING.xxl,
   },
-}); 
+});

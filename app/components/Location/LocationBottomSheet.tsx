@@ -1,10 +1,10 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Animated, 
-  Dimensions, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Dimensions,
   Modal,
   SafeAreaView,
   KeyboardAvoidingView,
@@ -12,7 +12,7 @@ import {
   Pressable,
   TouchableOpacity,
   TextInput,
-  Keyboard
+  Keyboard,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
@@ -48,7 +48,7 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
   selectedLocation,
   onDeleteRecent,
   onPinDrop,
-  mapRegion
+  mapRegion,
 }) => {
   const insets = useSafeAreaInsets();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -88,11 +88,23 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
     let showSubscription, hideSubscription;
 
     if (Platform.OS === 'ios') {
-      showSubscription = Keyboard.addListener('keyboardWillShow', keyboardWillShow);
-      hideSubscription = Keyboard.addListener('keyboardWillHide', keyboardWillHide);
+      showSubscription = Keyboard.addListener(
+        'keyboardWillShow',
+        keyboardWillShow
+      );
+      hideSubscription = Keyboard.addListener(
+        'keyboardWillHide',
+        keyboardWillHide
+      );
     } else {
-      showSubscription = Keyboard.addListener('keyboardDidShow', keyboardDidShow);
-      hideSubscription = Keyboard.addListener('keyboardDidHide', keyboardDidHide);
+      showSubscription = Keyboard.addListener(
+        'keyboardDidShow',
+        keyboardDidShow
+      );
+      hideSubscription = Keyboard.addListener(
+        'keyboardDidHide',
+        keyboardDidHide
+      );
     }
 
     return () => {
@@ -107,64 +119,68 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
     { useNativeDriver: false }
   );
 
-  const onHandlerStateChange = useCallback((event: any) => {
-    if (event.nativeEvent.oldState === State.ACTIVE) {
-      const { translationY, velocityY } = event.nativeEvent;
-      
-      // Check if should dismiss based on distance or velocity
-      const shouldDismiss = translationY > DISMISS_THRESHOLD || velocityY > 500;
-      
-      if (shouldDismiss) {
-        // Dismiss keyboard before closing
-        Keyboard.dismiss();
-        
-        // Animate out with matching velocity
-        Animated.timing(translateY, {
-          toValue: SHEET_HEIGHT,
-          duration: Math.max(200, Math.min(400, 400 - (velocityY / 5))),
-          easing: Animations.TIMING.easeOut,
-          useNativeDriver: false
-        }).start(() => {
-          onClose();
-        });
-        
-        Animated.timing(backdropOpacity, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: false
-        }).start();
-      } else {
-        // Spring back to position
-        Animated.spring(translateY, {
-          toValue: 0,
-          friction: 8,
-          tension: 100,
-          useNativeDriver: false
-        }).start();
+  const onHandlerStateChange = useCallback(
+    (event: any) => {
+      if (event.nativeEvent.oldState === State.ACTIVE) {
+        const { translationY, velocityY } = event.nativeEvent;
+
+        // Check if should dismiss based on distance or velocity
+        const shouldDismiss =
+          translationY > DISMISS_THRESHOLD || velocityY > 500;
+
+        if (shouldDismiss) {
+          // Dismiss keyboard before closing
+          Keyboard.dismiss();
+
+          // Animate out with matching velocity
+          Animated.timing(translateY, {
+            toValue: SHEET_HEIGHT,
+            duration: Math.max(200, Math.min(400, 400 - velocityY / 5)),
+            easing: Animations.TIMING.easeOut,
+            useNativeDriver: false,
+          }).start(() => {
+            onClose();
+          });
+
+          Animated.timing(backdropOpacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: false,
+          }).start();
+        } else {
+          // Spring back to position
+          Animated.spring(translateY, {
+            toValue: 0,
+            friction: 8,
+            tension: 100,
+            useNativeDriver: false,
+          }).start();
+        }
+
+        // Reset drag value
+        dragY.setValue(0);
       }
-      
-      // Reset drag value
-      dragY.setValue(0);
-    }
-  }, [translateY, backdropOpacity, onClose, dragY]);
+    },
+    [translateY, backdropOpacity, onClose, dragY]
+  );
 
   // Show animation
   const showSheet = useCallback(() => {
     translateY.setValue(SHEET_HEIGHT);
-    
+
     Animated.parallel([
       Animated.spring(translateY, {
         toValue: 0,
         friction: 8, // Damping ~0.8 as specified
         tension: 100,
-        useNativeDriver: false
+        useNativeDriver: false,
       }),
       Animated.timing(backdropOpacity, {
         toValue: 0.5,
         duration: Animations.DURATION.medium,
         easing: Animations.TIMING.easeOut,
-        useNativeDriver: false
-      })
+        useNativeDriver: false,
+      }),
     ]).start();
   }, [translateY, backdropOpacity]);
 
@@ -172,20 +188,20 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
   const hideSheet = useCallback(() => {
     // Dismiss keyboard when hiding
     Keyboard.dismiss();
-    
+
     Animated.parallel([
       Animated.timing(translateY, {
         toValue: SHEET_HEIGHT,
         duration: Animations.DURATION.medium,
         easing: Animations.TIMING.easeIn,
-        useNativeDriver: false
+        useNativeDriver: false,
       }),
       Animated.timing(backdropOpacity, {
         toValue: 0,
         duration: Animations.DURATION.medium,
         easing: Animations.TIMING.easeIn,
-        useNativeDriver: false
-      })
+        useNativeDriver: false,
+      }),
     ]).start();
   }, [translateY, backdropOpacity]);
 
@@ -207,7 +223,7 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
   // Calculate keyboard offset for the bottom sheet
   const getKeyboardOffset = () => {
     if (!isKeyboardVisible || keyboardHeight === 0) return 0;
-    
+
     if (Platform.OS === 'ios') {
       // For iOS, calculate offset considering safe areas and modal positioning
       const baseOffset = keyboardHeight - insets.bottom;
@@ -229,7 +245,7 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
 
   // Combined translateY for both gesture and animation, with keyboard offset
   const combinedTranslateY = Animated.add(
-    translateY, 
+    translateY,
     Animated.add(dragY, new Animated.Value(-getKeyboardOffset()))
   );
 
@@ -250,8 +266,8 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
           style={[
             styles.backdrop,
             {
-              opacity: backdropOpacity
-            }
+              opacity: backdropOpacity,
+            },
           ]}
         >
           <Pressable
@@ -271,13 +287,16 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
             style={[
               styles.sheetContainer,
               {
-                transform: [{ translateY: combinedTranslateY }]
-              }
+                transform: [{ translateY: combinedTranslateY }],
+              },
             ]}
           >
             <SafeAreaView style={styles.sheet}>
               <KeyboardAvoidingView
-                style={[styles.keyboardAvoid, isKeyboardVisible && styles.keyboardAvoidKeyboard]}
+                style={[
+                  styles.keyboardAvoid,
+                  isKeyboardVisible && styles.keyboardAvoidKeyboard,
+                ]}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={getKeyboardVerticalOffset()}
               >
@@ -293,7 +312,9 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
                       {isMapMode ? 'Pin Location' : 'Choose Location'}
                     </Text>
                     <Text style={styles.headerSubtitle}>
-                      {isMapMode ? 'Tap the map to select a point' : 'Select your delivery destination'}
+                      {isMapMode
+                        ? 'Tap the map to select a point'
+                        : 'Select your delivery destination'}
                     </Text>
                   </View>
                   <Pressable
@@ -302,31 +323,47 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
                       onToggleMapMode();
                     }}
                     style={styles.mapToggle}
-                    accessibilityLabel={isMapMode ? 'Switch to list view' : 'Switch to map view'}
+                    accessibilityLabel={
+                      isMapMode ? 'Switch to list view' : 'Switch to map view'
+                    }
                     accessibilityRole="button"
                   >
-                    <Ionicons 
-                      name={isMapMode ? 'list' : 'map'} 
-                      size={24} 
-                      color={COLORS.primary} 
+                    <Ionicons
+                      name={isMapMode ? 'list' : 'map'}
+                      size={24}
+                      color={COLORS.primary}
                     />
                   </Pressable>
                 </View>
 
                 {/* Search Bar */}
-                <View style={[styles.searchBarContainer, isKeyboardVisible && styles.searchBarContainerKeyboard]}>
-                  <View style={[styles.searchBar, isKeyboardVisible && styles.searchBarKeyboard]}>
+                <View
+                  style={[
+                    styles.searchBarContainer,
+                    isKeyboardVisible && styles.searchBarContainerKeyboard,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.searchBar,
+                      isKeyboardVisible && styles.searchBarKeyboard,
+                    ]}
+                  >
                     <View style={styles.searchIconContainer}>
-                      <Ionicons 
-                        name="search" 
-                        size={20} 
-                        color={COLORS.inactive} 
+                      <Ionicons
+                        name="search"
+                        size={20}
+                        color={COLORS.inactive}
                       />
                     </View>
-                    
+
                     <TextInput
                       style={styles.searchInput}
-                      placeholder={isMapMode ? "Tap the map to drop a pin" : "Search for a location..."}
+                      placeholder={
+                        isMapMode
+                          ? 'Tap the map to drop a pin'
+                          : 'Search for a location...'
+                      }
                       placeholderTextColor={COLORS.placeholder}
                       value={searchText}
                       onChangeText={onSearchTextChange}
@@ -336,7 +373,7 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
                       autoCorrect={false}
                       editable={!isMapMode}
                     />
-                    
+
                     {/* Clear button */}
                     {searchText.length > 0 && (
                       <TouchableOpacity
@@ -345,28 +382,36 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
                           onSearchTextChange('');
                         }}
                       >
-                        <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+                        <Ionicons
+                          name="close-circle"
+                          size={20}
+                          color={COLORS.textSecondary}
+                        />
                       </TouchableOpacity>
                     )}
-                    
+
                     {/* Toggle View Button */}
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.toggleButton}
                       onPress={() => {
                         Keyboard.dismiss();
                         onToggleMapMode();
                       }}
-                      accessibilityLabel={isMapMode ? "Switch to list view" : "Switch to map view"}
+                      accessibilityLabel={
+                        isMapMode ? 'Switch to list view' : 'Switch to map view'
+                      }
                       accessibilityHint="Toggle between map and list view"
                     >
-                      <View style={[
-                        styles.toggleButtonBackground,
-                        isMapMode ? styles.toggleButtonActive : null
-                      ]}>
-                        <Ionicons 
-                          name={isMapMode ? "list" : "map"} 
-                          size={18} 
-                          color={isMapMode ? COLORS.card : COLORS.primary} 
+                      <View
+                        style={[
+                          styles.toggleButtonBackground,
+                          isMapMode ? styles.toggleButtonActive : null,
+                        ]}
+                      >
+                        <Ionicons
+                          name={isMapMode ? 'list' : 'map'}
+                          size={18}
+                          color={isMapMode ? COLORS.card : COLORS.primary}
                         />
                       </View>
                     </TouchableOpacity>
@@ -374,39 +419,56 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
                 </View>
 
                 {/* Content */}
-                <View style={[styles.content, isKeyboardVisible && styles.contentKeyboard]}>
+                <View
+                  style={[
+                    styles.content,
+                    isKeyboardVisible && styles.contentKeyboard,
+                  ]}
+                >
                   {isMapMode ? (
                     <View style={styles.staticMapContainer}>
                       <View style={styles.staticMap}>
                         <View style={styles.mapBackground} />
-                        
-                        <View style={[styles.deliveryZone, styles.primaryZone]} />
-                        <View style={[styles.deliveryZone, styles.secondaryZone]} />
-                        
+
+                        <View
+                          style={[styles.deliveryZone, styles.primaryZone]}
+                        />
+                        <View
+                          style={[styles.deliveryZone, styles.secondaryZone]}
+                        />
+
                         {selectedLocation?.coordinate && (
-                          <View 
+                          <View
                             style={[
                               styles.staticMarker,
                               {
                                 left: '50%',
                                 top: '50%',
-                              }
+                              },
                             ]}
                           >
-                            <Ionicons name="location" size={32} color="#000000" />
+                            <Ionicons
+                              name="location"
+                              size={32}
+                              color="#000000"
+                            />
                           </View>
                         )}
-                        
+
                         <View style={styles.mapInstructions}>
                           <View style={styles.instructionCard}>
-                            <Ionicons name="information-circle" size={16} color={COLORS.primary} />
+                            <Ionicons
+                              name="information-circle"
+                              size={16}
+                              color={COLORS.primary}
+                            />
                             <Text style={styles.instructionText}>
                               Tap to select location
                             </Text>
                           </View>
                         </View>
-                        
-                        <TouchableOpacity 
+
+                        <TouchableOpacity
                           style={styles.locationControl}
                           onPress={() => {
                             if (selectedLocation?.coordinate) {
@@ -418,25 +480,31 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
                             }
                           }}
                         >
-                          <Ionicons name="locate" size={24} color={COLORS.primary} />
+                          <Ionicons
+                            name="locate"
+                            size={24}
+                            color={COLORS.primary}
+                          />
                         </TouchableOpacity>
                       </View>
-                      
-                      <TouchableOpacity 
+
+                      <TouchableOpacity
                         style={styles.mapTapArea}
                         activeOpacity={0.9}
-                        onPress={(event) => {
+                        onPress={event => {
                           const baseLat = 1.3521;
                           const baseLng = 103.8198;
-                          
-                          const randomLat = baseLat + (Math.random() * 0.05 - 0.025);
-                          const randomLng = baseLng + (Math.random() * 0.05 - 0.025);
-                          
+
+                          const randomLat =
+                            baseLat + (Math.random() * 0.05 - 0.025);
+                          const randomLng =
+                            baseLng + (Math.random() * 0.05 - 0.025);
+
                           const mockCoordinate = {
                             latitude: randomLat,
-                            longitude: randomLng
+                            longitude: randomLng,
                           };
-                          
+
                           if (onPinDrop) {
                             onPinDrop(mockCoordinate);
                           }
@@ -457,7 +525,12 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
                 </View>
 
                 {/* Confirm Button */}
-                <View style={[styles.confirmButtonContainer, isKeyboardVisible && styles.confirmButtonContainerKeyboard]}>
+                <View
+                  style={[
+                    styles.confirmButtonContainer,
+                    isKeyboardVisible && styles.confirmButtonContainerKeyboard,
+                  ]}
+                >
                   <LocationConfirmButton
                     onConfirm={onConfirm}
                     selectedLocation={selectedLocation}
@@ -476,41 +549,41 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    justifyContent: 'flex-end'
+    justifyContent: 'flex-end',
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.primary
+    backgroundColor: COLORS.primary,
   },
   sheetContainer: {
     height: SHEET_HEIGHT,
     backgroundColor: COLORS.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    ...SHADOWS.medium
+    ...SHADOWS.medium,
   },
   sheet: {
-    flex: 1
+    flex: 1,
   },
   keyboardAvoid: {
-    flex: 1
+    flex: 1,
   },
   handleContainer: {
     alignItems: 'center',
-    paddingVertical: SPACING.sm
+    paddingVertical: SPACING.sm,
   },
   handle: {
     width: 36,
     height: 4,
     backgroundColor: COLORS.border,
-    borderRadius: 2
+    borderRadius: 2,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.md
+    paddingBottom: SPACING.md,
   },
   headerTextContainer: {
     flex: 1,
@@ -519,7 +592,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 4
+    marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
@@ -532,26 +605,26 @@ const styles = StyleSheet.create({
     minWidth: 48,
     minHeight: 48,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   searchBarContainer: {
     paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.sm
+    paddingBottom: SPACING.sm,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.background,
     borderRadius: 8,
-    padding: SPACING.sm
+    padding: SPACING.sm,
   },
   searchIconContainer: {
-    marginRight: SPACING.sm
+    marginRight: SPACING.sm,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: COLORS.text
+    color: COLORS.text,
   },
   toggleButton: {
     padding: SPACING.sm,
@@ -560,21 +633,21 @@ const styles = StyleSheet.create({
     minWidth: 48,
     minHeight: 48,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   toggleButtonBackground: {
     width: 36,
     height: 36,
     borderRadius: 8,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   toggleButtonActive: {
-    backgroundColor: COLORS.primary
+    backgroundColor: COLORS.primary,
   },
   content: {
     flex: 1,
-    paddingHorizontal: SPACING.md
+    paddingHorizontal: SPACING.md,
   },
   staticMapContainer: {
     flex: 1,
@@ -583,17 +656,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#E5E5E5',
     height: 300,
-    marginBottom: 16
+    marginBottom: 16,
   },
   staticMap: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative'
+    position: 'relative',
   },
   mapBackground: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#E5E5E5'
+    backgroundColor: '#E5E5E5',
   },
   deliveryZone: {
     position: 'absolute',
@@ -601,34 +674,31 @@ const styles = StyleSheet.create({
     height: '80%',
     borderRadius: 1000,
     borderWidth: 1,
-    opacity: 0.3
+    opacity: 0.3,
   },
   primaryZone: {
     borderColor: '#000000',
     backgroundColor: 'rgba(0, 0, 0, 0.1)',
     width: '70%',
-    height: '70%'
+    height: '70%',
   },
   secondaryZone: {
     borderColor: '#333333',
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
     width: '85%',
-    height: '85%'
+    height: '85%',
   },
   staticMarker: {
     position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
-    transform: [
-      { translateX: -16 },
-      { translateY: -32 }
-    ]
+    transform: [{ translateX: -16 }, { translateY: -32 }],
   },
   mapInstructions: {
     position: 'absolute',
     top: 16,
     left: 16,
-    right: 16
+    right: 16,
   },
   instructionCard: {
     backgroundColor: COLORS.card,
@@ -643,13 +713,13 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2
+    elevation: 2,
   },
   instructionText: {
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.text,
-    marginLeft: 8
+    marginLeft: 8,
   },
   locationControl: {
     position: 'absolute',
@@ -668,33 +738,33 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2
+    elevation: 2,
   },
   mapTapArea: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'transparent'
+    backgroundColor: 'transparent',
   },
   keyboardAvoidKeyboard: {
-    paddingBottom: SPACING.md
+    paddingBottom: SPACING.md,
   },
   searchBarContainerKeyboard: {
-    paddingBottom: SPACING.md
+    paddingBottom: SPACING.md,
   },
   searchBarKeyboard: {
-    paddingBottom: SPACING.md
+    paddingBottom: SPACING.md,
   },
   clearButton: {
-    padding: SPACING.sm
+    padding: SPACING.sm,
   },
   confirmButtonContainer: {
-    padding: SPACING.md
+    padding: SPACING.md,
   },
   confirmButtonContainerKeyboard: {
-    paddingBottom: SPACING.md
+    paddingBottom: SPACING.md,
   },
   contentKeyboard: {
-    paddingBottom: SPACING.md
-  }
+    paddingBottom: SPACING.md,
+  },
 });
 
 export default LocationBottomSheet;

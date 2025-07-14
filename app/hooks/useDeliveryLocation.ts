@@ -21,28 +21,39 @@ const defaultPreferences: LocationPreferences = {
 export const useDeliveryLocation = () => {
   const { state, dispatch } = useContext(AppContext);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
-  const [locationPreferences, setLocationPreferences] = useState<LocationPreferences>(defaultPreferences);
+  const [locationPreferences, setLocationPreferences] =
+    useState<LocationPreferences>(defaultPreferences);
 
   // Get current delivery location
   const deliveryLocation = state.selectedLocation;
 
   // Set delivery location
-  const setDeliveryLocation = useCallback(async (location: LocationSuggestion | null) => {
-    dispatch({ type: 'SET_SELECTED_LOCATION', payload: location });
-    
-    // Update preferences based on location source
-    if (location) {
-      const newPreferences = {
-        ...locationPreferences,
-        lastLocationSource: location.type === 'current' ? 'current' as const : 
-                           location.type === 'saved' ? 'saved' as const : 'search' as const,
-        // If user explicitly selects a non-current location, prevent auto-reversion
-        preventCurrentLocationAutoSelect: location.type !== 'current'
-      };
-      setLocationPreferences(newPreferences);
-      await AsyncStorage.setItem(LOCATION_PREFERENCES_KEY, JSON.stringify(newPreferences));
-    }
-  }, [dispatch, locationPreferences]);
+  const setDeliveryLocation = useCallback(
+    async (location: LocationSuggestion | null) => {
+      dispatch({ type: 'SET_SELECTED_LOCATION', payload: location });
+
+      // Update preferences based on location source
+      if (location) {
+        const newPreferences = {
+          ...locationPreferences,
+          lastLocationSource:
+            location.type === 'current'
+              ? ('current' as const)
+              : location.type === 'saved'
+                ? ('saved' as const)
+                : ('search' as const),
+          // If user explicitly selects a non-current location, prevent auto-reversion
+          preventCurrentLocationAutoSelect: location.type !== 'current',
+        };
+        setLocationPreferences(newPreferences);
+        await AsyncStorage.setItem(
+          LOCATION_PREFERENCES_KEY,
+          JSON.stringify(newPreferences)
+        );
+      }
+    },
+    [dispatch, locationPreferences]
+  );
 
   // Check if location is set
   const hasDeliveryLocation = deliveryLocation !== null;
@@ -50,18 +61,18 @@ export const useDeliveryLocation = () => {
   // Get formatted address string
   const getFormattedAddress = useCallback(() => {
     if (!deliveryLocation) return '';
-    
+
     if (deliveryLocation.subtitle) {
       return deliveryLocation.subtitle;
     }
-    
+
     return deliveryLocation.title;
   }, [deliveryLocation]);
 
   // Get short address for display
   const getShortAddress = useCallback(() => {
     if (!deliveryLocation) return 'Set delivery address';
-    
+
     return deliveryLocation.title;
   }, [deliveryLocation]);
 
@@ -76,43 +87,58 @@ export const useDeliveryLocation = () => {
   }, []);
 
   // Add location to saved addresses
-  const saveCurrentLocation = useCallback(async (label: string, icon?: string, color?: string) => {
-    if (!deliveryLocation) return false;
-    
-    try {
-      const savedAddress: SavedAddress = {
-        id: `saved_${Date.now()}`,
-        label,
-        location: deliveryLocation,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        icon,
-        color,
-        isDefault: savedAddresses.length === 0, // First saved address becomes default
-      };
-      
-      await GoogleMapsService.saveAddress(savedAddress);
-      await loadSavedAddresses(); // Refresh the list
-      return true;
-    } catch (error) {
-      console.error('Failed to save location:', error);
-      return false;
-    }
-  }, [deliveryLocation, savedAddresses.length, loadSavedAddresses]);
+  const saveCurrentLocation = useCallback(
+    async (label: string, icon?: string, color?: string) => {
+      if (!deliveryLocation) return false;
+
+      try {
+        const savedAddress: SavedAddress = {
+          id: `saved_${Date.now()}`,
+          label,
+          location: deliveryLocation,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          icon,
+          color,
+          isDefault: savedAddresses.length === 0, // First saved address becomes default
+        };
+
+        await GoogleMapsService.saveAddress(savedAddress);
+        await loadSavedAddresses(); // Refresh the list
+        return true;
+      } catch (error) {
+        console.error('Failed to save location:', error);
+        return false;
+      }
+    },
+    [deliveryLocation, savedAddresses.length, loadSavedAddresses]
+  );
 
   // Get default saved address
   const getDefaultSavedAddress = useCallback(() => {
-    return savedAddresses.find(address => address.isDefault) || savedAddresses[0] || null;
+    return (
+      savedAddresses.find(address => address.isDefault) ||
+      savedAddresses[0] ||
+      null
+    );
   }, [savedAddresses]);
 
   // Check if current location is saved
   const isCurrentLocationSaved = useCallback(() => {
     if (!deliveryLocation) return false;
-    return savedAddresses.some(address => 
-      address.location.id === deliveryLocation.id ||
-      (address.location.coordinate && deliveryLocation.coordinate &&
-       Math.abs(address.location.coordinate.latitude - deliveryLocation.coordinate.latitude) < 0.001 &&
-       Math.abs(address.location.coordinate.longitude - deliveryLocation.coordinate.longitude) < 0.001)
+    return savedAddresses.some(
+      address =>
+        address.location.id === deliveryLocation.id ||
+        (address.location.coordinate &&
+          deliveryLocation.coordinate &&
+          Math.abs(
+            address.location.coordinate.latitude -
+              deliveryLocation.coordinate.latitude
+          ) < 0.001 &&
+          Math.abs(
+            address.location.coordinate.longitude -
+              deliveryLocation.coordinate.longitude
+          ) < 0.001)
     );
   }, [deliveryLocation, savedAddresses]);
 
@@ -121,19 +147,24 @@ export const useDeliveryLocation = () => {
     const loadData = async () => {
       try {
         // Load preferences
-        const storedPreferences = await AsyncStorage.getItem(LOCATION_PREFERENCES_KEY);
+        const storedPreferences = await AsyncStorage.getItem(
+          LOCATION_PREFERENCES_KEY
+        );
         if (storedPreferences) {
           const parsedPreferences = JSON.parse(storedPreferences);
-          setLocationPreferences({ ...defaultPreferences, ...parsedPreferences });
+          setLocationPreferences({
+            ...defaultPreferences,
+            ...parsedPreferences,
+          });
         }
-        
+
         // Load saved addresses
         await loadSavedAddresses();
       } catch (error) {
         console.error('Failed to load location data:', error);
       }
     };
-    
+
     loadData();
   }, [loadSavedAddresses]);
 
@@ -151,7 +182,10 @@ export const useDeliveryLocation = () => {
     locationPreferences,
     setLocationPreferences: async (prefs: LocationPreferences) => {
       setLocationPreferences(prefs);
-      await AsyncStorage.setItem(LOCATION_PREFERENCES_KEY, JSON.stringify(prefs));
+      await AsyncStorage.setItem(
+        LOCATION_PREFERENCES_KEY,
+        JSON.stringify(prefs)
+      );
     },
   };
 };

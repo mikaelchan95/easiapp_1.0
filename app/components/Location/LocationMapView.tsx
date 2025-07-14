@@ -1,6 +1,19 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, StyleSheet, Dimensions, Text, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
-import MapView, { Marker, Region, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
+import {
+  View,
+  StyleSheet,
+  Dimensions,
+  Text,
+  ActivityIndicator,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
+import MapView, {
+  Marker,
+  Region,
+  Circle,
+  PROVIDER_GOOGLE,
+} from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
@@ -14,43 +27,51 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
   region,
   onRegionChange,
   onPinDrop,
-  selectedCoordinate
+  selectedCoordinate,
 }) => {
   const mapRef = useRef<MapView>(null);
   const [currentRegion, setCurrentRegion] = useState<Region>(region);
   const [mapError, setMapError] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
-  const [userLocation, setUserLocation] = useState<LocationCoordinate | null>(null);
+  const [userLocation, setUserLocation] = useState<LocationCoordinate | null>(
+    null
+  );
 
   // Request location permissions and get user location - skip for now
   // We'll handle location in GoogleMapsService instead
-  
+
   // Handle region change
-  const handleRegionChange = useCallback((newRegion: Region) => {
-    setCurrentRegion(newRegion);
-    if (onRegionChange) {
-      onRegionChange(newRegion);
-    }
-  }, [onRegionChange]);
+  const handleRegionChange = useCallback(
+    (newRegion: Region) => {
+      setCurrentRegion(newRegion);
+      if (onRegionChange) {
+        onRegionChange(newRegion);
+      }
+    },
+    [onRegionChange]
+  );
 
   // Handle map press to drop pin
-  const handleMapPress = useCallback(async (event: any) => {
-    const coordinate: LocationCoordinate = {
-      latitude: event.nativeEvent.coordinate.latitude,
-      longitude: event.nativeEvent.coordinate.longitude,
-    };
+  const handleMapPress = useCallback(
+    async (event: any) => {
+      const coordinate: LocationCoordinate = {
+        latitude: event.nativeEvent.coordinate.latitude,
+        longitude: event.nativeEvent.coordinate.longitude,
+      };
 
-    // Provide haptic feedback
-    try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    } catch (error) {
-      // Haptics might not be available on all devices
-    }
+      // Provide haptic feedback
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } catch (error) {
+        // Haptics might not be available on all devices
+      }
 
-    if (onPinDrop) {
-      onPinDrop(coordinate);
-    }
-  }, [onPinDrop]);
+      if (onPinDrop) {
+        onPinDrop(coordinate);
+      }
+    },
+    [onPinDrop]
+  );
 
   // Handle zoom to current location
   const handleZoomToLocation = useCallback(() => {
@@ -78,9 +99,10 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
         <Ionicons name="map-outline" size={48} color={COLORS.textSecondary} />
         <Text style={styles.fallbackTitle}>Map Unavailable</Text>
         <Text style={styles.fallbackText}>
-          Unable to load the map. Please check your internet connection and try again.
+          Unable to load the map. Please check your internet connection and try
+          again.
         </Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.fallbackButton}
           onPress={() => setMapError(false)}
         >
@@ -98,7 +120,7 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
           <Text style={styles.loadingText}>Loading map...</Text>
         </View>
       )}
-      
+
       <MapView
         ref={mapRef}
         style={styles.map}
@@ -126,26 +148,35 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
         }}
       >
         {/* Delivery zones as circles */}
-        {isMapReady && GOOGLE_MAPS_CONFIG.deliveryZones.map((zone, index) => (
-          <React.Fragment key={`zone_${index}`}>
-            {/* Zone circle overlay */}
-            <Circle
-              center={zone.center}
-              radius={zone.radius * 1000} // Convert km to meters
-              strokeColor={zone.specialPricing ? '#000000' : '#333333'}
-              strokeWidth={1}
-              fillColor={zone.specialPricing ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.05)'}
-            />
-            
-            {/* Zone center marker */}
-            <Marker
-              coordinate={zone.center}
-              title={zone.name}
-              description={zone.specialPricing ? 'Special delivery area' : 'Delivery available'}
-              pinColor={zone.specialPricing ? '#000000' : '#333333'}
-            />
-          </React.Fragment>
-        ))}
+        {isMapReady &&
+          GOOGLE_MAPS_CONFIG.deliveryZones.map((zone, index) => (
+            <React.Fragment key={`zone_${index}`}>
+              {/* Zone circle overlay */}
+              <Circle
+                center={zone.center}
+                radius={zone.radius * 1000} // Convert km to meters
+                strokeColor={zone.specialPricing ? '#000000' : '#333333'}
+                strokeWidth={1}
+                fillColor={
+                  zone.specialPricing
+                    ? 'rgba(0, 0, 0, 0.1)'
+                    : 'rgba(0, 0, 0, 0.05)'
+                }
+              />
+
+              {/* Zone center marker */}
+              <Marker
+                coordinate={zone.center}
+                title={zone.name}
+                description={
+                  zone.specialPricing
+                    ? 'Special delivery area'
+                    : 'Delivery available'
+                }
+                pinColor={zone.specialPricing ? '#000000' : '#333333'}
+              />
+            </React.Fragment>
+          ))}
 
         {/* Selected location marker */}
         {selectedCoordinate && (
@@ -165,25 +196,29 @@ const LocationMapView: React.FC<LocationMapViewProps> = ({
       {/* Map controls overlay */}
       <View style={styles.controlsOverlay}>
         {/* My Location Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.myLocationButton}
           onPress={handleZoomToLocation}
         >
-          <Ionicons 
-            name="locate" 
-            size={24} 
-            color={COLORS.primary}
-          />
+          <Ionicons name="locate" size={24} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
 
       {/* Instructions overlay */}
       <View style={styles.instructionsOverlay}>
         <View style={styles.instructionCard}>
-          <Ionicons name="information-circle" size={16} color={COLORS.primary} />
+          <Ionicons
+            name="information-circle"
+            size={16}
+            color={COLORS.primary}
+          />
           <View style={styles.instructionText}>
-            <Text style={styles.instructionTitle}>Tap anywhere to drop a pin</Text>
-            <Text style={styles.instructionSubtitle}>Dark areas show delivery zones</Text>
+            <Text style={styles.instructionTitle}>
+              Tap anywhere to drop a pin
+            </Text>
+            <Text style={styles.instructionSubtitle}>
+              Dark areas show delivery zones
+            </Text>
           </View>
         </View>
       </View>

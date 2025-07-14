@@ -24,28 +24,32 @@ class BiometricService {
     try {
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-      const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      const supportedTypes =
+        await LocalAuthentication.supportedAuthenticationTypesAsync();
 
       console.log('🔐 Biometric capabilities:', {
         hasHardware,
         isEnrolled,
-        supportedTypes: supportedTypes.map(type => 
-          type === LocalAuthentication.AuthenticationType.FINGERPRINT ? 'Fingerprint' :
-          type === LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION ? 'Face ID' : 'Unknown'
-        )
+        supportedTypes: supportedTypes.map(type =>
+          type === LocalAuthentication.AuthenticationType.FINGERPRINT
+            ? 'Fingerprint'
+            : type === LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION
+              ? 'Face ID'
+              : 'Unknown'
+        ),
       });
 
       return {
         hasHardware,
         isEnrolled,
-        supportedTypes
+        supportedTypes,
       };
     } catch (error) {
       console.error('❌ Error checking biometric capabilities:', error);
       return {
         hasHardware: false,
         isEnrolled: false,
-        supportedTypes: []
+        supportedTypes: [],
       };
     }
   }
@@ -63,7 +67,9 @@ class BiometricService {
    */
   async isBiometricEnabled(): Promise<boolean> {
     try {
-      const enabled = await AsyncStorage.getItem(BiometricService.BIOMETRIC_ENABLED_KEY);
+      const enabled = await AsyncStorage.getItem(
+        BiometricService.BIOMETRIC_ENABLED_KEY
+      );
       return enabled === 'true';
     } catch (error) {
       console.error('❌ Error checking biometric enabled status:', error);
@@ -76,8 +82,14 @@ class BiometricService {
    */
   async setBiometricEnabled(enabled: boolean): Promise<void> {
     try {
-      await AsyncStorage.setItem(BiometricService.BIOMETRIC_ENABLED_KEY, enabled.toString());
-      console.log('✅ Biometric authentication', enabled ? 'enabled' : 'disabled');
+      await AsyncStorage.setItem(
+        BiometricService.BIOMETRIC_ENABLED_KEY,
+        enabled.toString()
+      );
+      console.log(
+        '✅ Biometric authentication',
+        enabled ? 'enabled' : 'disabled'
+      );
     } catch (error) {
       console.error('❌ Error setting biometric enabled status:', error);
     }
@@ -91,9 +103,12 @@ class BiometricService {
       const credentials = {
         email,
         encryptedData,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
-      await AsyncStorage.setItem(BiometricService.STORED_CREDENTIALS_KEY, JSON.stringify(credentials));
+      await AsyncStorage.setItem(
+        BiometricService.STORED_CREDENTIALS_KEY,
+        JSON.stringify(credentials)
+      );
       console.log('✅ Credentials stored for biometric authentication');
     } catch (error) {
       console.error('❌ Error storing credentials:', error);
@@ -103,15 +118,20 @@ class BiometricService {
   /**
    * Get stored credentials for biometric authentication
    */
-  async getStoredCredentials(): Promise<{ email: string; encryptedData: string } | null> {
+  async getStoredCredentials(): Promise<{
+    email: string;
+    encryptedData: string;
+  } | null> {
     try {
-      const stored = await AsyncStorage.getItem(BiometricService.STORED_CREDENTIALS_KEY);
+      const stored = await AsyncStorage.getItem(
+        BiometricService.STORED_CREDENTIALS_KEY
+      );
       if (!stored) return null;
-      
+
       const credentials = JSON.parse(stored);
       return {
         email: credentials.email,
-        encryptedData: credentials.encryptedData
+        encryptedData: credentials.encryptedData,
       };
     } catch (error) {
       console.error('❌ Error retrieving stored credentials:', error);
@@ -134,14 +154,16 @@ class BiometricService {
   /**
    * Authenticate using biometrics
    */
-  async authenticate(promptMessage: string = 'Authenticate to access your account'): Promise<BiometricAuthResult> {
+  async authenticate(
+    promptMessage: string = 'Authenticate to access your account'
+  ): Promise<BiometricAuthResult> {
     try {
       // Check if biometric authentication is available
       const isAvailable = await this.isBiometricAvailable();
       if (!isAvailable) {
         return {
           success: false,
-          error: 'Biometric authentication is not available on this device'
+          error: 'Biometric authentication is not available on this device',
         };
       }
 
@@ -150,14 +172,18 @@ class BiometricService {
       if (!isEnabled) {
         return {
           success: false,
-          error: 'Biometric authentication is not enabled'
+          error: 'Biometric authentication is not enabled',
         };
       }
 
       // Get supported authentication types for custom prompt
       const capabilities = await this.checkBiometricCapabilities();
-      const hasFingerprint = capabilities.supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT);
-      const hasFaceID = capabilities.supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION);
+      const hasFingerprint = capabilities.supportedTypes.includes(
+        LocalAuthentication.AuthenticationType.FINGERPRINT
+      );
+      const hasFaceID = capabilities.supportedTypes.includes(
+        LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION
+      );
 
       let customPrompt = promptMessage;
       if (hasFaceID) {
@@ -181,14 +207,14 @@ class BiometricService {
         console.log('❌ Biometric authentication failed:', result.error);
         return {
           success: false,
-          error: result.error || 'Authentication failed'
+          error: result.error || 'Authentication failed',
         };
       }
     } catch (error) {
       console.error('❌ Error during biometric authentication:', error);
       return {
         success: false,
-        error: 'An error occurred during authentication'
+        error: 'An error occurred during authentication',
       };
     }
   }
@@ -198,10 +224,18 @@ class BiometricService {
    */
   async getBiometricTypeName(): Promise<string> {
     const capabilities = await this.checkBiometricCapabilities();
-    
-    if (capabilities.supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+
+    if (
+      capabilities.supportedTypes.includes(
+        LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION
+      )
+    ) {
       return 'Face ID';
-    } else if (capabilities.supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+    } else if (
+      capabilities.supportedTypes.includes(
+        LocalAuthentication.AuthenticationType.FINGERPRINT
+      )
+    ) {
       return 'Fingerprint';
     } else {
       return 'Biometric Authentication';
@@ -218,12 +252,14 @@ class BiometricService {
       if (!isAvailable) {
         return {
           success: false,
-          error: 'Biometric authentication is not available on this device'
+          error: 'Biometric authentication is not available on this device',
         };
       }
 
       // Test biometric authentication
-      const authResult = await this.authenticate('Set up biometric authentication for EASI');
+      const authResult = await this.authenticate(
+        'Set up biometric authentication for EASI'
+      );
       if (!authResult.success) {
         return authResult;
       }
@@ -237,7 +273,7 @@ class BiometricService {
       console.error('❌ Error setting up biometric authentication:', error);
       return {
         success: false,
-        error: 'Failed to set up biometric authentication'
+        error: 'Failed to set up biometric authentication',
       };
     }
   }

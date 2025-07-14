@@ -45,10 +45,10 @@ export default function InvoiceViewer() {
   const navigation = useNavigation();
   const route = useRoute();
   const insets = useSafeAreaInsets();
-  
+
   // Get invoiceId from route params
   const { invoiceId } = route.params as { invoiceId: string };
-  
+
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -57,48 +57,50 @@ export default function InvoiceViewer() {
     id: invoiceId,
     invoiceNumber: invoiceId,
     companyName: 'EASI Solutions Pte Ltd',
-    companyAddress: '123 Business Ave, #12-34\nSingapore 123456\nGST: 123456789M',
+    companyAddress:
+      '123 Business Ave, #12-34\nSingapore 123456\nGST: 123456789M',
     issueDate: '2024-12-15',
     dueDate: '2025-01-14',
     status: 'sent',
     paymentTerms: 'NET 30',
     creditTerms: 'Company Credit Account',
-    notes: 'Thank you for your business. Payment is due within 30 days of invoice date.',
+    notes:
+      'Thank you for your business. Payment is due within 30 days of invoice date.',
     lineItems: [
       {
         id: '1',
         description: 'Industrial Equipment Order #ORD-2024-001234',
         quantity: 15,
-        unitPrice: 245.00,
-        total: 3675.00,
-        date: '2024-12-01'
+        unitPrice: 245.0,
+        total: 3675.0,
+        date: '2024-12-01',
       },
       {
         id: '2',
         description: 'Premium Tools Package #ORD-2024-001235',
         quantity: 8,
-        unitPrice: 189.50,
-        total: 1516.00,
-        date: '2024-12-03'
+        unitPrice: 189.5,
+        total: 1516.0,
+        date: '2024-12-03',
       },
       {
         id: '3',
         description: 'Safety Equipment Bulk Order #ORD-2024-001236',
         quantity: 25,
-        unitPrice: 67.80,
-        total: 1695.00,
-        date: '2024-12-05'
+        unitPrice: 67.8,
+        total: 1695.0,
+        date: '2024-12-05',
       },
       {
         id: '4',
         description: 'Maintenance Supplies #ORD-2024-001237',
         quantity: 12,
         unitPrice: 134.25,
-        total: 1611.00,
-        date: '2024-12-08'
+        total: 1611.0,
+        date: '2024-12-08',
       },
     ],
-    subtotal: 8497.00,
+    subtotal: 8497.0,
     tax: 679.76,
     total: 9176.76,
   };
@@ -184,29 +186,25 @@ export default function InvoiceViewer() {
           text: 'Send',
           onPress: () => {
             Alert.alert('Success', 'Payment reminder sent successfully');
-          }
-        }
+          },
+        },
       ]
     );
   };
 
   const handleMarkAsPaid = () => {
-    Alert.alert(
-      'Mark as Paid',
-      'Mark this invoice as paid?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Mark Paid',
-          onPress: () => {
-            if (invoice) {
-              setInvoice({ ...invoice, status: 'paid' });
-              Alert.alert('Success', 'Invoice marked as paid');
-            }
+    Alert.alert('Mark as Paid', 'Mark this invoice as paid?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Mark Paid',
+        onPress: () => {
+          if (invoice) {
+            setInvoice({ ...invoice, status: 'paid' });
+            Alert.alert('Success', 'Invoice marked as paid');
           }
-        }
-      ]
-    );
+        },
+      },
+    ]);
   };
 
   if (loading) {
@@ -221,9 +219,16 @@ export default function InvoiceViewer() {
   if (!invoice) {
     return (
       <View style={styles.errorContainer}>
-        <Ionicons name="document-outline" size={48} color={theme.colors.text.secondary} />
+        <Ionicons
+          name="document-outline"
+          size={48}
+          color={theme.colors.text.secondary}
+        />
         <Text style={styles.errorText}>Invoice not found</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
@@ -232,23 +237,39 @@ export default function InvoiceViewer() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.canvas} />
-      
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={theme.colors.canvas}
+      />
+
       {/* Header */}
       <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.headerBackButton} 
+          <TouchableOpacity
+            style={styles.headerBackButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
+            <Ionicons
+              name="chevron-back"
+              size={24}
+              color={theme.colors.text.primary}
+            />
           </TouchableOpacity>
           <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Invoice {invoice.invoiceNumber}</Text>
+            <Text style={styles.headerTitle}>
+              Invoice {invoice.invoiceNumber}
+            </Text>
             <Text style={styles.headerSubtitle}>{invoice.companyName}</Text>
           </View>
-          <TouchableOpacity style={styles.shareButton} onPress={handleShareInvoice}>
-            <Ionicons name="share-outline" size={24} color={theme.colors.text.primary} />
+          <TouchableOpacity
+            style={styles.shareButton}
+            onPress={handleShareInvoice}
+          >
+            <Ionicons
+              name="share-outline"
+              size={24}
+              color={theme.colors.text.primary}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -258,12 +279,21 @@ export default function InvoiceViewer() {
         <View style={styles.invoiceHeader}>
           <View style={styles.invoiceHeaderLeft}>
             <Text style={styles.invoiceNumber}>{invoice.invoiceNumber}</Text>
-            <Text style={styles.invoiceDate}>Issue Date: {invoice.issueDate}</Text>
+            <Text style={styles.invoiceDate}>
+              Issue Date: {invoice.issueDate}
+            </Text>
             <Text style={styles.invoiceDate}>Due Date: {invoice.dueDate}</Text>
           </View>
           <View style={styles.invoiceHeaderRight}>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(invoice.status) }]}>
-              <Text style={styles.statusText}>{getStatusText(invoice.status)}</Text>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: getStatusColor(invoice.status) },
+              ]}
+            >
+              <Text style={styles.statusText}>
+                {getStatusText(invoice.status)}
+              </Text>
             </View>
           </View>
         </View>
@@ -290,16 +320,24 @@ export default function InvoiceViewer() {
         {/* Line Items */}
         <View style={styles.lineItemsSection}>
           <Text style={styles.sectionTitle}>Items & Services</Text>
-          {invoice.lineItems.map((item) => (
+          {invoice.lineItems.map(item => (
             <View key={item.id} style={styles.lineItem}>
               <View style={styles.lineItemMain}>
-                <Text style={styles.lineItemDescription}>{item.description}</Text>
+                <Text style={styles.lineItemDescription}>
+                  {item.description}
+                </Text>
                 <Text style={styles.lineItemDate}>{item.date}</Text>
               </View>
               <View style={styles.lineItemAmounts}>
-                <Text style={styles.lineItemQuantity}>Qty: {item.quantity}</Text>
-                <Text style={styles.lineItemPrice}>${item.unitPrice.toFixed(2)} ea</Text>
-                <Text style={styles.lineItemTotal}>${item.total.toFixed(2)}</Text>
+                <Text style={styles.lineItemQuantity}>
+                  Qty: {item.quantity}
+                </Text>
+                <Text style={styles.lineItemPrice}>
+                  ${item.unitPrice.toFixed(2)} ea
+                </Text>
+                <Text style={styles.lineItemTotal}>
+                  ${item.total.toFixed(2)}
+                </Text>
               </View>
             </View>
           ))}
@@ -309,7 +347,9 @@ export default function InvoiceViewer() {
         <View style={styles.totalsSection}>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Subtotal</Text>
-            <Text style={styles.totalAmount}>${invoice.subtotal.toFixed(2)}</Text>
+            <Text style={styles.totalAmount}>
+              ${invoice.subtotal.toFixed(2)}
+            </Text>
           </View>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Tax (8%)</Text>
@@ -317,7 +357,9 @@ export default function InvoiceViewer() {
           </View>
           <View style={[styles.totalRow, styles.grandTotalRow]}>
             <Text style={styles.grandTotalLabel}>Total</Text>
-            <Text style={styles.grandTotalAmount}>${invoice.total.toFixed(2)}</Text>
+            <Text style={styles.grandTotalAmount}>
+              ${invoice.total.toFixed(2)}
+            </Text>
           </View>
         </View>
 
@@ -329,20 +371,41 @@ export default function InvoiceViewer() {
 
         {/* Action Buttons */}
         <View style={styles.actionsSection}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleDownloadPDF}>
-            <Ionicons name="download-outline" size={20} color={theme.colors.text.primary} />
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleDownloadPDF}
+          >
+            <Ionicons
+              name="download-outline"
+              size={20}
+              color={theme.colors.text.primary}
+            />
             <Text style={styles.actionButtonText}>Download PDF</Text>
           </TouchableOpacity>
 
           {invoice.status !== 'paid' && (
             <>
-              <TouchableOpacity style={styles.actionButton} onPress={handleSendReminder}>
-                <Ionicons name="mail-outline" size={20} color={theme.colors.text.primary} />
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleSendReminder}
+              >
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color={theme.colors.text.primary}
+                />
                 <Text style={styles.actionButtonText}>Send Reminder</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.primaryActionButton} onPress={handleMarkAsPaid}>
-                <Ionicons name="checkmark" size={20} color={theme.colors.canvas} />
+              <TouchableOpacity
+                style={styles.primaryActionButton}
+                onPress={handleMarkAsPaid}
+              >
+                <Ionicons
+                  name="checkmark"
+                  size={20}
+                  color={theme.colors.canvas}
+                />
                 <Text style={styles.primaryActionButtonText}>Mark as Paid</Text>
               </TouchableOpacity>
             </>

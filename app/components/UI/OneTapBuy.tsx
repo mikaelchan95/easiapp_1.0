@@ -7,7 +7,7 @@ import {
   Animated,
   ViewStyle,
   StyleProp,
-  Dimensions
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -29,16 +29,18 @@ const OneTapBuy: React.FC<OneTapBuyProps> = ({
   productName,
   price,
   style,
-  onSuccess
+  onSuccess,
 }) => {
-  const [currentStep, setCurrentStep] = useState<'initial' | 'confirm' | 'processing' | 'success'>('initial');
+  const [currentStep, setCurrentStep] = useState<
+    'initial' | 'confirm' | 'processing' | 'success'
+  >('initial');
   const navigation = useNavigation();
-  
+
   // Animation values
   const progressAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const successAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Handle initial tap - move to confirm state
   const handleTap = () => {
     if (currentStep === 'initial') {
@@ -48,44 +50,44 @@ const OneTapBuy: React.FC<OneTapBuyProps> = ({
           toValue: 0.95,
           duration: 100,
           useNativeDriver: true,
-          easing: Animations.TIMING.easeOut
+          easing: Animations.TIMING.easeOut,
         }),
         Animated.spring(scaleAnim, {
           toValue: 1,
           friction: 5,
           tension: 300,
-          useNativeDriver: true
-        })
+          useNativeDriver: true,
+        }),
       ]).start();
-      
+
       setCurrentStep('confirm');
     }
   };
-  
+
   // Handle confirm tap - initiate purchase
   const handleConfirm = () => {
     if (currentStep === 'confirm') {
       setCurrentStep('processing');
-      
+
       // Animate progress bar
       Animated.timing(progressAnim, {
         toValue: 1,
         duration: 1500,
         useNativeDriver: false,
-        easing: Animations.TIMING.easeInOut
+        easing: Animations.TIMING.easeInOut,
       }).start(({ finished }) => {
         if (finished) {
           setCurrentStep('success');
-          
+
           // Show success animation
           Animated.sequence([
             Animated.timing(successAnim, {
               toValue: 1,
               duration: 400,
               useNativeDriver: true,
-              easing: Animations.TIMING.easeOut
+              easing: Animations.TIMING.easeOut,
             }),
-            Animated.delay(1500)
+            Animated.delay(1500),
           ]).start(() => {
             // Navigate to cart or order confirmation
             if (onSuccess) onSuccess();
@@ -95,28 +97,28 @@ const OneTapBuy: React.FC<OneTapBuyProps> = ({
       });
     }
   };
-  
+
   // Handle cancel tap - reset to initial state
   const handleCancel = () => {
     if (currentStep === 'confirm') {
       setCurrentStep('initial');
-      
+
       // Animate scale reset
       Animated.timing(scaleAnim, {
         toValue: 1,
         duration: 200,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
+        easing: Animations.TIMING.easeOut,
       }).start();
     }
   };
-  
+
   // Interpolate progress width for animation
   const progressWidth = progressAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0%', '100%']
+    outputRange: ['0%', '100%'],
   });
-  
+
   // Render appropriate button content based on current step
   const renderButtonContent = () => {
     switch (currentStep) {
@@ -127,19 +129,21 @@ const OneTapBuy: React.FC<OneTapBuyProps> = ({
             <Text style={styles.buttonText}>Buy Now • ${price.toFixed(0)}</Text>
           </View>
         );
-        
+
       case 'confirm':
         return (
           <View style={styles.confirmContent}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.confirmButton}
               onPress={handleConfirm}
               activeOpacity={0.8}
             >
-              <Text style={styles.confirmText}>Confirm • ${price.toFixed(0)}</Text>
+              <Text style={styles.confirmText}>
+                Confirm • ${price.toFixed(0)}
+              </Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.cancelButton}
               onPress={handleCancel}
               activeOpacity={0.8}
@@ -148,61 +152,58 @@ const OneTapBuy: React.FC<OneTapBuyProps> = ({
             </TouchableOpacity>
           </View>
         );
-        
+
       case 'processing':
         return (
           <View style={styles.processingContent}>
             <Text style={styles.processingText}>Processing Order...</Text>
             <View style={styles.progressContainer}>
-              <Animated.View 
-                style={[
-                  styles.progressBar,
-                  { width: progressWidth }
-                ]}
+              <Animated.View
+                style={[styles.progressBar, { width: progressWidth }]}
               />
             </View>
           </View>
         );
-        
+
       case 'success':
         return (
-          <Animated.View 
+          <Animated.View
             style={[
               styles.successContent,
-              { 
+              {
                 opacity: successAnim,
                 transform: [
-                  { 
+                  {
                     scale: successAnim.interpolate({
                       inputRange: [0, 0.5, 1],
-                      outputRange: [0.8, 1.1, 1]
-                    })
-                  }
-                ]
-              }
+                      outputRange: [0.8, 1.1, 1],
+                    }),
+                  },
+                ],
+              },
             ]}
           >
             <View style={styles.successIconContainer}>
-              <Ionicons name="checkmark-circle" size={32} color={COLORS.success} />
+              <Ionicons
+                name="checkmark-circle"
+                size={32}
+                color={COLORS.success}
+              />
             </View>
             <Text style={styles.successText}>Order Confirmed!</Text>
           </Animated.View>
         );
     }
   };
-  
+
   return (
-    <Animated.View 
-      style={[
-        styles.container,
-        { transform: [{ scale: scaleAnim }] },
-        style
-      ]}
+    <Animated.View
+      style={[styles.container, { transform: [{ scale: scaleAnim }] }, style]}
     >
       <TouchableOpacity
         style={[
           styles.button,
-          currentStep !== 'initial' && styles.buttonActive
+          currentStep !== 'initial' && styles.buttonActive,
         ]}
         onPress={handleTap}
         disabled={currentStep !== 'initial'}
@@ -321,7 +322,7 @@ const styles = StyleSheet.create({
     color: COLORS.accent,
     fontSize: 16,
     fontWeight: '700',
-  }
+  },
 });
 
-export default OneTapBuy; 
+export default OneTapBuy;

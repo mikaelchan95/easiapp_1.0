@@ -17,14 +17,14 @@ export type RootStackParamList = {
   Products: undefined;
   Cart: undefined;
   Checkout: undefined;
-  
+
   // New individual checkout screens
   CheckoutAddress: undefined;
   CheckoutDelivery: undefined;
   CheckoutPayment: undefined;
   CheckoutReview: undefined;
   CheckoutProcessing: undefined;
-  
+
   // Enhanced checkout screens
   CheckoutValidation: {
     cartItems: Array<{ product: any; quantity: number }>;
@@ -41,13 +41,13 @@ export type RootStackParamList = {
   OrderApprovalStatus: {
     orderId: string;
   };
-  
+
   // Notification screens
   NotificationCenter: undefined;
   NotificationDetail: {
     notificationId: string;
   };
-  
+
   Profile: { highlightRecentOrder?: boolean };
   Rewards: undefined;
   Activities: undefined;
@@ -99,7 +99,7 @@ export type RootStackParamList = {
   OrderApprovalList: {
     filter?: 'pending' | 'history' | 'all';
   };
-  OrderApprovalDetail: { 
+  OrderApprovalDetail: {
     orderId: string;
     approvalId?: string;
   };
@@ -110,32 +110,32 @@ export type RootStackParamList = {
   ApprovalHistory: {
     filter?: 'approved' | 'rejected' | 'all';
   };
-  
+
   // Billing-related screens
-  BillingDashboard: { 
-    companyId?: string; 
-    companyName?: string; 
+  BillingDashboard: {
+    companyId?: string;
+    companyName?: string;
   };
-  BillingSettings: { 
-    companyId?: string; 
-    companyName?: string; 
+  BillingSettings: {
+    companyId?: string;
+    companyName?: string;
   };
   InvoiceGeneration: undefined;
-  InvoiceViewer: { 
-    invoiceId?: string; 
+  InvoiceViewer: {
+    invoiceId?: string;
   };
   InvoicesList: {
     companyId?: string;
     status?: 'pending' | 'paid' | 'overdue' | 'all';
   };
-  InvoiceDetail: { 
-    invoiceId: string; 
+  InvoiceDetail: {
+    invoiceId: string;
   };
   PaymentHistory: {
     companyId?: string;
   };
-  PaymentDetail: { 
-    paymentId: string; 
+  PaymentDetail: {
+    paymentId: string;
   };
   CompanyCreditOverview: {
     companyId?: string;
@@ -153,7 +153,7 @@ export type RootStackParamList = {
     paymentAmount: number;
     allocationStrategy: 'oldest_first' | 'largest_first' | 'manual';
   };
-  
+
   // Admin screens
   AdminBillingDashboard: undefined;
   CompanyBillingManager: {
@@ -181,7 +181,12 @@ export type AppStackParamList = {
   Rewards: undefined;
   Profile: undefined;
   ProductDetail: { productId: string };
-  OrderSuccess: { orderId: string; deliveryDate: string; deliveryTime: string; total?: number };
+  OrderSuccess: {
+    orderId: string;
+    deliveryDate: string;
+    deliveryTime: string;
+    total?: number;
+  };
   OrderTracking: { orderId: string };
   SmartSearch: undefined;
   ThemeShowcase: undefined;
@@ -223,7 +228,7 @@ export type AppStackParamList = {
   OrderApprovalList: {
     filter?: 'pending' | 'history' | 'all';
   };
-  OrderApprovalDetail: { 
+  OrderApprovalDetail: {
     orderId: string;
     approvalId?: string;
   };
@@ -234,32 +239,32 @@ export type AppStackParamList = {
   ApprovalHistory: {
     filter?: 'approved' | 'rejected' | 'all';
   };
-  
+
   // Billing-related screens
-  BillingDashboard: { 
-    companyId?: string; 
-    companyName?: string; 
+  BillingDashboard: {
+    companyId?: string;
+    companyName?: string;
   };
-  BillingSettings: { 
-    companyId?: string; 
-    companyName?: string; 
+  BillingSettings: {
+    companyId?: string;
+    companyName?: string;
   };
   InvoiceGeneration: undefined;
-  InvoiceViewer: { 
-    invoiceId?: string; 
+  InvoiceViewer: {
+    invoiceId?: string;
   };
   InvoicesList: {
     companyId?: string;
     status?: 'pending' | 'paid' | 'overdue' | 'all';
   };
-  InvoiceDetail: { 
-    invoiceId: string; 
+  InvoiceDetail: {
+    invoiceId: string;
   };
   PaymentHistory: {
     companyId?: string;
   };
-  PaymentDetail: { 
-    paymentId: string; 
+  PaymentDetail: {
+    paymentId: string;
   };
   CompanyCreditOverview: {
     companyId?: string;
@@ -277,7 +282,7 @@ export type AppStackParamList = {
     paymentAmount: number;
     allocationStrategy: 'oldest_first' | 'largest_first' | 'manual';
   };
-  
+
   // Admin screens
   AdminBillingDashboard: undefined;
   CompanyBillingManager: {
@@ -299,4 +304,4 @@ declare global {
   namespace ReactNavigation {
     interface RootParamList extends RootStackParamList {}
   }
-} 
+}

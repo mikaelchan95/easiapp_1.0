@@ -7,7 +7,7 @@ export const COLORS = {
   // Primary colors - following workspace rules
   primary: '#000000', // Black for interactive elements
   accent: '#FFFFFF', // White
-  
+
   // UI colors - strictly following workspace rules
   background: 'hsl(0, 0%, 98%)', // Frame background (very light gray)
   card: 'hsl(0, 0%, 100%)', // Canvas white for all cards/panels/containers
@@ -16,26 +16,26 @@ export const COLORS = {
   border: 'hsl(0, 0%, 90%)', // Borders & dividers (subtle light gray)
   placeholder: 'hsl(0, 0%, 40%)', // Placeholder text
   inactive: 'hsl(0, 0%, 45%)', // Inactive elements
-  
+
   // Interactive states - following workspace rules
   buttonBg: 'hsl(0, 0%, 0%)', // Black button background
   buttonText: 'hsl(0, 0%, 100%)', // White button text
   buttonHover: 'hsl(0, 0%, 10%)', // 10% lightness for hover
   buttonActive: 'hsl(0, 0%, 20%)', // 20% lightness for active
-  
+
   // Status colors
   success: '#4CAF50',
   error: '#F44336',
   warning: '#FF9800',
   info: '#2196F3',
-  
+
   // Status background colors
   successBackground: '#E8F5E8',
   errorBackground: '#FFEBEE',
   warningBackground: '#FFF3E0',
   infoBackground: '#E3F2FD',
   primaryBackground: '#F5F5F5',
-  
+
   // Legacy support
   secondary: '#333333',
   badgeBackground: '#000000',
@@ -90,23 +90,23 @@ export const SPACING = {
  */
 export const FONT_SIZES = {
   // Headings
-  h1: 28,      // Large titles, hero text
-  h2: 24,      // Section headers, page titles
-  h3: 20,      // Subsection headers
-  h4: 18,      // Card titles, important labels
-  h5: 16,      // Standard headings
-  h6: 14,      // Small headings
-  
+  h1: 28, // Large titles, hero text
+  h2: 24, // Section headers, page titles
+  h3: 20, // Subsection headers
+  h4: 18, // Card titles, important labels
+  h5: 16, // Standard headings
+  h6: 14, // Small headings
+
   // Body text
-  body: 16,    // Main body text, standard reading
+  body: 16, // Main body text, standard reading
   bodySmall: 14, // Secondary body text
-  
+
   // UI elements
-  button: 16,  // Button text
+  button: 16, // Button text
   buttonSmall: 14, // Small button text
   caption: 14, // Captions, help text
-  label: 12,   // Labels, metadata
-  tiny: 10,    // Badges, very small text
+  label: 12, // Labels, metadata
+  tiny: 10, // Badges, very small text
 };
 
 /**
@@ -163,7 +163,7 @@ export const TYPOGRAPHY = {
     color: COLORS.text,
     lineHeight: FONT_SIZES.h6 * 1.2,
   },
-  
+
   // Body text - for main content
   body: {
     fontSize: FONT_SIZES.body,
@@ -177,7 +177,7 @@ export const TYPOGRAPHY = {
     color: COLORS.text,
     lineHeight: FONT_SIZES.bodySmall * 1.4,
   },
-  
+
   // UI elements
   button: {
     fontSize: FONT_SIZES.button,
@@ -191,7 +191,7 @@ export const TYPOGRAPHY = {
     color: COLORS.text,
     lineHeight: FONT_SIZES.buttonSmall * 1.2,
   },
-  
+
   // Secondary text
   caption: {
     fontSize: FONT_SIZES.caption,
@@ -211,7 +211,7 @@ export const TYPOGRAPHY = {
     color: COLORS.textSecondary,
     lineHeight: FONT_SIZES.tiny * 1.3,
   },
-  
+
   // Deprecated - keeping for backward compatibility
   small: {
     fontSize: FONT_SIZES.label,
@@ -250,4 +250,4 @@ export const theme = {
   typography: TYPOGRAPHY,
   fontSizes: FONT_SIZES,
   fontWeights: FONT_WEIGHTS,
-}; 
+};

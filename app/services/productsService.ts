@@ -57,18 +57,24 @@ const getSupabaseStorageUrl = (path: string): string => {
 };
 
 // Transform database product to app Product format
-const transformDatabaseProductToProduct = (dbProduct: DatabaseProduct): Product => {
-  const finalImageUrl = dbProduct.image_url ? (dbProduct.image_url.startsWith('http') ? dbProduct.image_url : getSupabaseStorageUrl(dbProduct.image_url)) : null;
-  
+const transformDatabaseProductToProduct = (
+  dbProduct: DatabaseProduct
+): Product => {
+  const finalImageUrl = dbProduct.image_url
+    ? dbProduct.image_url.startsWith('http')
+      ? dbProduct.image_url
+      : getSupabaseStorageUrl(dbProduct.image_url)
+    : null;
+
   // Debug logging for image URL transformation (dev only)
   if (__DEV__) {
     console.log(`Transform product ${dbProduct.name}:`, {
       originalImageUrl: dbProduct.image_url,
       finalImageUrl: finalImageUrl,
-      isAlreadyFullUrl: dbProduct.image_url?.startsWith('http')
+      isAlreadyFullUrl: dbProduct.image_url?.startsWith('http'),
     });
   }
-  
+
   return {
     id: dbProduct.id,
     name: dbProduct.name,
@@ -90,11 +96,14 @@ const transformDatabaseProductToProduct = (dbProduct: DatabaseProduct): Product 
 };
 
 // Helper function to check if a column exists
-const checkColumnExists = async (tableName: string, columnName: string): Promise<boolean> => {
+const checkColumnExists = async (
+  tableName: string,
+  columnName: string
+): Promise<boolean> => {
   try {
     const { data, error } = await supabase.rpc('check_column_exists', {
       table_name: tableName,
-      column_name: columnName
+      column_name: columnName,
     });
     return data === true;
   } catch {
@@ -112,9 +121,7 @@ export const productsService = {
   // Get products with filters
   async getProducts(filters: ProductFilters = {}): Promise<Product[]> {
     try {
-      let query = supabase
-        .from('products')
-        .select('*');
+      let query = supabase.from('products').select('*');
 
       // Add is_active filter (column exists in database)
       query = query.eq('is_active', true);
@@ -129,7 +136,9 @@ export const productsService = {
       }
 
       if (filters.search) {
-        query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%,category.ilike.%${filters.search}%`);
+        query = query.or(
+          `name.ilike.%${filters.search}%,description.ilike.%${filters.search}%,category.ilike.%${filters.search}%`
+        );
       }
 
       if (filters.priceRange) {
@@ -146,18 +155,21 @@ export const productsService = {
       // Apply pagination
       if (filters.limit) {
         if (filters.offset) {
-          query = query.range(filters.offset, filters.offset + filters.limit - 1);
+          query = query.range(
+            filters.offset,
+            filters.offset + filters.limit - 1
+          );
         } else {
           query = query.limit(filters.limit);
         }
       }
 
       const { data: products, error } = await query;
-      
+
       if (error) {
         throw error;
       }
-      
+
       return products ? products.map(transformDatabaseProductToProduct) : [];
     } catch (error) {
       throw error;
@@ -167,14 +179,11 @@ export const productsService = {
   // Get single product by ID
   async getProductById(productId: string): Promise<Product | null> {
     try {
-      let query = supabase
-        .from('products')
-        .select('*')
-        .eq('id', productId);
-      
+      let query = supabase.from('products').select('*').eq('id', productId);
+
       // Don't add is_active filter since the column doesn't exist in the current database
       // When the database is properly set up, uncomment: query = query.eq('is_active', true);
-      
+
       const { data: product, error } = await query.maybeSingle();
 
       if (error) {
@@ -188,12 +197,15 @@ export const productsService = {
   },
 
   // Get products by category
-  async getProductsByCategory(category: string, limit?: number): Promise<Product[]> {
+  async getProductsByCategory(
+    category: string,
+    limit?: number
+  ): Promise<Product[]> {
     return this.getProducts({
       category: category === 'all' ? undefined : category,
       limit,
       sortBy: 'rating',
-      sortOrder: 'desc'
+      sortOrder: 'desc',
     });
   },
 
@@ -203,12 +215,15 @@ export const productsService = {
       featured: true,
       limit,
       sortBy: 'rating',
-      sortOrder: 'desc'
+      sortOrder: 'desc',
     });
   },
 
   // Search products
-  async searchProducts(searchTerm: string, filters: Omit<ProductFilters, 'search'> = {}): Promise<Product[]> {
+  async searchProducts(
+    searchTerm: string,
+    filters: Omit<ProductFilters, 'search'> = {}
+  ): Promise<Product[]> {
     return this.getProducts({
       ...filters,
       search: searchTerm,
@@ -222,10 +237,10 @@ export const productsService = {
         .from('products')
         .select('category')
         .order('category');
-      
+
       // Don't add is_active filter since the column doesn't exist in the current database
       // When the database is properly set up, uncomment: query = query.eq('is_active', true);
-      
+
       const { data: categories, error } = await query;
 
       if (error) {
@@ -233,7 +248,9 @@ export const productsService = {
       }
 
       // Extract unique categories
-      const uniqueCategories = [...new Set(categories?.map(item => item.category) || [])];
+      const uniqueCategories = [
+        ...new Set(categories?.map(item => item.category) || []),
+      ];
       return uniqueCategories;
     } catch (error) {
       // Return default categories on error
@@ -242,16 +259,19 @@ export const productsService = {
   },
 
   // Check product availability
-  async checkProductAvailability(productId: string, quantity: number): Promise<boolean> {
+  async checkProductAvailability(
+    productId: string,
+    quantity: number
+  ): Promise<boolean> {
     try {
       let query = supabase
         .from('products')
         .select('stock_quantity')
         .eq('id', productId);
-      
+
       // Don't add is_active filter since the column doesn't exist in the current database
       // When the database is properly set up, uncomment: query = query.eq('is_active', true);
-      
+
       const { data: product, error } = await query.maybeSingle();
 
       if (error) {
@@ -265,16 +285,18 @@ export const productsService = {
   },
 
   // Get stock info for a product
-  async getProductStock(productId: string): Promise<{ inStock: boolean; quantity: number; lowStock: boolean } | null> {
+  async getProductStock(
+    productId: string
+  ): Promise<{ inStock: boolean; quantity: number; lowStock: boolean } | null> {
     try {
       let query = supabase
         .from('products')
         .select('stock_quantity, low_stock_threshold')
         .eq('id', productId);
-      
+
       // Don't add is_active filter since the column doesn't exist in the current database
       // When the database is properly set up, uncomment: query = query.eq('is_active', true);
-      
+
       const { data: product, error } = await query.maybeSingle();
 
       if (error) {
@@ -304,10 +326,18 @@ export const productsService = {
           schema: 'public',
           table: 'products',
         },
-        (payload) => {
+        payload => {
           // Only log significant changes in development
-          if (__DEV__ && payload.eventType && ['INSERT', 'UPDATE', 'DELETE'].includes(payload.eventType)) {
-            console.log('Product change:', payload.eventType, payload.new?.name || payload.old?.name);
+          if (
+            __DEV__ &&
+            payload.eventType &&
+            ['INSERT', 'UPDATE', 'DELETE'].includes(payload.eventType)
+          ) {
+            console.log(
+              'Product change:',
+              payload.eventType,
+              payload.new?.name || payload.old?.name
+            );
           }
           callback(payload);
         }

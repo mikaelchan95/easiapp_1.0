@@ -15,6 +15,7 @@ Run the schema creation script in your Supabase SQL editor:
 ```
 
 This creates:
+
 - `companies` table for business accounts
 - `users` table for both individual and company users
 - `user_permissions` table for role-based access control
@@ -31,6 +32,7 @@ After creating the tables, run the seed script:
 ```
 
 This populates the database with:
+
 - 2 sample companies (The Winery Tapas Bar, Marina Bay Restaurant Group)
 - 6 sample users (4 company users, 2 individual users)
 - Appropriate permissions for each user role
@@ -49,6 +51,7 @@ If you want to enable profile image uploads:
 ### 1. Enable Email Auth
 
 In your Supabase dashboard:
+
 1. Go to Authentication > Settings
 2. Ensure "Enable email confirmations" is configured as needed
 3. Configure email templates if desired
@@ -58,6 +61,7 @@ In your Supabase dashboard:
 You can create users directly in Supabase or use the seed data:
 
 **Test Accounts:**
+
 - Email: `mikael@thewinery.com.sg` (Company Superadmin)
 - Email: `sarah@thewinery.com.sg` (Company Manager)
 - Email: `jane@example.com` (Individual User)
@@ -67,17 +71,20 @@ You can create users directly in Supabase or use the seed data:
 The app is already configured with:
 
 ### 1. Supabase Client
+
 - Configuration in `app/config/supabase.ts`
 - URL: `https://vqxnkxaeriizizfmqvua.supabase.co`
 - Anon key: Provided in the configuration
 
 ### 2. Service Layer
+
 - Complete service layer in `app/services/supabaseService.ts`
 - Handles all CRUD operations
 - Transforms database types to app types
 - Includes real-time subscriptions
 
 ### 3. Context Integration
+
 - Updated `AppContext` with Supabase methods
 - Authentication functions (`signIn`, `signOut`)
 - Profile update functions (`updateUserProfile`, `updateCompanyProfile`)
@@ -86,22 +93,26 @@ The app is already configured with:
 ## Features Implemented
 
 ### ✅ User Authentication
+
 - Sign in with email/password
 - Automatic session management
 - Sign out functionality
 
 ### ✅ Profile Management
+
 - User profile display and updates
 - Company profile display and updates
 - Role-based permissions
 - Team management interface
 
 ### ✅ Data Synchronization
+
 - Real-time updates via Supabase subscriptions
 - Fallback to mock data for development
 - Proper error handling
 
 ### ✅ Security
+
 - Row Level Security (RLS) policies
 - Role-based access control
 - Secure authentication flow
@@ -109,18 +120,21 @@ The app is already configured with:
 ## Usage Examples
 
 ### Sign In
+
 ```typescript
 const { signIn } = useContext(AppContext);
 const user = await signIn('mikael@thewinery.com.sg', 'password');
 ```
 
 ### Update Profile
+
 ```typescript
 const { updateUserProfile } = useContext(AppContext);
 const success = await updateUserProfile({ name: 'New Name' });
 ```
 
 ### Update Company
+
 ```typescript
 const { updateCompanyProfile } = useContext(AppContext);
 const success = await updateCompanyProfile({ name: 'New Company Name' });
@@ -129,16 +143,19 @@ const success = await updateCompanyProfile({ name: 'New Company Name' });
 ## Testing
 
 ### 1. Authentication Flow
+
 1. Use the AuthScreen component (created but not integrated into navigation)
 2. Try signing in with test credentials
 3. Verify user data loads correctly
 
 ### 2. Profile Updates
+
 1. Navigate to Profile screen
 2. Check that user and company data displays
 3. Test sign out functionality
 
 ### 3. Permissions
+
 1. Sign in as different user types
 2. Verify role-based menu items appear/disappear
 3. Test company management features
@@ -146,11 +163,13 @@ const success = await updateCompanyProfile({ name: 'New Company Name' });
 ## Development vs Production
 
 ### Current State (Development)
+
 - Falls back to mock data if Supabase is unavailable
 - Uses provided Supabase instance
 - All features work with both mock and real data
 
 ### Production Considerations
+
 1. **Environment Variables**: Move Supabase credentials to environment variables
 2. **Error Handling**: Implement proper error boundaries
 3. **Offline Support**: Add offline data caching
@@ -211,4 +230,4 @@ user_permissions
 └── permission flags (various boolean fields)
 ```
 
-The integration is complete and ready for testing! 
+The integration is complete and ready for testing!

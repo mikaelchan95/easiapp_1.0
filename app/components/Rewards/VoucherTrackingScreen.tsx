@@ -8,12 +8,19 @@ import {
   FlatList,
   Modal,
   Alert,
-  StatusBar
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useRewards, VoucherStatus, PointsTransactionType } from '../../context/RewardsContext';
+import {
+  useRewards,
+  VoucherStatus,
+  PointsTransactionType,
+} from '../../context/RewardsContext';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import MobileHeader from '../Layout/MobileHeader';
 import AnimatedButton from '../UI/AnimatedButton';
@@ -25,47 +32,70 @@ interface VoucherCardProps {
   onStatusUpdate?: (redemptionId: string, status: VoucherStatus) => void;
 }
 
-const VoucherCard: React.FC<VoucherCardProps> = ({ voucher, onStatusUpdate }) => {
+const VoucherCard: React.FC<VoucherCardProps> = ({
+  voucher,
+  onStatusUpdate,
+}) => {
   const getStatusColor = (status: VoucherStatus) => {
     // Following workspace rules - using monochrome colors
     switch (status) {
-      case 'confirmed': return COLORS.text; // Black for confirmed
-      case 'pending': return COLORS.textSecondary; // Dark gray for pending
-      case 'expired': return COLORS.inactive; // Gray for expired
-      case 'used': return COLORS.textSecondary; // Dark gray for used
-      default: return COLORS.text;
+      case 'confirmed':
+        return COLORS.text; // Black for confirmed
+      case 'pending':
+        return COLORS.textSecondary; // Dark gray for pending
+      case 'expired':
+        return COLORS.inactive; // Gray for expired
+      case 'used':
+        return COLORS.textSecondary; // Dark gray for used
+      default:
+        return COLORS.text;
     }
   };
 
   const getStatusIcon = (status: VoucherStatus) => {
     switch (status) {
-      case 'confirmed': return 'checkmark-circle-outline';
-      case 'pending': return 'time-outline';
-      case 'expired': return 'close-circle-outline';
-      case 'used': return 'checkmark-done-outline';
-      default: return 'help-circle-outline';
+      case 'confirmed':
+        return 'checkmark-circle-outline';
+      case 'pending':
+        return 'time-outline';
+      case 'expired':
+        return 'close-circle-outline';
+      case 'used':
+        return 'checkmark-done-outline';
+      default:
+        return 'help-circle-outline';
     }
   };
 
   const getStatusBackground = (status: VoucherStatus) => {
     // Subtle background colors following workspace rules
     switch (status) {
-      case 'confirmed': return COLORS.text; // Black background
-      case 'pending': return COLORS.border; // Light gray background
-      case 'expired': return COLORS.inactive; // Gray background
-      case 'used': return COLORS.textSecondary; // Dark gray background
-      default: return COLORS.text;
+      case 'confirmed':
+        return COLORS.text; // Black background
+      case 'pending':
+        return COLORS.border; // Light gray background
+      case 'expired':
+        return COLORS.inactive; // Gray background
+      case 'used':
+        return COLORS.textSecondary; // Dark gray background
+      default:
+        return COLORS.text;
     }
   };
 
   const getStatusTextColor = (status: VoucherStatus) => {
     // Text color for status badges
     switch (status) {
-      case 'confirmed': return COLORS.card; // White text on black
-      case 'pending': return COLORS.text; // Black text on light gray
-      case 'expired': return COLORS.card; // White text on gray
-      case 'used': return COLORS.card; // White text on dark gray
-      default: return COLORS.card;
+      case 'confirmed':
+        return COLORS.card; // White text on black
+      case 'pending':
+        return COLORS.text; // Black text on light gray
+      case 'expired':
+        return COLORS.card; // White text on gray
+      case 'used':
+        return COLORS.card; // White text on dark gray
+      default:
+        return COLORS.card;
     }
   };
 
@@ -73,14 +103,16 @@ const VoucherCard: React.FC<VoucherCardProps> = ({ voucher, onStatusUpdate }) =>
     return new Date(dateString).toLocaleDateString('en-SG', {
       day: 'numeric',
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
   const isExpiringSoon = () => {
     const expiryDate = new Date(voucher.expiryDate);
     const today = new Date();
-    const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const daysUntilExpiry = Math.ceil(
+      (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
     return daysUntilExpiry <= 7 && daysUntilExpiry > 0;
   };
 
@@ -91,21 +123,25 @@ const VoucherCard: React.FC<VoucherCardProps> = ({ voucher, onStatusUpdate }) =>
           <Text style={styles.voucherAmount}>S${voucher.value}</Text>
           <Text style={styles.voucherLabel}>Voucher</Text>
         </View>
-        
+
         <View style={styles.voucherStatus}>
-          <View style={[
-            styles.statusBadge, 
-            { backgroundColor: getStatusBackground(voucher.status) }
-          ]}>
-            <Ionicons 
-              name={getStatusIcon(voucher.status)} 
-              size={14} 
-              color={getStatusTextColor(voucher.status)} 
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: getStatusBackground(voucher.status) },
+            ]}
+          >
+            <Ionicons
+              name={getStatusIcon(voucher.status)}
+              size={14}
+              color={getStatusTextColor(voucher.status)}
             />
-            <Text style={[
-              styles.statusText,
-              { color: getStatusTextColor(voucher.status) }
-            ]}>
+            <Text
+              style={[
+                styles.statusText,
+                { color: getStatusTextColor(voucher.status) },
+              ]}
+            >
               {voucher.status.charAt(0).toUpperCase() + voucher.status.slice(1)}
             </Text>
           </View>
@@ -114,28 +150,52 @@ const VoucherCard: React.FC<VoucherCardProps> = ({ voucher, onStatusUpdate }) =>
 
       <View style={styles.voucherDetails}>
         <Text style={styles.voucherTitle}>{voucher.title}</Text>
-        
+
         <View style={styles.voucherMeta}>
           <View style={styles.metaRow}>
-            <Ionicons name="calendar-outline" size={14} color={COLORS.textSecondary} />
-            <Text style={styles.metaText}>Redeemed: {formatDate(voucher.redeemedDate)}</Text>
+            <Ionicons
+              name="calendar-outline"
+              size={14}
+              color={COLORS.textSecondary}
+            />
+            <Text style={styles.metaText}>
+              Redeemed: {formatDate(voucher.redeemedDate)}
+            </Text>
           </View>
-          
+
           <View style={styles.metaRow}>
-            <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
-            <Text style={styles.metaText}>Expires: {formatDate(voucher.expiryDate)}</Text>
+            <Ionicons
+              name="time-outline"
+              size={14}
+              color={COLORS.textSecondary}
+            />
+            <Text style={styles.metaText}>
+              Expires: {formatDate(voucher.expiryDate)}
+            </Text>
           </View>
-          
+
           {voucher.confirmationCode && (
             <View style={styles.metaRow}>
-              <Ionicons name="receipt-outline" size={14} color={COLORS.textSecondary} />
-              <Text style={styles.metaText}>Code: {voucher.confirmationCode}</Text>
+              <Ionicons
+                name="receipt-outline"
+                size={14}
+                color={COLORS.textSecondary}
+              />
+              <Text style={styles.metaText}>
+                Code: {voucher.confirmationCode}
+              </Text>
             </View>
           )}
-          
+
           <View style={styles.metaRow}>
-            <Ionicons name="star-outline" size={14} color={COLORS.textSecondary} />
-            <Text style={styles.metaText}>{voucher.pointsUsed.toLocaleString()} points used</Text>
+            <Ionicons
+              name="star-outline"
+              size={14}
+              color={COLORS.textSecondary}
+            />
+            <Text style={styles.metaText}>
+              {voucher.pointsUsed.toLocaleString()} points used
+            </Text>
           </View>
         </View>
 
@@ -148,7 +208,9 @@ const VoucherCard: React.FC<VoucherCardProps> = ({ voucher, onStatusUpdate }) =>
 
         {voucher.usedDate && (
           <View style={styles.usedInfo}>
-            <Text style={styles.usedText}>Used on {formatDate(voucher.usedDate)}</Text>
+            <Text style={styles.usedText}>
+              Used on {formatDate(voucher.usedDate)}
+            </Text>
             {voucher.orderId && (
               <Text style={styles.orderText}>Order: {voucher.orderId}</Text>
             )}
@@ -164,35 +226,53 @@ interface MissingPointsCardProps {
   onReport?: () => void;
 }
 
-const MissingPointsCard: React.FC<MissingPointsCardProps> = ({ entry, onReport }) => {
+const MissingPointsCard: React.FC<MissingPointsCardProps> = ({
+  entry,
+  onReport,
+}) => {
   const getStatusColor = (status: string) => {
     // Following workspace rules - using monochrome colors
     switch (status) {
-      case 'resolved': return COLORS.text; // Black for resolved
-      case 'investigating': return COLORS.textSecondary; // Dark gray for investigating
-      case 'reported': return COLORS.text; // Black for reported
-      case 'rejected': return COLORS.inactive; // Gray for rejected
-      default: return COLORS.textSecondary;
+      case 'resolved':
+        return COLORS.text; // Black for resolved
+      case 'investigating':
+        return COLORS.textSecondary; // Dark gray for investigating
+      case 'reported':
+        return COLORS.text; // Black for reported
+      case 'rejected':
+        return COLORS.inactive; // Gray for rejected
+      default:
+        return COLORS.textSecondary;
     }
   };
 
   const getStatusBackground = (status: string) => {
     switch (status) {
-      case 'resolved': return COLORS.text; // Black background
-      case 'investigating': return COLORS.border; // Light gray background
-      case 'reported': return COLORS.textSecondary; // Dark gray background
-      case 'rejected': return COLORS.inactive; // Gray background
-      default: return COLORS.textSecondary;
+      case 'resolved':
+        return COLORS.text; // Black background
+      case 'investigating':
+        return COLORS.border; // Light gray background
+      case 'reported':
+        return COLORS.textSecondary; // Dark gray background
+      case 'rejected':
+        return COLORS.inactive; // Gray background
+      default:
+        return COLORS.textSecondary;
     }
   };
 
   const getStatusTextColor = (status: string) => {
     switch (status) {
-      case 'resolved': return COLORS.card; // White text on black
-      case 'investigating': return COLORS.text; // Black text on light gray
-      case 'reported': return COLORS.card; // White text on dark gray
-      case 'rejected': return COLORS.card; // White text on gray
-      default: return COLORS.card;
+      case 'resolved':
+        return COLORS.card; // White text on black
+      case 'investigating':
+        return COLORS.text; // Black text on light gray
+      case 'reported':
+        return COLORS.card; // White text on dark gray
+      case 'rejected':
+        return COLORS.card; // White text on gray
+      default:
+        return COLORS.card;
     }
   };
 
@@ -200,7 +280,7 @@ const MissingPointsCard: React.FC<MissingPointsCardProps> = ({ entry, onReport }
     return new Date(dateString).toLocaleDateString('en-SG', {
       day: 'numeric',
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
@@ -208,41 +288,51 @@ const MissingPointsCard: React.FC<MissingPointsCardProps> = ({ entry, onReport }
     <View style={styles.missingPointsCard}>
       <View style={styles.missingHeader}>
         <Text style={styles.missingOrderId}>Order {entry.orderId}</Text>
-        <View style={[
-          styles.statusBadge, 
-          { backgroundColor: getStatusBackground(entry.status) }
-        ]}>
-          <Text style={[
-            styles.statusText,
-            { color: getStatusTextColor(entry.status) }
-          ]}>
+        <View
+          style={[
+            styles.statusBadge,
+            { backgroundColor: getStatusBackground(entry.status) },
+          ]}
+        >
+          <Text
+            style={[
+              styles.statusText,
+              { color: getStatusTextColor(entry.status) },
+            ]}
+          >
             {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
           </Text>
         </View>
       </View>
 
       <Text style={styles.missingReason}>{entry.reason}</Text>
-      
+
       <View style={styles.missingDetails}>
         <View style={styles.missingRow}>
           <Text style={styles.missingLabel}>Expected Points:</Text>
-          <Text style={styles.missingValue}>{entry.expectedPoints.toLocaleString()}</Text>
+          <Text style={styles.missingValue}>
+            {entry.expectedPoints.toLocaleString()}
+          </Text>
         </View>
-        
+
         <View style={styles.missingRow}>
           <Text style={styles.missingLabel}>Order Date:</Text>
           <Text style={styles.missingValue}>{formatDate(entry.orderDate)}</Text>
         </View>
-        
+
         <View style={styles.missingRow}>
           <Text style={styles.missingLabel}>Reported:</Text>
-          <Text style={styles.missingValue}>{formatDate(entry.reportedDate)}</Text>
+          <Text style={styles.missingValue}>
+            {formatDate(entry.reportedDate)}
+          </Text>
         </View>
 
         {entry.resolvedDate && (
           <View style={styles.missingRow}>
             <Text style={styles.missingLabel}>Resolved:</Text>
-            <Text style={styles.missingValue}>{formatDate(entry.resolvedDate)}</Text>
+            <Text style={styles.missingValue}>
+              {formatDate(entry.resolvedDate)}
+            </Text>
           </View>
         )}
       </View>
@@ -259,14 +349,16 @@ const ExpiringPointsCard: React.FC<ExpiringPointsCardProps> = ({ entry }) => {
     return new Date(dateString).toLocaleDateString('en-SG', {
       day: 'numeric',
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
   const getDaysUntilExpiry = () => {
     const expiryDate = new Date(entry.expiryDate);
     const today = new Date();
-    const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const daysUntilExpiry = Math.ceil(
+      (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
     return daysUntilExpiry;
   };
 
@@ -274,33 +366,29 @@ const ExpiringPointsCard: React.FC<ExpiringPointsCardProps> = ({ entry }) => {
   const isUrgent = daysLeft <= 3;
 
   return (
-    <View style={[
-      styles.expiringCard,
-      isUrgent && styles.expiringCardUrgent
-    ]}>
+    <View style={[styles.expiringCard, isUrgent && styles.expiringCardUrgent]}>
       <View style={styles.expiringHeader}>
         <View style={styles.pointsInfo}>
-          <Text style={styles.expiringPoints}>{entry.points.toLocaleString()}</Text>
+          <Text style={styles.expiringPoints}>
+            {entry.points.toLocaleString()}
+          </Text>
           <Text style={styles.expiringLabel}>Points Expiring</Text>
         </View>
-        
+
         <View style={styles.expiryInfo}>
-          <Text style={[
-            styles.daysLeft,
-            isUrgent && styles.daysLeftUrgent
-          ]}>
+          <Text style={[styles.daysLeft, isUrgent && styles.daysLeftUrgent]}>
             {daysLeft > 0 ? `${daysLeft} days left` : 'Expired'}
           </Text>
-          <Ionicons 
-            name="time-outline" 
-            size={16} 
-            color={isUrgent ? COLORS.text : COLORS.textSecondary} 
+          <Ionicons
+            name="time-outline"
+            size={16}
+            color={isUrgent ? COLORS.text : COLORS.textSecondary}
           />
         </View>
       </View>
 
       <Text style={styles.expiringSource}>{entry.source}</Text>
-      
+
       <View style={styles.expiringDates}>
         <Text style={styles.expiringDate}>
           Earned: {formatDate(entry.earnedDate)}
@@ -319,32 +407,35 @@ export default function VoucherTrackingScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('vouchers');
   const insets = useSafeAreaInsets();
 
-  const tabs = useMemo(() => [
-    { 
-      id: 'vouchers' as TabType, 
-      label: 'Vouchers', 
-      icon: 'card-outline',
-      count: state.userRewards.voucherRedemptions.length
-    },
-    { 
-      id: 'points' as TabType, 
-      label: 'History', 
-      icon: 'time-outline',
-      count: state.userRewards.pointsHistory.length
-    },
-    { 
-      id: 'missing' as TabType, 
-      label: 'Missing', 
-      icon: 'alert-circle-outline',
-      count: state.userRewards.missingPoints.length
-    },
-    { 
-      id: 'expiring' as TabType, 
-      label: 'Expiring', 
-      icon: 'hourglass-outline',
-      count: state.userRewards.pointsExpiring.length
-    }
-  ], [state.userRewards]);
+  const tabs = useMemo(
+    () => [
+      {
+        id: 'vouchers' as TabType,
+        label: 'Vouchers',
+        icon: 'card-outline',
+        count: state.userRewards.voucherRedemptions.length,
+      },
+      {
+        id: 'points' as TabType,
+        label: 'History',
+        icon: 'time-outline',
+        count: state.userRewards.pointsHistory.length,
+      },
+      {
+        id: 'missing' as TabType,
+        label: 'Missing',
+        icon: 'alert-circle-outline',
+        count: state.userRewards.missingPoints.length,
+      },
+      {
+        id: 'expiring' as TabType,
+        label: 'Expiring',
+        icon: 'hourglass-outline',
+        count: state.userRewards.pointsExpiring.length,
+      },
+    ],
+    [state.userRewards]
+  );
 
   const handleReportMissingPoints = () => {
     Alert.alert(
@@ -352,7 +443,10 @@ export default function VoucherTrackingScreen() {
       'Please contact our support team to report missing points from your recent purchase.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Contact Support', onPress: () => navigation.navigate('Support') }
+        {
+          text: 'Contact Support',
+          onPress: () => navigation.navigate('Support'),
+        },
       ]
     );
   };
@@ -361,10 +455,15 @@ export default function VoucherTrackingScreen() {
     if (state.userRewards.voucherRedemptions.length === 0) {
       return (
         <View style={styles.emptyState}>
-          <Ionicons name="card-outline" size={48} color={COLORS.textSecondary} />
+          <Ionicons
+            name="card-outline"
+            size={48}
+            color={COLORS.textSecondary}
+          />
           <Text style={styles.emptyTitle}>No Vouchers Yet</Text>
           <Text style={styles.emptyText}>
-            Your redeemed vouchers will appear here. Start earning points to unlock rewards!
+            Your redeemed vouchers will appear here. Start earning points to
+            unlock rewards!
           </Text>
         </View>
       );
@@ -374,7 +473,7 @@ export default function VoucherTrackingScreen() {
       <FlatList
         data={state.userRewards.voucherRedemptions}
         renderItem={({ item }) => <VoucherCard voucher={item} />}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
       />
@@ -382,8 +481,10 @@ export default function VoucherTrackingScreen() {
   };
 
   const renderPointsHistory = () => {
-    const [selectedFilter, setSelectedFilter] = useState<'all' | 'earned' | 'redeemed' | 'expired'>('all');
-    
+    const [selectedFilter, setSelectedFilter] = useState<
+      'all' | 'earned' | 'redeemed' | 'expired'
+    >('all');
+
     const filteredHistory = state.userRewards.pointsHistory.filter(item => {
       if (selectedFilter === 'all') return true;
       return item.type === selectedFilter;
@@ -393,13 +494,13 @@ export default function VoucherTrackingScreen() {
       { id: 'all', label: 'All' },
       { id: 'earned', label: 'Earned' },
       { id: 'redeemed', label: 'Redeemed' },
-      { id: 'expired', label: 'Expired' }
+      { id: 'expired', label: 'Expired' },
     ];
 
     return (
       <View style={styles.historyContainer}>
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.filterScroll}
           contentContainerStyle={styles.filterScrollContent}
@@ -409,44 +510,58 @@ export default function VoucherTrackingScreen() {
               key={filter.id}
               style={[
                 styles.filterTab,
-                selectedFilter === filter.id && styles.filterTabActive
+                selectedFilter === filter.id && styles.filterTabActive,
               ]}
               onPress={() => setSelectedFilter(filter.id as any)}
             >
-              <Text style={[
-                styles.filterTabText,
-                selectedFilter === filter.id && styles.filterTabTextActive
-              ]}>
+              <Text
+                style={[
+                  styles.filterTabText,
+                  selectedFilter === filter.id && styles.filterTabTextActive,
+                ]}
+              >
                 {filter.label}
               </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
-        
+
         <FlatList
           data={filteredHistory}
           renderItem={({ item }) => (
             <View style={styles.historyItem}>
               <View style={styles.historyContent}>
-                <Text style={styles.historyDescription}>{item.description}</Text>
+                <Text style={styles.historyDescription}>
+                  {item.description}
+                </Text>
                 <Text style={styles.historyDate}>{item.date}</Text>
                 {item.orderId && (
-                  <Text style={styles.historyOrderId}>Order: {item.orderId}</Text>
+                  <Text style={styles.historyOrderId}>
+                    Order: {item.orderId}
+                  </Text>
                 )}
                 <Text style={styles.historyCategory}>{item.type}</Text>
               </View>
-              <Text style={[
-                styles.historyPoints,
-                item.type === 'earned' ? styles.pointsEarned : 
-                item.type === 'redeemed' ? styles.pointsRedeemed : 
-                styles.pointsExpired
-              ]}>
-                {item.type === 'earned' ? '+' : item.type === 'redeemed' ? '-' : ''}
+              <Text
+                style={[
+                  styles.historyPoints,
+                  item.type === 'earned'
+                    ? styles.pointsEarned
+                    : item.type === 'redeemed'
+                      ? styles.pointsRedeemed
+                      : styles.pointsExpired,
+                ]}
+              >
+                {item.type === 'earned'
+                  ? '+'
+                  : item.type === 'redeemed'
+                    ? '-'
+                    : ''}
                 {item.points.toLocaleString()}
               </Text>
             </View>
           )}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
         />
@@ -458,16 +573,24 @@ export default function VoucherTrackingScreen() {
     if (state.userRewards.missingPoints.length === 0) {
       return (
         <View style={styles.missingContainer}>
-          <TouchableOpacity style={styles.reportButton} onPress={handleReportMissingPoints}>
+          <TouchableOpacity
+            style={styles.reportButton}
+            onPress={handleReportMissingPoints}
+          >
             <Ionicons name="add-outline" size={20} color={COLORS.card} />
             <Text style={styles.reportButtonText}>Report Missing Points</Text>
           </TouchableOpacity>
-          
+
           <View style={styles.emptyState}>
-            <Ionicons name="checkmark-circle-outline" size={48} color={COLORS.textSecondary} />
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={48}
+              color={COLORS.textSecondary}
+            />
             <Text style={styles.emptyTitle}>All Points Accounted For</Text>
             <Text style={styles.emptyText}>
-              No missing points reports. If you believe points are missing from a recent purchase, use the report button above.
+              No missing points reports. If you believe points are missing from
+              a recent purchase, use the report button above.
             </Text>
           </View>
         </View>
@@ -476,15 +599,18 @@ export default function VoucherTrackingScreen() {
 
     return (
       <View style={styles.missingContainer}>
-        <TouchableOpacity style={styles.reportButton} onPress={handleReportMissingPoints}>
+        <TouchableOpacity
+          style={styles.reportButton}
+          onPress={handleReportMissingPoints}
+        >
           <Ionicons name="add-outline" size={20} color={COLORS.card} />
           <Text style={styles.reportButtonText}>Report Missing Points</Text>
         </TouchableOpacity>
-        
+
         <FlatList
           data={state.userRewards.missingPoints}
           renderItem={({ item }) => <MissingPointsCard entry={item} />}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
         />
@@ -493,17 +619,25 @@ export default function VoucherTrackingScreen() {
   };
 
   const renderExpiringPoints = () => {
-    const urgentExpiringPoints = state.userRewards.pointsExpiring.filter(entry => {
-      const expiryDate = new Date(entry.expiryDate);
-      const today = new Date();
-      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      return daysUntilExpiry <= 3;
-    });
+    const urgentExpiringPoints = state.userRewards.pointsExpiring.filter(
+      entry => {
+        const expiryDate = new Date(entry.expiryDate);
+        const today = new Date();
+        const daysUntilExpiry = Math.ceil(
+          (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        return daysUntilExpiry <= 3;
+      }
+    );
 
     if (state.userRewards.pointsExpiring.length === 0) {
       return (
         <View style={styles.emptyState}>
-          <Ionicons name="time-outline" size={48} color={COLORS.textSecondary} />
+          <Ionicons
+            name="time-outline"
+            size={48}
+            color={COLORS.textSecondary}
+          />
           <Text style={styles.emptyTitle}>No Expiring Points</Text>
           <Text style={styles.emptyText}>
             Your points are safe! None of your current points are expiring soon.
@@ -518,15 +652,16 @@ export default function VoucherTrackingScreen() {
           <View style={styles.urgentNotice}>
             <Ionicons name="warning-outline" size={20} color={COLORS.text} />
             <Text style={styles.urgentText}>
-              {urgentExpiringPoints.length} point{urgentExpiringPoints.length > 1 ? 's' : ''} expire within 3 days!
+              {urgentExpiringPoints.length} point
+              {urgentExpiringPoints.length > 1 ? 's' : ''} expire within 3 days!
             </Text>
           </View>
         )}
-        
+
         <FlatList
           data={state.userRewards.pointsExpiring}
           renderItem={({ item }) => <ExpiringPointsCard entry={item} />}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
         />
@@ -536,23 +671,28 @@ export default function VoucherTrackingScreen() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'vouchers': return renderVouchersList();
-      case 'points': return renderPointsHistory();
-      case 'missing': return renderMissingPoints();
-      case 'expiring': return renderExpiringPoints();
-      default: return null;
+      case 'vouchers':
+        return renderVouchersList();
+      case 'points':
+        return renderPointsHistory();
+      case 'missing':
+        return renderMissingPoints();
+      case 'expiring':
+        return renderExpiringPoints();
+      default:
+        return null;
     }
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
-      
+
       {/* Status Bar Background */}
       <View style={[styles.statusBarBackground, { height: insets.top }]} />
-      
+
       {/* Mobile Header */}
-      <MobileHeader 
+      <MobileHeader
         title="Voucher Tracking"
         showBackButton={true}
         showCartButton={true}
@@ -562,29 +702,30 @@ export default function VoucherTrackingScreen() {
 
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.tabScrollContent}
         >
           {tabs.map(tab => (
             <TouchableOpacity
               key={tab.id}
-              style={[
-                styles.tab,
-                activeTab === tab.id && styles.tabActive
-              ]}
+              style={[styles.tab, activeTab === tab.id && styles.tabActive]}
               onPress={() => setActiveTab(tab.id)}
             >
-              <Ionicons 
-                name={tab.icon as any} 
-                size={18} 
-                color={activeTab === tab.id ? COLORS.card : COLORS.textSecondary} 
+              <Ionicons
+                name={tab.icon as any}
+                size={18}
+                color={
+                  activeTab === tab.id ? COLORS.card : COLORS.textSecondary
+                }
               />
-              <Text style={[
-                styles.tabText,
-                activeTab === tab.id && styles.tabTextActive
-              ]}>
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === tab.id && styles.tabTextActive,
+                ]}
+              >
                 {tab.label}
               </Text>
               {tab.count > 0 && (
@@ -600,9 +741,7 @@ export default function VoucherTrackingScreen() {
       </View>
 
       {/* Content */}
-      <View style={styles.content}>
-        {renderContent()}
-      </View>
+      <View style={styles.content}>{renderContent()}</View>
     </View>
   );
 }
@@ -615,7 +754,7 @@ const styles = StyleSheet.create({
   statusBarBackground: {
     backgroundColor: COLORS.card,
   },
-  
+
   // Tab Navigation - improved design
   tabContainer: {
     backgroundColor: COLORS.card,
@@ -1029,4 +1168,4 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     maxWidth: 280,
   },
-}); 
+});

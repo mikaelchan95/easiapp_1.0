@@ -21,7 +21,14 @@ export interface PointsTransaction {
   id: string;
   userId: string;
   companyId: string | null;
-  transactionType: 'earned_purchase' | 'redeemed_voucher' | 'points_transfer_in' | 'points_transfer_out' | 'earned_bonus' | 'expired' | 'adjusted';
+  transactionType:
+    | 'earned_purchase'
+    | 'redeemed_voucher'
+    | 'points_transfer_in'
+    | 'points_transfer_out'
+    | 'earned_bonus'
+    | 'expired'
+    | 'adjusted';
   pointsAmount: number;
   pointsBalanceBefore: number;
   pointsBalanceAfter: number;
@@ -29,13 +36,13 @@ export interface PointsTransaction {
   createdAt: string;
 }
 
-export type CompanyUserRole = 
-  | 'superadmin'    // Full access, can manage company settings and users
-  | 'manager'       // Can approve orders, manage team members
-  | 'approver'      // Can only approve/reject orders
-  | 'staff';        // Can create orders, view their own history
+export type CompanyUserRole =
+  | 'superadmin' // Full access, can manage company settings and users
+  | 'manager' // Can approve orders, manage team members
+  | 'approver' // Can only approve/reject orders
+  | 'staff'; // Can create orders, view their own history
 
-export type OrderApprovalStatus = 
+export type OrderApprovalStatus =
   | 'pending_approval'
   | 'approved'
   | 'rejected'
@@ -47,12 +54,12 @@ export interface User {
   email: string;
   phone: string;
   accountType: AccountType;
-  companyId?: string;        // For company users
-  role?: CompanyUserRole;    // For company users
+  companyId?: string; // For company users
+  role?: CompanyUserRole; // For company users
   permissions?: UserPermissions;
   profileImage?: string;
-  walletBalance?: number;    // For individual users
-  points?: number;          // Reward points for both individual and company users
+  walletBalance?: number; // For individual users
+  points?: number; // Reward points for both individual and company users
   createdAt: string;
   lastLogin?: string;
 }
@@ -60,35 +67,35 @@ export interface User {
 export interface Company {
   id: string;
   name: string;
-  companyName: string;      // Legal entity name
-  uen: string;              // Unique Entity Number
+  companyName: string; // Legal entity name
+  uen: string; // Unique Entity Number
   address: string;
   phone?: string;
   email?: string;
   logo?: string;
-  
+
   // Billing & Credit
   creditLimit?: number;
   currentCredit?: number;
   paymentTerms?: 'COD' | 'NET7' | 'NET30' | 'NET60';
-  
+
   // Points & Rewards
   totalPoints?: number;
   pointsEarnedThisMonth?: number;
   pointsRedeemedThisMonth?: number;
-  
+
   // Order Settings
   approvalSettings: {
     requireApproval: boolean;
-    approvalThreshold?: number;    // Orders above this amount need approval
-    multiLevelApproval?: boolean;  // Require multiple approvers
-    autoApproveBelow?: number;     // Auto-approve orders below this amount
+    approvalThreshold?: number; // Orders above this amount need approval
+    multiLevelApproval?: boolean; // Require multiple approvers
+    autoApproveBelow?: number; // Auto-approve orders below this amount
   };
-  
+
   // Company Status
   status: 'active' | 'suspended' | 'pending_verification';
   verifiedAt?: string;
-  
+
   createdAt: string;
   updatedAt: string;
 }
@@ -97,19 +104,19 @@ export interface UserPermissions {
   // Order Permissions
   canCreateOrders: boolean;
   canApproveOrders: boolean;
-  canViewAllOrders: boolean;    // View company-wide orders
-  orderLimit?: number;          // Max order value without approval
-  
+  canViewAllOrders: boolean; // View company-wide orders
+  orderLimit?: number; // Max order value without approval
+
   // User Management
   canManageUsers: boolean;
   canInviteUsers: boolean;
   canSetPermissions: boolean;
-  
+
   // Company Settings
   canEditCompanyInfo: boolean;
   canManageBilling: boolean;
   canViewReports: boolean;
-  
+
   // Product Access
   canViewTradePrice: boolean;
   canAccessExclusiveProducts: boolean;
@@ -176,7 +183,9 @@ export const isIndividualUser = (user: User): user is IndividualUser => {
 };
 
 // Default permissions by role
-export const getDefaultPermissionsByRole = (role: CompanyUserRole): UserPermissions => {
+export const getDefaultPermissionsByRole = (
+  role: CompanyUserRole
+): UserPermissions => {
   switch (role) {
     case 'superadmin':
       return {
@@ -192,7 +201,7 @@ export const getDefaultPermissionsByRole = (role: CompanyUserRole): UserPermissi
         canViewTradePrice: true,
         canAccessExclusiveProducts: true,
       };
-    
+
     case 'manager':
       return {
         canCreateOrders: true,
@@ -207,7 +216,7 @@ export const getDefaultPermissionsByRole = (role: CompanyUserRole): UserPermissi
         canViewTradePrice: true,
         canAccessExclusiveProducts: true,
       };
-    
+
     case 'approver':
       return {
         canCreateOrders: false,
@@ -222,7 +231,7 @@ export const getDefaultPermissionsByRole = (role: CompanyUserRole): UserPermissi
         canViewTradePrice: true,
         canAccessExclusiveProducts: false,
       };
-    
+
     case 'staff':
       return {
         canCreateOrders: true,
@@ -239,4 +248,4 @@ export const getDefaultPermissionsByRole = (role: CompanyUserRole): UserPermissi
         canAccessExclusiveProducts: false,
       };
   }
-}; 
+};

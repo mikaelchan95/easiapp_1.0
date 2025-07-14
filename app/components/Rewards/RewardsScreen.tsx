@@ -1,18 +1,21 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  FlatList, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  FlatList,
   Animated,
   Modal,
   ActivityIndicator,
   StatusBar,
-  Image
+  Image,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useRewards, TierLevel } from '../../context/RewardsContext';
@@ -20,7 +23,13 @@ import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import MobileHeader from '../Layout/MobileHeader';
 import { useAppContext } from '../../context/AppContext';
 import { isCompanyUser, CompanyUser, IndividualUser } from '../../types/user';
-import { formatStatCurrency, formatStatNumber, formatPoints, formatFinancialAmount, formatLargeNumber } from '../../utils/formatting';
+import {
+  formatStatCurrency,
+  formatStatNumber,
+  formatPoints,
+  formatFinancialAmount,
+  formatLargeNumber,
+} from '../../utils/formatting';
 import { auditService, PointsAuditEntry } from '../../services/auditService';
 
 // Mock rewards data
@@ -31,17 +40,20 @@ const mockRewards = [
     description: 'Get 10% off your next purchase of $100 or more',
     points: 500,
     expiry: '30 days after redemption',
-    imageUrl: 'https://images.unsplash.com/photo-1581237058004-34789da7e6b4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-    category: 'discount'
+    imageUrl:
+      'https://images.unsplash.com/photo-1581237058004-34789da7e6b4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
+    category: 'discount',
   },
   {
     id: '2',
     title: 'Free Shipping',
-    description: 'Get free shipping on your next order with no minimum purchase',
+    description:
+      'Get free shipping on your next order with no minimum purchase',
     points: 300,
     expiry: '14 days after redemption',
-    imageUrl: 'https://images.unsplash.com/photo-1586936893866-470173892b26?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-    category: 'shipping'
+    imageUrl:
+      'https://images.unsplash.com/photo-1586936893866-470173892b26?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
+    category: 'shipping',
   },
   {
     id: '3',
@@ -49,18 +61,21 @@ const mockRewards = [
     description: 'Exclusive invitation to a Macallan whisky tasting event',
     points: 1000,
     expiry: 'Valid for events in the next 3 months',
-    imageUrl: 'https://images.unsplash.com/photo-1527281400683-1aefee6bca6e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-    category: 'experience'
+    imageUrl:
+      'https://images.unsplash.com/photo-1527281400683-1aefee6bca6e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
+    category: 'experience',
   },
   {
     id: '4',
     title: 'Limited Edition Gift Box',
-    description: 'Redeem for a limited edition Macallan gift box with your next purchase',
+    description:
+      'Redeem for a limited edition Macallan gift box with your next purchase',
     points: 750,
     expiry: 'While supplies last',
-    imageUrl: 'https://images.unsplash.com/photo-1603569283847-aa295f0d016a?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-    category: 'merchandise'
-  }
+    imageUrl:
+      'https://images.unsplash.com/photo-1603569283847-aa295f0d016a?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
+    category: 'merchandise',
+  },
 ];
 
 // Mock user loyalty data
@@ -73,41 +88,55 @@ const mockLoyalty = {
     { id: '1', date: '2023-12-10', description: 'Purchase', points: 150 },
     { id: '2', date: '2023-11-25', description: 'Birthday Bonus', points: 500 },
     { id: '3', date: '2023-11-05', description: 'Purchase', points: 220 },
-  ]
+  ],
 };
 
 // Tier Badge Component
-const TierBadge = ({ tier, size = 'large' }: { tier: TierLevel; size?: 'small' | 'large' }) => {
+const TierBadge = ({
+  tier,
+  size = 'large',
+}: {
+  tier: TierLevel;
+  size?: 'small' | 'large';
+}) => {
   const colors = {
     Bronze: '#CD7F32',
-    Silver: '#C0C0C0', 
-    Gold: '#FFD700'
+    Silver: '#C0C0C0',
+    Gold: '#FFD700',
   };
-  
+
   const iconSize = size === 'large' ? 28 : 18;
   const containerSize = size === 'large' ? 56 : 36;
-  
+
   return (
-    <View style={[
-      styles.tierBadge,
-      { 
-        backgroundColor: colors[tier], 
-        width: containerSize, 
-        height: containerSize 
-      }
-    ]}>
+    <View
+      style={[
+        styles.tierBadge,
+        {
+          backgroundColor: colors[tier],
+          width: containerSize,
+          height: containerSize,
+        },
+      ]}
+    >
       <Ionicons name="trophy" size={iconSize} color={COLORS.accent} />
     </View>
   );
 };
 
 // Points History Modal
-const PointsHistoryModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+const PointsHistoryModal = ({
+  visible,
+  onClose,
+}: {
+  visible: boolean;
+  onClose: () => void;
+}) => {
   const { state } = useRewards();
   const { state: appState } = useAppContext();
   const [pointsAudit, setPointsAudit] = useState<PointsAuditEntry[]>([]);
   const [loading, setLoading] = useState(false);
-  
+
   // Load audit trail when modal opens
   React.useEffect(() => {
     const loadPointsAudit = async () => {
@@ -115,16 +144,21 @@ const PointsHistoryModal = ({ visible, onClose }: { visible: boolean; onClose: (
         setLoading(true);
         try {
           let auditData: PointsAuditEntry[] = [];
-          
+
           // Load user's points audit (individual users)
           if (appState.user.accountType === 'individual') {
             auditData = await auditService.getUserPointsAudit(appState.user.id);
           }
           // Load company's points audit (company users can see all company activity)
-          else if (appState.user.accountType === 'company' && appState.user.companyId) {
-            auditData = await auditService.getCompanyPointsAudit(appState.user.companyId);
+          else if (
+            appState.user.accountType === 'company' &&
+            appState.user.companyId
+          ) {
+            auditData = await auditService.getCompanyPointsAudit(
+              appState.user.companyId
+            );
           }
-          
+
           setPointsAudit(auditData);
         } catch (error) {
           console.error('Error loading points audit:', error);
@@ -135,48 +169,67 @@ const PointsHistoryModal = ({ visible, onClose }: { visible: boolean; onClose: (
         }
       }
     };
-    
+
     loadPointsAudit();
   }, [visible, appState.user?.id, appState.user?.companyId]);
-  
+
   const formatTransactionType = (type: string) => {
     switch (type) {
-      case 'earned_purchase': return 'Purchase';
-      case 'earned_bonus': return 'Bonus';
-      case 'earned_referral': return 'Referral';
-      case 'earned_milestone': return 'Milestone';
-      case 'redeemed_voucher': return 'Voucher';
-      case 'redeemed_reward': return 'Reward';
-      case 'expired': return 'Expired';
-      case 'adjusted': return 'Adjusted';
-      case 'restored': return 'Restored';
-      default: return type;
+      case 'earned_purchase':
+        return 'Purchase';
+      case 'earned_bonus':
+        return 'Bonus';
+      case 'earned_referral':
+        return 'Referral';
+      case 'earned_milestone':
+        return 'Milestone';
+      case 'redeemed_voucher':
+        return 'Voucher';
+      case 'redeemed_reward':
+        return 'Reward';
+      case 'expired':
+        return 'Expired';
+      case 'adjusted':
+        return 'Adjusted';
+      case 'restored':
+        return 'Restored';
+      default:
+        return type;
     }
   };
-  
+
   const renderAuditItem = ({ item }: { item: PointsAuditEntry }) => (
     <View style={styles.historyItem}>
       <View style={styles.historyContent}>
         <Text style={styles.historyDescription}>{item.description}</Text>
         <Text style={styles.historyDate}>
-          {new Date(item.created_at).toLocaleDateString()} • {formatTransactionType(item.transaction_type)}
+          {new Date(item.created_at).toLocaleDateString()} •{' '}
+          {formatTransactionType(item.transaction_type)}
         </Text>
         {item.reference_id && (
           <Text style={styles.historyOrderId}>
-            {item.reference_type === 'order' ? 'Order: ' : 'Ref: '}{item.reference_id}
+            {item.reference_type === 'order' ? 'Order: ' : 'Ref: '}
+            {item.reference_id}
           </Text>
         )}
         {/* Show user name for company users viewing company-wide audit */}
-        {appState.user?.accountType === 'company' && item.user && item.user_id !== appState.user.id && (
-          <Text style={styles.historyUser}>By: {item.user.name}</Text>
-        )}
+        {appState.user?.accountType === 'company' &&
+          item.user &&
+          item.user_id !== appState.user.id && (
+            <Text style={styles.historyUser}>By: {item.user.name}</Text>
+          )}
       </View>
       <View style={styles.historyPointsContainer}>
-        <Text style={[
-          styles.historyPoints,
-          item.points_amount > 0 ? styles.pointsEarned : styles.pointsRedeemed
-        ]}>
-          {item.points_amount > 0 ? '+' : ''}{formatPoints(Math.abs(item.points_amount))}
+        <Text
+          style={[
+            styles.historyPoints,
+            item.points_amount > 0
+              ? styles.pointsEarned
+              : styles.pointsRedeemed,
+          ]}
+        >
+          {item.points_amount > 0 ? '+' : ''}
+          {formatPoints(Math.abs(item.points_amount))}
         </Text>
         <Text style={styles.historyBalance}>
           Balance: {formatPoints(item.points_balance_after)}
@@ -184,7 +237,7 @@ const PointsHistoryModal = ({ visible, onClose }: { visible: boolean; onClose: (
       </View>
     </View>
   );
-  
+
   return (
     <Modal
       visible={visible}
@@ -204,7 +257,7 @@ const PointsHistoryModal = ({ visible, onClose }: { visible: boolean; onClose: (
             <Ionicons name="close" size={24} color={COLORS.text} />
           </TouchableOpacity>
         </View>
-        
+
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.primary} />
@@ -218,7 +271,11 @@ const PointsHistoryModal = ({ visible, onClose }: { visible: boolean; onClose: (
             renderItem={renderAuditItem}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Ionicons name="receipt-outline" size={48} color={COLORS.inactive} />
+                <Ionicons
+                  name="receipt-outline"
+                  size={48}
+                  color={COLORS.inactive}
+                />
                 <Text style={styles.emptyText}>No points history yet</Text>
                 <Text style={styles.emptySubtext}>
                   Start making purchases to earn points and build your history
@@ -234,16 +291,22 @@ const PointsHistoryModal = ({ visible, onClose }: { visible: boolean; onClose: (
 
 export default function RewardsScreen() {
   const navigation = useNavigation();
-  const { state, redeemReward, getTierBenefits, getPointsToNextTier, getExpiringPoints } = useRewards();
+  const {
+    state,
+    redeemReward,
+    getTierBenefits,
+    getPointsToNextTier,
+    getExpiringPoints,
+  } = useRewards();
   const { state: appState } = useAppContext();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showHistory, setShowHistory] = useState(false);
   const [redeeming, setRedeeming] = useState<string | null>(null);
   const [showExpiringPoints, setShowExpiringPoints] = useState(false);
   const insets = useSafeAreaInsets();
-  
+
   const user = appState.user;
-  
+
   // Show loading state if user is authenticated but rewards haven't loaded yet
   if (user && !state.userRewards) {
     return (
@@ -255,15 +318,21 @@ export default function RewardsScreen() {
       </SafeAreaView>
     );
   }
-  
+
   // Show auth required state if no user
   if (!user || !state.userRewards) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.authRequiredContainer}>
-          <Ionicons name="log-in-outline" size={48} color={COLORS.textSecondary} />
-          <Text style={styles.authRequiredText}>Please sign in to view rewards</Text>
-          <TouchableOpacity 
+          <Ionicons
+            name="log-in-outline"
+            size={48}
+            color={COLORS.textSecondary}
+          />
+          <Text style={styles.authRequiredText}>
+            Please sign in to view rewards
+          </Text>
+          <TouchableOpacity
             style={styles.signInButton}
             onPress={() => navigation.navigate('Profile' as never)}
           >
@@ -273,7 +342,7 @@ export default function RewardsScreen() {
       </SafeAreaView>
     );
   }
-  
+
   const handleFeaturePress = (feature: string) => {
     console.log(`Pressed: ${feature}`);
     // Add navigation logic here if needed
@@ -281,9 +350,9 @@ export default function RewardsScreen() {
 
   const renderUserProfile = () => {
     if (!user) return null;
-    
+
     const isCompany = isCompanyUser(user);
-    
+
     return (
       <View style={styles.profileCard}>
         {/* Center-aligned Header */}
@@ -298,21 +367,34 @@ export default function RewardsScreen() {
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
               {user.profileImage ? (
-                <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />
+                <Image
+                  source={{ uri: user.profileImage }}
+                  style={styles.avatarImage}
+                />
               ) : (
                 <View style={styles.avatarPlaceholder}>
                   <Text style={styles.avatarInitials}>
-                    {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    {user.name
+                      .split(' ')
+                      .map(n => n[0])
+                      .join('')
+                      .toUpperCase()}
                   </Text>
                 </View>
               )}
             </View>
           </View>
-          
+
           <View style={styles.userInfoSection}>
             <View style={styles.userMainInfo}>
               <View style={styles.nameRow}>
-                <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">{user.name}</Text>
+                <Text
+                  style={styles.userName}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {user.name}
+                </Text>
                 <View style={styles.verifiedBadge}>
                   <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
                 </View>
@@ -321,12 +403,14 @@ export default function RewardsScreen() {
                 <Text style={styles.accountType}>
                   {isCompany ? 'Business Account' : 'Personal Account'}
                 </Text>
-                <Text style={styles.rewardTier}>{state.userRewards?.tier || 'Bronze'} Tier</Text>
+                <Text style={styles.rewardTier}>
+                  {state.userRewards?.tier || 'Bronze'} Tier
+                </Text>
               </View>
             </View>
           </View>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.settingsButton}
             onPress={() => handleFeaturePress('Settings')}
             activeOpacity={0.7}
@@ -334,20 +418,19 @@ export default function RewardsScreen() {
             <Ionicons name="settings-outline" size={22} color={COLORS.text} />
           </TouchableOpacity>
         </View>
-
       </View>
     );
   };
-  
+
   // Check for expiring points
   const expiringPoints = getExpiringPoints(30);
   const urgentExpiringPoints = getExpiringPoints(7);
-  
+
   // Animation for tier progress and carousel transitions
   const progressAnim = useRef(new Animated.Value(0)).current;
   const carouselAnim = useRef(new Animated.Value(0)).current;
   const progressBarAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Animate progress bar continuously
   React.useEffect(() => {
     const animateProgressBar = () => {
@@ -355,7 +438,7 @@ export default function RewardsScreen() {
       Animated.timing(progressBarAnim, {
         toValue: 1,
         duration: 2000,
-        useNativeDriver: false
+        useNativeDriver: false,
       }).start();
     };
 
@@ -363,7 +446,7 @@ export default function RewardsScreen() {
     Animated.timing(progressAnim, {
       toValue: progress,
       duration: 1000,
-      useNativeDriver: false
+      useNativeDriver: false,
     }).start();
 
     animateProgressBar();
@@ -376,95 +459,102 @@ export default function RewardsScreen() {
     const interval = setInterval(() => {
       setShowExpiringPoints(prev => {
         const newValue = !prev;
-        
+
         // Animate carousel slide
         Animated.timing(carouselAnim, {
           toValue: newValue ? 1 : 0,
           duration: 600,
-          useNativeDriver: true
+          useNativeDriver: true,
         }).start();
-        
+
         return newValue;
       });
     }, 5000);
 
     return () => clearInterval(interval);
   }, []);
-  
+
   const calculateProgress = useCallback(() => {
     const pointsToNext = getPointsToNextTier();
     if (pointsToNext === 0) return 100; // Already Gold
-    
+
     if (!state.userRewards) return 0;
-    
+
     const currentTierMin = state.userRewards.tier === 'Bronze' ? 0 : 50000;
     const nextTierMin = state.userRewards.tier === 'Bronze' ? 50000 : 200000;
     const range = nextTierMin - currentTierMin;
-    const progress = ((state.userRewards.lifetimePoints - currentTierMin) / range) * 100;
-    
+    const progress =
+      ((state.userRewards.lifetimePoints - currentTierMin) / range) * 100;
+
     return Math.min(Math.max(progress, 0), 100);
   }, [state.userRewards?.lifetimePoints, state.userRewards?.tier]);
-  
+
   const handleRedeem = async (rewardId: string) => {
     setRedeeming(rewardId);
     const success = await redeemReward(rewardId);
     setRedeeming(null);
-    
+
     if (success) {
       // Show success feedback
       // In real app, would show a toast/notification
     }
   };
-  
-  const filteredRewards = selectedCategory === 'all' 
-    ? state.rewardsCatalog
-    : state.rewardsCatalog.filter(r => r.type === selectedCategory);
-  
+
+  const filteredRewards =
+    selectedCategory === 'all'
+      ? state.rewardsCatalog
+      : state.rewardsCatalog.filter(r => r.type === selectedCategory);
+
   const categories = [
     { id: 'all', label: 'All' },
     { id: 'voucher', label: 'Vouchers' },
     { id: 'bundle', label: 'Bundles' },
-    { id: 'swag', label: 'Merch' }
+    { id: 'swag', label: 'Merch' },
   ];
-  
-  const renderRewardItem = ({ item }: { item: typeof state.rewardsCatalog[0] }) => {
+
+  const renderRewardItem = ({
+    item,
+  }: {
+    item: (typeof state.rewardsCatalog)[0];
+  }) => {
     const canRedeem = (state.userRewards?.points || 0) >= item.points;
     const isRedeeming = redeeming === item.id;
-    
+
     const getRewardIcon = () => {
       switch (item.type) {
-        case 'voucher': return 'pricetag-outline';
-        case 'bundle': return 'cube-outline';
-        default: return 'gift-outline';
+        case 'voucher':
+          return 'pricetag-outline';
+        case 'bundle':
+          return 'cube-outline';
+        default:
+          return 'gift-outline';
       }
     };
-    
+
     return (
       <View style={styles.rewardCard}>
         <View style={styles.rewardHeader}>
           <View style={styles.rewardIconContainer}>
-            <Ionicons 
-              name={getRewardIcon()} 
-              size={20} 
-              color={COLORS.text} 
-            />
+            <Ionicons name={getRewardIcon()} size={20} color={COLORS.text} />
           </View>
           <View style={styles.rewardContent}>
             <Text style={styles.rewardTitle}>{item.title}</Text>
             <Text style={styles.rewardDescription}>{item.description}</Text>
           </View>
         </View>
-        
+
         <View style={styles.rewardFooter}>
           <View style={styles.rewardPointsContainer}>
-            <Text style={styles.rewardPoints}>{item.points.toLocaleString()}</Text>
+            <Text style={styles.rewardPoints}>
+              {item.points.toLocaleString()}
+            </Text>
             <Text style={styles.rewardPointsLabel}>points</Text>
           </View>
-          
+
           <TouchableOpacity
             style={[
               styles.redeemButton,
-              !canRedeem && styles.redeemButtonDisabled
+              !canRedeem && styles.redeemButtonDisabled,
             ]}
             onPress={() => handleRedeem(item.id)}
             disabled={!canRedeem || isRedeeming}
@@ -473,10 +563,12 @@ export default function RewardsScreen() {
             {isRedeeming ? (
               <ActivityIndicator size="small" color={COLORS.accent} />
             ) : (
-              <Text style={[
-                styles.redeemButtonText,
-                !canRedeem && styles.redeemButtonTextDisabled
-              ]}>
+              <Text
+                style={[
+                  styles.redeemButtonText,
+                  !canRedeem && styles.redeemButtonTextDisabled,
+                ]}
+              >
                 {canRedeem ? 'Redeem' : 'Insufficient'}
               </Text>
             )}
@@ -485,22 +577,25 @@ export default function RewardsScreen() {
       </View>
     );
   };
-  
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
-      
+
       {/* Header Container */}
       <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
         {/* User Profile Header */}
         {renderUserProfile()}
       </View>
-      
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Rewards Balance Cards */}
         <View style={styles.balanceCardsContainer}>
           {/* Points Card */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.pointsCard}
             onPress={() => setShowHistory(true)}
             activeOpacity={0.95}
@@ -508,22 +603,32 @@ export default function RewardsScreen() {
             <View style={styles.cardContent}>
               <View style={styles.cardHeader}>
                 <View style={styles.pointsIconContainer}>
-                  <Ionicons name="gift" size={16} color={COLORS.textSecondary} />
+                  <Ionicons
+                    name="gift"
+                    size={16}
+                    color={COLORS.textSecondary}
+                  />
                 </View>
                 <Text style={styles.cardLabel}>Points</Text>
                 <View style={styles.actionIndicator}>
-                  <Ionicons name="chevron-forward" size={14} color={COLORS.inactive} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={14}
+                    color={COLORS.inactive}
+                  />
                 </View>
               </View>
               <View style={styles.amountContainer}>
-                <Text style={styles.pointsAmount}>{(state.userRewards?.points || 0).toLocaleString()}</Text>
+                <Text style={styles.pointsAmount}>
+                  {(state.userRewards?.points || 0).toLocaleString()}
+                </Text>
               </View>
               <Text style={styles.cardSubtext}>Available to use</Text>
             </View>
           </TouchableOpacity>
 
           {/* Tier Card */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.tierCard}
             onPress={() => navigation.navigate('TierBenefitsScreen')}
             activeOpacity={0.95}
@@ -531,15 +636,24 @@ export default function RewardsScreen() {
             <View style={styles.cardContent}>
               <View style={styles.cardHeader}>
                 <View style={styles.tierIconContainer}>
-                  <TierBadge tier={state.userRewards?.tier || 'Bronze'} size="small" />
+                  <TierBadge
+                    tier={state.userRewards?.tier || 'Bronze'}
+                    size="small"
+                  />
                 </View>
                 <Text style={styles.cardLabel}>Tier</Text>
                 <View style={styles.actionIndicator}>
-                  <Ionicons name="chevron-forward" size={14} color={COLORS.inactive} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={14}
+                    color={COLORS.inactive}
+                  />
                 </View>
               </View>
               <View style={styles.amountContainer}>
-                <Text style={styles.tierAmount}>{state.userRewards?.tier || 'Bronze'}</Text>
+                <Text style={styles.tierAmount}>
+                  {state.userRewards?.tier || 'Bronze'}
+                </Text>
               </View>
               <Text style={styles.cardSubtext}>Member status</Text>
             </View>
@@ -550,54 +664,61 @@ export default function RewardsScreen() {
         {(getPointsToNextTier() > 0 || urgentExpiringPoints.length > 0) && (
           <View style={styles.progressCard}>
             <View style={styles.carouselContainer}>
-              <Animated.View 
+              <Animated.View
                 style={[
                   styles.carouselTrack,
                   {
-                    transform: [{
-                      translateX: carouselAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['0%', '-50%'] // Move to show second slide
-                      })
-                    }]
-                  }
+                    transform: [
+                      {
+                        translateX: carouselAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['0%', '-50%'], // Move to show second slide
+                        }),
+                      },
+                    ],
+                  },
                 ]}
               >
                 {/* Progress to next tier slide */}
                 <View style={styles.carouselSlide}>
                   <View style={styles.progressHeader}>
-                    <Ionicons name="trending-up" size={16} color={COLORS.primary} />
+                    <Ionicons
+                      name="trending-up"
+                      size={16}
+                      color={COLORS.primary}
+                    />
                     <Text style={styles.progressTitle}>
-                      {formatLargeNumber(getPointsToNextTier())} points to {
-                        (state.userRewards?.tier || 'Bronze') === 'Bronze' ? 'Silver' : 'Gold'
-                      }
+                      {formatLargeNumber(getPointsToNextTier())} points to{' '}
+                      {(state.userRewards?.tier || 'Bronze') === 'Bronze'
+                        ? 'Silver'
+                        : 'Gold'}
                     </Text>
                   </View>
                   <View style={styles.progressBarContainer}>
-                    <Animated.View 
+                    <Animated.View
                       style={[
                         styles.progressBar,
                         {
                           width: progressAnim.interpolate({
                             inputRange: [0, 100],
-                            outputRange: ['0%', '100%']
-                          })
-                        }
+                            outputRange: ['0%', '100%'],
+                          }),
+                        },
                       ]}
                     />
-                    <Animated.View 
+                    <Animated.View
                       style={[
                         styles.progressBarGlow,
                         {
                           width: progressAnim.interpolate({
                             inputRange: [0, 100],
-                            outputRange: ['0%', '100%']
+                            outputRange: ['0%', '100%'],
                           }),
                           opacity: progressBarAnim.interpolate({
                             inputRange: [0, 0.5, 1],
-                            outputRange: [0.3, 1, 0.3]
-                          })
-                        }
+                            outputRange: [0.3, 1, 0.3],
+                          }),
+                        },
                       ]}
                     />
                   </View>
@@ -608,36 +729,51 @@ export default function RewardsScreen() {
                   <View style={styles.carouselSlide}>
                     <View style={styles.expiringHeader}>
                       <Ionicons name="warning" size={16} color={COLORS.error} />
-                      <Text style={styles.expiringTitle}>Points Expiring Soon!</Text>
+                      <Text style={styles.expiringTitle}>
+                        Points Expiring Soon!
+                      </Text>
                     </View>
                     <View style={styles.expiringDescription}>
                       <Text style={styles.expiringText}>
-                        {urgentExpiringPoints.reduce((sum, entry) => sum + entry.points, 0).toLocaleString()} points expire within 7 days
+                        {urgentExpiringPoints
+                          .reduce((sum, entry) => sum + entry.points, 0)
+                          .toLocaleString()}{' '}
+                        points expire within 7 days
                       </Text>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.expiringButton}
                         onPress={() => navigation.navigate('VoucherTracking')}
                       >
-                        <Text style={styles.expiringButtonText}>View Details</Text>
-                        <Ionicons name="arrow-forward" size={14} color={COLORS.error} />
+                        <Text style={styles.expiringButtonText}>
+                          View Details
+                        </Text>
+                        <Ionicons
+                          name="arrow-forward"
+                          size={14}
+                          color={COLORS.error}
+                        />
                       </TouchableOpacity>
                     </View>
                   </View>
                 )}
               </Animated.View>
             </View>
-            
+
             {/* Carousel indicators */}
             <View style={styles.carouselIndicators}>
-              <View style={[
-                styles.indicator,
-                !showExpiringPoints && styles.activeIndicator
-              ]} />
-              {urgentExpiringPoints.length > 0 && (
-                <View style={[
+              <View
+                style={[
                   styles.indicator,
-                  showExpiringPoints && styles.activeIndicator
-                ]} />
+                  !showExpiringPoints && styles.activeIndicator,
+                ]}
+              />
+              {urgentExpiringPoints.length > 0 && (
+                <View
+                  style={[
+                    styles.indicator,
+                    showExpiringPoints && styles.activeIndicator,
+                  ]}
+                />
               )}
             </View>
           </View>
@@ -647,7 +783,7 @@ export default function RewardsScreen() {
         <View style={styles.quickActionsCard}>
           <Text style={styles.quickActionsTitle}>Explore More</Text>
           <View style={styles.quickActionsGrid}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.quickActionItem}
               onPress={() => navigation.navigate('ReferralScreen')}
             >
@@ -656,8 +792,8 @@ export default function RewardsScreen() {
               </View>
               <Text style={styles.quickActionLabel}>Referrals</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.quickActionItem}
               onPress={() => navigation.navigate('AchievementsScreen')}
             >
@@ -666,8 +802,8 @@ export default function RewardsScreen() {
               </View>
               <Text style={styles.quickActionLabel}>Achievements</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.quickActionItem}
               onPress={() => navigation.navigate('MilestonesScreen')}
             >
@@ -676,42 +812,56 @@ export default function RewardsScreen() {
               </View>
               <Text style={styles.quickActionLabel}>Milestones</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.quickActionItem}
               onPress={() => navigation.navigate('RewardsAnalytics')}
             >
               <View style={styles.quickActionIcon}>
-                <Ionicons name="analytics-outline" size={24} color={COLORS.text} />
+                <Ionicons
+                  name="analytics-outline"
+                  size={24}
+                  color={COLORS.text}
+                />
               </View>
               <Text style={styles.quickActionLabel}>Analytics</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-
         {/* Rewards Catalog */}
         <View style={styles.catalogSection}>
           <View style={styles.catalogHeader}>
             <View style={styles.catalogTitleContainer}>
-              <Ionicons name="gift" size={20} color={COLORS.primary} style={styles.catalogIcon} />
+              <Ionicons
+                name="gift"
+                size={20}
+                color={COLORS.primary}
+                style={styles.catalogIcon}
+              />
               <Text style={styles.catalogTitle}>Redeem Rewards</Text>
               <View style={styles.catalogCountBadge}>
-                <Text style={styles.catalogCountText}>{filteredRewards.length}</Text>
+                <Text style={styles.catalogCountText}>
+                  {filteredRewards.length}
+                </Text>
               </View>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.catalogViewAllButton}
               onPress={() => navigation.navigate('RewardsAnalytics')}
             >
               <Text style={styles.catalogViewAllText}>View All</Text>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={COLORS.primary}
+              />
             </TouchableOpacity>
           </View>
-          
+
           {/* Category Filter */}
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.categoryScroll}
           >
@@ -720,20 +870,24 @@ export default function RewardsScreen() {
                 key={category.id}
                 style={[
                   styles.categoryButton,
-                  selectedCategory === category.id && styles.categoryButtonActive
+                  selectedCategory === category.id &&
+                    styles.categoryButtonActive,
                 ]}
                 onPress={() => setSelectedCategory(category.id)}
               >
-                <Text style={[
-                  styles.categoryButtonText,
-                  selectedCategory === category.id && styles.categoryButtonTextActive
-                ]}>
+                <Text
+                  style={[
+                    styles.categoryButtonText,
+                    selectedCategory === category.id &&
+                      styles.categoryButtonTextActive,
+                  ]}
+                >
                   {category.label}
                 </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
-          
+
           {/* Rewards List */}
           <FlatList
             data={filteredRewards}
@@ -743,15 +897,15 @@ export default function RewardsScreen() {
             contentContainerStyle={styles.rewardsList}
           />
         </View>
-        
+
         {/* Bottom Padding */}
         <View style={styles.bottomPadding} />
       </ScrollView>
-        
+
       {/* Points History Modal */}
-      <PointsHistoryModal 
-        visible={showHistory} 
-        onClose={() => setShowHistory(false)} 
+      <PointsHistoryModal
+        visible={showHistory}
+        onClose={() => setShowHistory(false)}
       />
     </View>
   );
@@ -771,7 +925,7 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  
+
   // Balance Cards Container
   balanceCardsContainer: {
     flexDirection: 'row',
@@ -779,7 +933,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     gap: SPACING.md,
   },
-  
+
   // Points Card
   pointsCard: {
     flex: 1,
@@ -790,7 +944,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     ...SHADOWS.medium,
   },
-  
+
   // Tier Card
   tierCard: {
     flex: 1,
@@ -801,7 +955,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     ...SHADOWS.medium,
   },
-  
+
   // Card Content
   cardContent: {
     flex: 1,
@@ -843,7 +997,7 @@ const styles = StyleSheet.create({
     color: COLORS.inactive,
     fontWeight: '400',
   },
-  
+
   // Icon Containers
   pointsIconContainer: {
     width: 28,
@@ -857,7 +1011,7 @@ const styles = StyleSheet.create({
   tierIconContainer: {
     marginRight: 10,
   },
-  
+
   // Progress Card
   progressCard: {
     marginHorizontal: SPACING.md,
@@ -883,7 +1037,7 @@ const styles = StyleSheet.create({
     minHeight: 56,
     justifyContent: 'space-between',
   },
-  
+
   // Progress Section
   progressHeader: {
     flexDirection: 'row',
@@ -919,7 +1073,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  
+
   // Expiring Points Section
   expiringHeader: {
     flexDirection: 'row',
@@ -953,7 +1107,7 @@ const styles = StyleSheet.create({
     color: COLORS.error,
     fontWeight: '600',
   },
-  
+
   // Carousel Indicators
   carouselIndicators: {
     flexDirection: 'row',
@@ -971,7 +1125,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     width: 18,
   },
-  
+
   // Legacy Tier Badge
   tierBadge: {
     borderRadius: 50,
@@ -979,8 +1133,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...SHADOWS.light,
   },
-  
-  
+
   // Catalog Section
   catalogSection: {
     paddingHorizontal: SPACING.md,
@@ -1056,7 +1209,7 @@ const styles = StyleSheet.create({
     color: COLORS.accent,
     fontWeight: '600',
   },
-  
+
   // Rewards List
   rewardsList: {
     paddingBottom: SPACING.xl,
@@ -1130,7 +1283,7 @@ const styles = StyleSheet.create({
   redeemButtonTextDisabled: {
     color: COLORS.textSecondary,
   },
-  
+
   // Modal Styles
   modalContainer: {
     flex: 1,
@@ -1190,7 +1343,6 @@ const styles = StyleSheet.create({
   pointsRedeemed: {
     color: COLORS.error,
   },
-  
 
   // Quick Actions Card
   quickActionsCard: {
@@ -1242,7 +1394,7 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.sm,
     position: 'relative',
   },
-  
+
   // Enhanced Header Top Row
   headerTopRow: {
     alignItems: 'center',
@@ -1257,7 +1409,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  
+
   // Enhanced Profile Section
   profileSection: {
     flexDirection: 'row',
@@ -1378,4 +1530,4 @@ const styles = StyleSheet.create({
     color: COLORS.accent,
     fontWeight: '600',
   },
-}); 
+});

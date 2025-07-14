@@ -154,7 +154,7 @@ export interface PostalCodeInputProps {
   error?: string;
   loading?: boolean;
   onQuickSelect?: (postalCode: string) => void;
-  popularPostalCodes?: Array<{code: string, label: string}>;
+  popularPostalCodes?: Array<{ code: string; label: string }>;
 }
 
 export interface SavedLocationsProps {
@@ -169,7 +169,9 @@ export interface AddressDetailsFormProps {
   location: LocationSuggestion;
   initialValues?: Partial<DeliveryDetails>;
   onSubmit: (details: DeliveryDetails) => void;
-  onSave?: (details: DeliveryDetails & {label: string; icon?: string; color?: string}) => void;
+  onSave?: (
+    details: DeliveryDetails & { label: string; icon?: string; color?: string }
+  ) => void;
   onCancel: () => void;
   isSaveMode?: boolean;
 }

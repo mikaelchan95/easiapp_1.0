@@ -10,7 +10,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { realTimePaymentService, PartialPaymentRequest } from '../../services/realTimePaymentService';
+import {
+  realTimePaymentService,
+  PartialPaymentRequest,
+} from '../../services/realTimePaymentService';
 import { enhancedBillingService } from '../../services/enhancedBillingService';
 import { theme } from '../../utils/theme';
 
@@ -26,18 +29,21 @@ export default function PartialPaymentScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const params = route.params as any;
-  
+
   // Validate route parameters
   if (!params || !params.companyId || !params.companyName) {
-    console.error('❌ PartialPaymentScreen: Missing required route params:', params);
-    
+    console.error(
+      '❌ PartialPaymentScreen: Missing required route params:',
+      params
+    );
+
     // Return early with error UI instead of crashing
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>
           Missing company information. Please go back and try again.
         </Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
@@ -46,7 +52,7 @@ export default function PartialPaymentScreen() {
       </View>
     );
   }
-  
+
   const { companyId, companyName } = params;
 
   const [loading, setLoading] = useState(false);
@@ -55,9 +61,13 @@ export default function PartialPaymentScreen() {
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
   const [paymentReference, setPaymentReference] = useState('');
   const [bankReference, setBankReference] = useState('');
-  const [allocationStrategy, setAllocationStrategy] = useState<'oldest_first' | 'largest_first' | 'manual'>('oldest_first');
+  const [allocationStrategy, setAllocationStrategy] = useState<
+    'oldest_first' | 'largest_first' | 'manual'
+  >('oldest_first');
   const [notes, setNotes] = useState('');
-  const [allocationPreview, setAllocationPreview] = useState<PaymentAllocationPreview[]>([]);
+  const [allocationPreview, setAllocationPreview] = useState<
+    PaymentAllocationPreview[]
+  >([]);
   const [totalAllocated, setTotalAllocated] = useState(0);
   const [remainingPayment, setRemainingPayment] = useState(0);
 
@@ -65,13 +75,13 @@ export default function PartialPaymentScreen() {
     { value: 'bank_transfer', label: 'Bank Transfer' },
     { value: 'cheque', label: 'Cheque' },
     { value: 'cash', label: 'Cash' },
-    { value: 'credit_card', label: 'Credit Card' }
+    { value: 'credit_card', label: 'Credit Card' },
   ];
 
   const allocationStrategies = [
     { value: 'oldest_first', label: 'Oldest First' },
     { value: 'largest_first', label: 'Largest First' },
-    { value: 'manual', label: 'Manual Allocation' }
+    { value: 'manual', label: 'Manual Allocation' },
   ];
 
   useEffect(() => {
@@ -133,15 +143,16 @@ export default function PartialPaymentScreen() {
         payment_reference: paymentReference,
         bank_reference: bankReference || undefined,
         allocation_strategy: allocationStrategy,
-        notes: notes || undefined
+        notes: notes || undefined,
       };
 
-      const result = await enhancedBillingService.processPartialPaymentWithUpdates(
-        paymentData,
-        (progress) => {
-          if (__DEV__) console.log('Payment progress:', progress);
-        }
-      );
+      const result =
+        await enhancedBillingService.processPartialPaymentWithUpdates(
+          paymentData,
+          progress => {
+            if (__DEV__) console.log('Payment progress:', progress);
+          }
+        );
 
       if (result.error) {
         Alert.alert('Payment Failed', result.error);
@@ -154,8 +165,8 @@ export default function PartialPaymentScreen() {
         [
           {
             text: 'OK',
-            onPress: () => navigation.goBack()
-          }
+            onPress: () => navigation.goBack(),
+          },
         ]
       );
     } catch (error) {
@@ -169,7 +180,7 @@ export default function PartialPaymentScreen() {
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('en-SG', {
       style: 'currency',
-      currency: 'SGD'
+      currency: 'SGD',
     }).format(amount);
   };
 
@@ -182,7 +193,7 @@ export default function PartialPaymentScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Payment Details</Text>
-        
+
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Payment Amount *</Text>
           <TextInput
@@ -196,20 +207,27 @@ export default function PartialPaymentScreen() {
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Payment Method *</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.methodSelector}>
-            {paymentMethods.map((method) => (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.methodSelector}
+          >
+            {paymentMethods.map(method => (
               <TouchableOpacity
                 key={method.value}
                 style={[
                   styles.methodButton,
-                  paymentMethod === method.value && styles.methodButtonSelected
+                  paymentMethod === method.value && styles.methodButtonSelected,
                 ]}
                 onPress={() => setPaymentMethod(method.value)}
               >
-                <Text style={[
-                  styles.methodButtonText,
-                  paymentMethod === method.value && styles.methodButtonTextSelected
-                ]}>
+                <Text
+                  style={[
+                    styles.methodButtonText,
+                    paymentMethod === method.value &&
+                      styles.methodButtonTextSelected,
+                  ]}
+                >
                   {method.label}
                 </Text>
               </TouchableOpacity>
@@ -240,20 +258,28 @@ export default function PartialPaymentScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Allocation Strategy</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.strategySelector}>
-          {allocationStrategies.map((strategy) => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.strategySelector}
+        >
+          {allocationStrategies.map(strategy => (
             <TouchableOpacity
               key={strategy.value}
               style={[
                 styles.strategyButton,
-                allocationStrategy === strategy.value && styles.strategyButtonSelected
+                allocationStrategy === strategy.value &&
+                  styles.strategyButtonSelected,
               ]}
               onPress={() => setAllocationStrategy(strategy.value as any)}
             >
-              <Text style={[
-                styles.strategyButtonText,
-                allocationStrategy === strategy.value && styles.strategyButtonTextSelected
-              ]}>
+              <Text
+                style={[
+                  styles.strategyButtonText,
+                  allocationStrategy === strategy.value &&
+                    styles.strategyButtonTextSelected,
+                ]}
+              >
                 {strategy.label}
               </Text>
             </TouchableOpacity>
@@ -271,19 +297,33 @@ export default function PartialPaymentScreen() {
       {allocationPreview.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Payment Allocation Preview</Text>
-          
+
           <View style={styles.summaryCard}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Total Payment:</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(parseFloat(paymentAmount))}</Text>
+              <Text style={styles.summaryValue}>
+                {formatCurrency(parseFloat(paymentAmount))}
+              </Text>
             </View>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Total Allocated:</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(totalAllocated)}</Text>
+              <Text style={styles.summaryValue}>
+                {formatCurrency(totalAllocated)}
+              </Text>
             </View>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Remaining:</Text>
-              <Text style={[styles.summaryValue, { color: remainingPayment > 0 ? theme.colors.warning : theme.colors.success }]}>
+              <Text
+                style={[
+                  styles.summaryValue,
+                  {
+                    color:
+                      remainingPayment > 0
+                        ? theme.colors.warning
+                        : theme.colors.success,
+                  },
+                ]}
+              >
                 {formatCurrency(remainingPayment)}
               </Text>
             </View>
@@ -292,8 +332,12 @@ export default function PartialPaymentScreen() {
           {allocationPreview.map((allocation, index) => (
             <View key={allocation.invoice_id} style={styles.allocationCard}>
               <View style={styles.allocationHeader}>
-                <Text style={styles.invoiceNumber}>{allocation.invoice_number}</Text>
-                <Text style={styles.allocatedAmount}>{formatCurrency(allocation.allocated_amount)}</Text>
+                <Text style={styles.invoiceNumber}>
+                  {allocation.invoice_number}
+                </Text>
+                <Text style={styles.allocatedAmount}>
+                  {formatCurrency(allocation.allocated_amount)}
+                </Text>
               </View>
               <View style={styles.allocationDetails}>
                 <Text style={styles.allocationDetail}>
@@ -332,7 +376,8 @@ export default function PartialPaymentScreen() {
           style={[
             styles.button,
             styles.processButton,
-            (loading || !paymentAmount || !paymentReference) && styles.buttonDisabled
+            (loading || !paymentAmount || !paymentReference) &&
+              styles.buttonDisabled,
           ]}
           onPress={processPayment}
           disabled={loading || !paymentAmount || !paymentReference}

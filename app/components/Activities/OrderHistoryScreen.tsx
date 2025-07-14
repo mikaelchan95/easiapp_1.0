@@ -9,7 +9,7 @@ import {
   TextInput,
   FlatList,
   Dimensions,
-  StatusBar
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -32,22 +32,40 @@ const MOCK_ORDERS: Order[] = [
     status: 'delivered',
     total: 145.99,
     items: [
-      { id: '1', name: 'Macallan 18 Year Old', quantity: 1, price: 145.99, image: 'bottle1' }
+      {
+        id: '1',
+        name: 'Macallan 18 Year Old',
+        quantity: 1,
+        price: 145.99,
+        image: 'bottle1',
+      },
     ],
-    deliveryAddress: '123 Main St, San Francisco, CA'
+    deliveryAddress: '123 Main St, San Francisco, CA',
   },
   {
     id: '2',
     orderNumber: 'ORD-2024-002',
     date: '2024-01-20',
     status: 'out_for_delivery',
-    total: 289.50,
+    total: 289.5,
     items: [
-      { id: '2', name: 'Dom Pérignon 2013', quantity: 1, price: 189.50, image: 'bottle2' },
-      { id: '3', name: 'Whiskey Glass Set', quantity: 1, price: 100.00, image: 'glasses' }
+      {
+        id: '2',
+        name: 'Dom Pérignon 2013',
+        quantity: 1,
+        price: 189.5,
+        image: 'bottle2',
+      },
+      {
+        id: '3',
+        name: 'Whiskey Glass Set',
+        quantity: 1,
+        price: 100.0,
+        image: 'glasses',
+      },
     ],
     deliveryAddress: '456 Oak Ave, Los Angeles, CA',
-    estimatedDelivery: '2024-01-25'
+    estimatedDelivery: '2024-01-25',
   },
   {
     id: '3',
@@ -56,30 +74,40 @@ const MOCK_ORDERS: Order[] = [
     status: 'preparing',
     total: 199.99,
     items: [
-      { id: '4', name: 'Macallan 25 Year Old', quantity: 1, price: 199.99, image: 'bottle3' }
+      {
+        id: '4',
+        name: 'Macallan 25 Year Old',
+        quantity: 1,
+        price: 199.99,
+        image: 'bottle3',
+      },
     ],
     deliveryAddress: '789 Pine St, Seattle, WA',
-    estimatedDelivery: '2024-01-28'
-  }
+    estimatedDelivery: '2024-01-28',
+  },
 ];
 
 const FILTER_OPTIONS = [
   { id: 'all', label: 'All Orders', icon: 'list-outline' },
   { id: 'delivered', label: 'Delivered', icon: 'checkmark-circle-outline' },
-  { id: 'out_for_delivery', label: 'Out for Delivery', icon: 'airplane-outline' },
+  {
+    id: 'out_for_delivery',
+    label: 'Out for Delivery',
+    icon: 'airplane-outline',
+  },
   { id: 'preparing', label: 'Preparing', icon: 'time-outline' },
-  { id: 'cancelled', label: 'Cancelled', icon: 'close-circle-outline' }
+  { id: 'cancelled', label: 'Cancelled', icon: 'close-circle-outline' },
 ];
 
 export default function OrderHistoryScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { state, dispatch } = useContext(AppContext);
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const searchAnim = useRef(new Animated.Value(0)).current;
-  
+
   // State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
@@ -87,37 +115,50 @@ export default function OrderHistoryScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Load orders on component mount and set up real-time subscription
   useEffect(() => {
     loadOrders();
-    
+
     // Set up real-time subscription for order updates
     let orderSubscription: any = null;
-    
+
     if (state.user) {
-      console.log('🔔 Setting up real-time order subscription for history screen');
+      console.log(
+        '🔔 Setting up real-time order subscription for history screen'
+      );
       orderSubscription = supabaseService.subscribeToUserOrders(
         state.user.id,
-        (updatedOrders) => {
-          console.log('📦 Real-time order update in history:', updatedOrders.length, 'orders');
+        updatedOrders => {
+          console.log(
+            '📦 Real-time order update in history:',
+            updatedOrders.length,
+            'orders'
+          );
           setOrders(updatedOrders);
           // Apply current filters to the updated orders
           let filtered = updatedOrders;
           if (selectedFilter !== 'all') {
-            filtered = filtered.filter(order => order.status === selectedFilter);
+            filtered = filtered.filter(
+              order => order.status === selectedFilter
+            );
           }
           if (searchQuery) {
-            filtered = filtered.filter(order => 
-              order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              order.items.some(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            filtered = filtered.filter(
+              order =>
+                order.orderNumber
+                  .toLowerCase()
+                  .includes(searchQuery.toLowerCase()) ||
+                order.items.some(item =>
+                  item.name.toLowerCase().includes(searchQuery.toLowerCase())
+                )
             );
           }
           setFilteredOrders(filtered);
         }
       );
     }
-    
+
     // Cleanup subscription on unmount
     return () => {
       if (orderSubscription) {
@@ -132,7 +173,8 @@ export default function OrderHistoryScreen() {
     try {
       setLoading(true);
       // Use context user (now live user) or try to get from Supabase
-      const currentUser = state.user || await supabaseService.getCurrentUser();
+      const currentUser =
+        state.user || (await supabaseService.getCurrentUser());
       if (currentUser) {
         console.log('📋 Loading orders for user:', currentUser.name);
         const userOrders = await supabaseService.getUserOrders(currentUser.id);
@@ -155,75 +197,96 @@ export default function OrderHistoryScreen() {
         toValue: 1,
         duration: 600,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
+        easing: Animations.TIMING.easeOut,
       }),
       Animated.timing(searchAnim, {
         toValue: 1,
         duration: 400,
         delay: 200,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
-      })
+        easing: Animations.TIMING.easeOut,
+      }),
     ]).start();
   }, []);
-  
+
   useEffect(() => {
     // Filter orders based on search and filter
     let filtered = orders;
-    
+
     if (selectedFilter !== 'all') {
       filtered = filtered.filter(order => order.status === selectedFilter);
     }
-    
+
     if (searchQuery) {
-      filtered = filtered.filter(order => 
-        order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.items.some(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      filtered = filtered.filter(
+        order =>
+          order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          order.items.some(item =>
+            item.name.toLowerCase().includes(searchQuery.toLowerCase())
+          )
       );
     }
-    
+
     setFilteredOrders(filtered);
   }, [searchQuery, selectedFilter, orders]);
-  
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'delivered': return '#4CAF50';
-      case 'out_for_delivery': return '#2196F3';
-      case 'preparing': return '#FF9800';
-      case 'confirmed': return '#4CAF50';
-      case 'ready': return '#9C27B0';
-      case 'pending': return '#795548';
-      case 'cancelled': return '#F44336';
-      case 'returned': return '#607D8B';
-      default: return COLORS.inactive;
+      case 'delivered':
+        return '#4CAF50';
+      case 'out_for_delivery':
+        return '#2196F3';
+      case 'preparing':
+        return '#FF9800';
+      case 'confirmed':
+        return '#4CAF50';
+      case 'ready':
+        return '#9C27B0';
+      case 'pending':
+        return '#795548';
+      case 'cancelled':
+        return '#F44336';
+      case 'returned':
+        return '#607D8B';
+      default:
+        return COLORS.inactive;
     }
   };
-  
+
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'delivered': return 'checkmark-circle';
-      case 'out_for_delivery': return 'airplane';
-      case 'preparing': return 'time';
-      case 'confirmed': return 'checkmark-circle';
-      case 'ready': return 'cube';
-      case 'pending': return 'hourglass';
-      case 'cancelled': return 'close-circle';
-      case 'returned': return 'return-up-back';
-      default: return 'help-circle';
+      case 'delivered':
+        return 'checkmark-circle';
+      case 'out_for_delivery':
+        return 'airplane';
+      case 'preparing':
+        return 'time';
+      case 'confirmed':
+        return 'checkmark-circle';
+      case 'ready':
+        return 'cube';
+      case 'pending':
+        return 'hourglass';
+      case 'cancelled':
+        return 'close-circle';
+      case 'returned':
+        return 'return-up-back';
+      default:
+        return 'help-circle';
     }
   };
-  
+
   const handleOrderPress = (order: Order) => {
     navigation.navigate('OrderDetails', { orderId: order.id });
   };
-  
+
   const handleReorder = (order: Order) => {
     // Clear current cart and add order items back to cart
     console.log('Reordering:', order.orderNumber);
-    
+
     // Clear current cart first
     dispatch({ type: 'CLEAR_CART' });
-    
+
     // Add each item from the order to the cart
     order.items.forEach(item => {
       dispatch({
@@ -239,58 +302,63 @@ export default function OrderHistoryScreen() {
             stockQuantity: 999, // Assume in stock
             description: `Reordered: ${item.name}`,
             category: 'Reorder',
-            isAvailable: true
+            isAvailable: true,
           },
-          quantity: item.quantity
-        }
+          quantity: item.quantity,
+        },
       });
     });
-    
+
     // Navigate to cart to show the recreated cart
     navigation.navigate('Main', { screen: 'Cart' });
-    
+
     // Show success feedback
     HapticFeedback.success();
   };
-  
+
   const handleTrackOrder = (order: Order) => {
     navigation.navigate('OrderTracking', { orderId: order.id });
   };
-  
+
   const renderFilterButton = (filter: any) => {
     const isSelected = selectedFilter === filter.id;
-    
+
     return (
       <TouchableOpacity
         key={filter.id}
-        style={[
-          styles.filterButton,
-          isSelected && styles.filterButtonSelected
-        ]}
+        style={[styles.filterButton, isSelected && styles.filterButtonSelected]}
         onPress={() => setSelectedFilter(filter.id)}
         accessible={true}
         accessibilityRole="button"
         accessibilityLabel={`Filter by ${filter.label}`}
       >
-        <Ionicons 
-          name={filter.icon as any} 
-          size={16} 
-          color={isSelected ? COLORS.accent : COLORS.inactive} 
+        <Ionicons
+          name={filter.icon as any}
+          size={16}
+          color={isSelected ? COLORS.accent : COLORS.inactive}
         />
-        <Text style={[
-          styles.filterButtonText,
-          isSelected && styles.filterButtonTextSelected
-        ]}>
+        <Text
+          style={[
+            styles.filterButtonText,
+            isSelected && styles.filterButtonTextSelected,
+          ]}
+        >
           {filter.label}
         </Text>
       </TouchableOpacity>
     );
   };
-  
-  const renderOrderCard = ({ item: order, index }: { item: Order; index: number }) => {
+
+  const renderOrderCard = ({
+    item: order,
+    index,
+  }: {
+    item: Order;
+    index: number;
+  }) => {
     const statusColor = getStatusColor(order.status);
     const statusIcon = getStatusIcon(order.status);
-    
+
     return (
       <Animated.View
         style={[
@@ -301,11 +369,11 @@ export default function OrderHistoryScreen() {
               {
                 translateY: fadeAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [50, 0]
-                })
-              }
-            ]
-          }
+                  outputRange: [50, 0],
+                }),
+              },
+            ],
+          },
         ]}
       >
         <TouchableOpacity
@@ -320,17 +388,28 @@ export default function OrderHistoryScreen() {
           <View style={styles.orderHeader}>
             <View style={styles.orderHeaderLeft}>
               <Text style={styles.orderNumber}>{order.orderNumber}</Text>
-              <Text style={styles.orderDate}>{new Date(order.date).toLocaleDateString()}</Text>
+              <Text style={styles.orderDate}>
+                {new Date(order.date).toLocaleDateString()}
+              </Text>
             </View>
-            
-            <View style={[styles.statusBadge, { backgroundColor: `${statusColor}15` }]}>
-              <Ionicons name={statusIcon as any} size={16} color={statusColor} />
+
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: `${statusColor}15` },
+              ]}
+            >
+              <Ionicons
+                name={statusIcon as any}
+                size={16}
+                color={statusColor}
+              />
               <Text style={[styles.statusText, { color: statusColor }]}>
                 {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
               </Text>
             </View>
           </View>
-          
+
           {/* Items Summary */}
           <View style={styles.itemsSection}>
             <Text style={styles.itemsTitle}>
@@ -347,14 +426,16 @@ export default function OrderHistoryScreen() {
               </Text>
             )}
           </View>
-          
+
           {/* Total and Actions */}
           <View style={styles.orderFooter}>
             <View style={styles.totalSection}>
               <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalAmount}>{formatFinancialAmount(order.total)}</Text>
+              <Text style={styles.totalAmount}>
+                {formatFinancialAmount(order.total)}
+              </Text>
             </View>
-            
+
             <View style={styles.actionButtons}>
               {order.status !== 'cancelled' && order.status !== 'delivered' && (
                 <TouchableOpacity
@@ -364,11 +445,15 @@ export default function OrderHistoryScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Track order"
                 >
-                  <Ionicons name="location-outline" size={16} color={COLORS.primary} />
+                  <Ionicons
+                    name="location-outline"
+                    size={16}
+                    color={COLORS.primary}
+                  />
                   <Text style={styles.trackButtonText}>Track</Text>
                 </TouchableOpacity>
               )}
-              
+
               <TouchableOpacity
                 style={[styles.actionButton, styles.reorderButton]}
                 onPress={() => handleReorder(order)}
@@ -376,18 +461,23 @@ export default function OrderHistoryScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Reorder items"
               >
-                <Ionicons name="refresh-outline" size={16} color={COLORS.accent} />
+                <Ionicons
+                  name="refresh-outline"
+                  size={16}
+                  color={COLORS.accent}
+                />
                 <Text style={styles.reorderButtonText}>Reorder</Text>
               </TouchableOpacity>
             </View>
           </View>
-          
+
           {/* Estimated Delivery */}
           {order.estimatedDelivery && order.status !== 'delivered' && (
             <View style={styles.deliveryInfo}>
               <Ionicons name="time-outline" size={14} color={COLORS.inactive} />
               <Text style={styles.deliveryText}>
-                Est. delivery: {new Date(order.estimatedDelivery).toLocaleDateString()}
+                Est. delivery:{' '}
+                {new Date(order.estimatedDelivery).toLocaleDateString()}
               </Text>
             </View>
           )}
@@ -395,32 +485,26 @@ export default function OrderHistoryScreen() {
       </Animated.View>
     );
   };
-  
+
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="receipt-outline" size={64} color={COLORS.inactive} />
       <Text style={styles.emptyStateTitle}>No Orders Found</Text>
       <Text style={styles.emptyStateText}>
-        {searchQuery || selectedFilter !== 'all' 
+        {searchQuery || selectedFilter !== 'all'
           ? 'Try adjusting your search or filters'
-          : 'Start shopping to see your orders here'
-        }
+          : 'Start shopping to see your orders here'}
       </Text>
     </View>
   );
-  
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <View style={[styles.statusBarSpacer, { height: insets.top }]} />
-      
+
       {/* Header */}
-      <Animated.View 
-        style={[
-          styles.header,
-          { opacity: fadeAnim }
-        ]}
-      >
+      <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
@@ -430,34 +514,38 @@ export default function OrderHistoryScreen() {
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        
+
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Order History</Text>
-          <Text style={styles.headerSubtitle}>{filteredOrders.length} orders</Text>
+          <Text style={styles.headerSubtitle}>
+            {filteredOrders.length} orders
+          </Text>
         </View>
       </Animated.View>
-      
+
       {/* Search Bar */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.searchSection,
-          { 
+          {
             opacity: searchAnim,
             transform: [
               {
                 translateY: searchAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [20, 0]
-                })
-              }
-            ]
-          }
+                  outputRange: [20, 0],
+                }),
+              },
+            ],
+          },
         ]}
       >
-        <View style={[
-          styles.searchContainer,
-          isSearchFocused && styles.searchContainerFocused
-        ]}>
+        <View
+          style={[
+            styles.searchContainer,
+            isSearchFocused && styles.searchContainerFocused,
+          ]}
+        >
           <Ionicons name="search-outline" size={20} color={COLORS.inactive} />
           <TextInput
             style={styles.searchInput}
@@ -483,28 +571,23 @@ export default function OrderHistoryScreen() {
           )}
         </View>
       </Animated.View>
-      
+
       {/* Filter Buttons */}
-      <Animated.View 
-        style={[
-          styles.filterSection,
-          { opacity: searchAnim }
-        ]}
-      >
-        <ScrollView 
-          horizontal 
+      <Animated.View style={[styles.filterSection, { opacity: searchAnim }]}>
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterScrollContent}
         >
           {FILTER_OPTIONS.map(renderFilterButton)}
         </ScrollView>
       </Animated.View>
-      
+
       {/* Orders List */}
       <FlatList
         data={filteredOrders}
         renderItem={renderOrderCard}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         contentContainerStyle={styles.ordersList}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmptyState}

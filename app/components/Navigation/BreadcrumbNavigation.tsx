@@ -20,15 +20,15 @@ interface BreadcrumbNavigationProps {
 export const createBreadcrumbs = (items: string[]): BreadcrumbItem[] => {
   return items.map((label, index) => ({
     label,
-    route: index < items.length - 1 ? undefined : undefined // Last item has no route
+    route: index < items.length - 1 ? undefined : undefined, // Last item has no route
   }));
 };
 
-export default function BreadcrumbNavigation({ 
-  items, 
+export default function BreadcrumbNavigation({
+  items,
   separator = '/',
   maxItems = 4,
-  style 
+  style,
 }: BreadcrumbNavigationProps) {
   const navigation = useNavigation();
 
@@ -38,30 +38,31 @@ export default function BreadcrumbNavigation({
     }
   };
 
-  const displayItems = items.length > maxItems 
-    ? [...items.slice(0, 1), { label: '...' }, ...items.slice(-maxItems + 2)]
-    : items;
+  const displayItems =
+    items.length > maxItems
+      ? [...items.slice(0, 1), { label: '...' }, ...items.slice(-maxItems + 2)]
+      : items;
 
   return (
     <View style={[styles.container, style]}>
       {displayItems.map((item, index) => (
         <View key={index} style={styles.breadcrumbItem}>
-          {index > 0 && (
-            <Text style={styles.separator}>{separator}</Text>
-          )}
-          
+          {index > 0 && <Text style={styles.separator}>{separator}</Text>}
+
           {item.route ? (
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => handlePress(item)}
               style={styles.linkContainer}
             >
               <Text style={styles.linkText}>{item.label}</Text>
             </TouchableOpacity>
           ) : (
-            <Text style={[
-              styles.text,
-              index === displayItems.length - 1 && styles.currentText
-            ]}>
+            <Text
+              style={[
+                styles.text,
+                index === displayItems.length - 1 && styles.currentText,
+              ]}
+            >
               {item.label}
             </Text>
           )}

@@ -47,7 +47,13 @@ export interface CompanyPayment {
   company_id: string;
   invoice_id?: string;
   payment_amount: number;
-  payment_method: 'bank_transfer' | 'credit_card' | 'debit_card' | 'paypal' | 'cheque' | 'cash';
+  payment_method:
+    | 'bank_transfer'
+    | 'credit_card'
+    | 'debit_card'
+    | 'paypal'
+    | 'cheque'
+    | 'cash';
   payment_date: string;
   payment_reference?: string;
   status: 'pending' | 'confirmed' | 'failed' | 'cancelled';
@@ -77,7 +83,11 @@ export interface BillingSettings {
 export interface CreditAlert {
   id: string;
   company_id: string;
-  category: 'credit_limit' | 'payment_overdue' | 'invoice_generated' | 'payment_failed';
+  category:
+    | 'credit_limit'
+    | 'payment_overdue'
+    | 'invoice_generated'
+    | 'payment_failed';
   severity: 'info' | 'warning' | 'critical';
   message: string;
   action_required: boolean;
@@ -126,10 +136,11 @@ interface ServiceResponse<T> {
 // ===== Company Billing Service =====
 
 class CompanyBillingService {
-  
   // ===== Company Credit Management =====
 
-  async getCompanyBillingStatus(companyId: string): Promise<ServiceResponse<CompanyBillingStatus>> {
+  async getCompanyBillingStatus(
+    companyId: string
+  ): Promise<ServiceResponse<CompanyBillingStatus>> {
     try {
       if (!companyId || typeof companyId !== 'string') {
         return { data: null, error: 'Invalid company ID provided' };
@@ -157,12 +168,14 @@ class CompanyBillingService {
 
       // Calculate credit metrics
       const currentCredit = companyData.credit_limit - companyData.credit_used;
-      const creditUtilization = companyData.credit_limit > 0 
-        ? (companyData.credit_used / companyData.credit_limit) * 100 
-        : 0;
+      const creditUtilization =
+        companyData.credit_limit > 0
+          ? (companyData.credit_used / companyData.credit_limit) * 100
+          : 0;
 
       // Determine billing status
-      let billingStatus: CompanyBillingStatus['billing_status'] = 'good_standing';
+      let billingStatus: CompanyBillingStatus['billing_status'] =
+        'good_standing';
       if (currentCredit < 0) {
         billingStatus = 'overlimit';
       } else if (creditUtilization >= 90) {
@@ -193,7 +206,10 @@ class CompanyBillingService {
     }
   }
 
-  async updateCompanyCredit(companyId: string, creditUsed: number): Promise<ServiceResponse<CompanyBillingStatus>> {
+  async updateCompanyCredit(
+    companyId: string,
+    creditUsed: number
+  ): Promise<ServiceResponse<CompanyBillingStatus>> {
     try {
       const { data, error } = await supabase
         .from('companies')
@@ -217,7 +233,7 @@ class CompanyBillingService {
   // ===== Invoice Operations =====
 
   async getCompanyInvoices(
-    companyId: string, 
+    companyId: string,
     options: InvoiceQueryOptions = {}
   ): Promise<ServiceResponse<CompanyInvoice[]>> {
     try {
@@ -241,7 +257,10 @@ class CompanyBillingService {
         query = query.limit(options.limit);
       }
       if (options.offset) {
-        query = query.range(options.offset, options.offset + (options.limit || 20) - 1);
+        query = query.range(
+          options.offset,
+          options.offset + (options.limit || 20) - 1
+        );
       }
 
       const { data, error, count } = await query;
@@ -258,13 +277,15 @@ class CompanyBillingService {
   }
 
   async generateMonthlyInvoice(
-    companyId: string, 
-    month: number, 
+    companyId: string,
+    month: number,
     year: number
   ): Promise<ServiceResponse<CompanyInvoice>> {
     try {
       // Get company orders for the month
-      const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
+      const startDate = new Date(year, month - 1, 1)
+        .toISOString()
+        .split('T')[0];
       const endDate = new Date(year, month, 0).toISOString().split('T')[0];
 
       const { data: orders, error: ordersError } = await supabase
@@ -280,11 +301,17 @@ class CompanyBillingService {
       }
 
       if (!orders || orders.length === 0) {
-        return { data: null, error: 'No completed orders found for this period' };
+        return {
+          data: null,
+          error: 'No completed orders found for this period',
+        };
       }
 
       // Calculate total amount
-      const totalAmount = orders.reduce((sum, order) => sum + order.final_total, 0);
+      const totalAmount = orders.reduce(
+        (sum, order) => sum + order.final_total,
+        0
+      );
 
       // Generate invoice number
       const invoiceNumber = `INV-${year}-${month.toString().padStart(2, '0')}-${Date.now().toString().slice(-6)}`;
@@ -300,7 +327,7 @@ class CompanyBillingService {
           billing_amount: totalAmount,
           outstanding_amount: totalAmount,
           status: 'pending',
-          payment_terms: 'NET30'
+          payment_terms: 'NET30',
         })
         .select()
         .single();
@@ -319,7 +346,7 @@ class CompanyBillingService {
   // ===== Payment Processing =====
 
   async getCompanyPayments(
-    companyId: string, 
+    companyId: string,
     options: PaymentQueryOptions = {}
   ): Promise<ServiceResponse<CompanyPayment[]>> {
     try {
@@ -343,7 +370,10 @@ class CompanyBillingService {
         query = query.limit(options.limit);
       }
       if (options.offset) {
-        query = query.range(options.offset, options.offset + (options.limit || 20) - 1);
+        query = query.range(
+          options.offset,
+          options.offset + (options.limit || 20) - 1
+        );
       }
 
       const { data, error, count } = await query;
@@ -380,7 +410,7 @@ class CompanyBillingService {
           payment_date: new Date().toISOString().split('T')[0],
           payment_reference: paymentData.reference,
           status: 'confirmed',
-          notes: paymentData.notes
+          notes: paymentData.notes,
         })
         .select()
         .single();
@@ -400,7 +430,12 @@ class CompanyBillingService {
         if (companyData) {
           await supabase
             .from('companies')
-            .update({ credit_used: Math.max(0, companyData.credit_used - paymentData.amount) })
+            .update({
+              credit_used: Math.max(
+                0,
+                companyData.credit_used - paymentData.amount
+              ),
+            })
             .eq('id', companyId);
         }
       }
@@ -414,7 +449,9 @@ class CompanyBillingService {
 
   // ===== Billing Settings =====
 
-  async getBillingSettings(companyId: string): Promise<ServiceResponse<BillingSettings>> {
+  async getBillingSettings(
+    companyId: string
+  ): Promise<ServiceResponse<BillingSettings>> {
     try {
       const { data, error } = await supabase
         .from('company_billing_settings')
@@ -454,7 +491,7 @@ class CompanyBillingService {
   }
 
   async updateBillingSettings(
-    companyId: string, 
+    companyId: string,
     settings: Partial<BillingSettings>
   ): Promise<ServiceResponse<BillingSettings>> {
     try {
@@ -463,7 +500,7 @@ class CompanyBillingService {
         .upsert({
           company_id: companyId,
           ...settings,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .select()
         .single();
@@ -481,7 +518,9 @@ class CompanyBillingService {
 
   // ===== Credit Alerts =====
 
-  async getCreditAlerts(companyId: string): Promise<ServiceResponse<CreditAlert[]>> {
+  async getCreditAlerts(
+    companyId: string
+  ): Promise<ServiceResponse<CreditAlert[]>> {
     try {
       const { data, error } = await supabase
         .from('company_credit_alerts')
@@ -521,12 +560,16 @@ class CompanyBillingService {
 
   // ===== Analytics =====
 
-  async getBillingAnalytics(companyId: string): Promise<ServiceResponse<BillingAnalytics>> {
+  async getBillingAnalytics(
+    companyId: string
+  ): Promise<ServiceResponse<BillingAnalytics>> {
     try {
       // Get invoice totals
       const { data: invoiceData } = await supabase
         .from('company_invoices')
-        .select('billing_amount, outstanding_amount, status, payment_due_date, invoice_date')
+        .select(
+          'billing_amount, outstanding_amount, status, payment_due_date, invoice_date'
+        )
         .eq('company_id', companyId);
 
       // Get payment totals
@@ -536,22 +579,31 @@ class CompanyBillingService {
         .eq('company_id', companyId)
         .eq('status', 'confirmed');
 
-      const totalInvoiced = invoiceData?.reduce((sum, inv) => sum + inv.billing_amount, 0) || 0;
-      const totalPaid = paymentData?.reduce((sum, pay) => sum + pay.payment_amount, 0) || 0;
-      const totalOutstanding = invoiceData?.reduce((sum, inv) => sum + (inv.outstanding_amount || 0), 0) || 0;
+      const totalInvoiced =
+        invoiceData?.reduce((sum, inv) => sum + inv.billing_amount, 0) || 0;
+      const totalPaid =
+        paymentData?.reduce((sum, pay) => sum + pay.payment_amount, 0) || 0;
+      const totalOutstanding =
+        invoiceData?.reduce(
+          (sum, inv) => sum + (inv.outstanding_amount || 0),
+          0
+        ) || 0;
 
       // Calculate average payment time (simplified)
       const averagePaymentTime = 15; // Default to 15 days
 
       // Generate monthly trends (last 6 months)
-      const monthlyTrends = this.generateMonthlyTrends(invoiceData || [], paymentData || []);
+      const monthlyTrends = this.generateMonthlyTrends(
+        invoiceData || [],
+        paymentData || []
+      );
 
       const analytics: BillingAnalytics = {
         total_invoiced: totalInvoiced,
         total_paid: totalPaid,
         total_outstanding: totalOutstanding,
         average_payment_time: averagePaymentTime,
-        monthly_trends: monthlyTrends
+        monthly_trends: monthlyTrends,
       };
 
       return { data: analytics, error: null };
@@ -568,7 +620,7 @@ class CompanyBillingService {
       style: 'currency',
       currency: 'SGD',
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     }).format(amount);
   }
 
@@ -579,7 +631,7 @@ class CompanyBillingService {
       return date.toLocaleDateString('en-SG', {
         year: 'numeric',
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
       });
     } catch {
       return 'Invalid Date';
@@ -658,7 +710,7 @@ class CompanyBillingService {
   }
 
   private generateMonthlyTrends(
-    invoices: any[], 
+    invoices: any[],
     payments: any[]
   ): BillingAnalytics['monthly_trends'] {
     const trends = [];
@@ -677,9 +729,12 @@ class CompanyBillingService {
         .reduce((sum, pay) => sum + pay.payment_amount, 0);
 
       trends.push({
-        month: date.toLocaleDateString('en-SG', { year: 'numeric', month: 'short' }),
+        month: date.toLocaleDateString('en-SG', {
+          year: 'numeric',
+          month: 'short',
+        }),
         invoiced: monthInvoiced,
-        paid: monthPaid
+        paid: monthPaid,
       });
     }
 

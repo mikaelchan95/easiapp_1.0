@@ -1,5 +1,21 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, StatusBar, RefreshControl, Animated } from 'react-native';
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+  useEffect,
+} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  ScrollView,
+  StatusBar,
+  RefreshControl,
+  Animated,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Product } from '../../utils/pricing';
 import ProductCard from '../UI/ProductCard';
@@ -31,7 +47,7 @@ export default function ProductsScreen() {
   const navigation = useNavigation();
   const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
   const { state } = useAppContext();
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -43,21 +59,23 @@ export default function ProductsScreen() {
         toValue: 1,
         duration: 600,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
+        easing: Animations.TIMING.easeOut,
       }),
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 600,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
-      })
+        easing: Animations.TIMING.easeOut,
+      }),
     ]).start();
   }, []);
 
   const filteredProducts = useMemo(() => {
     const products = state.products || [];
     if (selectedCategory === 'all') return products;
-    return products.filter(p => p.category.toLowerCase().includes(selectedCategory));
+    return products.filter(p =>
+      p.category.toLowerCase().includes(selectedCategory)
+    );
   }, [selectedCategory, state.products]);
 
   const handleProductSelect = (product: Product) => {
@@ -67,13 +85,13 @@ export default function ProductsScreen() {
   const handleRefresh = useCallback(async () => {
     HapticFeedback.medium();
     setRefreshing(true);
-    
+
     // Simulate data refresh - in a real app, you'd fetch new data here
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     // You could reset filters, fetch new products, etc.
     // setSelectedCategory('all');
-    
+
     HapticFeedback.success();
     setRefreshing(false);
   }, []);
@@ -84,12 +102,12 @@ export default function ProductsScreen() {
     navigation.navigate('DeliveryLocationScreen');
   }, [navigation]);
 
-  const renderCategory = (cat: typeof categories[0]) => (
+  const renderCategory = (cat: (typeof categories)[0]) => (
     <TouchableOpacity
       key={cat.id}
       style={[
         styles.categoryButton,
-        selectedCategory === cat.id && styles.categoryButtonActive
+        selectedCategory === cat.id && styles.categoryButtonActive,
       ]}
       onPress={() => {
         HapticFeedback.selection();
@@ -98,27 +116,33 @@ export default function ProductsScreen() {
       activeOpacity={0.8}
     >
       <View style={styles.categoryIconContainer}>
-        <Ionicons 
-          name={cat.icon as any} 
-          size={20} 
-          color={selectedCategory === cat.id ? COLORS.accent : COLORS.textSecondary} 
+        <Ionicons
+          name={cat.icon as any}
+          size={20}
+          color={
+            selectedCategory === cat.id ? COLORS.accent : COLORS.textSecondary
+          }
         />
       </View>
-      <Text style={[
-        styles.categoryText,
-        selectedCategory === cat.id && styles.categoryTextActive
-      ]}>{cat.name}</Text>
+      <Text
+        style={[
+          styles.categoryText,
+          selectedCategory === cat.id && styles.categoryTextActive,
+        ]}
+      >
+        {cat.name}
+      </Text>
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
-      
+
       <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
         {/* Delivery Location Header */}
         <View style={styles.topLocationContainer}>
-          <DeliveryLocationHeader 
+          <DeliveryLocationHeader
             location={deliveryLocation}
             onPress={handleAddressPress}
             showDeliveryInfo={true}
@@ -126,7 +150,7 @@ export default function ProductsScreen() {
             style={styles.topLocationHeader}
           />
         </View>
-        
+
         {/* Mobile Header with Search */}
         <MobileHeader
           showBackButton={false}
@@ -135,7 +159,7 @@ export default function ProductsScreen() {
           title="Explore"
         />
       </View>
-      
+
       {/* Category Filter Bar */}
       <View style={styles.categoryBarContainer}>
         <FlatList
@@ -144,7 +168,7 @@ export default function ProductsScreen() {
           contentContainerStyle={styles.categoryBar}
           data={categories}
           renderItem={({ item }) => renderCategory(item)}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
         />
       </View>
 
@@ -153,22 +177,36 @@ export default function ProductsScreen() {
         <Text style={styles.sectionTitle}>Products</Text>
         <View style={styles.toggleButtons}>
           <TouchableOpacity
-            style={[styles.toggleButton, viewMode === 'grid' && styles.toggleButtonActive]}
+            style={[
+              styles.toggleButton,
+              viewMode === 'grid' && styles.toggleButtonActive,
+            ]}
             onPress={() => {
               HapticFeedback.selection();
               setViewMode('grid');
             }}
           >
-            <Ionicons name="grid" size={18} color={viewMode === 'grid' ? COLORS.accent : COLORS.textSecondary} />
+            <Ionicons
+              name="grid"
+              size={18}
+              color={viewMode === 'grid' ? COLORS.accent : COLORS.textSecondary}
+            />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.toggleButton, viewMode === 'list' && styles.toggleButtonActive]}
+            style={[
+              styles.toggleButton,
+              viewMode === 'list' && styles.toggleButtonActive,
+            ]}
             onPress={() => {
               HapticFeedback.selection();
               setViewMode('list');
             }}
           >
-            <Ionicons name="list" size={18} color={viewMode === 'list' ? COLORS.accent : COLORS.textSecondary} />
+            <Ionicons
+              name="list"
+              size={18}
+              color={viewMode === 'list' ? COLORS.accent : COLORS.textSecondary}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -341,4 +379,4 @@ const styles = StyleSheet.create({
   listItem: {
     marginBottom: SPACING.sm,
   },
-}); 
+});

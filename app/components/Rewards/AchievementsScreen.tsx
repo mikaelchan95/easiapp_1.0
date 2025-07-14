@@ -1,13 +1,13 @@
 import React, { useState, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   StatusBar,
   FlatList,
-  Animated
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,7 +28,7 @@ const mockAchievements = [
     unlockedDate: '2024-01-10',
     progress: 100,
     requirement: 'Make 1 purchase',
-    rarity: 'common'
+    rarity: 'common',
   },
   {
     id: '2',
@@ -41,7 +41,7 @@ const mockAchievements = [
     unlockedDate: '2024-01-15',
     progress: 100,
     requirement: 'Purchase 5 whisky brands',
-    rarity: 'rare'
+    rarity: 'rare',
   },
   {
     id: '3',
@@ -54,7 +54,7 @@ const mockAchievements = [
     unlockedDate: '2024-01-20',
     progress: 100,
     requirement: 'Spend S$1,000+',
-    rarity: 'epic'
+    rarity: 'epic',
   },
   {
     id: '4',
@@ -67,7 +67,7 @@ const mockAchievements = [
     unlockedDate: null,
     progress: 70,
     requirement: 'Refer 10 friends',
-    rarity: 'rare'
+    rarity: 'rare',
   },
   {
     id: '5',
@@ -80,7 +80,7 @@ const mockAchievements = [
     unlockedDate: null,
     progress: 33,
     requirement: 'Complete 3 orders in 1 day',
-    rarity: 'uncommon'
+    rarity: 'uncommon',
   },
   {
     id: '6',
@@ -93,7 +93,7 @@ const mockAchievements = [
     unlockedDate: null,
     progress: 20,
     requirement: 'Gold tier for 6 months',
-    rarity: 'legendary'
+    rarity: 'legendary',
   },
   {
     id: '7',
@@ -106,7 +106,7 @@ const mockAchievements = [
     unlockedDate: '2024-01-08',
     progress: 100,
     requirement: 'Order after midnight',
-    rarity: 'common'
+    rarity: 'common',
   },
   {
     id: '8',
@@ -119,16 +119,22 @@ const mockAchievements = [
     unlockedDate: null,
     progress: 66,
     requirement: 'Buy champagne 3 times',
-    rarity: 'uncommon'
-  }
+    rarity: 'uncommon',
+  },
 ];
 
 const mockStats = {
   totalAchievements: mockAchievements.length,
   unlockedAchievements: mockAchievements.filter(a => a.unlocked).length,
-  totalPoints: mockAchievements.filter(a => a.unlocked).reduce((sum, a) => sum + a.points, 0),
+  totalPoints: mockAchievements
+    .filter(a => a.unlocked)
+    .reduce((sum, a) => sum + a.points, 0),
   nextMilestone: 'Reach 10 achievements',
-  completionRate: Math.round((mockAchievements.filter(a => a.unlocked).length / mockAchievements.length) * 100)
+  completionRate: Math.round(
+    (mockAchievements.filter(a => a.unlocked).length /
+      mockAchievements.length) *
+      100
+  ),
 };
 
 const categories = [
@@ -138,7 +144,7 @@ const categories = [
   { id: 'spending', label: 'Spending', icon: 'card' },
   { id: 'referral', label: 'Referral', icon: 'people' },
   { id: 'activity', label: 'Activity', icon: 'pulse' },
-  { id: 'loyalty', label: 'Loyalty', icon: 'star' }
+  { id: 'loyalty', label: 'Loyalty', icon: 'star' },
 ];
 
 const getRarityColor = (rarity: string) => {
@@ -154,7 +160,11 @@ const getRarityColor = (rarity: string) => {
     case 'legendary':
       return { bg: '#FFF8E1', border: '#FFC107', text: '#F57F17' };
     default:
-      return { bg: COLORS.background, border: COLORS.border, text: COLORS.textSecondary };
+      return {
+        bg: COLORS.background,
+        border: COLORS.border,
+        text: COLORS.textSecondary,
+      };
   }
 };
 
@@ -163,34 +173,49 @@ export default function AchievementsScreen() {
   const insets = useSafeAreaInsets();
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const filteredAchievements = selectedCategory === 'all' 
-    ? mockAchievements 
-    : mockAchievements.filter(achievement => achievement.category === selectedCategory);
+  const filteredAchievements =
+    selectedCategory === 'all'
+      ? mockAchievements
+      : mockAchievements.filter(
+          achievement => achievement.category === selectedCategory
+        );
 
-  const renderAchievementItem = ({ item }: { item: typeof mockAchievements[0] }) => {
+  const renderAchievementItem = ({
+    item,
+  }: {
+    item: (typeof mockAchievements)[0];
+  }) => {
     const rarityColor = getRarityColor(item.rarity);
-    
+
     return (
-      <View style={[styles.achievementCard, { borderColor: rarityColor.border }]}>
+      <View
+        style={[styles.achievementCard, { borderColor: rarityColor.border }]}
+      >
         <View style={styles.achievementHeader}>
-          <View style={[
-            styles.achievementIcon,
-            { 
-              backgroundColor: item.unlocked ? rarityColor.bg : COLORS.background,
-              borderColor: rarityColor.border
-            }
-          ]}>
-            <Ionicons 
-              name={item.icon as any} 
-              size={24} 
-              color={item.unlocked ? rarityColor.text : COLORS.textSecondary} 
+          <View
+            style={[
+              styles.achievementIcon,
+              {
+                backgroundColor: item.unlocked
+                  ? rarityColor.bg
+                  : COLORS.background,
+                borderColor: rarityColor.border,
+              },
+            ]}
+          >
+            <Ionicons
+              name={item.icon as any}
+              size={24}
+              color={item.unlocked ? rarityColor.text : COLORS.textSecondary}
             />
           </View>
           <View style={styles.achievementInfo}>
-            <Text style={[
-              styles.achievementTitle,
-              { color: item.unlocked ? COLORS.text : COLORS.textSecondary }
-            ]}>
+            <Text
+              style={[
+                styles.achievementTitle,
+                { color: item.unlocked ? COLORS.text : COLORS.textSecondary },
+              ]}
+            >
               {item.title}
             </Text>
             <Text style={styles.achievementDescription}>
@@ -201,7 +226,9 @@ export default function AchievementsScreen() {
             </Text>
           </View>
           <View style={styles.achievementReward}>
-            <View style={[styles.rarityBadge, { backgroundColor: rarityColor.bg }]}>
+            <View
+              style={[styles.rarityBadge, { backgroundColor: rarityColor.bg }]}
+            >
               <Text style={[styles.rarityText, { color: rarityColor.text }]}>
                 {item.rarity.toUpperCase()}
               </Text>
@@ -209,7 +236,7 @@ export default function AchievementsScreen() {
             <Text style={styles.pointsText}>+{item.points} pts</Text>
           </View>
         </View>
-        
+
         {!item.unlocked && (
           <View style={styles.progressSection}>
             <View style={styles.progressHeader}>
@@ -217,22 +244,26 @@ export default function AchievementsScreen() {
               <Text style={styles.progressPercent}>{item.progress}%</Text>
             </View>
             <View style={styles.progressBarContainer}>
-              <View 
+              <View
                 style={[
                   styles.progressBar,
-                  { 
+                  {
                     width: `${item.progress}%`,
-                    backgroundColor: rarityColor.border
-                  }
-                ]} 
+                    backgroundColor: rarityColor.border,
+                  },
+                ]}
               />
             </View>
           </View>
         )}
-        
+
         {item.unlocked && item.unlockedDate && (
           <View style={styles.unlockedSection}>
-            <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
+            <Ionicons
+              name="checkmark-circle"
+              size={16}
+              color={COLORS.success}
+            />
             <Text style={styles.unlockedText}>
               Unlocked on {item.unlockedDate}
             </Text>
@@ -245,27 +276,29 @@ export default function AchievementsScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
-      
+
       {/* Status Bar Background */}
       <View style={[styles.statusBarBackground, { height: insets.top }]} />
-      
+
       {/* Mobile Header */}
-      <MobileHeader 
+      <MobileHeader
         title="Achievements"
         showBackButton={true}
         showCartButton={true}
         showSearch={false}
         showLocationHeader={false}
       />
-      
+
       {/* Stats Widget */}
       <View style={styles.statsWidget}>
         <View style={styles.widgetContainer}>
           <Text style={styles.widgetTitle}>Your Achievement Progress</Text>
-          
+
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{mockStats.unlockedAchievements}</Text>
+              <Text style={styles.statValue}>
+                {mockStats.unlockedAchievements}
+              </Text>
               <Text style={styles.statLabel}>Unlocked</Text>
             </View>
             <View style={styles.statDivider} />
@@ -279,7 +312,7 @@ export default function AchievementsScreen() {
               <Text style={styles.statLabel}>Complete</Text>
             </View>
           </View>
-          
+
           <View style={styles.nextMilestone}>
             <Text style={styles.milestoneText}>{mockStats.nextMilestone}</Text>
           </View>
@@ -288,8 +321,8 @@ export default function AchievementsScreen() {
 
       {/* Category Filter */}
       <View style={styles.filterContainer}>
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterScroll}
         >
@@ -298,19 +331,26 @@ export default function AchievementsScreen() {
               key={category.id}
               style={[
                 styles.categoryButton,
-                selectedCategory === category.id && styles.categoryButtonActive
+                selectedCategory === category.id && styles.categoryButtonActive,
               ]}
               onPress={() => setSelectedCategory(category.id)}
             >
-              <Ionicons 
-                name={category.icon as any} 
-                size={16} 
-                color={selectedCategory === category.id ? COLORS.buttonText : COLORS.text} 
+              <Ionicons
+                name={category.icon as any}
+                size={16}
+                color={
+                  selectedCategory === category.id
+                    ? COLORS.buttonText
+                    : COLORS.text
+                }
               />
-              <Text style={[
-                styles.categoryButtonText,
-                selectedCategory === category.id && styles.categoryButtonTextActive
-              ]}>
+              <Text
+                style={[
+                  styles.categoryButtonText,
+                  selectedCategory === category.id &&
+                    styles.categoryButtonTextActive,
+                ]}
+              >
                 {category.label}
               </Text>
             </TouchableOpacity>
@@ -338,7 +378,7 @@ const styles = StyleSheet.create({
   statusBarBackground: {
     backgroundColor: COLORS.card,
   },
-  
+
   // Stats Widget
   statsWidget: {
     marginHorizontal: SPACING.md,
@@ -394,7 +434,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontWeight: '500',
   },
-  
+
   // Filter Container
   filterContainer: {
     marginBottom: SPACING.lg,
@@ -426,13 +466,13 @@ const styles = StyleSheet.create({
   categoryButtonTextActive: {
     color: COLORS.buttonText,
   },
-  
+
   // List Container
   listContainer: {
     paddingHorizontal: SPACING.md,
     paddingBottom: SPACING.xxl,
   },
-  
+
   // Achievement Card
   achievementCard: {
     backgroundColor: COLORS.card,
@@ -494,7 +534,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontWeight: '600',
   },
-  
+
   // Progress Section
   progressSection: {
     marginBottom: SPACING.sm,
@@ -525,7 +565,7 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 3,
   },
-  
+
   // Unlocked Section
   unlockedSection: {
     flexDirection: 'row',
@@ -537,4 +577,4 @@ const styles = StyleSheet.create({
     color: COLORS.success,
     fontWeight: '500',
   },
-}); 
+});

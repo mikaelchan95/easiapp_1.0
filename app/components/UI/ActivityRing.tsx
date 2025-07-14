@@ -16,16 +16,16 @@ const ActivityRing: React.FC<ActivityRingProps> = ({
   progress,
   color = '#4CAF50',
   backgroundColor = '#E5E5E5',
-  showPercentage = true
+  showPercentage = true,
 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  
+
   // Create multiple segments to simulate a smooth ring
   const segments = 12; // 12 segments for smooth appearance
   const segmentAngle = 360 / segments;
   const filledSegments = Math.round((progress / 100) * segments);
-  
+
   return (
     <View style={[styles.container, { width: size, height: size }]}>
       {/* Background ring */}
@@ -41,12 +41,12 @@ const ActivityRing: React.FC<ActivityRingProps> = ({
           },
         ]}
       />
-      
+
       {/* Progress segments */}
       {Array.from({ length: segments }, (_, index) => {
         const isActive = index < filledSegments;
-        const rotation = (index * segmentAngle) - 90; // Start from top
-        
+        const rotation = index * segmentAngle - 90; // Start from top
+
         return (
           <View
             key={index}
@@ -75,7 +75,7 @@ const ActivityRing: React.FC<ActivityRingProps> = ({
           </View>
         );
       })}
-      
+
       {/* Center content */}
       {showPercentage && (
         <View style={styles.centerContent}>
@@ -118,4 +118,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ActivityRing; 
+export default ActivityRing;

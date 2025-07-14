@@ -9,6 +9,7 @@ The billing dashboard provides sophisticated financial management capabilities f
 ## Components
 
 ### 1. CompanyCreditOverview
+
 **Main credit overview widget for dashboard integration**
 
 A comprehensive credit status widget that displays real-time credit utilization, available credit, latest invoice information, and status warnings.
@@ -21,10 +22,11 @@ import { CompanyCreditOverview } from '../components/Billing';
   onPress={() => navigation.navigate('BillingDashboard')}
   onRefresh={handleRefresh}
   showHeader={true}
-/>
+/>;
 ```
 
 **Features:**
+
 - Real-time credit utilization with progress bar
 - Available credit vs. used credit display
 - Latest invoice status and due date warnings
@@ -34,6 +36,7 @@ import { CompanyCreditOverview } from '../components/Billing';
 - Tap to navigate to full billing dashboard
 
 **Design Elements:**
+
 - Monochrome design with status color coding
 - Card-based layout with shadow elevation
 - Progress bars for credit utilization
@@ -41,6 +44,7 @@ import { CompanyCreditOverview } from '../components/Billing';
 - Clean typography hierarchy
 
 ### 2. BillingDashboard
+
 **Comprehensive billing management screen**
 
 A full-featured dashboard with tabbed navigation for overview, invoices, and payments management.
@@ -52,10 +56,11 @@ import { BillingDashboard } from '../components/Billing';
   companyId="company-uuid"
   companyName="Company Name"
   onNavigateToSettings={() => navigation.navigate('BillingSettings')}
-/>
+/>;
 ```
 
 **Features:**
+
 - Three-tab interface: Overview, Invoices, Payments
 - Quick actions for common billing tasks
 - Financial statistics and metrics
@@ -65,11 +70,13 @@ import { BillingDashboard } from '../components/Billing';
 - Settings navigation
 
 **Tabs:**
+
 - **Overview**: Credit status, quick actions, stats, charts
 - **Invoices**: Full invoice listing with filtering
 - **Payments**: Complete payment history with reconciliation
 
 ### 3. InvoicesList
+
 **Invoice listing with pagination and filters**
 
 A sophisticated invoice management component with filtering, search, and pagination capabilities.
@@ -79,13 +86,16 @@ import { InvoicesList } from '../components/Billing';
 
 <InvoicesList
   companyId="company-uuid"
-  onInvoicePress={(invoice) => navigation.navigate('InvoiceDetail', { invoiceId: invoice.id })}
+  onInvoicePress={invoice =>
+    navigation.navigate('InvoiceDetail', { invoiceId: invoice.id })
+  }
   showFilters={true}
   limit={20}
-/>
+/>;
 ```
 
 **Features:**
+
 - Horizontal filter buttons (All, Pending, Paid, Overdue, Cancelled)
 - Infinite scroll pagination
 - Pull-to-refresh functionality
@@ -95,6 +105,7 @@ import { InvoicesList } from '../components/Billing';
 - Invoice detail navigation
 
 **Filter Options:**
+
 - All invoices
 - Pending payments
 - Paid invoices
@@ -102,6 +113,7 @@ import { InvoicesList } from '../components/Billing';
 - Cancelled invoices
 
 ### 4. PaymentHistory
+
 **Payment history and reconciliation**
 
 Comprehensive payment tracking with detailed transaction information and status management.
@@ -111,13 +123,16 @@ import { PaymentHistory } from '../components/Billing';
 
 <PaymentHistory
   companyId="company-uuid"
-  onPaymentPress={(payment) => navigation.navigate('PaymentDetail', { paymentId: payment.id })}
+  onPaymentPress={payment =>
+    navigation.navigate('PaymentDetail', { paymentId: payment.id })
+  }
   showFilters={true}
   limit={20}
-/>
+/>;
 ```
 
 **Features:**
+
 - Payment method icons and status indicators
 - Reference number tracking
 - Invoice association indicators
@@ -127,6 +142,7 @@ import { PaymentHistory } from '../components/Billing';
 - Detailed payment information display
 
 **Payment Information:**
+
 - Amount and currency formatting
 - Payment method (Bank Transfer, Credit Card, etc.)
 - Transaction reference numbers
@@ -136,6 +152,7 @@ import { PaymentHistory } from '../components/Billing';
 - Transaction notes
 
 ### 5. BillingSettingsScreen
+
 **Billing preferences and automation settings**
 
 Comprehensive billing configuration screen for managing automated billing, email notifications, and late fee policies.
@@ -146,31 +163,35 @@ import { BillingSettingsScreen } from '../components/Billing';
 <BillingSettingsScreen
   companyId="company-uuid"
   companyName="Company Name"
-  onSave={(settings) => console.log('Settings saved:', settings)}
+  onSave={settings => console.log('Settings saved:', settings)}
   onBack={() => navigation.goBack()}
-/>
+/>;
 ```
 
 **Settings Categories:**
 
 **General Settings:**
+
 - Billing frequency (Monthly, Quarterly, Annual)
 - Billing day of month (1-28)
 - Automatic billing toggle
 
 **Email Settings:**
+
 - Primary billing email address
 - CC email addresses (multiple)
 - Payment reminder toggles
 - Reminder timing configuration (days before due date)
 
 **Late Fee Settings:**
+
 - Enable/disable late fees
 - Late fee type (Percentage vs. Fixed amount)
 - Late fee amount configuration
 - Grace period settings (days after due date)
 
 **Features:**
+
 - Form validation with error handling
 - Real-time change tracking
 - Save/Reset functionality with confirmation
@@ -185,19 +206,19 @@ Add the billing routes to your navigation configuration:
 
 ```tsx
 // In your stack navigator
-import { 
-  BillingDashboard, 
-  BillingSettingsScreen 
+import {
+  BillingDashboard,
+  BillingSettingsScreen
 } from '../components/Billing';
 
 // Add routes
-<Stack.Screen 
-  name="BillingDashboard" 
+<Stack.Screen
+  name="BillingDashboard"
   component={BillingDashboard}
   options={{ title: 'Billing Dashboard' }}
 />
-<Stack.Screen 
-  name="BillingSettings" 
+<Stack.Screen
+  name="BillingSettings"
   component={BillingSettingsScreen}
   options={{ title: 'Billing Settings' }}
 />
@@ -212,7 +233,8 @@ import companyBillingService from '../services/companyBillingService';
 
 // Example usage in your components
 const loadBillingData = async () => {
-  const { data, error } = await companyBillingService.getCompanyBillingStatus(companyId);
+  const { data, error } =
+    await companyBillingService.getCompanyBillingStatus(companyId);
   if (data) {
     setBillingStatus(data);
   }
@@ -231,15 +253,17 @@ const Dashboard = () => {
   return (
     <ScrollView>
       {/* Other dashboard components */}
-      
+
       <CompanyCreditOverview
         companyId={user.company_id}
-        onPress={() => navigation.navigate('BillingDashboard', {
-          companyId: user.company_id,
-          companyName: user.company_name
-        })}
+        onPress={() =>
+          navigation.navigate('BillingDashboard', {
+            companyId: user.company_id,
+            companyName: user.company_name,
+          })
+        }
       />
-      
+
       {/* More dashboard components */}
     </ScrollView>
   );
@@ -317,6 +341,7 @@ Components include accessibility features:
 ## Future Enhancements
 
 ### Phase 2 Features
+
 - Chart integration (Victory Native or similar)
 - Export functionality (PDF invoices, CSV reports)
 - Advanced filtering and search
@@ -324,6 +349,7 @@ Components include accessibility features:
 - Mobile payment integration
 
 ### Phase 3 Features
+
 - Real-time notifications
 - Automated payment matching
 - Multi-currency support

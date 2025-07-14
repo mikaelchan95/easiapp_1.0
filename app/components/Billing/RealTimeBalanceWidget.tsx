@@ -9,7 +9,10 @@ import {
   ScrollView,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { realTimePaymentService, BalanceUpdate } from '../../services/realTimePaymentService';
+import {
+  realTimePaymentService,
+  BalanceUpdate,
+} from '../../services/realTimePaymentService';
 import { enhancedBillingService } from '../../services/enhancedBillingService';
 import { theme } from '../../utils/theme';
 
@@ -31,11 +34,14 @@ interface BalanceData {
 export default function RealTimeBalanceWidget({
   companyId,
   companyName,
-  onBalancePress
+  onBalancePress,
 }: RealTimeBalanceWidgetProps) {
   // Validate required props
   if (!companyId || typeof companyId !== 'string' || companyId.trim() === '') {
-    console.error('❌ RealTimeBalanceWidget: Invalid companyId provided:', companyId);
+    console.error(
+      '❌ RealTimeBalanceWidget: Invalid companyId provided:',
+      companyId
+    );
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>
@@ -50,7 +56,9 @@ export default function RealTimeBalanceWidget({
   const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
   const [isLive, setIsLive] = useState(false);
   const [recentUpdates, setRecentUpdates] = useState<BalanceUpdate[]>([]);
-  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected');
+  const [connectionStatus, setConnectionStatus] = useState<
+    'connected' | 'disconnected' | 'connecting'
+  >('disconnected');
 
   useFocusEffect(
     useCallback(() => {
@@ -71,9 +79,10 @@ export default function RealTimeBalanceWidget({
           credit_limit: result.data.metrics.creditSummary.credit_limit,
           credit_used: result.data.metrics.creditSummary.credit_used,
           available_credit: result.data.metrics.creditSummary.available_credit,
-          utilization_percentage: result.data.metrics.creditSummary.utilization_percentage,
+          utilization_percentage:
+            result.data.metrics.creditSummary.utilization_percentage,
           status: result.data.metrics.creditSummary.status,
-          last_updated: new Date().toISOString()
+          last_updated: new Date().toISOString(),
         });
         setIsLive(result.data.is_live);
         setRecentUpdates(result.data.recent_updates || []);
@@ -88,13 +97,13 @@ export default function RealTimeBalanceWidget({
 
   const setupRealTimeMonitoring = async () => {
     setConnectionStatus('connecting');
-    
+
     const success = await enhancedBillingService.startRealTimeMonitoring(
       companyId,
       (update: BalanceUpdate) => {
         handleBalanceUpdate(update);
       },
-      (error) => {
+      error => {
         console.error('Real-time monitoring error:', error);
         setConnectionStatus('disconnected');
       }
@@ -110,18 +119,21 @@ export default function RealTimeBalanceWidget({
 
   const handleBalanceUpdate = (update: BalanceUpdate) => {
     if (__DEV__) console.log('Received balance update:', update);
-    
+
     // Update balance data
     setBalanceData(prev => {
       if (!prev) return prev;
-      
+
       return {
         ...prev,
         available_credit: update.new_balance,
         credit_used: prev.credit_limit - update.new_balance,
-        utilization_percentage: ((prev.credit_limit - update.new_balance) / prev.credit_limit) * 100,
-        status: getBalanceStatus(((prev.credit_limit - update.new_balance) / prev.credit_limit) * 100),
-        last_updated: update.timestamp
+        utilization_percentage:
+          ((prev.credit_limit - update.new_balance) / prev.credit_limit) * 100,
+        status: getBalanceStatus(
+          ((prev.credit_limit - update.new_balance) / prev.credit_limit) * 100
+        ),
+        last_updated: update.timestamp,
       };
     });
 
@@ -129,7 +141,9 @@ export default function RealTimeBalanceWidget({
     setRecentUpdates(prev => [update, ...prev.slice(0, 4)]);
   };
 
-  const getBalanceStatus = (utilization: number): 'good' | 'warning' | 'critical' => {
+  const getBalanceStatus = (
+    utilization: number
+  ): 'good' | 'warning' | 'critical' => {
     if (utilization >= 90) return 'critical';
     if (utilization >= 75) return 'warning';
     return 'good';
@@ -158,28 +172,40 @@ export default function RealTimeBalanceWidget({
 
   const getStatusColor = (status: string): string => {
     switch (status) {
-      case 'good': return theme.colors.success;
-      case 'warning': return theme.colors.warning;
-      case 'critical': return theme.colors.error;
-      default: return theme.colors.textSecondary;
+      case 'good':
+        return theme.colors.success;
+      case 'warning':
+        return theme.colors.warning;
+      case 'critical':
+        return theme.colors.error;
+      default:
+        return theme.colors.textSecondary;
     }
   };
 
   const getConnectionStatusColor = (): string => {
     switch (connectionStatus) {
-      case 'connected': return theme.colors.success;
-      case 'connecting': return theme.colors.warning;
-      case 'disconnected': return theme.colors.error;
-      default: return theme.colors.textSecondary;
+      case 'connected':
+        return theme.colors.success;
+      case 'connecting':
+        return theme.colors.warning;
+      case 'disconnected':
+        return theme.colors.error;
+      default:
+        return theme.colors.textSecondary;
     }
   };
 
   const getConnectionStatusText = (): string => {
     switch (connectionStatus) {
-      case 'connected': return 'Live';
-      case 'connecting': return 'Connecting...';
-      case 'disconnected': return 'Offline';
-      default: return 'Unknown';
+      case 'connected':
+        return 'Live';
+      case 'connecting':
+        return 'Connecting...';
+      case 'disconnected':
+        return 'Offline';
+      default:
+        return 'Unknown';
     }
   };
 
@@ -217,8 +243,15 @@ export default function RealTimeBalanceWidget({
             <Text style={styles.cardTitle}>Credit Balance</Text>
           </View>
           <View style={styles.statusContainer}>
-            <View style={[styles.statusDot, { backgroundColor: getConnectionStatusColor() }]} />
-            <Text style={[styles.statusText, { color: getConnectionStatusColor() }]}>
+            <View
+              style={[
+                styles.statusDot,
+                { backgroundColor: getConnectionStatusColor() },
+              ]}
+            />
+            <Text
+              style={[styles.statusText, { color: getConnectionStatusColor() }]}
+            >
               {getConnectionStatusText()}
             </Text>
           </View>
@@ -227,20 +260,25 @@ export default function RealTimeBalanceWidget({
         <View style={styles.balanceSection}>
           <View style={styles.balanceRow}>
             <Text style={styles.balanceLabel}>Available Credit</Text>
-            <Text style={[styles.balanceAmount, { color: getStatusColor(balanceData.status) }]}>
+            <Text
+              style={[
+                styles.balanceAmount,
+                { color: getStatusColor(balanceData.status) },
+              ]}
+            >
               {formatCurrency(balanceData.available_credit)}
             </Text>
           </View>
-          
+
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View 
+              <View
                 style={[
                   styles.progressFill,
-                  { 
+                  {
                     width: `${Math.min(balanceData.utilization_percentage, 100)}%`,
-                    backgroundColor: getStatusColor(balanceData.status)
-                  }
+                    backgroundColor: getStatusColor(balanceData.status),
+                  },
                 ]}
               />
             </View>
@@ -252,11 +290,15 @@ export default function RealTimeBalanceWidget({
           <View style={styles.creditDetails}>
             <View style={styles.creditRow}>
               <Text style={styles.creditLabel}>Credit Limit:</Text>
-              <Text style={styles.creditValue}>{formatCurrency(balanceData.credit_limit)}</Text>
+              <Text style={styles.creditValue}>
+                {formatCurrency(balanceData.credit_limit)}
+              </Text>
             </View>
             <View style={styles.creditRow}>
               <Text style={styles.creditLabel}>Credit Used:</Text>
-              <Text style={styles.creditValue}>{formatCurrency(balanceData.credit_used)}</Text>
+              <Text style={styles.creditValue}>
+                {formatCurrency(balanceData.credit_used)}
+              </Text>
             </View>
           </View>
         </View>
@@ -280,12 +322,17 @@ export default function RealTimeBalanceWidget({
           {recentUpdates.slice(0, 3).map((update, index) => (
             <View key={index} style={styles.updateItem}>
               <View style={styles.updateContent}>
-                <Text style={styles.updateType}>{update.update_type.replace('_', ' ')}</Text>
+                <Text style={styles.updateType}>
+                  {update.update_type.replace('_', ' ')}
+                </Text>
                 <Text style={styles.updateAmount}>
-                  {update.amount > 0 ? '+' : ''}{formatCurrency(Math.abs(update.amount))}
+                  {update.amount > 0 ? '+' : ''}
+                  {formatCurrency(Math.abs(update.amount))}
                 </Text>
               </View>
-              <Text style={styles.updateTime}>{formatTime(update.timestamp)}</Text>
+              <Text style={styles.updateTime}>
+                {formatTime(update.timestamp)}
+              </Text>
             </View>
           ))}
         </View>

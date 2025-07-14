@@ -1,4 +1,11 @@
-import React, { createContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
 
 // Cart notification context type
 export type CartNotificationType = {
@@ -21,7 +28,9 @@ export const CartNotificationContext = createContext<CartNotificationType>({
 });
 
 // Provider component
-export const CartNotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const CartNotificationProvider: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   // Notification state
   const [notification, setNotification] = useState({
     visible: false,
@@ -44,7 +53,10 @@ export const CartNotificationProvider: React.FC<{ children: React.ReactNode }> =
   const processBatch = useCallback(() => {
     if (pendingItems.current.length === 0) return;
 
-    const totalItems = pendingItems.current.reduce((sum, item) => sum + item.quantity, 0);
+    const totalItems = pendingItems.current.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
     const lastItem = pendingItems.current[pendingItems.current.length - 1];
 
     // Update notification state
@@ -71,51 +83,57 @@ export const CartNotificationProvider: React.FC<{ children: React.ReactNode }> =
   }, []);
 
   // Show notification with batching
-  const showCartNotification = useCallback((itemName?: string, quantity: number = 1) => {
-    // Add to pending items
-    pendingItems.current.push({ name: itemName, quantity });
+  const showCartNotification = useCallback(
+    (itemName?: string, quantity: number = 1) => {
+      // Add to pending items
+      pendingItems.current.push({ name: itemName, quantity });
 
-    // If we're already showing a notification, extend it
-    if (notification.visible) {
-      // Clear existing hide timer
-      if (hideTimer.current) {
-        clearTimeout(hideTimer.current);
+      // If we're already showing a notification, extend it
+      if (notification.visible) {
+        // Clear existing hide timer
+        if (hideTimer.current) {
+          clearTimeout(hideTimer.current);
+        }
+
+        // Update current notification immediately
+        const totalItems = pendingItems.current.reduce(
+          (sum, item) => sum + item.quantity,
+          0
+        );
+        const lastItem = pendingItems.current[pendingItems.current.length - 1];
+
+        setNotification({
+          visible: true,
+          itemCount: notification.itemCount + totalItems,
+          lastItemName: lastItem.name,
+        });
+
+        // Clear pending items since we've processed them
+        pendingItems.current = [];
+
+        // Set new hide timer
+        hideTimer.current = setTimeout(() => {
+          setNotification(prev => ({
+            ...prev,
+            visible: false,
+          }));
+        }, DISPLAY_DURATION);
+
+        return;
       }
 
-      // Update current notification immediately
-      const totalItems = pendingItems.current.reduce((sum, item) => sum + item.quantity, 0);
-      const lastItem = pendingItems.current[pendingItems.current.length - 1];
+      // If not currently showing, start batch timer
+      if (batchTimer.current) {
+        clearTimeout(batchTimer.current);
+      }
 
-      setNotification({
-        visible: true,
-        itemCount: notification.itemCount + totalItems,
-        lastItemName: lastItem.name,
-      });
-
-      // Clear pending items since we've processed them
-      pendingItems.current = [];
-      
-      // Set new hide timer
-      hideTimer.current = setTimeout(() => {
-        setNotification(prev => ({
-          ...prev,
-          visible: false,
-        }));
-      }, DISPLAY_DURATION);
-
-      return;
-    }
-
-    // If not currently showing, start batch timer
-    if (batchTimer.current) {
-      clearTimeout(batchTimer.current);
-    }
-
-    batchTimer.current = setTimeout(() => {
-      processBatch();
-      batchTimer.current = null;
-    }, BATCH_WINDOW);
-  }, [notification.visible, notification.itemCount, processBatch]);
+      batchTimer.current = setTimeout(() => {
+        processBatch();
+        batchTimer.current = null;
+      }, BATCH_WINDOW);
+    },
+    [notification.visible, notification.itemCount, processBatch]
+  );
 
   // Hide notification immediately
   const hideCartNotification = useCallback(() => {
@@ -129,7 +147,7 @@ export const CartNotificationProvider: React.FC<{ children: React.ReactNode }> =
       visible: false,
     }));
   }, []);
-    
+
   // Clear notification queue
   const clearNotificationQueue = useCallback(() => {
     if (batchTimer.current) {
@@ -147,7 +165,7 @@ export const CartNotificationProvider: React.FC<{ children: React.ReactNode }> =
       lastItemName: undefined,
     });
   }, []);
-  
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -156,26 +174,29 @@ export const CartNotificationProvider: React.FC<{ children: React.ReactNode }> =
       }
       if (hideTimer.current) {
         clearTimeout(hideTimer.current);
-    }
+      }
     };
   }, []);
 
   // Memoize the context value
-  const contextValue = useMemo(() => ({
-    visible: notification.visible,
-    itemCount: notification.itemCount,
-    lastItemName: notification.lastItemName,
-    showCartNotification,
-    hideCartNotification,
-    clearNotificationQueue,
-  }), [
-    notification.visible,
-    notification.itemCount,
-    notification.lastItemName,
-    showCartNotification, 
-    hideCartNotification, 
-    clearNotificationQueue,
-  ]);
+  const contextValue = useMemo(
+    () => ({
+      visible: notification.visible,
+      itemCount: notification.itemCount,
+      lastItemName: notification.lastItemName,
+      showCartNotification,
+      hideCartNotification,
+      clearNotificationQueue,
+    }),
+    [
+      notification.visible,
+      notification.itemCount,
+      notification.lastItemName,
+      showCartNotification,
+      hideCartNotification,
+      clearNotificationQueue,
+    ]
+  );
 
   return (
     <CartNotificationContext.Provider value={contextValue}>
@@ -184,4 +205,4 @@ export const CartNotificationProvider: React.FC<{ children: React.ReactNode }> =
   );
 };
 
-export default CartNotificationProvider; 
+export default CartNotificationProvider;

@@ -6,30 +6,30 @@ import { Animated, Easing } from 'react-native';
 export const TIMING = {
   // Easing functions for natural motion
   easeInOut: Easing.bezier(0.4, 0.0, 0.2, 1), // Standard curve for most UI animations
-  easeOut: Easing.bezier(0.0, 0.0, 0.2, 1),   // Quick acceleration, gentle slowdown
-  easeIn: Easing.bezier(0.4, 0.0, 1, 1),      // Starts slow, ends at full velocity
+  easeOut: Easing.bezier(0.0, 0.0, 0.2, 1), // Quick acceleration, gentle slowdown
+  easeIn: Easing.bezier(0.4, 0.0, 1, 1), // Starts slow, ends at full velocity
   emphatic: Easing.bezier(0.175, 0.885, 0.32, 1.275), // More dramatic curve for attention-grabbing animations
   bounce: Easing.bounce,
-  
+
   // Apple-like spring presets
   spring: {
     stiff: { friction: 8, tension: 100 },
     gentle: { friction: 7, tension: 40 },
-    wobbly: { friction: 3, tension: 40 }
-  }
+    wobbly: { friction: 3, tension: 40 },
+  },
 };
 
 /**
  * Standard durations for animations
  */
 export const DURATION = {
-  short: 150,  // For micro-feedback (button presses)
+  short: 150, // For micro-feedback (button presses)
   medium: 300, // Standard transitions
-  long: 500,   // Complex or multi-stage transitions
-  
+  long: 500, // Complex or multi-stage transitions
+
   // Legacy naming for backward compatibility
   quick: 200,
-  slow: 400
+  slow: 400,
 };
 
 /**
@@ -44,7 +44,7 @@ export const buttonPress = (scaleValue: Animated.Value) => {
       toValue: 0.96,
       duration: DURATION.short,
       easing: TIMING.easeOut,
-      useNativeDriver: true
+      useNativeDriver: true,
     }).start();
   };
 
@@ -54,7 +54,7 @@ export const buttonPress = (scaleValue: Animated.Value) => {
       toValue: 1,
       duration: DURATION.short,
       easing: TIMING.easeOut,
-      useNativeDriver: true
+      useNativeDriver: true,
     }).start();
   };
 
@@ -66,12 +66,14 @@ export const buttonPress = (scaleValue: Animated.Value) => {
  * @param value Animated.Value to animate
  * @returns The animation object
  */
-export const pressFeedback = (value: Animated.Value): Animated.CompositeAnimation => {
+export const pressFeedback = (
+  value: Animated.Value
+): Animated.CompositeAnimation => {
   return Animated.timing(value, {
     toValue: 0.95,
     duration: DURATION.short,
     easing: TIMING.easeOut,
-    useNativeDriver: true
+    useNativeDriver: true,
   });
 };
 
@@ -80,12 +82,14 @@ export const pressFeedback = (value: Animated.Value): Animated.CompositeAnimatio
  * @param value Animated.Value to animate
  * @returns The animation object
  */
-export const releaseFeedback = (value: Animated.Value): Animated.CompositeAnimation => {
+export const releaseFeedback = (
+  value: Animated.Value
+): Animated.CompositeAnimation => {
   return Animated.spring(value, {
     toValue: 1,
     friction: 5,
     tension: 300,
-    useNativeDriver: true
+    useNativeDriver: true,
   });
 };
 
@@ -96,7 +100,7 @@ export const releaseFeedback = (value: Animated.Value): Animated.CompositeAnimat
  * @returns The animation object
  */
 export const successAnimation = (
-  value: Animated.Value, 
+  value: Animated.Value,
   callback?: () => void
 ): Animated.CompositeAnimation => {
   const animation = Animated.sequence([
@@ -104,26 +108,26 @@ export const successAnimation = (
       toValue: 1.2,
       duration: DURATION.short,
       easing: TIMING.easeOut,
-      useNativeDriver: true
+      useNativeDriver: true,
     }),
     Animated.timing(value, {
       toValue: 0.9,
       duration: DURATION.short,
       easing: TIMING.easeInOut,
-      useNativeDriver: true
+      useNativeDriver: true,
     }),
     Animated.spring(value, {
       toValue: 1,
       friction: 4,
       tension: 100,
-      useNativeDriver: true
-    })
+      useNativeDriver: true,
+    }),
   ]);
-  
+
   if (callback) {
     animation.start(callback);
   }
-  
+
   return animation;
 };
 
@@ -143,13 +147,13 @@ export const fadeIn = (
     toValue: 1,
     duration,
     easing: TIMING.easeOut,
-    useNativeDriver: true
+    useNativeDriver: true,
   });
-  
+
   if (callback) {
     animation.start(callback);
   }
-  
+
   return animation;
 };
 
@@ -169,13 +173,13 @@ export const fadeOut = (
     toValue: 0,
     duration,
     easing: TIMING.easeIn,
-    useNativeDriver: true
+    useNativeDriver: true,
   });
-  
+
   if (callback) {
     animation.start(callback);
   }
-  
+
   return animation;
 };
 
@@ -197,18 +201,18 @@ export const slideAnimation = (
 ): Animated.CompositeAnimation => {
   // Reset the value to the starting position
   value.setValue(from);
-  
+
   const animation = Animated.timing(value, {
     toValue: to,
     duration,
     easing: TIMING.easeInOut,
-    useNativeDriver: true
+    useNativeDriver: true,
   });
-  
+
   if (callback) {
     animation.start(callback);
   }
-  
+
   return animation;
 };
 
@@ -219,8 +223,8 @@ export const slideAnimation = (
  * @param callback Optional callback function
  */
 export const slideUp = (
-  value: Animated.Value, 
-  distance: number = 50, 
+  value: Animated.Value,
+  distance: number = 50,
   callback?: () => void
 ) => {
   return slideAnimation(value, distance, 0, DURATION.medium, callback);
@@ -233,8 +237,8 @@ export const slideUp = (
  * @param callback Optional callback function
  */
 export const slideDown = (
-  value: Animated.Value, 
-  distance: number = 50, 
+  value: Animated.Value,
+  distance: number = 50,
   callback?: () => void
 ) => {
   return slideAnimation(value, 0, distance, DURATION.medium, callback);
@@ -248,8 +252,8 @@ export const slideDown = (
  * @param callback Optional callback function
  */
 export const springAnimation = (
-  value: Animated.Value, 
-  toValue: number = 1, 
+  value: Animated.Value,
+  toValue: number = 1,
   preset: 'stiff' | 'gentle' | 'wobbly' = 'gentle',
   callback?: () => void
 ) => {
@@ -257,13 +261,13 @@ export const springAnimation = (
     toValue,
     friction: TIMING.spring[preset].friction,
     tension: TIMING.spring[preset].tension,
-    useNativeDriver: true
+    useNativeDriver: true,
   });
-  
+
   if (callback) {
     animation.start(callback);
   }
-  
+
   return animation;
 };
 
@@ -284,16 +288,16 @@ export const pulseAnimation = (
       toValue: intense ? 1.2 : 1.05,
       duration: DURATION.short,
       easing: TIMING.easeOut,
-      useNativeDriver: true
+      useNativeDriver: true,
     }),
     Animated.timing(value, {
       toValue: 1,
       duration: DURATION.short,
       easing: TIMING.easeInOut,
-      useNativeDriver: true
-    })
+      useNativeDriver: true,
+    }),
   ]);
-  
+
   if (repeat) {
     animation.start(({ finished }) => {
       if (finished && repeat) {
@@ -301,7 +305,7 @@ export const pulseAnimation = (
       }
     });
   }
-  
+
   return animation;
 };
 
@@ -310,38 +314,41 @@ export const pulseAnimation = (
  * @param value Animated.Value to animate
  * @param callback Optional callback function
  */
-export const heartbeatAnimation = (value: Animated.Value, callback?: () => void) => {
+export const heartbeatAnimation = (
+  value: Animated.Value,
+  callback?: () => void
+) => {
   const animation = Animated.sequence([
-    Animated.timing(value, { 
-      toValue: 1.2, 
-      duration: 150, 
+    Animated.timing(value, {
+      toValue: 1.2,
+      duration: 150,
       easing: TIMING.easeOut,
-      useNativeDriver: true 
+      useNativeDriver: true,
     }),
-    Animated.timing(value, { 
-      toValue: 1, 
-      duration: 100, 
+    Animated.timing(value, {
+      toValue: 1,
+      duration: 100,
       easing: TIMING.easeIn,
-      useNativeDriver: true 
+      useNativeDriver: true,
     }),
-    Animated.timing(value, { 
-      toValue: 1.1, 
-      duration: 150, 
+    Animated.timing(value, {
+      toValue: 1.1,
+      duration: 150,
       easing: TIMING.easeOut,
-      useNativeDriver: true 
+      useNativeDriver: true,
     }),
-    Animated.timing(value, { 
-      toValue: 1, 
-      duration: 100, 
+    Animated.timing(value, {
+      toValue: 1,
+      duration: 100,
       easing: TIMING.easeIn,
-      useNativeDriver: true 
-    })
+      useNativeDriver: true,
+    }),
   ]);
-  
+
   if (callback) {
     animation.start(callback);
   }
-  
+
   return animation;
 };
 
@@ -354,10 +361,15 @@ export const heartbeatAnimation = (value: Animated.Value, callback?: () => void)
  */
 export const staggered = (
   values: Animated.Value[],
-  animationCreator: (value: Animated.Value, index: number) => Animated.CompositeAnimation,
+  animationCreator: (
+    value: Animated.Value,
+    index: number
+  ) => Animated.CompositeAnimation,
   staggerDelay: number = 50
 ): Animated.CompositeAnimation => {
-  const animations = values.map((value, index) => animationCreator(value, index));
+  const animations = values.map((value, index) =>
+    animationCreator(value, index)
+  );
   return Animated.stagger(staggerDelay, animations);
 };
 
@@ -366,15 +378,19 @@ export const staggered = (
  * @param values Array of Animated.Value to animate
  * @param stagger Delay between each animation
  */
-export const staggeredAnimations = (values: Animated.Value[], stagger: number = 50) => {
+export const staggeredAnimations = (
+  values: Animated.Value[],
+  stagger: number = 50
+) => {
   return staggered(
     values,
-    (value) => Animated.timing(value, {
-      toValue: 1,
-      duration: DURATION.medium,
-      easing: TIMING.easeOut,
-      useNativeDriver: true
-    }),
+    value =>
+      Animated.timing(value, {
+        toValue: 1,
+        duration: DURATION.medium,
+        easing: TIMING.easeOut,
+        useNativeDriver: true,
+      }),
     stagger
   );
 };
@@ -384,14 +400,17 @@ export const staggeredAnimations = (values: Animated.Value[], stagger: number = 
  * @param value Animated.Value to animate
  * @param duration Duration of one shimmer cycle
  */
-export const shimmerAnimation = (value: Animated.Value, duration: number = 1500) => {
+export const shimmerAnimation = (
+  value: Animated.Value,
+  duration: number = 1500
+) => {
   value.setValue(0);
   Animated.loop(
     Animated.timing(value, {
       toValue: 1,
       duration,
       easing: Easing.linear,
-      useNativeDriver: false // Shimmer uses interpolation for backgroundColor
+      useNativeDriver: false, // Shimmer uses interpolation for backgroundColor
     })
   ).start();
 };
@@ -404,22 +423,22 @@ export const shimmerAnimation = (value: Animated.Value, duration: number = 1500)
  * @param callback Optional callback function
  */
 export const progressAnimation = (
-  value: Animated.Value, 
-  toValue: number = 1, 
-  duration: number = 1000, 
+  value: Animated.Value,
+  toValue: number = 1,
+  duration: number = 1000,
   callback?: () => void
 ) => {
   const animation = Animated.timing(value, {
     toValue,
     duration,
     easing: TIMING.easeOut,
-    useNativeDriver: false // Progress bar uses layout properties
+    useNativeDriver: false, // Progress bar uses layout properties
   });
-  
+
   if (callback) {
     animation.start(callback);
   }
-  
+
   return animation;
 };
 
@@ -428,41 +447,43 @@ export const progressAnimation = (
  * @param value Animated.Value to animate
  * @returns The animation object
  */
-export const shakeAnimation = (value: Animated.Value): Animated.CompositeAnimation => {
+export const shakeAnimation = (
+  value: Animated.Value
+): Animated.CompositeAnimation => {
   // Reset the value
   value.setValue(0);
-  
+
   return Animated.sequence([
     Animated.timing(value, {
       toValue: 10,
       duration: 100,
       easing: TIMING.easeInOut,
-      useNativeDriver: true
+      useNativeDriver: true,
     }),
     Animated.timing(value, {
       toValue: -10,
       duration: 100,
       easing: TIMING.easeInOut,
-      useNativeDriver: true
+      useNativeDriver: true,
     }),
     Animated.timing(value, {
       toValue: 6,
       duration: 100,
       easing: TIMING.easeInOut,
-      useNativeDriver: true
+      useNativeDriver: true,
     }),
     Animated.timing(value, {
       toValue: -6,
       duration: 100,
       easing: TIMING.easeInOut,
-      useNativeDriver: true
+      useNativeDriver: true,
     }),
     Animated.timing(value, {
       toValue: 0,
       duration: 100,
       easing: TIMING.easeInOut,
-      useNativeDriver: true
-    })
+      useNativeDriver: true,
+    }),
   ]);
 };
 
@@ -472,25 +493,28 @@ export const shakeAnimation = (value: Animated.Value): Animated.CompositeAnimati
  * @param callback Optional callback function
  * @returns The animation object
  */
-export const bounceAnimation = (value: Animated.Value, callback?: () => void): Animated.CompositeAnimation => {
+export const bounceAnimation = (
+  value: Animated.Value,
+  callback?: () => void
+): Animated.CompositeAnimation => {
   const animation = Animated.sequence([
     Animated.timing(value, {
       toValue: 1.1,
       duration: 100,
       easing: TIMING.easeOut,
-      useNativeDriver: true
+      useNativeDriver: true,
     }),
     Animated.spring(value, {
       toValue: 1,
       friction: 4,
       tension: 300,
-      useNativeDriver: true
-    })
+      useNativeDriver: true,
+    }),
   ]);
-  
+
   if (callback) {
     animation.start(callback);
   }
-  
+
   return animation;
-}; 
+};

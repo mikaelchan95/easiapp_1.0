@@ -9,7 +9,10 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { enhancedBillingService, CreditAlert } from '../../services/enhancedBillingService';
+import {
+  enhancedBillingService,
+  CreditAlert,
+} from '../../services/enhancedBillingService';
 import { theme } from '../../utils/theme';
 
 interface CreditAlertsNotificationProps {
@@ -33,7 +36,7 @@ export default function CreditAlertsNotification({
 
   useEffect(() => {
     loadAlerts();
-    
+
     let interval: NodeJS.Timeout;
     if (autoRefresh) {
       interval = setInterval(loadAlerts, refreshInterval);
@@ -95,28 +98,40 @@ export default function CreditAlertsNotification({
 
   const getAlertIcon = (type: string): string => {
     switch (type) {
-      case 'critical': return '🚨';
-      case 'warning': return '⚠️';
-      case 'info': return 'ℹ️';
-      default: return '📢';
+      case 'critical':
+        return '🚨';
+      case 'warning':
+        return '⚠️';
+      case 'info':
+        return 'ℹ️';
+      default:
+        return '📢';
     }
   };
 
   const getAlertColor = (type: string): string => {
     switch (type) {
-      case 'critical': return theme.colors.error;
-      case 'warning': return theme.colors.warning;
-      case 'info': return theme.colors.info;
-      default: return theme.colors.primary;
+      case 'critical':
+        return theme.colors.error;
+      case 'warning':
+        return theme.colors.warning;
+      case 'info':
+        return theme.colors.info;
+      default:
+        return theme.colors.primary;
     }
   };
 
   const getAlertBackgroundColor = (type: string): string => {
     switch (type) {
-      case 'critical': return theme.colors.errorBackground;
-      case 'warning': return theme.colors.warningBackground;
-      case 'info': return theme.colors.infoBackground;
-      default: return theme.colors.primaryBackground;
+      case 'critical':
+        return theme.colors.errorBackground;
+      case 'warning':
+        return theme.colors.warningBackground;
+      case 'info':
+        return theme.colors.infoBackground;
+      default:
+        return theme.colors.primaryBackground;
     }
   };
 
@@ -130,7 +145,14 @@ export default function CreditAlertsNotification({
         alert.message,
         [
           { text: 'Dismiss', style: 'cancel' },
-          ...(alert.action_required ? [{ text: 'Take Action', onPress: () => handleActionRequired(alert) }] : [])
+          ...(alert.action_required
+            ? [
+                {
+                  text: 'Take Action',
+                  onPress: () => handleActionRequired(alert),
+                },
+              ]
+            : []),
         ]
       );
     }
@@ -144,9 +166,19 @@ export default function CreditAlertsNotification({
           'Credit Limit Action Required',
           'Your credit utilization is high. Consider making a payment or requesting a credit limit increase.',
           [
-            { text: 'Make Payment', onPress: () => { /* Navigate to payment screen */ } },
-            { text: 'Request Increase', onPress: () => { /* Navigate to credit request */ } },
-            { text: 'Later', style: 'cancel' }
+            {
+              text: 'Make Payment',
+              onPress: () => {
+                /* Navigate to payment screen */
+              },
+            },
+            {
+              text: 'Request Increase',
+              onPress: () => {
+                /* Navigate to credit request */
+              },
+            },
+            { text: 'Later', style: 'cancel' },
           ]
         );
         break;
@@ -155,9 +187,19 @@ export default function CreditAlertsNotification({
           'Overdue Invoices Action Required',
           'You have overdue invoices that require immediate payment.',
           [
-            { text: 'View Invoices', onPress: () => { /* Navigate to invoices */ } },
-            { text: 'Make Payment', onPress: () => { /* Navigate to payment screen */ } },
-            { text: 'Later', style: 'cancel' }
+            {
+              text: 'View Invoices',
+              onPress: () => {
+                /* Navigate to invoices */
+              },
+            },
+            {
+              text: 'Make Payment',
+              onPress: () => {
+                /* Navigate to payment screen */
+              },
+            },
+            { text: 'Later', style: 'cancel' },
           ]
         );
         break;
@@ -209,9 +251,15 @@ export default function CreditAlertsNotification({
         <TouchableOpacity
           style={[
             styles.alertCard,
-            { backgroundColor: getAlertBackgroundColor(mostImportantAlert?.type || 'info') }
+            {
+              backgroundColor: getAlertBackgroundColor(
+                mostImportantAlert?.type || 'info'
+              ),
+            },
           ]}
-          onPress={() => mostImportantAlert && handleAlertPress(mostImportantAlert)}
+          onPress={() =>
+            mostImportantAlert && handleAlertPress(mostImportantAlert)
+          }
         >
           <View style={styles.alertContent}>
             <View style={styles.alertHeader}>
@@ -219,7 +267,14 @@ export default function CreditAlertsNotification({
                 {getAlertIcon(mostImportantAlert?.type || 'info')}
               </Text>
               <View style={styles.alertText}>
-                <Text style={[styles.alertCategory, { color: getAlertColor(mostImportantAlert?.type || 'info') }]}>
+                <Text
+                  style={[
+                    styles.alertCategory,
+                    {
+                      color: getAlertColor(mostImportantAlert?.type || 'info'),
+                    },
+                  ]}
+                >
                   {mostImportantAlert?.category.replace('_', ' ').toUpperCase()}
                 </Text>
                 <Text style={styles.alertMessage} numberOfLines={2}>
@@ -227,14 +282,22 @@ export default function CreditAlertsNotification({
                 </Text>
               </View>
               {alerts.length > 1 && (
-                <TouchableOpacity style={styles.countBadge} onPress={showAllAlerts}>
+                <TouchableOpacity
+                  style={styles.countBadge}
+                  onPress={showAllAlerts}
+                >
                   <Text style={styles.countText}>{alerts.length}</Text>
                 </TouchableOpacity>
               )}
             </View>
             {mostImportantAlert?.action_required && (
               <View style={styles.actionIndicator}>
-                <Text style={[styles.actionText, { color: getAlertColor(mostImportantAlert.type) }]}>
+                <Text
+                  style={[
+                    styles.actionText,
+                    { color: getAlertColor(mostImportantAlert.type) },
+                  ]}
+                >
                   Action Required
                 </Text>
               </View>
@@ -271,15 +334,30 @@ export default function CreditAlertsNotification({
                 {criticalAlerts.map((alert, index) => (
                   <TouchableOpacity
                     key={`critical-${index}`}
-                    style={[styles.modalAlertCard, { backgroundColor: getAlertBackgroundColor('critical') }]}
+                    style={[
+                      styles.modalAlertCard,
+                      { backgroundColor: getAlertBackgroundColor('critical') },
+                    ]}
                     onPress={() => handleAlertPress(alert)}
                   >
-                    <Text style={[styles.modalAlertCategory, { color: getAlertColor('critical') }]}>
+                    <Text
+                      style={[
+                        styles.modalAlertCategory,
+                        { color: getAlertColor('critical') },
+                      ]}
+                    >
                       {alert.category.replace('_', ' ').toUpperCase()}
                     </Text>
-                    <Text style={styles.modalAlertMessage}>{alert.message}</Text>
+                    <Text style={styles.modalAlertMessage}>
+                      {alert.message}
+                    </Text>
                     {alert.action_required && (
-                      <Text style={[styles.modalActionRequired, { color: getAlertColor('critical') }]}>
+                      <Text
+                        style={[
+                          styles.modalActionRequired,
+                          { color: getAlertColor('critical') },
+                        ]}
+                      >
                         Action Required
                       </Text>
                     )}
@@ -294,15 +372,30 @@ export default function CreditAlertsNotification({
                 {warningAlerts.map((alert, index) => (
                   <TouchableOpacity
                     key={`warning-${index}`}
-                    style={[styles.modalAlertCard, { backgroundColor: getAlertBackgroundColor('warning') }]}
+                    style={[
+                      styles.modalAlertCard,
+                      { backgroundColor: getAlertBackgroundColor('warning') },
+                    ]}
                     onPress={() => handleAlertPress(alert)}
                   >
-                    <Text style={[styles.modalAlertCategory, { color: getAlertColor('warning') }]}>
+                    <Text
+                      style={[
+                        styles.modalAlertCategory,
+                        { color: getAlertColor('warning') },
+                      ]}
+                    >
                       {alert.category.replace('_', ' ').toUpperCase()}
                     </Text>
-                    <Text style={styles.modalAlertMessage}>{alert.message}</Text>
+                    <Text style={styles.modalAlertMessage}>
+                      {alert.message}
+                    </Text>
                     {alert.action_required && (
-                      <Text style={[styles.modalActionRequired, { color: getAlertColor('warning') }]}>
+                      <Text
+                        style={[
+                          styles.modalActionRequired,
+                          { color: getAlertColor('warning') },
+                        ]}
+                      >
                         Action Required
                       </Text>
                     )}
@@ -317,13 +410,23 @@ export default function CreditAlertsNotification({
                 {infoAlerts.map((alert, index) => (
                   <TouchableOpacity
                     key={`info-${index}`}
-                    style={[styles.modalAlertCard, { backgroundColor: getAlertBackgroundColor('info') }]}
+                    style={[
+                      styles.modalAlertCard,
+                      { backgroundColor: getAlertBackgroundColor('info') },
+                    ]}
                     onPress={() => handleAlertPress(alert)}
                   >
-                    <Text style={[styles.modalAlertCategory, { color: getAlertColor('info') }]}>
+                    <Text
+                      style={[
+                        styles.modalAlertCategory,
+                        { color: getAlertColor('info') },
+                      ]}
+                    >
                       {alert.category.replace('_', ' ').toUpperCase()}
                     </Text>
-                    <Text style={styles.modalAlertMessage}>{alert.message}</Text>
+                    <Text style={styles.modalAlertMessage}>
+                      {alert.message}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>

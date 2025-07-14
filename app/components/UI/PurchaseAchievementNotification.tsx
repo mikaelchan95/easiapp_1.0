@@ -22,22 +22,24 @@ interface PurchaseAchievementNotificationProps {
   onViewOrder: () => void;
 }
 
-const PurchaseAchievementNotification: React.FC<PurchaseAchievementNotificationProps> = ({
+const PurchaseAchievementNotification: React.FC<
+  PurchaseAchievementNotificationProps
+> = ({
   visible,
   orderTotal,
   pointsEarned,
   savingsAmount = 0,
   onDismiss,
-  onViewOrder
+  onViewOrder,
 }) => {
   const insets = useSafeAreaInsets();
-  
+
   // Animation values
   const translateY = useRef(new Animated.Value(-100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.95)).current;
   const iconScale = useRef(new Animated.Value(1)).current;
-  
+
   // Timer ref
   const hideTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -45,7 +47,7 @@ const PurchaseAchievementNotification: React.FC<PurchaseAchievementNotificationP
   const showAnimation = useCallback(() => {
     // Haptic feedback
     HapticFeedback.success();
-    
+
     // Icon bounce animation
     Animated.sequence([
       Animated.timing(iconScale, {
@@ -86,32 +88,35 @@ const PurchaseAchievementNotification: React.FC<PurchaseAchievementNotificationP
   }, [translateY, opacity, scale, iconScale]);
 
   // Create smooth exit animation
-  const hideAnimation = useCallback((callback?: () => void) => {
-    Animated.parallel([
-      Animated.timing(translateY, {
-        toValue: -100,
-        duration: 250,
-        easing: Easing.in(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 200,
-        easing: Easing.in(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scale, {
-        toValue: 0.95,
-        duration: 250,
-        easing: Easing.in(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start(({ finished }) => {
-      if (finished && callback) {
-        callback();
-      }
-    });
-  }, [translateY, opacity, scale]);
+  const hideAnimation = useCallback(
+    (callback?: () => void) => {
+      Animated.parallel([
+        Animated.timing(translateY, {
+          toValue: -100,
+          duration: 250,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 200,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 0.95,
+          duration: 250,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]).start(({ finished }) => {
+        if (finished && callback) {
+          callback();
+        }
+      });
+    },
+    [translateY, opacity, scale]
+  );
 
   // Handle view order with smooth transition
   const handleViewOrder = useCallback(() => {
@@ -119,27 +124,27 @@ const PurchaseAchievementNotification: React.FC<PurchaseAchievementNotificationP
       clearTimeout(hideTimer.current);
       hideTimer.current = null;
     }
-    
+
     HapticFeedback.light();
-    
+
     hideAnimation(() => {
       onDismiss();
       onViewOrder();
     });
   }, [hideAnimation, onDismiss, onViewOrder]);
-  
+
   // Handle dismiss
   const handleDismiss = useCallback(() => {
     if (hideTimer.current) {
       clearTimeout(hideTimer.current);
       hideTimer.current = null;
     }
-    
+
     hideAnimation(() => {
       onDismiss();
     });
   }, [hideAnimation, onDismiss]);
-  
+
   // Handle visibility changes
   useEffect(() => {
     if (visible) {
@@ -148,26 +153,26 @@ const PurchaseAchievementNotification: React.FC<PurchaseAchievementNotificationP
       opacity.setValue(0);
       scale.setValue(0.95);
       iconScale.setValue(1);
-      
+
       // Use InteractionManager to ensure smooth animations
       const handle = InteractionManager.runAfterInteractions(() => {
         showAnimation();
       });
-      
+
       // Set auto-hide timer
       if (hideTimer.current) {
         clearTimeout(hideTimer.current);
       }
-      
+
       hideTimer.current = setTimeout(() => {
         handleDismiss();
       }, 4000);
-      
+
       return () => {
         handle.cancel();
       };
     }
-    
+
     return () => {
       if (hideTimer.current) {
         clearTimeout(hideTimer.current);
@@ -175,7 +180,7 @@ const PurchaseAchievementNotification: React.FC<PurchaseAchievementNotificationP
       }
     };
   }, [visible, showAnimation, handleDismiss]);
-  
+
   // Don't render if not visible
   if (!visible) {
     return null;
@@ -185,53 +190,50 @@ const PurchaseAchievementNotification: React.FC<PurchaseAchievementNotificationP
   const message = React.useMemo(() => {
     return `Order complete • +${pointsEarned} points`;
   }, [pointsEarned]);
-  
+
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.container,
         {
           paddingTop: insets.top + 8,
-          transform: [
-            { translateY },
-            { scale },
-          ],
+          transform: [{ translateY }, { scale }],
           opacity,
-        }
+        },
       ]}
     >
       <View style={styles.content}>
         {/* Icon with animated scale */}
-        <Animated.View 
+        <Animated.View
           style={[
-            styles.iconContainer, 
+            styles.iconContainer,
             {
               transform: [{ scale: iconScale }],
-            }
+            },
           ]}
         >
           <Ionicons name="checkmark-circle" size={24} color={COLORS.text} />
         </Animated.View>
-        
+
         {/* Message */}
         <View style={styles.messageContainer}>
           <Text style={styles.message} numberOfLines={1}>
             {message}
           </Text>
         </View>
-        
+
         {/* Action buttons */}
         <View style={styles.actionsContainer}>
-          <TouchableOpacity 
-            style={styles.viewButton} 
+          <TouchableOpacity
+            style={styles.viewButton}
             onPress={handleViewOrder}
             activeOpacity={0.7}
           >
             <Text style={styles.viewButtonText}>View Order</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.dismissButton} 
+
+          <TouchableOpacity
+            style={styles.dismissButton}
             onPress={handleDismiss}
             activeOpacity={0.7}
           >

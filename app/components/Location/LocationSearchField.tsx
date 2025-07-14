@@ -1,11 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { 
-  View, 
-  TextInput, 
-  StyleSheet, 
-  Pressable,
-  Animated
-} from 'react-native';
+import { View, TextInput, StyleSheet, Pressable, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
@@ -18,7 +12,7 @@ const LocationSearchField: React.FC<LocationSearchFieldProps> = ({
   onChangeText,
   onClear,
   placeholder = 'Search address or place',
-  autoFocus = false
+  autoFocus = false,
 }) => {
   // Refs
   const inputRef = useRef<TextInput>(null);
@@ -34,7 +28,7 @@ const LocationSearchField: React.FC<LocationSearchFieldProps> = ({
       const timer = setTimeout(() => {
         inputRef.current?.focus();
       }, 300);
-      
+
       return () => clearTimeout(timer);
     }
   }, [autoFocus]);
@@ -46,14 +40,14 @@ const LocationSearchField: React.FC<LocationSearchFieldProps> = ({
         toValue: 1,
         duration: Animations.DURATION.short,
         easing: Animations.TIMING.easeOut,
-        useNativeDriver: true
+        useNativeDriver: true,
       }).start();
     } else {
       Animated.timing(clearButtonOpacity, {
         toValue: 0,
         duration: Animations.DURATION.short,
         easing: Animations.TIMING.easeIn,
-        useNativeDriver: true
+        useNativeDriver: true,
       }).start();
     }
   }, [value, clearButtonOpacity]);
@@ -70,20 +64,20 @@ const LocationSearchField: React.FC<LocationSearchFieldProps> = ({
     // Start ripple animation
     rippleScale.setValue(0);
     rippleOpacity.setValue(0.3);
-    
+
     Animated.parallel([
       Animated.timing(rippleScale, {
         toValue: 1,
         duration: 200,
         easing: Animations.TIMING.easeOut,
-        useNativeDriver: true
+        useNativeDriver: true,
       }),
       Animated.timing(rippleOpacity, {
         toValue: 0,
         duration: 200,
         easing: Animations.TIMING.easeOut,
-        useNativeDriver: true
-      })
+        useNativeDriver: true,
+      }),
     ]).start();
 
     // Text fade-out animation
@@ -91,7 +85,7 @@ const LocationSearchField: React.FC<LocationSearchFieldProps> = ({
       toValue: 0,
       duration: 150,
       easing: Animations.TIMING.easeOut,
-      useNativeDriver: true
+      useNativeDriver: true,
     }).start(() => {
       onClear();
       // Focus back on input after clearing
@@ -105,7 +99,7 @@ const LocationSearchField: React.FC<LocationSearchFieldProps> = ({
       toValue: 0.9,
       duration: Animations.DURATION.short,
       easing: Animations.TIMING.easeOut,
-      useNativeDriver: true
+      useNativeDriver: true,
     }).start();
   };
 
@@ -114,7 +108,7 @@ const LocationSearchField: React.FC<LocationSearchFieldProps> = ({
       toValue: 1,
       friction: 5,
       tension: 300,
-      useNativeDriver: true
+      useNativeDriver: true,
     }).start();
   };
 
@@ -123,11 +117,7 @@ const LocationSearchField: React.FC<LocationSearchFieldProps> = ({
       <View style={styles.inputContainer}>
         {/* Search icon */}
         <View style={styles.searchIcon}>
-          <Ionicons 
-            name="search" 
-            size={20} 
-            color={COLORS.textSecondary} 
-          />
+          <Ionicons name="search" size={20} color={COLORS.textSecondary} />
         </View>
 
         {/* Text input */}
@@ -155,18 +145,18 @@ const LocationSearchField: React.FC<LocationSearchFieldProps> = ({
                 styles.ripple,
                 {
                   transform: [{ scale: rippleScale }],
-                  opacity: rippleOpacity
-                }
+                  opacity: rippleOpacity,
+                },
               ]}
             />
-            
+
             {/* Clear button */}
             <Animated.View
               style={[
                 {
                   opacity: clearButtonOpacity,
-                  transform: [{ scale: clearButtonScale }]
-                }
+                  transform: [{ scale: clearButtonScale }],
+                },
               ]}
             >
               <Pressable
@@ -178,10 +168,10 @@ const LocationSearchField: React.FC<LocationSearchFieldProps> = ({
                 accessibilityRole="button"
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Expand hit area
               >
-                <Ionicons 
-                  name="close-circle" 
-                  size={20} 
-                  color={COLORS.textSecondary} 
+                <Ionicons
+                  name="close-circle"
+                  size={20}
+                  color={COLORS.textSecondary}
                 />
               </Pressable>
             </Animated.View>
@@ -194,7 +184,7 @@ const LocationSearchField: React.FC<LocationSearchFieldProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: SPACING.sm
+    marginBottom: SPACING.sm,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -206,21 +196,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     minHeight: 48, // Ensuring accessibility tap target
-    position: 'relative'
+    position: 'relative',
   },
   searchIcon: {
     marginRight: SPACING.sm,
     width: 20,
     height: 20,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   input: {
     flex: 1,
     ...TYPOGRAPHY.body,
     color: COLORS.text,
     paddingVertical: 0, // Remove default padding to maintain height control
-    minHeight: 24 // Ensure input has minimum height for touch targets
+    minHeight: 24, // Ensure input has minimum height for touch targets
   },
   clearButtonContainer: {
     position: 'relative',
@@ -228,22 +218,22 @@ const styles = StyleSheet.create({
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: SPACING.sm
+    marginLeft: SPACING.sm,
   },
   ripple: {
     position: 'absolute',
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.primary
+    backgroundColor: COLORS.primary,
   },
   clearButton: {
     width: 32,
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 16
-  }
+    borderRadius: 16,
+  },
 });
 
 export default LocationSearchField;
