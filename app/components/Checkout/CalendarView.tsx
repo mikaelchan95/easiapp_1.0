@@ -8,7 +8,7 @@ import {
   ScrollView 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, TYPOGRAPHY } from '../../utils/theme';
+import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from '../../utils/theme';
 
 interface CalendarViewProps {
   onSelectDate: (dateString: string) => void;
@@ -300,7 +300,8 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
-    marginHorizontal: 0, // Remove any external margins
+    marginHorizontal: SPACING.md, // Add consistent margins
+    ...SHADOWS.medium,
   },
   header: {
     flexDirection: 'row',

@@ -346,8 +346,27 @@ export default function CheckoutScreen() {
             <Ionicons name="chevron-back" size={24} color={COLORS.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{getStepTitle(currentStep)}</Text>
-          <View style={styles.placeholder} />
+          <TouchableOpacity 
+            style={styles.stepFlowButton}
+            onPress={() => navigation.navigate('CheckoutAddress' as never)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="layers-outline" size={16} color={COLORS.text} />
+          </TouchableOpacity>
         </Animated.View>
+      </View>
+      
+      {/* Step-by-step flow option */}
+      <View style={styles.flowOptionContainer}>
+        <TouchableOpacity 
+          style={styles.flowOptionButton}
+          onPress={() => navigation.navigate('CheckoutAddress' as never)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="list-outline" size={20} color={COLORS.text} />
+          <Text style={styles.flowOptionText}>Use step-by-step checkout</Text>
+          <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+        </TouchableOpacity>
       </View>
       
       {/* Content with Animation */}
@@ -644,6 +663,33 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
+  },
+  stepFlowButton: {
+    padding: 8,
+    borderRadius: 6,
+  },
+  flowOptionContainer: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.background,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  flowOptionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    backgroundColor: COLORS.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.light,
+  },
+  flowOptionText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    marginLeft: SPACING.sm,
+    flex: 1,
   },
   stepLine: {
     flex: 1,
