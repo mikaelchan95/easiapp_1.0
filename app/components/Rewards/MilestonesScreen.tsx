@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   StatusBar,
   Animated,
-  Dimensions
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,7 +29,7 @@ const mockMilestones = [
     icon: 'footsteps',
     color: '#4CAF50',
     completed: true,
-    completedDate: '2024-01-10'
+    completedDate: '2024-01-10',
   },
   {
     id: '2',
@@ -41,7 +41,7 @@ const mockMilestones = [
     icon: 'rocket',
     color: '#2196F3',
     completed: true,
-    completedDate: '2024-01-15'
+    completedDate: '2024-01-15',
   },
   {
     id: '3',
@@ -53,7 +53,7 @@ const mockMilestones = [
     icon: 'wine',
     color: '#FF9800',
     completed: true,
-    completedDate: '2024-01-20'
+    completedDate: '2024-01-20',
   },
   {
     id: '4',
@@ -65,7 +65,7 @@ const mockMilestones = [
     icon: 'star',
     color: '#9C27B0',
     completed: false,
-    completedDate: null
+    completedDate: null,
   },
   {
     id: '5',
@@ -77,7 +77,7 @@ const mockMilestones = [
     icon: 'library',
     color: '#FF5722',
     completed: false,
-    completedDate: null
+    completedDate: null,
   },
   {
     id: '6',
@@ -89,8 +89,8 @@ const mockMilestones = [
     icon: 'trophy',
     color: '#795548',
     completed: false,
-    completedDate: null
-  }
+    completedDate: null,
+  },
 ];
 
 const currentSpending = 1850;
@@ -109,51 +109,90 @@ const mockSpendingHistory = [
   { month: 'Sep', amount: 0 },
   { month: 'Oct', amount: 0 },
   { month: 'Nov', amount: 0 },
-  { month: 'Dec', amount: 0 }
+  { month: 'Dec', amount: 0 },
 ];
 
 export default function MilestonesScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [selectedPeriod, setSelectedPeriod] = useState('year');
-  const progressAnims = useRef(mockMilestones.map(() => new Animated.Value(0))).current;
+  const progressAnims = useRef(
+    mockMilestones.map(() => new Animated.Value(0))
+  ).current;
 
   useEffect(() => {
     // Animate progress bars
     mockMilestones.forEach((milestone, index) => {
-      const progress = Math.min((milestone.currentAmount / milestone.targetAmount) * 100, 100);
+      const progress = Math.min(
+        (milestone.currentAmount / milestone.targetAmount) * 100,
+        100
+      );
       Animated.timing(progressAnims[index], {
         toValue: progress,
-        duration: 1000 + (index * 200),
-        useNativeDriver: false
+        duration: 1000 + index * 200,
+        useNativeDriver: false,
       }).start();
     });
   }, []);
 
   const getCurrentMilestone = () => {
-    return mockMilestones.find(m => !m.completed) || mockMilestones[mockMilestones.length - 1];
+    return (
+      mockMilestones.find(m => !m.completed) ||
+      mockMilestones[mockMilestones.length - 1]
+    );
   };
 
   const getNextMilestone = () => {
     const currentIndex = mockMilestones.findIndex(m => !m.completed);
-    return currentIndex < mockMilestones.length - 1 ? mockMilestones[currentIndex + 1] : null;
+    return currentIndex < mockMilestones.length - 1
+      ? mockMilestones[currentIndex + 1]
+      : null;
   };
 
   const currentMilestone = getCurrentMilestone();
   const nextMilestone = getNextMilestone();
 
-  const renderMilestone = (milestone: typeof mockMilestones[0], index: number) => {
-    const progress = Math.min((milestone.currentAmount / milestone.targetAmount) * 100, 100);
-    const remaining = Math.max(milestone.targetAmount - milestone.currentAmount, 0);
+  const renderMilestone = (
+    milestone: (typeof mockMilestones)[0],
+    index: number
+  ) => {
+    const progress = Math.min(
+      (milestone.currentAmount / milestone.targetAmount) * 100,
+      100
+    );
+    const remaining = Math.max(
+      milestone.targetAmount - milestone.currentAmount,
+      0
+    );
 
     return (
-      <View key={milestone.id} style={[styles.milestoneCard, milestone.completed && styles.completedCard]}>
+      <View
+        key={milestone.id}
+        style={[
+          styles.milestoneCard,
+          milestone.completed && styles.completedCard,
+        ]}
+      >
         <View style={styles.milestoneHeader}>
-          <View style={[styles.milestoneIcon, { backgroundColor: `${milestone.color}15` }]}>
-            <Ionicons name={milestone.icon as any} size={24} color={milestone.color} />
+          <View
+            style={[
+              styles.milestoneIcon,
+              { backgroundColor: `${milestone.color}15` },
+            ]}
+          >
+            <Ionicons
+              name={milestone.icon as any}
+              size={24}
+              color={milestone.color}
+            />
           </View>
           <View style={styles.milestoneInfo}>
-            <Text style={[styles.milestoneTitle, milestone.completed && styles.completedTitle]}>
+            <Text
+              style={[
+                styles.milestoneTitle,
+                milestone.completed && styles.completedTitle,
+              ]}
+            >
               {milestone.title}
             </Text>
             <Text style={styles.milestoneDescription}>
@@ -162,7 +201,11 @@ export default function MilestonesScreen() {
           </View>
           {milestone.completed && (
             <View style={styles.completedBadge}>
-              <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
+              <Ionicons
+                name="checkmark-circle"
+                size={24}
+                color={COLORS.success}
+              />
             </View>
           )}
         </View>
@@ -170,28 +213,27 @@ export default function MilestonesScreen() {
         <View style={styles.milestoneProgress}>
           <View style={styles.progressHeader}>
             <Text style={styles.progressText}>
-              S${milestone.currentAmount.toLocaleString()} / S${milestone.targetAmount.toLocaleString()}
+              S${milestone.currentAmount.toLocaleString()} / S$
+              {milestone.targetAmount.toLocaleString()}
             </Text>
-            <Text style={styles.progressPercent}>
-              {Math.round(progress)}%
-            </Text>
+            <Text style={styles.progressPercent}>{Math.round(progress)}%</Text>
           </View>
-          
+
           <View style={styles.progressBarContainer}>
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.progressBar,
                 {
                   backgroundColor: milestone.color,
                   width: progressAnims[index].interpolate({
                     inputRange: [0, 100],
-                    outputRange: ['0%', '100%']
-                  })
-                }
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
               ]}
             />
           </View>
-          
+
           {!milestone.completed && (
             <Text style={styles.remainingText}>
               S${remaining.toLocaleString()} remaining
@@ -217,7 +259,7 @@ export default function MilestonesScreen() {
 
   const renderSpendingChart = () => {
     const maxAmount = Math.max(...mockSpendingHistory.map(h => h.amount));
-    
+
     return (
       <View style={styles.chartContainer}>
         <Text style={styles.chartTitle}>Monthly Spending</Text>
@@ -225,13 +267,14 @@ export default function MilestonesScreen() {
           {mockSpendingHistory.map((item, index) => (
             <View key={index} style={styles.chartColumn}>
               <View style={styles.chartBar}>
-                <View 
+                <View
                   style={[
                     styles.chartBarFill,
-                    { 
+                    {
                       height: `${(item.amount / maxAmount) * 100}%`,
-                      backgroundColor: item.amount > 0 ? COLORS.buttonBg : COLORS.border
-                    }
+                      backgroundColor:
+                        item.amount > 0 ? COLORS.buttonBg : COLORS.border,
+                    },
                   ]}
                 />
               </View>
@@ -246,40 +289,53 @@ export default function MilestonesScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
-      
+
       {/* Status Bar Background */}
       <View style={[styles.statusBarBackground, { height: insets.top }]} />
-      
+
       {/* Mobile Header */}
-      <MobileHeader 
+      <MobileHeader
         title="Milestones"
         showBackButton={true}
         showCartButton={true}
         showSearch={false}
         showLocationHeader={false}
       />
-      
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Current Progress Widget */}
         <View style={styles.progressWidget}>
           <View style={styles.widgetContainer}>
             <Text style={styles.widgetTitle}>Your Progress This Year</Text>
-            
+
             <View style={styles.currentStats}>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>S${currentSpending.toLocaleString()}</Text>
+                <Text style={styles.statValue}>
+                  S${currentSpending.toLocaleString()}
+                </Text>
                 <Text style={styles.statLabel}>Total Spent</Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{mockMilestones.filter(m => m.completed).length}</Text>
+                <Text style={styles.statValue}>
+                  {mockMilestones.filter(m => m.completed).length}
+                </Text>
                 <Text style={styles.statLabel}>Milestones</Text>
               </View>
             </View>
-            
+
             <View style={styles.nextMilestoneInfo}>
-              <Text style={styles.nextMilestoneTitle}>Next: {currentMilestone.title}</Text>
+              <Text style={styles.nextMilestoneTitle}>
+                Next: {currentMilestone.title}
+              </Text>
               <Text style={styles.nextMilestoneAmount}>
-                S${(currentMilestone.targetAmount - currentMilestone.currentAmount).toLocaleString()} to go
+                S$
+                {(
+                  currentMilestone.targetAmount - currentMilestone.currentAmount
+                ).toLocaleString()}{' '}
+                to go
               </Text>
             </View>
           </View>
@@ -287,50 +343,61 @@ export default function MilestonesScreen() {
 
         {/* Spending Chart */}
         <View style={styles.chartSection}>
-          <View style={styles.chartWidget}>
-            {renderSpendingChart()}
-          </View>
+          <View style={styles.chartWidget}>{renderSpendingChart()}</View>
         </View>
 
         {/* Milestones List */}
         <View style={styles.milestonesSection}>
           <Text style={styles.sectionTitle}>All Milestones</Text>
-          {mockMilestones.map((milestone, index) => renderMilestone(milestone, index))}
+          {mockMilestones.map((milestone, index) =>
+            renderMilestone(milestone, index)
+          )}
         </View>
-        
+
         {/* Tips Section */}
         <View style={styles.tipsSection}>
           <Text style={styles.sectionTitle}>Tips to Reach Your Goals</Text>
           <View style={styles.tipsContainer}>
             <View style={styles.tip}>
               <View style={styles.tipIcon}>
-                <Ionicons name="calendar-outline" size={20} color={COLORS.text} />
+                <Ionicons
+                  name="calendar-outline"
+                  size={20}
+                  color={COLORS.text}
+                />
               </View>
               <Text style={styles.tipText}>
-                Set a monthly budget to steadily progress towards your milestones
+                Set a monthly budget to steadily progress towards your
+                milestones
               </Text>
             </View>
-            
+
             <View style={styles.tip}>
               <View style={styles.tipIcon}>
-                <Ionicons name="notifications-outline" size={20} color={COLORS.text} />
+                <Ionicons
+                  name="notifications-outline"
+                  size={20}
+                  color={COLORS.text}
+                />
               </View>
               <Text style={styles.tipText}>
-                Enable notifications to stay updated on special offers and promotions
+                Enable notifications to stay updated on special offers and
+                promotions
               </Text>
             </View>
-            
+
             <View style={styles.tip}>
               <View style={styles.tipIcon}>
                 <Ionicons name="people-outline" size={20} color={COLORS.text} />
               </View>
               <Text style={styles.tipText}>
-                Refer friends to earn bonus credits that count towards your milestones
+                Refer friends to earn bonus credits that count towards your
+                milestones
               </Text>
             </View>
           </View>
         </View>
-        
+
         {/* Bottom Padding */}
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -349,7 +416,7 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  
+
   // Progress Widget
   progressWidget: {
     marginHorizontal: SPACING.md,
@@ -403,7 +470,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: SPACING.xs,
   },
-  
+
   // Chart Section
   chartSection: {
     marginHorizontal: SPACING.md,
@@ -452,7 +519,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 10,
   },
-  
+
   // Milestones Section
   milestonesSection: {
     marginHorizontal: SPACING.md,
@@ -566,7 +633,7 @@ const styles = StyleSheet.create({
     color: COLORS.success,
     fontWeight: '500',
   },
-  
+
   // Tips Section
   tipsSection: {
     marginHorizontal: SPACING.md,
@@ -598,8 +665,8 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 20,
   },
-  
+
   bottomPadding: {
     height: SPACING.xxl,
   },
-}); 
+});

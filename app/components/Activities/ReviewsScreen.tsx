@@ -9,7 +9,7 @@ import {
   TextInput,
   Dimensions,
   Image,
-  Modal
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -41,11 +41,12 @@ const MOCK_REVIEWS: Review[] = [
     productImage: 'bottle1',
     rating: 5,
     title: 'Exceptional Quality',
-    comment: 'This whiskey exceeded my expectations. Smooth, rich, and perfectly aged. The sherry cask influence is beautifully balanced.',
+    comment:
+      'This whiskey exceeded my expectations. Smooth, rich, and perfectly aged. The sherry cask influence is beautifully balanced.',
     date: '2024-01-10',
     verified: true,
     helpful: 12,
-    userMarkedHelpful: false
+    userMarkedHelpful: false,
   },
   {
     id: '2',
@@ -54,11 +55,12 @@ const MOCK_REVIEWS: Review[] = [
     productImage: 'bottle2',
     rating: 4,
     title: 'Great for Special Occasions',
-    comment: 'Excellent champagne with fine bubbles and elegant taste. A bit pricey but worth it for celebrations.',
+    comment:
+      'Excellent champagne with fine bubbles and elegant taste. A bit pricey but worth it for celebrations.',
     date: '2024-01-08',
     verified: true,
     helpful: 8,
-    userMarkedHelpful: true
+    userMarkedHelpful: true,
   },
   {
     id: '3',
@@ -67,12 +69,13 @@ const MOCK_REVIEWS: Review[] = [
     productImage: 'bottle3',
     rating: 5,
     title: 'Premium Experience',
-    comment: 'Absolutely stunning whiskey. Complex flavors that evolve with each sip. Perfect for connoisseurs.',
+    comment:
+      'Absolutely stunning whiskey. Complex flavors that evolve with each sip. Perfect for connoisseurs.',
     date: '2024-01-05',
     verified: false,
     helpful: 15,
-    userMarkedHelpful: false
-  }
+    userMarkedHelpful: false,
+  },
 ];
 
 const RATING_FILTERS = [
@@ -81,17 +84,17 @@ const RATING_FILTERS = [
   { id: '4', label: '4 Stars', icon: 'star', count: 0 },
   { id: '3', label: '3 Stars', icon: 'star', count: 0 },
   { id: '2', label: '2 Stars', icon: 'star', count: 0 },
-  { id: '1', label: '1 Star', icon: 'star', count: 0 }
+  { id: '1', label: '1 Star', icon: 'star', count: 0 },
 ];
 
 export default function ReviewsScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const headerAnim = useRef(new Animated.Value(0)).current;
-  
+
   // State
   const [reviews, setReviews] = useState(MOCK_REVIEWS);
   const [filteredReviews, setFilteredReviews] = useState(MOCK_REVIEWS);
@@ -99,7 +102,7 @@ export default function ReviewsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showAddReviewModal, setShowAddReviewModal] = useState(false);
-  
+
   useEffect(() => {
     // Initial animation
     Animated.parallel([
@@ -107,52 +110,64 @@ export default function ReviewsScreen() {
         toValue: 1,
         duration: 600,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
+        easing: Animations.TIMING.easeOut,
       }),
       Animated.timing(headerAnim, {
         toValue: 1,
         duration: 400,
         delay: 200,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
-      })
+        easing: Animations.TIMING.easeOut,
+      }),
     ]).start();
   }, []);
-  
+
   useEffect(() => {
     // Filter reviews
     let filtered = reviews;
-    
+
     if (selectedRating !== 'all') {
-      filtered = filtered.filter(review => review.rating === parseInt(selectedRating));
-    }
-    
-    if (searchQuery) {
-      filtered = filtered.filter(review => 
-        review.productName.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1 ||
-        review.title.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1 ||
-        review.comment.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1
+      filtered = filtered.filter(
+        review => review.rating === parseInt(selectedRating)
       );
     }
-    
+
+    if (searchQuery) {
+      filtered = filtered.filter(
+        review =>
+          review.productName
+            .toLowerCase()
+            .indexOf(searchQuery.toLowerCase()) !== -1 ||
+          review.title.toLowerCase().indexOf(searchQuery.toLowerCase()) !==
+            -1 ||
+          review.comment.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1
+      );
+    }
+
     setFilteredReviews(filtered);
   }, [selectedRating, searchQuery, reviews]);
-  
+
   const handleMarkHelpful = (reviewId: string) => {
-    setReviews(prevReviews => 
-      prevReviews.map(review => 
-        review.id === reviewId 
-          ? { 
-              ...review, 
-              helpful: review.userMarkedHelpful ? review.helpful - 1 : review.helpful + 1,
-              userMarkedHelpful: !review.userMarkedHelpful 
+    setReviews(prevReviews =>
+      prevReviews.map(review =>
+        review.id === reviewId
+          ? {
+              ...review,
+              helpful: review.userMarkedHelpful
+                ? review.helpful - 1
+                : review.helpful + 1,
+              userMarkedHelpful: !review.userMarkedHelpful,
             }
           : review
       )
     );
   };
-  
-  const renderStars = (rating: number, size: number = 16, color: string = '#FFD700') => {
+
+  const renderStars = (
+    rating: number,
+    size: number = 16,
+    color: string = '#FFD700'
+  ) => {
     return (
       <View style={styles.starsContainer}>
         {[1, 2, 3, 4, 5].map(star => (
@@ -166,59 +181,67 @@ export default function ReviewsScreen() {
       </View>
     );
   };
-  
+
   const renderRatingFilter = (filter: any) => {
     const isSelected = selectedRating === filter.id;
-    const count = filter.id === 'all' 
-      ? reviews.length 
-      : reviews.filter(r => r.rating === parseInt(filter.id)).length;
-    
+    const count =
+      filter.id === 'all'
+        ? reviews.length
+        : reviews.filter(r => r.rating === parseInt(filter.id)).length;
+
     return (
       <TouchableOpacity
         key={filter.id}
-        style={[
-          styles.ratingFilter,
-          isSelected && styles.ratingFilterSelected
-        ]}
+        style={[styles.ratingFilter, isSelected && styles.ratingFilterSelected]}
         onPress={() => setSelectedRating(filter.id)}
         accessible={true}
         accessibilityRole="button"
         accessibilityLabel={`Filter by ${filter.label}`}
       >
-        <Ionicons 
-          name={filter.icon as any} 
-          size={16} 
-          color={isSelected ? COLORS.accent : COLORS.inactive} 
+        <Ionicons
+          name={filter.icon as any}
+          size={16}
+          color={isSelected ? COLORS.accent : COLORS.inactive}
         />
-        <Text style={[
-          styles.ratingFilterText,
-          isSelected && styles.ratingFilterTextSelected
-        ]}>
+        <Text
+          style={[
+            styles.ratingFilterText,
+            isSelected && styles.ratingFilterTextSelected,
+          ]}
+        >
           {filter.label}
         </Text>
-        <Text style={[
-          styles.ratingFilterCount,
-          isSelected && styles.ratingFilterCountSelected
-        ]}>
+        <Text
+          style={[
+            styles.ratingFilterCount,
+            isSelected && styles.ratingFilterCountSelected,
+          ]}
+        >
           ({count})
         </Text>
       </TouchableOpacity>
     );
   };
-  
-  const renderReviewCard = ({ item: review, index }: { item: Review; index: number }) => {
+
+  const renderReviewCard = ({
+    item: review,
+    index,
+  }: {
+    item: Review;
+    index: number;
+  }) => {
     const cardAnim = useRef(new Animated.Value(0)).current;
-    
+
     useEffect(() => {
       Animated.timing(cardAnim, {
         toValue: 1,
         duration: 400,
         delay: index * 100,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
+        easing: Animations.TIMING.easeOut,
       }).start();
     }, []);
-    
+
     return (
       <Animated.View
         style={[
@@ -229,31 +252,39 @@ export default function ReviewsScreen() {
               {
                 translateY: cardAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [30, 0]
-                })
-              }
-            ]
-          }
+                  outputRange: [30, 0],
+                }),
+              },
+            ],
+          },
         ]}
       >
         <View style={styles.reviewHeader}>
           <View style={styles.productInfo}>
             <View style={styles.productImageContainer}>
               <View style={styles.productImagePlaceholder}>
-                <Ionicons name="wine-outline" size={24} color={COLORS.inactive} />
+                <Ionicons
+                  name="wine-outline"
+                  size={24}
+                  color={COLORS.inactive}
+                />
               </View>
             </View>
             <View style={styles.productDetails}>
-              <Text style={styles.productName} numberOfLines={1}>{review.productName}</Text>
+              <Text style={styles.productName} numberOfLines={1}>
+                {review.productName}
+              </Text>
               <View style={styles.ratingRow}>
                 {renderStars(review.rating, 14)}
                 <Text style={styles.ratingText}>({review.rating}/5)</Text>
               </View>
             </View>
           </View>
-          
+
           <View style={styles.reviewMeta}>
-            <Text style={styles.reviewDate}>{new Date(review.date).toLocaleDateString()}</Text>
+            <Text style={styles.reviewDate}>
+              {new Date(review.date).toLocaleDateString()}
+            </Text>
             {review.verified && (
               <View style={styles.verifiedBadge}>
                 <Ionicons name="checkmark-circle" size={14} color="#4CAF50" />
@@ -262,36 +293,42 @@ export default function ReviewsScreen() {
             )}
           </View>
         </View>
-        
+
         <View style={styles.reviewContent}>
           <Text style={styles.reviewTitle}>{review.title}</Text>
           <Text style={styles.reviewComment}>{review.comment}</Text>
         </View>
-        
+
         <View style={styles.reviewActions}>
           <TouchableOpacity
             style={[
               styles.helpfulButton,
-              review.userMarkedHelpful && styles.helpfulButtonActive
+              review.userMarkedHelpful && styles.helpfulButtonActive,
             ]}
             onPress={() => handleMarkHelpful(review.id)}
             accessible={true}
             accessibilityRole="button"
             accessibilityLabel={`Mark review as helpful. Currently ${review.helpful} people found this helpful`}
           >
-            <Ionicons 
-              name={review.userMarkedHelpful ? "thumbs-up" : "thumbs-up-outline"} 
-              size={16} 
-              color={review.userMarkedHelpful ? COLORS.primary : COLORS.inactive} 
+            <Ionicons
+              name={
+                review.userMarkedHelpful ? 'thumbs-up' : 'thumbs-up-outline'
+              }
+              size={16}
+              color={
+                review.userMarkedHelpful ? COLORS.primary : COLORS.inactive
+              }
             />
-            <Text style={[
-              styles.helpfulText,
-              review.userMarkedHelpful && styles.helpfulTextActive
-            ]}>
+            <Text
+              style={[
+                styles.helpfulText,
+                review.userMarkedHelpful && styles.helpfulTextActive,
+              ]}
+            >
               Helpful ({review.helpful})
             </Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={styles.shareButton}
             accessible={true}
@@ -304,7 +341,7 @@ export default function ReviewsScreen() {
       </Animated.View>
     );
   };
-  
+
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="star-outline" size={64} color={COLORS.inactive} />
@@ -312,8 +349,7 @@ export default function ReviewsScreen() {
       <Text style={styles.emptyStateText}>
         {searchQuery || selectedRating !== 'all'
           ? 'Try adjusting your search or filters'
-          : 'Be the first to share your experience!'
-        }
+          : 'Be the first to share your experience!'}
       </Text>
       {!searchQuery && selectedRating === 'all' && (
         <TouchableOpacity
@@ -329,24 +365,24 @@ export default function ReviewsScreen() {
       )}
     </View>
   );
-  
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.header,
-          { 
+          {
             opacity: headerAnim,
             transform: [
               {
                 translateY: headerAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [-20, 0]
-                })
-              }
-            ]
-          }
+                  outputRange: [-20, 0],
+                }),
+              },
+            ],
+          },
         ]}
       >
         <TouchableOpacity
@@ -358,14 +394,15 @@ export default function ReviewsScreen() {
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        
+
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Reviews & Ratings</Text>
           <Text style={styles.headerSubtitle}>
-            {filteredReviews.length} review{filteredReviews.length !== 1 ? 's' : ''}
+            {filteredReviews.length} review
+            {filteredReviews.length !== 1 ? 's' : ''}
           </Text>
         </View>
-        
+
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => setShowAddReviewModal(true)}
@@ -376,18 +413,15 @@ export default function ReviewsScreen() {
           <Ionicons name="add" size={20} color={COLORS.text} />
         </TouchableOpacity>
       </Animated.View>
-      
+
       {/* Search Bar */}
-      <Animated.View 
-        style={[
-          styles.searchSection,
-          { opacity: fadeAnim }
-        ]}
-      >
-        <View style={[
-          styles.searchContainer,
-          isSearchFocused && styles.searchContainerFocused
-        ]}>
+      <Animated.View style={[styles.searchSection, { opacity: fadeAnim }]}>
+        <View
+          style={[
+            styles.searchContainer,
+            isSearchFocused && styles.searchContainerFocused,
+          ]}
+        >
           <Ionicons name="search-outline" size={20} color={COLORS.inactive} />
           <TextInput
             style={styles.searchInput}
@@ -413,29 +447,24 @@ export default function ReviewsScreen() {
           )}
         </View>
       </Animated.View>
-      
+
       {/* Rating Filters */}
-      <Animated.View 
-        style={[
-          styles.filtersSection,
-          { opacity: fadeAnim }
-        ]}
-      >
+      <Animated.View style={[styles.filtersSection, { opacity: fadeAnim }]}>
         <FlatList
           data={RATING_FILTERS}
           renderItem={({ item }) => renderRatingFilter(item)}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filtersContainer}
         />
       </Animated.View>
-      
+
       {/* Reviews List */}
       <FlatList
         data={filteredReviews}
         renderItem={renderReviewCard}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         contentContainerStyle={styles.reviewsList}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmptyState}

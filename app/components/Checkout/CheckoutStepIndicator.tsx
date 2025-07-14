@@ -7,20 +7,17 @@ interface CheckoutStepIndicatorProps {
   totalSteps: number;
 }
 
-export default function CheckoutStepIndicator({ 
-  currentStep, 
-  totalSteps = 4
+export default function CheckoutStepIndicator({
+  currentStep,
+  totalSteps = 4,
 }: CheckoutStepIndicatorProps) {
   const progressPercentage = (currentStep / totalSteps) * 100;
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.progressTrack}>
-        <View 
-          style={[
-            styles.progressFill,
-            { width: `${progressPercentage}%` }
-          ]} 
+        <View
+          style={[styles.progressFill, { width: `${progressPercentage}%` }]}
         />
       </View>
     </View>

@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
-  StatusBar
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -37,7 +37,7 @@ const ACTIVITY_OPTIONS: ActivityOption[] = [
     icon: 'receipt-outline',
     color: '#4CAF50',
     screen: 'OrderHistory',
-    badge: 2
+    badge: 2,
   },
   {
     id: 'wishlist',
@@ -46,7 +46,7 @@ const ACTIVITY_OPTIONS: ActivityOption[] = [
     icon: 'heart-outline',
     color: '#E91E63',
     screen: 'Wishlist',
-    badge: 5
+    badge: 5,
   },
   {
     id: 'reviews',
@@ -55,7 +55,7 @@ const ACTIVITY_OPTIONS: ActivityOption[] = [
     icon: 'star-outline',
     color: '#FF9800',
     screen: 'Reviews',
-    isNew: true
+    isNew: true,
   },
   {
     id: 'rewards',
@@ -63,7 +63,7 @@ const ACTIVITY_OPTIONS: ActivityOption[] = [
     subtitle: 'Earn points, get rewards',
     icon: 'gift-outline',
     color: '#9C27B0',
-    screen: 'Rewards'
+    screen: 'Rewards',
   },
   {
     id: 'referrals',
@@ -72,7 +72,7 @@ const ACTIVITY_OPTIONS: ActivityOption[] = [
     icon: 'people-outline',
     color: '#2196F3',
     screen: 'Referrals',
-    isNew: true
+    isNew: true,
   },
   {
     id: 'support',
@@ -80,8 +80,8 @@ const ACTIVITY_OPTIONS: ActivityOption[] = [
     subtitle: 'Get assistance anytime',
     icon: 'help-circle-outline',
     color: '#607D8B',
-    screen: 'Support'
-  }
+    screen: 'Support',
+  },
 ];
 
 const QUICK_ACTIONS = [
@@ -89,42 +89,44 @@ const QUICK_ACTIONS = [
     id: 'reorder',
     title: 'Reorder',
     icon: 'refresh-outline',
-    color: '#4CAF50'
+    color: '#4CAF50',
   },
   {
     id: 'track',
     title: 'Track Order',
     icon: 'location-outline',
-    color: '#2196F3'
+    color: '#2196F3',
   },
   {
     id: 'chat',
     title: 'Live Chat',
     icon: 'chatbubble-outline',
-    color: '#FF9800'
+    color: '#FF9800',
   },
   {
     id: 'phone',
     title: 'Call Support',
     icon: 'call-outline',
-    color: '#9C27B0'
-  }
+    color: '#9C27B0',
+  },
 ];
 
 export default function ActivitiesScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const cardAnimations = useRef(
     ACTIVITY_OPTIONS.map(() => new Animated.Value(0))
   ).current;
-  
+
   // State
-  const [activeQuickAction, setActiveQuickAction] = useState<string | null>(null);
-  
+  const [activeQuickAction, setActiveQuickAction] = useState<string | null>(
+    null
+  );
+
   useEffect(() => {
     // Initial entrance animation
     Animated.parallel([
@@ -132,41 +134,41 @@ export default function ActivitiesScreen() {
         toValue: 1,
         duration: 600,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
+        easing: Animations.TIMING.easeOut,
       }),
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 600,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
-      })
+        easing: Animations.TIMING.easeOut,
+      }),
     ]).start();
-    
+
     // Stagger card animations
-    const cardAnimSequence = cardAnimations.map((anim, index) => 
+    const cardAnimSequence = cardAnimations.map((anim, index) =>
       Animated.timing(anim, {
         toValue: 1,
         duration: 400,
         delay: index * 100,
         useNativeDriver: true,
-        easing: Animations.TIMING.easeOut
+        easing: Animations.TIMING.easeOut,
       })
     );
-    
+
     Animated.stagger(100, cardAnimSequence).start();
   }, []);
-  
+
   const handleActivityPress = (activity: ActivityOption) => {
     // Provide haptic feedback and navigation
     navigation.navigate(activity.screen as any);
   };
-  
+
   const handleQuickAction = (actionId: string) => {
     setActiveQuickAction(actionId);
-    
+
     // Reset after animation
     setTimeout(() => setActiveQuickAction(null), 200);
-    
+
     switch (actionId) {
       case 'reorder':
         navigation.navigate('OrderHistory');
@@ -182,10 +184,10 @@ export default function ActivitiesScreen() {
         break;
     }
   };
-  
+
   const renderActivityCard = (activity: ActivityOption, index: number) => {
     const cardAnim = cardAnimations[index];
-    
+
     return (
       <Animated.View
         key={activity.id}
@@ -197,17 +199,17 @@ export default function ActivitiesScreen() {
               {
                 translateY: cardAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [20, 0]
-                })
+                  outputRange: [20, 0],
+                }),
               },
               {
                 scale: cardAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0.95, 1]
-                })
-              }
-            ]
-          }
+                  outputRange: [0.95, 1],
+                }),
+              },
+            ],
+          },
         ]}
       >
         <TouchableOpacity
@@ -219,14 +221,21 @@ export default function ActivitiesScreen() {
           accessibilityLabel={`${activity.title}: ${activity.subtitle}`}
         >
           <View style={styles.cardContent}>
-            <View style={[styles.iconContainer, { backgroundColor: `${activity.color}15` }]}>
-              <Ionicons 
-                name={activity.icon as any} 
-                size={28} 
-                color={activity.color} 
+            <View
+              style={[
+                styles.iconContainer,
+                { backgroundColor: `${activity.color}15` },
+              ]}
+            >
+              <Ionicons
+                name={activity.icon as any}
+                size={28}
+                color={activity.color}
               />
               {activity.badge && (
-                <View style={[styles.badge, { backgroundColor: activity.color }]}>
+                <View
+                  style={[styles.badge, { backgroundColor: activity.color }]}
+                >
                   <Text style={styles.badgeText}>{activity.badge}</Text>
                 </View>
               )}
@@ -236,17 +245,17 @@ export default function ActivitiesScreen() {
                 </View>
               )}
             </View>
-            
+
             <View style={styles.textContent}>
               <Text style={styles.cardTitle}>{activity.title}</Text>
               <Text style={styles.cardSubtitle}>{activity.subtitle}</Text>
             </View>
-            
+
             <View style={styles.chevronContainer}>
-              <Ionicons 
-                name="chevron-forward" 
-                size={20} 
-                color={COLORS.inactive} 
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={COLORS.inactive}
               />
             </View>
           </View>
@@ -254,74 +263,74 @@ export default function ActivitiesScreen() {
       </Animated.View>
     );
   };
-  
+
   const renderQuickAction = (action: any) => {
     const isActive = activeQuickAction === action.id;
-    
+
     return (
       <TouchableOpacity
         key={action.id}
-        style={[
-          styles.quickActionButton,
-          isActive && styles.quickActionActive
-        ]}
+        style={[styles.quickActionButton, isActive && styles.quickActionActive]}
         onPress={() => handleQuickAction(action.id)}
         activeOpacity={0.7}
         accessible={true}
         accessibilityRole="button"
         accessibilityLabel={action.title}
       >
-        <View style={[styles.quickActionIcon, { backgroundColor: `${action.color}15` }]}>
-          <Ionicons 
-            name={action.icon as any} 
-            size={24} 
-            color={action.color} 
-          />
+        <View
+          style={[
+            styles.quickActionIcon,
+            { backgroundColor: `${action.color}15` },
+          ]}
+        >
+          <Ionicons name={action.icon as any} size={24} color={action.color} />
         </View>
         <Text style={styles.quickActionText}>{action.title}</Text>
       </TouchableOpacity>
     );
   };
-  
+
   return (
     <View style={styles.container}>
       {/* Status Bar Background */}
       <View style={[styles.statusBarSpacer, { height: insets.top }]} />
-      
+
       {/* Header */}
-      <MobileHeader 
-        title="Activities" 
-        showBackButton={false} 
+      <MobileHeader
+        title="Activities"
+        showBackButton={false}
         showSearch={false}
         showCartButton={false}
       />
-      
+
       {/* Header Description */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.headerDescription,
           {
             opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
-          }
+            transform: [{ translateY: slideAnim }],
+          },
         ]}
       >
-        <Text style={styles.headerSubtitle}>Manage your account & preferences</Text>
+        <Text style={styles.headerSubtitle}>
+          Manage your account & preferences
+        </Text>
       </Animated.View>
-      
-      <ScrollView 
+
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Quick Actions */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.quickActionsSection,
             {
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
-            }
+              transform: [{ translateY: slideAnim }],
+            },
           ]}
         >
           <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -329,7 +338,7 @@ export default function ActivitiesScreen() {
             {QUICK_ACTIONS.map(renderQuickAction)}
           </View>
         </Animated.View>
-        
+
         {/* Main Activities */}
         <View style={styles.activitiesSection}>
           <Text style={styles.sectionTitle}>Your Activities</Text>

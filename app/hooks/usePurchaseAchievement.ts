@@ -9,7 +9,8 @@ export interface PurchaseAchievementData {
 
 export const usePurchaseAchievement = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const [achievementData, setAchievementData] = useState<PurchaseAchievementData | null>(null);
+  const [achievementData, setAchievementData] =
+    useState<PurchaseAchievementData | null>(null);
 
   const showAchievement = useCallback((data: PurchaseAchievementData) => {
     setAchievementData(data);
@@ -27,7 +28,7 @@ export const usePurchaseAchievement = () => {
   const calculateRewards = useCallback((orderTotal: number) => {
     const pointsEarned = Math.floor(orderTotal * 2); // 2 points per dollar
     const savingsAmount = orderTotal * 0.15; // 15% savings
-    
+
     return {
       pointsEarned,
       savingsAmount,

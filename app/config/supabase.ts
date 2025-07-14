@@ -18,10 +18,10 @@ export const supabase = createClient(
 );
 
 // Handle app state changes for proper session management
-AppState.addEventListener('change', (state) => {
+AppState.addEventListener('change', state => {
   if (state === 'active') {
     supabase.auth.startAutoRefresh();
   } else {
     supabase.auth.stopAutoRefresh();
   }
-}); 
+});

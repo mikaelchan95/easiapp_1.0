@@ -27,7 +27,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { GOOGLE_MAPS_CONFIG } from '../../config/googleMaps';
-import { LocationSuggestion, LocationCoordinate, SavedAddress, DeliveryDetails } from '../../types/location';
+import {
+  LocationSuggestion,
+  LocationCoordinate,
+  SavedAddress,
+  DeliveryDetails,
+} from '../../types/location';
 import { GoogleMapsService } from '../../services/googleMapsService';
 import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 import AddressDetailsForm from './AddressDetailsForm';
@@ -42,25 +47,29 @@ interface UberStyleLocationPickerProps {
 }
 
 // Helper function to get appropriate icon for saved locations
-const getSavedLocationIcon = (iconName: string): keyof typeof Ionicons.glyphMap => {
+const getSavedLocationIcon = (
+  iconName: string
+): keyof typeof Ionicons.glyphMap => {
   const iconMap: { [key: string]: keyof typeof Ionicons.glyphMap } = {
-    'home': 'home',
-    'business': 'business',
-    'work': 'briefcase',
-    'briefcase': 'briefcase',
-    'heart': 'heart',
-    'star': 'star',
-    'location': 'location',
-    'school': 'school',
-    'car': 'car',
-    'restaurant': 'restaurant',
+    home: 'home',
+    business: 'business',
+    work: 'briefcase',
+    briefcase: 'briefcase',
+    heart: 'heart',
+    star: 'star',
+    location: 'location',
+    school: 'school',
+    car: 'car',
+    restaurant: 'restaurant',
   };
-  
+
   return iconMap[iconName] || 'location';
 };
 
 // Header Component
-const LocationHeader: React.FC<{ onBackPress: () => void }> = ({ onBackPress }) => (
+const LocationHeader: React.FC<{ onBackPress: () => void }> = ({
+  onBackPress,
+}) => (
   <View style={[styles.header, { backgroundColor: COLORS.card }]}>
     <TouchableOpacity style={styles.backButton} onPress={onBackPress}>
       <Ionicons name="chevron-back" size={24} color={COLORS.text} />
@@ -78,12 +87,12 @@ const SheetHeader: React.FC = () => (
     <View style={styles.sheetHandle} />
     <View style={styles.sheetHeader}>
       <Text style={styles.sheetTitle}>Set delivery location</Text>
-      <Text style={styles.sheetSubtitle}>Choose where you'd like your order delivered</Text>
+      <Text style={styles.sheetSubtitle}>
+        Choose where you'd like your order delivered
+      </Text>
     </View>
   </View>
 );
-
-
 
 // Current Location Button Component
 const CurrentLocationButton: React.FC<{
@@ -91,16 +100,22 @@ const CurrentLocationButton: React.FC<{
   visible: boolean;
 }> = ({ onPress, visible }) => {
   if (!visible) return null;
-  
+
   return (
-    <TouchableOpacity style={styles.primaryLocationButton} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={styles.primaryLocationButton}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
       <View style={styles.primaryButtonContent}>
         <View style={styles.primaryButtonIcon}>
           <Ionicons name="locate" size={24} color={COLORS.card} />
         </View>
         <View style={styles.primaryButtonText}>
           <Text style={styles.primaryButtonTitle}>Use my current location</Text>
-          <Text style={styles.primaryButtonSubtitle}>We'll detect your location automatically</Text>
+          <Text style={styles.primaryButtonSubtitle}>
+            We'll detect your location automatically
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -110,7 +125,7 @@ const CurrentLocationButton: React.FC<{
 // Divider Component
 const OrDivider: React.FC<{ visible: boolean }> = ({ visible }) => {
   if (!visible) return null;
-  
+
   return (
     <View style={styles.dividerContainer}>
       <View style={styles.dividerLine} />
@@ -130,7 +145,9 @@ const SearchInput: React.FC<{
   inputRef?: React.RefObject<TextInput>;
 }> = ({ value, onChangeText, onFocus, onClear, showLabel, inputRef }) => (
   <View style={styles.searchSection}>
-    {showLabel && <Text style={styles.searchLabel}>Enter a specific address</Text>}
+    {showLabel && (
+      <Text style={styles.searchLabel}>Enter a specific address</Text>
+    )}
     <View style={styles.sheetInputWrapper}>
       <View style={styles.locationInputDot}>
         <View style={styles.deliveryDot} />
@@ -150,7 +167,11 @@ const SearchInput: React.FC<{
       />
       {value ? (
         <TouchableOpacity style={styles.clearButton} onPress={onClear}>
-          <Ionicons name="close-circle-outline" size={18} color={COLORS.textSecondary} />
+          <Ionicons
+            name="close-circle-outline"
+            size={18}
+            color={COLORS.textSecondary}
+          />
         </TouchableOpacity>
       ) : null}
     </View>
@@ -164,45 +185,71 @@ const SearchResults: React.FC<{
   isLoading: boolean;
   onSelectLocation: (location: LocationSuggestion) => void;
   onSaveLocation: (location: LocationSuggestion) => void;
-}> = ({ searchText, suggestions, isLoading, onSelectLocation, onSaveLocation }) => {
+}> = ({
+  searchText,
+  suggestions,
+  isLoading,
+  onSelectLocation,
+  onSaveLocation,
+}) => {
   if (searchText.length === 0) return null;
 
   return (
     <View style={styles.suggestionsContainer}>
       <Text style={styles.searchResultsTitle}>Search Results</Text>
-      <ScrollView style={styles.suggestionsList} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        style={styles.suggestionsList}
+        keyboardShouldPersistTaps="handled"
+      >
         {isLoading && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="small" color={COLORS.primary} />
             <Text style={styles.loadingText}>Searching locations...</Text>
           </View>
         )}
-        {!isLoading && suggestions.length > 0 && suggestions.map((suggestion, index) => (
-          <View key={`${suggestion.id}-${index}`} style={styles.suggestionItemContainer}>
-            <TouchableOpacity
-              style={styles.suggestionItem}
-              onPress={() => onSelectLocation(suggestion)}
-              accessibilityLabel={`Select location ${suggestion.title}`}
-              accessibilityRole="button"
+        {!isLoading &&
+          suggestions.length > 0 &&
+          suggestions.map((suggestion, index) => (
+            <View
+              key={`${suggestion.id}-${index}`}
+              style={styles.suggestionItemContainer}
             >
-              <View style={styles.suggestionIcon}>
-                <Ionicons name={suggestion.isPremiumLocation ? "star" : "location"} size={20} color={COLORS.textSecondary} />
-              </View>
-              <View style={styles.suggestionTextContainer}>
-                <Text style={styles.suggestionTitle} numberOfLines={1}>{suggestion.title}</Text>
-                <Text style={styles.suggestionSubtitle} numberOfLines={1}>{suggestion.subtitle}</Text>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.saveLocationButton}
-              onPress={() => onSaveLocation(suggestion)}
-              accessibilityLabel={`Save location ${suggestion.title}`}
-              accessibilityRole="button"
-            >
-              <Ionicons name="bookmark-outline" size={18} color={COLORS.text} />
-            </TouchableOpacity>
-          </View>
-        ))}
+              <TouchableOpacity
+                style={styles.suggestionItem}
+                onPress={() => onSelectLocation(suggestion)}
+                accessibilityLabel={`Select location ${suggestion.title}`}
+                accessibilityRole="button"
+              >
+                <View style={styles.suggestionIcon}>
+                  <Ionicons
+                    name={suggestion.isPremiumLocation ? 'star' : 'location'}
+                    size={20}
+                    color={COLORS.textSecondary}
+                  />
+                </View>
+                <View style={styles.suggestionTextContainer}>
+                  <Text style={styles.suggestionTitle} numberOfLines={1}>
+                    {suggestion.title}
+                  </Text>
+                  <Text style={styles.suggestionSubtitle} numberOfLines={1}>
+                    {suggestion.subtitle}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveLocationButton}
+                onPress={() => onSaveLocation(suggestion)}
+                accessibilityLabel={`Save location ${suggestion.title}`}
+                accessibilityRole="button"
+              >
+                <Ionicons
+                  name="bookmark-outline"
+                  size={18}
+                  color={COLORS.text}
+                />
+              </TouchableOpacity>
+            </View>
+          ))}
         {!isLoading && searchText.length > 0 && suggestions.length === 0 && (
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>No locations found.</Text>
@@ -214,42 +261,54 @@ const SearchResults: React.FC<{
 };
 
 const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
-  onLocationSelect
+  onLocationSelect,
 }) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapView>(null);
   const inputRef = useRef<TextInput>(null);
   const { state, refreshUserLocations } = useContext(AppContext);
-  const { 
-    deliveryLocation, 
-    setDeliveryLocation, 
-    savedAddresses, 
+  const {
+    deliveryLocation,
+    setDeliveryLocation,
+    savedAddresses,
     loadSavedAddresses,
     saveCurrentLocation,
-    locationPreferences 
+    locationPreferences,
   } = useDeliveryLocation();
-  
+
   // State management
   const [mapReady, setMapReady] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   // Recent locations - hybrid approach: local state + database sync
-  const [recentLocations, setRecentLocations] = useState<LocationSuggestion[]>([]);
-  
+  const [recentLocations, setRecentLocations] = useState<LocationSuggestion[]>(
+    []
+  );
+
   // Debug logging
   console.log('🔍 LOCATION PICKER - User:', state.user?.name);
-  console.log('🔍 LOCATION PICKER - Recent locations count:', recentLocations.length);
+  console.log(
+    '🔍 LOCATION PICKER - Recent locations count:',
+    recentLocations.length
+  );
   console.log('🔍 LOCATION PICKER - Recent locations data:', recentLocations);
-  const [currentLocation, setCurrentLocation] = useState<LocationSuggestion | null>(null);
-  const [pickupLocation, setPickupLocation] = useState<LocationSuggestion | null>(null);
-  const [mapRegion, setMapRegion] = useState(GOOGLE_MAPS_CONFIG.marinaBayRegion);
+  const [currentLocation, setCurrentLocation] =
+    useState<LocationSuggestion | null>(null);
+  const [pickupLocation, setPickupLocation] =
+    useState<LocationSuggestion | null>(null);
+  const [mapRegion, setMapRegion] = useState(
+    GOOGLE_MAPS_CONFIG.marinaBayRegion
+  );
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
-  const [activeTab, setActiveTab] = useState<'recent' | 'saved' | 'current'>('recent');
-  const [selectedLocationToSave, setSelectedLocationToSave] = useState<LocationSuggestion | null>(null);
+  const [activeTab, setActiveTab] = useState<'recent' | 'saved' | 'current'>(
+    'recent'
+  );
+  const [selectedLocationToSave, setSelectedLocationToSave] =
+    useState<LocationSuggestion | null>(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
 
   // Enhanced keyboard handling with proper iOS support
@@ -281,11 +340,23 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
     let showSubscription, hideSubscription;
 
     if (Platform.OS === 'ios') {
-      showSubscription = Keyboard.addListener('keyboardWillShow', keyboardWillShow);
-      hideSubscription = Keyboard.addListener('keyboardWillHide', keyboardWillHide);
+      showSubscription = Keyboard.addListener(
+        'keyboardWillShow',
+        keyboardWillShow
+      );
+      hideSubscription = Keyboard.addListener(
+        'keyboardWillHide',
+        keyboardWillHide
+      );
     } else {
-      showSubscription = Keyboard.addListener('keyboardDidShow', keyboardDidShow);
-      hideSubscription = Keyboard.addListener('keyboardDidHide', keyboardDidHide);
+      showSubscription = Keyboard.addListener(
+        'keyboardDidShow',
+        keyboardDidShow
+      );
+      hideSubscription = Keyboard.addListener(
+        'keyboardDidHide',
+        keyboardDidHide
+      );
     }
 
     return () => {
@@ -315,10 +386,10 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
       try {
         // Load saved addresses and recent locations
         await loadSavedAddresses();
-        
+
         // Recent locations are now loaded via real-time subscription in AppContext
         // No manual loading needed here - the global state will be updated automatically
-        
+
         // Only load current location if preferences allow it
         if (locationPreferences.autoSuggestCurrent) {
           const location = await GoogleMapsService.getCurrentLocation();
@@ -347,7 +418,14 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
     };
 
     loadInitialData();
-  }, [locationPreferences.autoSuggestCurrent, pickupLocation, deliveryLocation, loadSavedAddresses, setDeliveryLocation, state.user]);
+  }, [
+    locationPreferences.autoSuggestCurrent,
+    pickupLocation,
+    deliveryLocation,
+    loadSavedAddresses,
+    setDeliveryLocation,
+    state.user,
+  ]);
 
   // Handlers
   const handleBackPress = () => {
@@ -368,18 +446,24 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
 
   const handleSearchInput = async (text: string) => {
     setSearchText(text);
-    
+
     // Clear pickup location when user starts typing
     if (text.length > 0 && pickupLocation) {
       setPickupLocation(null);
     }
-    
+
     if (text.length > 2) {
       try {
         setIsLoading(true);
-        const results = await GoogleMapsService.getAutocompleteSuggestions(text);
+        const results =
+          await GoogleMapsService.getAutocompleteSuggestions(text);
         setSuggestions(results);
-        console.log('🔍 Search suggestions:', results.length, 'results for:', text);
+        console.log(
+          '🔍 Search suggestions:',
+          results.length,
+          'results for:',
+          text
+        );
       } catch (error) {
         console.error('Search error:', error);
         if (Platform.OS === 'ios') {
@@ -402,16 +486,22 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
       // If location doesn't have coordinates, get them from place details
       let enrichedLocation = location;
       if (!location.coordinate && location.placeId) {
-        console.log('🔍 Getting coordinates for selected location:', location.title);
-        const placeDetails = await GoogleMapsService.getPlaceDetails(location.placeId);
+        console.log(
+          '🔍 Getting coordinates for selected location:',
+          location.title
+        );
+        const placeDetails = await GoogleMapsService.getPlaceDetails(
+          location.placeId
+        );
         if (placeDetails) {
           enrichedLocation = placeDetails;
         }
       }
 
       // Validate location
-      const validation = await GoogleMapsService.validateLocation(enrichedLocation);
-      
+      const validation =
+        await GoogleMapsService.validateLocation(enrichedLocation);
+
       if (!validation.valid) {
         if (Platform.OS === 'ios') {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -426,14 +516,18 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
 
       // Use enriched location with delivery info
       const finalLocation = validation.enrichedLocation || enrichedLocation;
-      
+
       setPickupLocation(finalLocation);
       await setDeliveryLocation(finalLocation);
 
       // Add to recent locations in database if user is logged in
       if (state.user) {
         try {
-          await supabaseService.saveUserLocation(state.user.id, finalLocation, false);
+          await supabaseService.saveUserLocation(
+            state.user.id,
+            finalLocation,
+            false
+          );
           // Manually refresh locations to ensure UI updates immediately
           await refreshUserLocations();
         } catch (error) {
@@ -457,12 +551,11 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
 
       setSearchText('');
       Keyboard.dismiss();
-      
+
       // Auto-confirm after a short delay
       setTimeout(() => {
         handleConfirmLocation(finalLocation);
       }, 300);
-      
     } catch (error) {
       console.error('Error selecting location:', error);
       if (Platform.OS === 'ios') {
@@ -479,20 +572,20 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
   const handleSavedLocationSelect = async (savedAddress: SavedAddress) => {
     const locationWithSavedType = {
       ...savedAddress.location,
-      type: 'saved' as const
+      type: 'saved' as const,
     };
-    
+
     await handleLocationSelection(locationWithSavedType);
   };
 
   const handleCurrentLocationPress = async () => {
     Keyboard.dismiss();
-    
+
     try {
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-      
+
       const loadingLocation = {
         id: 'loading_current_location',
         title: 'Getting your location...',
@@ -500,9 +593,9 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
         coordinate: undefined,
       };
       setPickupLocation(loadingLocation);
-      
+
       const location = await GoogleMapsService.getCurrentLocation();
-      
+
       if (location) {
         setPickupLocation(location);
         await setDeliveryLocation(location);
@@ -512,7 +605,10 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
         if (Platform.OS === 'ios') {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         }
-        Alert.alert('Location Error', 'Unable to get your current location. Please check your location permissions and try again.');
+        Alert.alert(
+          'Location Error',
+          'Unable to get your current location. Please check your location permissions and try again.'
+        );
       }
     } catch (error) {
       console.error('Error getting current location:', error);
@@ -520,20 +616,23 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
       if (Platform.OS === 'ios') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
-      Alert.alert('Location Error', 'Unable to get your current location. Please try again.');
+      Alert.alert(
+        'Location Error',
+        'Unable to get your current location. Please try again.'
+      );
     }
   };
 
   const handleConfirmLocation = (location?: LocationSuggestion) => {
     const locationToConfirm = location || pickupLocation || deliveryLocation;
-    
+
     if (locationToConfirm) {
       if (Platform.OS === 'ios') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      
+
       onLocationSelect(locationToConfirm);
-      
+
       if (navigation.canGoBack()) {
         navigation.goBack();
       }
@@ -547,10 +646,10 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
       activeOpacity={0.7}
     >
       <View style={styles.suggestionIcon}>
-        <Ionicons 
-          name={item.type === 'current' ? 'location' : 'location-outline'} 
-          size={20} 
-          color={COLORS.text} 
+        <Ionicons
+          name={item.type === 'current' ? 'location' : 'location-outline'}
+          size={20}
+          color={COLORS.text}
         />
       </View>
       <View style={styles.suggestionTextContainer}>
@@ -570,7 +669,7 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
   // Enhanced keyboard offset calculation for iOS
   const getKeyboardOffset = () => {
     if (!isKeyboardVisible || keyboardHeight === 0) return 0;
-    
+
     if (Platform.OS === 'ios') {
       // Minimize offset to prevent over-adjustment
       return Math.max(keyboardHeight - insets.bottom - 100, 0);
@@ -595,14 +694,14 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
-      
+
       // Quick save with default label
       const success = await saveCurrentLocation(
         `${address.label} (${new Date().toLocaleDateString()})`,
         address.icon,
         address.color
       );
-      
+
       if (success) {
         if (Platform.OS === 'ios') {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -626,12 +725,14 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
   };
 
   // Handle address form submission for saving
-  const handleAddressFormSave = async (details: DeliveryDetails & {label: string; icon?: string; color?: string}) => {
+  const handleAddressFormSave = async (
+    details: DeliveryDetails & { label: string; icon?: string; color?: string }
+  ) => {
     try {
       if (Platform.OS === 'ios') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      
+
       const newAddress: SavedAddress = {
         id: Date.now().toString(),
         label: details.label,
@@ -650,14 +751,13 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
 
       await GoogleMapsService.saveAddress(newAddress);
       await loadSavedAddresses();
-      
+
       setShowAddressForm(false);
       setSelectedLocationToSave(null);
-      
+
       // Show success feedback
       setShowSavePrompt(true);
       setTimeout(() => setShowSavePrompt(false), 2000);
-      
     } catch (error) {
       console.error('Error saving address:', error);
       if (Platform.OS === 'ios') {
@@ -675,17 +775,26 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.card }}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} translucent={false} />
-      
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.card}
+        translucent={false}
+      />
+
       <LocationHeader onBackPress={handleBackPress} />
-      
-      <KeyboardAvoidingView 
+
+      <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={getKeyboardVerticalOffset()}
       >
         {/* Map */}
-        <View style={[styles.mapContainer, isKeyboardVisible && styles.mapContainerKeyboard]}>
+        <View
+          style={[
+            styles.mapContainer,
+            isKeyboardVisible && styles.mapContainerKeyboard,
+          ]}
+        >
           <MapView
             ref={mapRef}
             style={styles.map}
@@ -706,28 +815,30 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
               />
             )}
           </MapView>
-          
+
           <View style={styles.centerMarker}>
             <View style={styles.markerDot} />
             <View style={styles.markerShadow} />
           </View>
         </View>
-        
+
         {/* Location Sheet - Changed from absolute to flex positioning */}
-        <View style={[
-          styles.locationSheet,
-          isKeyboardVisible && styles.locationSheetKeyboard
-        ]}>
+        <View
+          style={[
+            styles.locationSheet,
+            isKeyboardVisible && styles.locationSheetKeyboard,
+          ]}
+        >
           <SheetHeader />
-          
+
           <View style={styles.sheetContent}>
-            <CurrentLocationButton 
+            <CurrentLocationButton
               onPress={handleCurrentLocationPress}
               visible={searchText.length === 0}
             />
-            
+
             <OrDivider visible={searchText.length === 0} />
-            
+
             <SearchInput
               value={searchText}
               onChangeText={handleSearchInput}
@@ -742,71 +853,102 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
               showLabel={searchText.length === 0}
               inputRef={inputRef}
             />
-            
+
             {/* Tab Navigation */}
             {searchText.length === 0 && !isKeyboardVisible && (
               <View style={styles.tabContainer}>
                 <View style={styles.tabNavigation}>
                   <TouchableOpacity
-                    style={[styles.tabButton, activeTab === 'recent' && styles.tabButtonActive]}
+                    style={[
+                      styles.tabButton,
+                      activeTab === 'recent' && styles.tabButtonActive,
+                    ]}
                     onPress={() => setActiveTab('recent')}
                     accessibilityLabel="Recent locations tab"
                   >
-                    <Ionicons 
-                      name="time-outline" 
-                      size={20} 
-                      color={activeTab === 'recent' ? COLORS.buttonText : COLORS.textSecondary} 
+                    <Ionicons
+                      name="time-outline"
+                      size={20}
+                      color={
+                        activeTab === 'recent'
+                          ? COLORS.buttonText
+                          : COLORS.textSecondary
+                      }
                     />
-                    <Text style={[
-                      styles.tabButtonText, 
-                      activeTab === 'recent' && styles.tabButtonTextActive
-                    ]}>
+                    <Text
+                      style={[
+                        styles.tabButtonText,
+                        activeTab === 'recent' && styles.tabButtonTextActive,
+                      ]}
+                    >
                       Recent
                     </Text>
                     {recentLocations.length > 0 && (
                       <View style={styles.tabBadge}>
-                        <Text style={styles.tabBadgeText}>{recentLocations.length}</Text>
+                        <Text style={styles.tabBadgeText}>
+                          {recentLocations.length}
+                        </Text>
                       </View>
                     )}
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.tabButton, activeTab === 'saved' && styles.tabButtonActive]}
+                    style={[
+                      styles.tabButton,
+                      activeTab === 'saved' && styles.tabButtonActive,
+                    ]}
                     onPress={() => setActiveTab('saved')}
                     accessibilityLabel="Saved locations tab"
                   >
-                    <Ionicons 
-                      name="bookmark-outline" 
-                      size={20} 
-                      color={activeTab === 'saved' ? COLORS.buttonText : COLORS.textSecondary} 
+                    <Ionicons
+                      name="bookmark-outline"
+                      size={20}
+                      color={
+                        activeTab === 'saved'
+                          ? COLORS.buttonText
+                          : COLORS.textSecondary
+                      }
                     />
-                    <Text style={[
-                      styles.tabButtonText, 
-                      activeTab === 'saved' && styles.tabButtonTextActive
-                    ]}>
+                    <Text
+                      style={[
+                        styles.tabButtonText,
+                        activeTab === 'saved' && styles.tabButtonTextActive,
+                      ]}
+                    >
                       Saved
                     </Text>
                     {savedAddresses.length > 0 && (
                       <View style={styles.tabBadge}>
-                        <Text style={styles.tabBadgeText}>{savedAddresses.length}</Text>
+                        <Text style={styles.tabBadgeText}>
+                          {savedAddresses.length}
+                        </Text>
                       </View>
                     )}
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.tabButton, activeTab === 'current' && styles.tabButtonActive]}
+                    style={[
+                      styles.tabButton,
+                      activeTab === 'current' && styles.tabButtonActive,
+                    ]}
                     onPress={() => setActiveTab('current')}
                     accessibilityLabel="Current location tab"
                   >
-                    <Ionicons 
-                      name="locate-outline" 
-                      size={20} 
-                      color={activeTab === 'current' ? COLORS.buttonText : COLORS.textSecondary} 
+                    <Ionicons
+                      name="locate-outline"
+                      size={20}
+                      color={
+                        activeTab === 'current'
+                          ? COLORS.buttonText
+                          : COLORS.textSecondary
+                      }
                     />
-                    <Text style={[
-                      styles.tabButtonText, 
-                      activeTab === 'current' && styles.tabButtonTextActive
-                    ]}>
+                    <Text
+                      style={[
+                        styles.tabButtonText,
+                        activeTab === 'current' && styles.tabButtonTextActive,
+                      ]}
+                    >
                       Current
                     </Text>
                   </TouchableOpacity>
@@ -827,35 +969,70 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
                               accessibilityLabel={`Select recent location ${location.title}`}
                             >
                               <View style={styles.locationIcon}>
-                                <Ionicons name="time-outline" size={18} color={COLORS.textSecondary} />
+                                <Ionicons
+                                  name="time-outline"
+                                  size={18}
+                                  color={COLORS.textSecondary}
+                                />
                               </View>
                               <View style={styles.locationInfo}>
-                                <Text style={styles.locationTitle} numberOfLines={1}>
+                                <Text
+                                  style={styles.locationTitle}
+                                  numberOfLines={1}
+                                >
                                   {location.title}
                                 </Text>
-                                <Text style={styles.locationSubtitle} numberOfLines={1}>
-                                  {location.subtitle || location.formattedAddress}
+                                <Text
+                                  style={styles.locationSubtitle}
+                                  numberOfLines={1}
+                                >
+                                  {location.subtitle ||
+                                    location.formattedAddress}
                                 </Text>
                               </View>
-                              <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+                              <Ionicons
+                                name="chevron-forward"
+                                size={16}
+                                color={COLORS.textSecondary}
+                              />
                             </TouchableOpacity>
                           ))}
                         </View>
                       ) : (
                         <View style={styles.emptyState}>
-                          <Ionicons name="time-outline" size={32} color={COLORS.textSecondary} />
-                          <Text style={styles.emptyStateTitle}>No recent locations</Text>
-                          <Text style={styles.emptyStateSubtitle}>Your recent searches will appear here</Text>
+                          <Ionicons
+                            name="time-outline"
+                            size={32}
+                            color={COLORS.textSecondary}
+                          />
+                          <Text style={styles.emptyStateTitle}>
+                            No recent locations
+                          </Text>
+                          <Text style={styles.emptyStateSubtitle}>
+                            Your recent searches will appear here
+                          </Text>
                           {/* Debug button for testing */}
-                          <TouchableOpacity 
-                            style={{ marginTop: 10, padding: 10, backgroundColor: '#007AFF', borderRadius: 5 }}
+                          <TouchableOpacity
+                            style={{
+                              marginTop: 10,
+                              padding: 10,
+                              backgroundColor: '#007AFF',
+                              borderRadius: 5,
+                            }}
                             onPress={async () => {
-                              console.log('🔧 DEBUG - Manual refresh triggered');
+                              console.log(
+                                '🔧 DEBUG - Manual refresh triggered'
+                              );
                               await refreshUserLocations();
-                              console.log('🔧 DEBUG - After refresh, recent locations:', recentLocations.length);
+                              console.log(
+                                '🔧 DEBUG - After refresh, recent locations:',
+                                recentLocations.length
+                              );
                             }}
                           >
-                            <Text style={{ color: 'white', fontSize: 12 }}>Debug: Reload Locations</Text>
+                            <Text style={{ color: 'white', fontSize: 12 }}>
+                              Debug: Reload Locations
+                            </Text>
                           </TouchableOpacity>
                         </View>
                       )}
@@ -866,8 +1043,10 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
                     <View style={styles.tabContentSection}>
                       {savedAddresses.length > 0 ? (
                         <View style={styles.locationsList}>
-                          {savedAddresses.map((item) => {
-                            const iconName = getSavedLocationIcon(item.icon || 'home');
+                          {savedAddresses.map(item => {
+                            const iconName = getSavedLocationIcon(
+                              item.icon || 'home'
+                            );
                             return (
                               <TouchableOpacity
                                 key={item.id}
@@ -877,47 +1056,87 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
                                 accessibilityLabel={`Select saved location ${item.label}`}
                               >
                                 <View style={styles.locationIcon}>
-                                  <Ionicons name={iconName} size={18} color={COLORS.text} />
+                                  <Ionicons
+                                    name={iconName}
+                                    size={18}
+                                    color={COLORS.text}
+                                  />
                                 </View>
                                 <View style={styles.locationInfo}>
                                   <View style={styles.locationTitleRow}>
-                                    <Text style={styles.locationTitle} numberOfLines={1}>
+                                    <Text
+                                      style={styles.locationTitle}
+                                      numberOfLines={1}
+                                    >
                                       {item.label}
                                     </Text>
                                     {item.isDefault && (
                                       <View style={styles.defaultBadge}>
-                                        <Text style={styles.defaultBadgeText}>Default</Text>
+                                        <Text style={styles.defaultBadgeText}>
+                                          Default
+                                        </Text>
                                       </View>
                                     )}
                                   </View>
-                                  <Text style={styles.locationSubtitle} numberOfLines={1}>
+                                  <Text
+                                    style={styles.locationSubtitle}
+                                    numberOfLines={1}
+                                  >
                                     {item.location.title}
                                   </Text>
                                 </View>
-                                <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+                                <Ionicons
+                                  name="chevron-forward"
+                                  size={16}
+                                  color={COLORS.textSecondary}
+                                />
                               </TouchableOpacity>
                             );
                           })}
-                          <TouchableOpacity 
+                          <TouchableOpacity
                             style={styles.manageLocationsButton}
-                            onPress={() => navigation.navigate('SavedLocations' as never)}
+                            onPress={() =>
+                              navigation.navigate('SavedLocations' as never)
+                            }
                             accessibilityLabel="Manage saved locations"
                           >
-                            <Ionicons name="settings-outline" size={18} color={COLORS.text} />
-                            <Text style={styles.manageLocationsText}>Manage saved locations</Text>
-                            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+                            <Ionicons
+                              name="settings-outline"
+                              size={18}
+                              color={COLORS.text}
+                            />
+                            <Text style={styles.manageLocationsText}>
+                              Manage saved locations
+                            </Text>
+                            <Ionicons
+                              name="chevron-forward"
+                              size={16}
+                              color={COLORS.textSecondary}
+                            />
                           </TouchableOpacity>
                         </View>
                       ) : (
                         <View style={styles.emptyState}>
-                          <Ionicons name="bookmark-outline" size={32} color={COLORS.textSecondary} />
-                          <Text style={styles.emptyStateTitle}>No saved locations</Text>
-                          <Text style={styles.emptyStateSubtitle}>Save locations for quick access</Text>
-                          <TouchableOpacity 
+                          <Ionicons
+                            name="bookmark-outline"
+                            size={32}
+                            color={COLORS.textSecondary}
+                          />
+                          <Text style={styles.emptyStateTitle}>
+                            No saved locations
+                          </Text>
+                          <Text style={styles.emptyStateSubtitle}>
+                            Save locations for quick access
+                          </Text>
+                          <TouchableOpacity
                             style={styles.addLocationButton}
-                            onPress={() => navigation.navigate('SavedLocations' as never)}
+                            onPress={() =>
+                              navigation.navigate('SavedLocations' as never)
+                            }
                           >
-                            <Text style={styles.addLocationButtonText}>Add Location</Text>
+                            <Text style={styles.addLocationButtonText}>
+                              Add Location
+                            </Text>
                           </TouchableOpacity>
                         </View>
                       )}
@@ -933,25 +1152,44 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
                         accessibilityLabel="Use current location"
                       >
                         <View style={styles.currentLocationIconLarge}>
-                          <Ionicons name="locate" size={24} color={COLORS.buttonText} />
+                          <Ionicons
+                            name="locate"
+                            size={24}
+                            color={COLORS.buttonText}
+                          />
                         </View>
                         <View style={styles.currentLocationContent}>
-                          <Text style={styles.currentLocationTitle}>Use my current location</Text>
+                          <Text style={styles.currentLocationTitle}>
+                            Use my current location
+                          </Text>
                           <Text style={styles.currentLocationSubtitle}>
                             We'll detect your location automatically
                           </Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+                        <Ionicons
+                          name="chevron-forward"
+                          size={20}
+                          color={COLORS.textSecondary}
+                        />
                       </TouchableOpacity>
-                      
+
                       {currentLocation && (
                         <View style={styles.detectedLocationCard}>
                           <View style={styles.locationIcon}>
-                            <Ionicons name="location" size={18} color={COLORS.primary} />
+                            <Ionicons
+                              name="location"
+                              size={18}
+                              color={COLORS.primary}
+                            />
                           </View>
                           <View style={styles.locationInfo}>
-                            <Text style={styles.locationTitle}>Current Location</Text>
-                            <Text style={styles.locationSubtitle} numberOfLines={2}>
+                            <Text style={styles.locationTitle}>
+                              Current Location
+                            </Text>
+                            <Text
+                              style={styles.locationSubtitle}
+                              numberOfLines={2}
+                            >
                               {currentLocation.title}
                             </Text>
                           </View>
@@ -962,7 +1200,7 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
                 </View>
               </View>
             )}
-            
+
             <SearchResults
               searchText={searchText}
               suggestions={suggestions}
@@ -978,7 +1216,11 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
       {showSavePrompt && (
         <View style={styles.savePromptOverlay}>
           <View style={styles.savePromptContent}>
-            <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
+            <Ionicons
+              name="checkmark-circle"
+              size={24}
+              color={COLORS.primary}
+            />
             <Text style={styles.savePromptText}>Location saved!</Text>
           </View>
         </View>
@@ -993,7 +1235,7 @@ const UberStyleLocationPicker: React.FC<UberStyleLocationPickerProps> = ({
         >
           <AddressDetailsForm
             location={selectedLocationToSave}
-            onSubmit={(details) => {
+            onSubmit={details => {
               // This won't be called since we're in save mode
               handleAddressFormCancel();
             }}
@@ -1414,7 +1656,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontWeight: '500',
   },
-  
+
   // Recent Locations Styles
   recentLocationsContainer: {
     paddingHorizontal: 20,
@@ -1465,7 +1707,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     lineHeight: 16,
   },
-  
+
   // Tab Navigation Styles
   tabContainer: {
     flex: 1,
@@ -1517,7 +1759,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.card,
   },
-  
+
   // Tab Content Styles
   tabContent: {
     flex: 1,
@@ -1583,7 +1825,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.buttonText,
   },
-  
+
   // Empty State Styles
   emptyState: {
     alignItems: 'center',
@@ -1615,7 +1857,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.buttonText,
   },
-  
+
   // Manage Locations Button
   manageLocationsButton: {
     flexDirection: 'row',
@@ -1634,7 +1876,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     marginRight: 12,
   },
-  
+
   // Current Location Card Styles
   currentLocationCard: {
     backgroundColor: COLORS.text,
@@ -1677,7 +1919,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  
+
   // Save Location Button Styles
   suggestionItemContainer: {
     flexDirection: 'row',
@@ -1697,4 +1939,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default UberStyleLocationPicker; 
+export default UberStyleLocationPicker;

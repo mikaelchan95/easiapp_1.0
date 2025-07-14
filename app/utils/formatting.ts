@@ -9,27 +9,31 @@
  * @param precision - Decimal places for shortened numbers (default: 1)
  * @param forceShorthand - Force shorthand even for smaller numbers
  */
-export const formatNumberShort = (num: number, precision: number = 1, forceShorthand: boolean = false): string => {
+export const formatNumberShort = (
+  num: number,
+  precision: number = 1,
+  forceShorthand: boolean = false
+): string => {
   if (num === 0) return '0';
-  
+
   const absNum = Math.abs(num);
   const sign = num < 0 ? '-' : '';
-  
+
   if (absNum >= 1000000000) {
     const formatted = (absNum / 1000000000).toFixed(precision);
     return `${sign}${removeTrailingZeros(formatted)}B`;
   }
-  
+
   if (absNum >= 1000000) {
     const formatted = (absNum / 1000000).toFixed(precision);
     return `${sign}${removeTrailingZeros(formatted)}M`;
   }
-  
+
   if (absNum >= 1000 || forceShorthand) {
     const formatted = (absNum / 1000).toFixed(precision);
     return `${sign}${removeTrailingZeros(formatted)}k`;
   }
-  
+
   return num.toString();
 };
 
@@ -41,39 +45,42 @@ export const formatNumberShort = (num: number, precision: number = 1, forceShort
  * @param forceShorthand - Force shorthand for amounts >= 1000
  */
 export const formatCurrencyShort = (
-  amount: number, 
-  currency: string = '$', 
+  amount: number,
+  currency: string = '$',
   showCents: boolean = false,
   forceShorthand: boolean = true
 ): string => {
   if (amount === 0) return `${currency}0`;
-  
+
   const absAmount = Math.abs(amount);
   const sign = amount < 0 ? '-' : '';
-  
+
   // For large amounts, always use shorthand
   if (absAmount >= 1000000) {
     const formatted = (absAmount / 1000000).toFixed(1);
     return `${sign}${currency}${removeTrailingZeros(formatted)}M`;
   }
-  
+
   if (absAmount >= 1000 && forceShorthand) {
     const formatted = (absAmount / 1000).toFixed(1);
     return `${sign}${currency}${removeTrailingZeros(formatted)}k`;
   }
-  
+
   // For smaller amounts, show normally
   if (showCents && absAmount < 1000) {
     return `${sign}${currency}${amount.toFixed(2)}`;
   }
-  
+
   return `${sign}${currency}${Math.round(absAmount)}`;
 };
 
 /**
  * Format percentage with clean display
  */
-export const formatPercentage = (value: number, precision: number = 0): string => {
+export const formatPercentage = (
+  value: number,
+  precision: number = 0
+): string => {
   return `${value.toFixed(precision)}%`;
 };
 
@@ -95,14 +102,20 @@ export const formatStatNumber = (num: number): string => {
 /**
  * Format currency for stats (no cents, shorthand)
  */
-export const formatStatCurrency = (amount: number, currency: string = '$'): string => {
+export const formatStatCurrency = (
+  amount: number,
+  currency: string = '$'
+): string => {
   return formatCurrencyShort(amount, currency, false, true);
 };
 
 /**
  * Shorten text messages for UI components
  */
-export const shortenMessage = (message: string, maxLength: number = 50): string => {
+export const shortenMessage = (
+  message: string,
+  maxLength: number = 50
+): string => {
   if (message.length <= maxLength) return message;
   return `${message.substring(0, maxLength - 3)}...`;
 };
@@ -113,26 +126,26 @@ export const shortenMessage = (message: string, maxLength: number = 50): string 
 export const cleanText = {
   // Credit/Balance related
   creditUsed: 'Used',
-  creditLimit: 'Limit', 
+  creditLimit: 'Limit',
   creditAvailable: 'Available',
   accountBalance: 'Balance',
-  
+
   // Order related
   orderTotal: 'Total',
   orderItems: (count: number) => `${count} item${count !== 1 ? 's' : ''}`,
-  
+
   // Status related
   inStock: 'In Stock',
   outOfStock: 'Out of Stock',
   lowStock: (count: number) => `${count} left`,
-  
+
   // Actions
   viewCart: 'View Cart',
   addToCart: 'Add',
   removeItem: 'Remove',
   saveForLater: 'Save',
   addToFavorites: 'Like',
-  
+
   // Time related
   deliveryTime: (time: string) => time.replace(' delivery', ''),
   estimatedTime: (time: string) => `~${time}`,
@@ -162,18 +175,18 @@ export const formatQuantity = (quantity: number): string => {
  * @param forceDecimals - Force showing decimals even for whole numbers
  */
 export const formatNumberWithCommas = (
-  num: number, 
-  decimals: number = 0, 
+  num: number,
+  decimals: number = 0,
   forceDecimals: boolean = false
 ): string => {
   if (num === 0) return forceDecimals ? '0.00' : '0';
-  
+
   const options: Intl.NumberFormatOptions = {
     minimumFractionDigits: forceDecimals ? decimals : 0,
     maximumFractionDigits: decimals,
     useGrouping: true,
   };
-  
+
   return new Intl.NumberFormat('en-US', options).format(num);
 };
 
@@ -184,13 +197,17 @@ export const formatNumberWithCommas = (
  * @param showCents - Show cents (default: true)
  */
 export const formatCurrencyWithCommas = (
-  amount: number, 
-  currency: string = '$', 
+  amount: number,
+  currency: string = '$',
   showCents: boolean = true
 ): string => {
   if (amount === 0) return showCents ? `${currency}0.00` : `${currency}0`;
-  
-  const formatted = formatNumberWithCommas(amount, showCents ? 2 : 0, showCents);
+
+  const formatted = formatNumberWithCommas(
+    amount,
+    showCents ? 2 : 0,
+    showCents
+  );
   return `${currency}${formatted}`;
 };
 
@@ -209,7 +226,10 @@ export const formatLargeNumber = (num: number, suffix?: string): string => {
  * @param amount - Amount to format
  * @param currency - Currency symbol (default: '$')
  */
-export const formatFinancialAmount = (amount: number, currency: string = '$'): string => {
+export const formatFinancialAmount = (
+  amount: number,
+  currency: string = '$'
+): string => {
   return formatCurrencyWithCommas(amount, currency, true);
 };
 
@@ -218,7 +238,10 @@ export const formatFinancialAmount = (amount: number, currency: string = '$'): s
  * @param points - Points to format
  * @param includeLabel - Whether to include 'points' label
  */
-export const formatPoints = (points: number, includeLabel: boolean = false): string => {
+export const formatPoints = (
+  points: number,
+  includeLabel: boolean = false
+): string => {
   const formatted = formatNumberWithCommas(points);
   return includeLabel ? `${formatted} points` : formatted;
 };
@@ -229,4 +252,4 @@ export const formatPoints = (points: number, includeLabel: boolean = false): str
  */
 export const formatNumber = (num: number): string => {
   return formatNumberWithCommas(num);
-}; 
+};

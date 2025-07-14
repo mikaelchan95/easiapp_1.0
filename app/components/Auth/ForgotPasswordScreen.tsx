@@ -16,7 +16,9 @@ interface ForgotPasswordScreenProps {
   onBack: () => void;
 }
 
-export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBack }) => {
+export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
+  onBack,
+}) => {
   const { resetPassword } = useAppContext();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -34,10 +36,10 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
     }
 
     setIsLoading(true);
-    
+
     try {
       const success = await resetPassword(email.trim());
-      
+
       if (success) {
         setEmailSent(true);
         Alert.alert(
@@ -64,17 +66,16 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.formContainer}>
         <Text style={styles.title}>Reset Password</Text>
         <Text style={styles.subtitle}>
-          {emailSent 
+          {emailSent
             ? "We've sent you a password reset link"
-            : "Enter your email address and we'll send you a link to reset your password"
-          }
+            : "Enter your email address and we'll send you a link to reset your password"}
         </Text>
 
         {!emailSent ? (
@@ -110,12 +111,13 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
               <Text style={styles.iconText}>✉️</Text>
             </View>
             <Text style={styles.emailSentText}>
-              If an account with that email exists, you'll receive a password reset link shortly.
+              If an account with that email exists, you'll receive a password
+              reset link shortly.
             </Text>
             <Text style={styles.emailSentSubtext}>
               Didn't receive the email? Check your spam folder or try again.
             </Text>
-            
+
             <TouchableOpacity
               style={styles.resendButton}
               onPress={handleResendEmail}
@@ -128,10 +130,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
           </View>
         )}
 
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={onBack}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Text style={styles.backButtonText}>Back to Sign In</Text>
         </TouchableOpacity>
       </View>

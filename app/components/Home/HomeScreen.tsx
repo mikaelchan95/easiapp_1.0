@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  View, 
-  ScrollView, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Text, 
-  Image, 
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  Image,
   StatusBar,
-  RefreshControl
+  RefreshControl,
 } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -41,11 +41,11 @@ export default function HomeScreen() {
   const { state, dispatch, testSupabaseIntegration } = useAppContext();
   const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
   const scrollViewRef = useRef<ScrollView>(null);
-  
+
   // Get user data from Supabase
   const user = state.user;
   const company = state.company;
-  
+
   // Test Supabase integration behind the scenes on component mount
   useEffect(() => {
     const testIntegration = async () => {
@@ -64,42 +64,42 @@ export default function HomeScreen() {
 
     testIntegration();
   }, []);
-  
 
-  
   // Auto-rotate banner every 6 seconds
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentBanner((prev) => (prev + 1) % 3);
+      setCurrentBanner(prev => (prev + 1) % 3);
     }, 6000);
     return () => clearInterval(timer);
   }, []);
-  
+
   // Handle pull to refresh
   const handleRefresh = useCallback(async () => {
     HapticFeedback.medium();
     setRefreshing(true);
-    
+
     // Test Supabase integration on refresh
     try {
       await testSupabaseIntegration();
     } catch (error) {
       console.log('Home: Error during refresh:', error);
     }
-    
+
     // Simulate additional data refresh
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     HapticFeedback.success();
     setRefreshing(false);
   }, [testSupabaseIntegration]);
-  
+
   // Memoized product sections for better performance
   const productSections = React.useMemo(() => {
     const products = state.products || [];
-    const featuredProducts = products.filter(p => (p.rating || 0) >= 4.9).slice(0, 6);
+    const featuredProducts = products
+      .filter(p => (p.rating || 0) >= 4.9)
+      .slice(0, 6);
     const newArrivals = products.slice(0, 3);
-    
+
     // Personalize recommendations based on user type
     let recommended = products.slice(2, 5);
     if (user && isCompanyUser(user)) {
@@ -107,62 +107,73 @@ export default function HomeScreen() {
       recommended = products.filter(p => p.retailPrice >= 100).slice(0, 3);
     } else if (user) {
       // For individual users, show popular mid-range products
-      recommended = products.filter(p => (p.rating || 0) >= 4.5 && p.retailPrice < 200).slice(0, 3);
+      recommended = products
+        .filter(p => (p.rating || 0) >= 4.5 && p.retailPrice < 200)
+        .slice(0, 3);
     }
-    
+
     return {
       featured: featuredProducts,
       hotDeals: featuredProducts.slice(0, 3),
       newArrivals,
-      recommended
+      recommended,
     };
   }, [user, state.products]);
-  
-  const handleProductPress = useCallback((product: Product) => {
-    navigation.navigate('ProductDetail', { id: product.id });
-  }, [navigation]);
-  
-  const handleViewAllPress = useCallback((category?: string) => {
-    if (category) {
-      navigation.navigate('SmartSearch', { category });
-    } else {
-      navigation.dispatch(
-        CommonActions.navigate({
-          name: 'Products'
-        })
-      );
-    }
-  }, [navigation]);
-  
+
+  const handleProductPress = useCallback(
+    (product: Product) => {
+      navigation.navigate('ProductDetail', { id: product.id });
+    },
+    [navigation]
+  );
+
+  const handleViewAllPress = useCallback(
+    (category?: string) => {
+      if (category) {
+        navigation.navigate('SmartSearch', { category });
+      } else {
+        navigation.dispatch(
+          CommonActions.navigate({
+            name: 'Products',
+          })
+        );
+      }
+    },
+    [navigation]
+  );
+
   const handleAddressPress = useCallback(() => {
     HapticFeedback.selection();
     // Navigate to the new delivery location picker
     navigation.navigate('DeliveryLocationScreen');
   }, [navigation]);
-  
+
   const handleRewardsPress = useCallback(() => {
     navigation.dispatch(
       CommonActions.navigate({
         name: 'Main',
-        params: { screen: 'Rewards' }
+        params: { screen: 'Rewards' },
       })
     );
   }, [navigation]);
-  
+
   const handleCreditPress = useCallback(() => {
     // Navigate to credit management
     navigation.dispatch(
       CommonActions.navigate({
         name: 'Main',
-        params: { screen: 'Profile' }
+        params: { screen: 'Profile' },
       })
     );
   }, [navigation]);
-  
+
   // Handle product selection from search
-  const handleProductSelect = useCallback((product: Product) => {
-    navigation.navigate('ProductDetail', { id: product.id });
-  }, [navigation]);
+  const handleProductSelect = useCallback(
+    (product: Product) => {
+      navigation.navigate('ProductDetail', { id: product.id });
+    },
+    [navigation]
+  );
 
   // Handle scroll events for back to top button
   const handleScroll = useCallback((event: any) => {
@@ -177,25 +188,31 @@ export default function HomeScreen() {
   }, []);
 
   // Handle brand press
-  const handleBrandPress = useCallback((brand: any) => {
-    // Navigate to products filtered by brand
-    navigation.navigate('SmartSearch', { category: brand.category });
-  }, [navigation]);
+  const handleBrandPress = useCallback(
+    (brand: any) => {
+      // Navigate to products filtered by brand
+      navigation.navigate('SmartSearch', { category: brand.category });
+    },
+    [navigation]
+  );
 
   // Handle brands view all
   const handleBrandsViewAll = useCallback(() => {
     navigation.dispatch(
       CommonActions.navigate({
-        name: 'Products'
+        name: 'Products',
       })
     );
   }, [navigation]);
 
   // Handle past order press
-  const handlePastOrderPress = useCallback((order: any) => {
-    // Navigate to order history for now - in a real app this would show order details
-    navigation.navigate('OrderHistory');
-  }, [navigation]);
+  const handlePastOrderPress = useCallback(
+    (order: any) => {
+      // Navigate to order history for now - in a real app this would show order details
+      navigation.navigate('OrderHistory');
+    },
+    [navigation]
+  );
 
   // Handle past orders view all
   const handlePastOrdersViewAll = useCallback(() => {
@@ -203,50 +220,53 @@ export default function HomeScreen() {
   }, [navigation]);
 
   // Handle reorder
-  const handleReorder = useCallback((order: any) => {
-    // Clear current cart and add order items back to cart
-    console.log('Reordering:', order.orderNumber);
-    
-    // Clear current cart first
-    dispatch({ type: 'CLEAR_CART' });
-    
-    // Add each item from the order to the cart
-    order.items.forEach(item => {
-      dispatch({
-        type: 'ADD_TO_CART',
-        payload: {
-          product: {
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            image: item.image,
-            retailPrice: item.price,
-            tradePrice: item.price * 0.9, // Assume 10% trade discount
-            stockQuantity: 999, // Assume in stock
-            description: `Reordered: ${item.name}`,
-            category: 'Reorder',
-            isAvailable: true
+  const handleReorder = useCallback(
+    (order: any) => {
+      // Clear current cart and add order items back to cart
+      console.log('Reordering:', order.orderNumber);
+
+      // Clear current cart first
+      dispatch({ type: 'CLEAR_CART' });
+
+      // Add each item from the order to the cart
+      order.items.forEach(item => {
+        dispatch({
+          type: 'ADD_TO_CART',
+          payload: {
+            product: {
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              image: item.image,
+              retailPrice: item.price,
+              tradePrice: item.price * 0.9, // Assume 10% trade discount
+              stockQuantity: 999, // Assume in stock
+              description: `Reordered: ${item.name}`,
+              category: 'Reorder',
+              isAvailable: true,
+            },
+            quantity: item.quantity,
           },
-          quantity: item.quantity
-        }
+        });
       });
-    });
-    
-    // Navigate to cart to show the recreated cart
-    navigation.navigate('Cart');
-    
-    // Show success feedback
-    HapticFeedback.success();
-  }, [dispatch, navigation]);
-  
+
+      // Navigate to cart to show the recreated cart
+      navigation.navigate('Cart');
+
+      // Show success feedback
+      HapticFeedback.success();
+    },
+    [dispatch, navigation]
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
-      
+
       <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
         {/* Delivery Location Header - Moved to Top */}
         <View style={styles.topLocationContainer}>
-          <DeliveryLocationHeader 
+          <DeliveryLocationHeader
             location={deliveryLocation}
             onPress={handleAddressPress}
             showDeliveryInfo={true}
@@ -254,9 +274,7 @@ export default function HomeScreen() {
             style={styles.topLocationHeader}
           />
         </View>
-        
 
-        
         {/* Mobile Header */}
         <MobileHeader
           showBackButton={false}
@@ -264,11 +282,11 @@ export default function HomeScreen() {
           showSearch={true}
         />
       </View>
-      
+
       {/* Scrollable Content */}
-      <ScrollView 
+      <ScrollView
         ref={scrollViewRef}
-        style={styles.content} 
+        style={styles.content}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
@@ -284,18 +302,18 @@ export default function HomeScreen() {
       >
         {/* Balance Cards */}
         <View style={styles.section}>
-          <BalanceCards 
+          <BalanceCards
             onCreditClick={handleCreditPress}
             onRewardsClick={handleRewardsPress}
             isLoggedIn={!!user}
           />
         </View>
-        
+
         {/* Banner Carousel */}
         <View style={styles.section}>
           <BannerCarousel currentBanner={currentBanner} />
         </View>
-        
+
         {/* Hot Deals */}
         <View style={styles.section}>
           <ProductSectionCard
@@ -307,7 +325,7 @@ export default function HomeScreen() {
             onProductPress={handleProductPress}
           />
         </View>
-        
+
         {/* New Arrivals */}
         <View style={styles.section}>
           <ProductSectionCard
@@ -319,7 +337,7 @@ export default function HomeScreen() {
             onProductPress={handleProductPress}
           />
         </View>
-        
+
         {/* Recommended For You */}
         <View style={styles.section}>
           <ProductSectionCard
@@ -348,16 +366,13 @@ export default function HomeScreen() {
             onReorderPress={handleReorder}
           />
         </View>
-        
+
         {/* Bottom padding for better scrolling experience */}
         <View style={styles.bottomPadding} />
       </ScrollView>
 
       {/* Back to Top Button */}
-      <BackToTopButton
-        visible={showBackToTop}
-        onPress={handleBackToTop}
-      />
+      <BackToTopButton visible={showBackToTop} onPress={handleBackToTop} />
     </View>
   );
 }
@@ -394,4 +409,4 @@ const styles = StyleSheet.create({
   bottomPadding: {
     height: SPACING.xxl,
   },
-}); 
+});

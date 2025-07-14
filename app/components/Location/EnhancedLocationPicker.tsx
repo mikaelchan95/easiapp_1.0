@@ -11,7 +11,7 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
-  Animated
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,15 +46,19 @@ const EnhancedLocationPicker: React.FC<EnhancedLocationPickerProps> = ({
   showCurrentLocation = true,
 }) => {
   const { savedAddresses, loadSavedAddresses } = useDeliveryLocation();
-  
+
   // State management
   const [searchText, setSearchText] = useState('');
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
-  const [recentLocations, setRecentLocations] = useState<LocationSuggestion[]>([]);
-  const [currentLocation, setCurrentLocation] = useState<LocationSuggestion | null>(null);
+  const [recentLocations, setRecentLocations] = useState<LocationSuggestion[]>(
+    []
+  );
+  const [currentLocation, setCurrentLocation] =
+    useState<LocationSuggestion | null>(null);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [isLoadingCurrent, setIsLoadingCurrent] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<LocationSuggestion | null>(initialLocation || null);
+  const [selectedLocation, setSelectedLocation] =
+    useState<LocationSuggestion | null>(initialLocation || null);
   const [searchFocused, setSearchFocused] = useState(false);
 
   // Animation values
@@ -78,10 +82,7 @@ const EnhancedLocationPicker: React.FC<EnhancedLocationPickerProps> = ({
   // Load initial data
   const loadInitialData = useCallback(async () => {
     try {
-      await Promise.all([
-        loadSavedAddresses(),
-        loadRecentLocations(),
-      ]);
+      await Promise.all([loadSavedAddresses(), loadRecentLocations()]);
     } catch (error) {
       console.error('Error loading initial data:', error);
     }
@@ -139,39 +140,48 @@ const EnhancedLocationPicker: React.FC<EnhancedLocationPickerProps> = ({
       }
     } catch (error) {
       console.error('Error getting current location:', error);
-      Alert.alert('Location Access', 'Enable location access in settings to use this feature.');
+      Alert.alert(
+        'Location Access',
+        'Enable location access in settings to use this feature.'
+      );
     } finally {
       setIsLoadingCurrent(false);
     }
   }, [showCurrentLocation]);
 
   // Handle location selection
-  const handleLocationSelect = useCallback(async (location: LocationSuggestion) => {
-    try {
-      if (Platform.OS === 'ios') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
+  const handleLocationSelect = useCallback(
+    async (location: LocationSuggestion) => {
+      try {
+        if (Platform.OS === 'ios') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
 
-      // Add to recent locations
-      await GoogleMapsService.addToRecentLocations(location);
-      
-      // Update selected location
-      setSelectedLocation(location);
-      
-      // Call parent callback
-      onLocationSelect(location);
-      
-      // Close modal
-      onClose();
-    } catch (error) {
-      console.error('Error selecting location:', error);
-    }
-  }, [onLocationSelect, onClose]);
+        // Add to recent locations
+        await GoogleMapsService.addToRecentLocations(location);
+
+        // Update selected location
+        setSelectedLocation(location);
+
+        // Call parent callback
+        onLocationSelect(location);
+
+        // Close modal
+        onClose();
+      } catch (error) {
+        console.error('Error selecting location:', error);
+      }
+    },
+    [onLocationSelect, onClose]
+  );
 
   // Handle saved address selection
-  const handleSavedAddressSelect = useCallback((address: SavedAddress) => {
-    handleLocationSelect(address.location);
-  }, [handleLocationSelect]);
+  const handleSavedAddressSelect = useCallback(
+    (address: SavedAddress) => {
+      handleLocationSelect(address.location);
+    },
+    [handleLocationSelect]
+  );
 
   // Clear search
   const clearSearch = useCallback(() => {
@@ -182,8 +192,8 @@ const EnhancedLocationPicker: React.FC<EnhancedLocationPickerProps> = ({
   // Modern header with clean design
   const renderHeader = () => (
     <View style={styles.header}>
-      <TouchableOpacity 
-        onPress={onClose} 
+      <TouchableOpacity
+        onPress={onClose}
         style={styles.closeButton}
         accessibilityLabel="Close location picker"
       >
@@ -197,11 +207,15 @@ const EnhancedLocationPicker: React.FC<EnhancedLocationPickerProps> = ({
   // Enhanced search bar with better UX
   const renderSearchBar = () => (
     <View style={styles.searchContainer}>
-      <View style={[
-        styles.searchBar,
-        searchFocused && styles.searchBarFocused
-      ]}>
-        <Ionicons name="search" size={20} color={COLORS.textSecondary} style={styles.searchIcon} />
+      <View
+        style={[styles.searchBar, searchFocused && styles.searchBarFocused]}
+      >
+        <Ionicons
+          name="search"
+          size={20}
+          color={COLORS.textSecondary}
+          style={styles.searchIcon}
+        />
         <TextInput
           style={styles.searchInput}
           placeholder="Search locations..."
@@ -215,12 +229,16 @@ const EnhancedLocationPicker: React.FC<EnhancedLocationPickerProps> = ({
           accessibilityLabel="Search for locations"
         />
         {searchText.length > 0 && (
-          <TouchableOpacity 
-            onPress={clearSearch} 
+          <TouchableOpacity
+            onPress={clearSearch}
             style={styles.clearButton}
             accessibilityLabel="Clear search"
           >
-            <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+            <Ionicons
+              name="close-circle"
+              size={20}
+              color={COLORS.textSecondary}
+            />
           </TouchableOpacity>
         )}
       </View>
@@ -247,17 +265,29 @@ const EnhancedLocationPicker: React.FC<EnhancedLocationPickerProps> = ({
             )}
           </View>
           <View style={styles.currentLocationContent}>
-            <Text style={styles.currentLocationTitle}>Get current location</Text>
-            <Text style={styles.currentLocationSubtitle}>Use your current position</Text>
+            <Text style={styles.currentLocationTitle}>
+              Get current location
+            </Text>
+            <Text style={styles.currentLocationSubtitle}>
+              Use your current position
+            </Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={COLORS.textSecondary}
+          />
         </TouchableOpacity>
       </View>
     );
   };
 
   // Location item component with improved design
-  const renderLocationItem = (location: LocationSuggestion, iconName: string, iconColor: string = COLORS.text) => (
+  const renderLocationItem = (
+    location: LocationSuggestion,
+    iconName: string,
+    iconColor: string = COLORS.text
+  ) => (
     <TouchableOpacity
       style={styles.locationItem}
       onPress={() => handleLocationSelect(location)}
@@ -267,8 +297,12 @@ const EnhancedLocationPicker: React.FC<EnhancedLocationPickerProps> = ({
         <Ionicons name={iconName as any} size={18} color={COLORS.buttonText} />
       </View>
       <View style={styles.locationInfo}>
-        <Text style={styles.locationTitle} numberOfLines={1}>{location.title}</Text>
-        <Text style={styles.locationSubtitle} numberOfLines={2}>{location.subtitle}</Text>
+        <Text style={styles.locationTitle} numberOfLines={1}>
+          {location.title}
+        </Text>
+        <Text style={styles.locationSubtitle} numberOfLines={2}>
+          {location.subtitle}
+        </Text>
       </View>
       <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
     </TouchableOpacity>
@@ -282,9 +316,13 @@ const EnhancedLocationPicker: React.FC<EnhancedLocationPickerProps> = ({
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Recent</Text>
         <View style={styles.sectionContent}>
-          {recentLocations.slice(0, 3).map((location) => (
+          {recentLocations.slice(0, 3).map(location => (
             <View key={location.id}>
-              {renderLocationItem(location, 'time-outline', COLORS.textSecondary)}
+              {renderLocationItem(
+                location,
+                'time-outline',
+                COLORS.textSecondary
+              )}
             </View>
           ))}
         </View>
@@ -309,7 +347,11 @@ const EnhancedLocationPicker: React.FC<EnhancedLocationPickerProps> = ({
       return (
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconContainer}>
-            <Ionicons name="search-outline" size={32} color={COLORS.textSecondary} />
+            <Ionicons
+              name="search-outline"
+              size={32}
+              color={COLORS.textSecondary}
+            />
           </View>
           <Text style={styles.emptyTitle}>No Results</Text>
           <Text style={styles.emptySubtitle}>Try a different search term</Text>
@@ -321,7 +363,7 @@ const EnhancedLocationPicker: React.FC<EnhancedLocationPickerProps> = ({
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Search Results</Text>
         <View style={styles.sectionContent}>
-          {suggestions.map((suggestion) => (
+          {suggestions.map(suggestion => (
             <View key={suggestion.id}>
               {renderLocationItem(suggestion, 'location-outline')}
             </View>
@@ -338,7 +380,7 @@ const EnhancedLocationPicker: React.FC<EnhancedLocationPickerProps> = ({
       presentationStyle="pageSheet"
     >
       <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           style={styles.content}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
@@ -349,8 +391,10 @@ const EnhancedLocationPicker: React.FC<EnhancedLocationPickerProps> = ({
           {renderSearchBar()}
 
           {/* Content */}
-          <Animated.View style={[styles.scrollContainer, { opacity: fadeAnim }]}>
-            <ScrollView 
+          <Animated.View
+            style={[styles.scrollContainer, { opacity: fadeAnim }]}
+          >
+            <ScrollView
               style={styles.scrollView}
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}
@@ -380,7 +424,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  
+
   // Header with modern design
   header: {
     flexDirection: 'row',
@@ -591,4 +635,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EnhancedLocationPicker; 
+export default EnhancedLocationPicker;

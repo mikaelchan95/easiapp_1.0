@@ -4,7 +4,12 @@ export interface PointsTransaction {
   id?: string;
   userId: string;
   companyId?: string;
-  transactionType: 'earned_purchase' | 'redeemed_voucher' | 'bonus' | 'expired' | 'adjustment';
+  transactionType:
+    | 'earned_purchase'
+    | 'redeemed_voucher'
+    | 'bonus'
+    | 'expired'
+    | 'adjustment';
   points: number;
   previousBalance: number;
   newBalance: number;
@@ -34,7 +39,11 @@ export const pointsService = {
     transactionType: string = 'earned_purchase'
   ): Promise<boolean> {
     try {
-      console.log('💰 Updating user company points:', { userId, companyId, pointsEarned });
+      console.log('💰 Updating user company points:', {
+        userId,
+        companyId,
+        pointsEarned,
+      });
 
       // First, get current company points
       const { data: currentData, error: fetchError } = await supabase
@@ -44,7 +53,8 @@ export const pointsService = {
         .eq('company_id', companyId)
         .single();
 
-      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows found
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        // PGRST116 = no rows found
         console.error('Error fetching current points:', fetchError);
         return false;
       }
@@ -67,18 +77,21 @@ export const pointsService = {
       // Upsert the points record
       const { error: upsertError } = await supabase
         .from('user_company_points')
-        .upsert({
-          user_id: userId,
-          company_id: companyId,
-          points_earned: newPointsEarned,
-          points_redeemed: currentPointsRedeemed,
-          lifetime_points_earned: newLifetimeEarned,
-          current_balance: newPointsEarned - currentPointsRedeemed,
-          tier_level: tierLevel,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,company_id'
-        });
+        .upsert(
+          {
+            user_id: userId,
+            company_id: companyId,
+            points_earned: newPointsEarned,
+            points_redeemed: currentPointsRedeemed,
+            lifetime_points_earned: newLifetimeEarned,
+            current_balance: newPointsEarned - currentPointsRedeemed,
+            tier_level: tierLevel,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'user_id,company_id',
+          }
+        );
 
       if (upsertError) {
         console.error('Error upserting user company points:', upsertError);
@@ -96,7 +109,10 @@ export const pointsService = {
   /**
    * Get company points summary for a user
    */
-  async getCompanyPointsSummary(userId: string, companyId: string): Promise<CompanyPointsSummary | null> {
+  async getCompanyPointsSummary(
+    userId: string,
+    companyId: string
+  ): Promise<CompanyPointsSummary | null> {
     try {
       const { data, error } = await supabase
         .from('user_company_points')
@@ -116,7 +132,7 @@ export const pointsService = {
         totalPointsRedeemed: data.points_redeemed || 0,
         currentBalance: data.current_balance || 0,
         tierLevel: data.tier_level || 'Bronze',
-        lifetimePointsEarned: data.lifetime_points_earned || 0
+        lifetimePointsEarned: data.lifetime_points_earned || 0,
       };
     } catch (error) {
       console.error('Error in getCompanyPointsSummary:', error);
@@ -144,18 +160,23 @@ export const pointsService = {
           .single();
 
         if (fetchError) {
-          console.error('Error fetching current company points for redemption:', fetchError);
+          console.error(
+            'Error fetching current company points for redemption:',
+            fetchError
+          );
           return false;
         }
 
-        const currentBalance = (currentData.points_earned || 0) - (currentData.points_redeemed || 0);
-        
+        const currentBalance =
+          (currentData.points_earned || 0) - (currentData.points_redeemed || 0);
+
         if (currentBalance < pointsToRedeem) {
           console.error('Insufficient points for redemption');
           return false;
         }
 
-        const newPointsRedeemed = (currentData.points_redeemed || 0) + pointsToRedeem;
+        const newPointsRedeemed =
+          (currentData.points_redeemed || 0) + pointsToRedeem;
         const newBalance = (currentData.points_earned || 0) - newPointsRedeemed;
 
         const { error: updateError } = await supabase
@@ -163,13 +184,16 @@ export const pointsService = {
           .update({
             points_redeemed: newPointsRedeemed,
             current_balance: newBalance,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq('user_id', userId)
           .eq('company_id', companyId);
 
         if (updateError) {
-          console.error('Error updating company points for redemption:', updateError);
+          console.error(
+            'Error updating company points for redemption:',
+            updateError
+          );
           return false;
         }
       } else {
@@ -181,12 +205,15 @@ export const pointsService = {
           .single();
 
         if (userError) {
-          console.error('Error fetching user points for redemption:', userError);
+          console.error(
+            'Error fetching user points for redemption:',
+            userError
+          );
           return false;
         }
 
         const currentPoints = userData.points || 0;
-        
+
         if (currentPoints < pointsToRedeem) {
           console.error('Insufficient points for redemption');
           return false;
@@ -200,7 +227,10 @@ export const pointsService = {
           .eq('id', userId);
 
         if (updateError) {
-          console.error('Error updating user points for redemption:', updateError);
+          console.error(
+            'Error updating user points for redemption:',
+            updateError
+          );
           return false;
         }
       }
@@ -216,7 +246,11 @@ export const pointsService = {
   /**
    * Get points transaction history
    */
-  async getPointsHistory(userId: string, companyId?: string, limit: number = 50): Promise<PointsTransaction[]> {
+  async getPointsHistory(
+    userId: string,
+    companyId?: string,
+    limit: number = 50
+  ): Promise<PointsTransaction[]> {
     try {
       let query = supabase
         .from('points_audit_log')
@@ -246,7 +280,10 @@ export const pointsService = {
   /**
    * Get user company points transactions (compatible with modal)
    */
-  async getUserCompanyPointsTransactions(userId: string, companyId: string): Promise<import('../types/user').PointsTransaction[]> {
+  async getUserCompanyPointsTransactions(
+    userId: string,
+    companyId: string
+  ): Promise<import('../types/user').PointsTransaction[]> {
     try {
       const { data, error } = await supabase
         .from('points_audit_log')
@@ -257,7 +294,10 @@ export const pointsService = {
         .limit(100);
 
       if (error) {
-        console.error('Error fetching user company points transactions:', error);
+        console.error(
+          'Error fetching user company points transactions:',
+          error
+        );
         return [];
       }
 
@@ -271,13 +311,13 @@ export const pointsService = {
         pointsBalanceBefore: transaction.points_before,
         pointsBalanceAfter: transaction.points_after,
         metadata: transaction.metadata || {},
-        createdAt: transaction.created_at
+        createdAt: transaction.created_at,
       }));
     } catch (error) {
       console.error('Error in getUserCompanyPointsTransactions:', error);
       return [];
     }
-  }
+  },
 };
 
 export default pointsService;

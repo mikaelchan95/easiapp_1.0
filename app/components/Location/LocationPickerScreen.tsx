@@ -1,17 +1,22 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { 
-  View, 
-  StyleSheet, 
-  Dimensions, 
+import {
+  View,
+  StyleSheet,
+  Dimensions,
   StatusBar,
   Platform,
   Text,
   TouchableOpacity,
   SafeAreaView,
-  TextInput
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker, Region, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, {
+  Marker,
+  Region,
+  Circle,
+  PROVIDER_GOOGLE,
+} from 'react-native-maps';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -29,12 +34,14 @@ interface LocationPickerScreenProps {
 }
 
 const LocationPickerScreen: React.FC<LocationPickerScreenProps> = ({
-  onLocationSelect
+  onLocationSelect,
 }) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
-  const [mapRegion, setMapRegion] = useState<Region>(GOOGLE_MAPS_CONFIG.marinaBayRegion);
+  const [mapRegion, setMapRegion] = useState<Region>(
+    GOOGLE_MAPS_CONFIG.marinaBayRegion
+  );
   const [mapReady, setMapReady] = useState(false);
   const [searchText, setSearchText] = useState('');
 
@@ -51,32 +58,35 @@ const LocationPickerScreen: React.FC<LocationPickerScreenProps> = ({
   }, [deliveryLocation]);
 
   // Handle location selection
-  const handleLocationSelect = useCallback((location: LocationSuggestion) => {
-    console.log('Location selected:', location);
-    
-    // Update global delivery location
-    setDeliveryLocation(location);
-    
-    // If coordinate available, center map on it
-    if (location.coordinate) {
-      setMapRegion({
-        latitude: location.coordinate.latitude,
-        longitude: location.coordinate.longitude,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
-      });
-    }
-    
-    // Pass to parent callback if provided
-    if (onLocationSelect) {
-      onLocationSelect(location);
-    }
-    
-    // Go back if we're in a navigation stack
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    }
-  }, [navigation, onLocationSelect, setDeliveryLocation]);
+  const handleLocationSelect = useCallback(
+    (location: LocationSuggestion) => {
+      console.log('Location selected:', location);
+
+      // Update global delivery location
+      setDeliveryLocation(location);
+
+      // If coordinate available, center map on it
+      if (location.coordinate) {
+        setMapRegion({
+          latitude: location.coordinate.latitude,
+          longitude: location.coordinate.longitude,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
+        });
+      }
+
+      // Pass to parent callback if provided
+      if (onLocationSelect) {
+        onLocationSelect(location);
+      }
+
+      // Go back if we're in a navigation stack
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      }
+    },
+    [navigation, onLocationSelect, setDeliveryLocation]
+  );
 
   // Handle back button
   const handleBackPress = useCallback(() => {
@@ -95,33 +105,32 @@ const LocationPickerScreen: React.FC<LocationPickerScreenProps> = ({
     <View style={styles.container}>
       {/* Status bar spacing */}
       <View style={[styles.statusBarSpacer, { height: insets.top }]} />
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent
+      />
+
       {/* Header */}
       <SafeAreaView style={styles.headerContainer}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={handleBackPress}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
           <Ionicons name="chevron-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
 
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Select Location</Text>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.searchBar}
             onPress={handleOpenLocationSearch}
             activeOpacity={0.7}
           >
             <Ionicons name="search" size={18} color={COLORS.textSecondary} />
-            <Text style={styles.searchBarText}>
-              Search for a location...
-            </Text>
+            <Text style={styles.searchBarText}>Search for a location...</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
-      
+
       {/* Full screen map */}
       <MapView
         style={styles.map}
@@ -147,26 +156,35 @@ const LocationPickerScreen: React.FC<LocationPickerScreenProps> = ({
         }}
       >
         {/* Delivery zones as circles */}
-        {mapReady && GOOGLE_MAPS_CONFIG.deliveryZones.map((zone, index) => (
-          <React.Fragment key={`zone_${index}`}>
-            {/* Zone circle overlay */}
-            <Circle
-              center={zone.center}
-              radius={zone.radius * 1000} // Convert km to meters
-              strokeColor={zone.specialPricing ? '#000000' : '#333333'}
-              strokeWidth={1}
-              fillColor={zone.specialPricing ? 'rgba(0, 0, 0, 0.05)' : 'rgba(0, 0, 0, 0.03)'}
-            />
-            
-            {/* Zone center marker */}
-            <Marker
-              coordinate={zone.center}
-              title={zone.name}
-              description={zone.specialPricing ? 'Special delivery area' : 'Delivery available'}
-              pinColor="#000000"
-            />
-          </React.Fragment>
-        ))}
+        {mapReady &&
+          GOOGLE_MAPS_CONFIG.deliveryZones.map((zone, index) => (
+            <React.Fragment key={`zone_${index}`}>
+              {/* Zone circle overlay */}
+              <Circle
+                center={zone.center}
+                radius={zone.radius * 1000} // Convert km to meters
+                strokeColor={zone.specialPricing ? '#000000' : '#333333'}
+                strokeWidth={1}
+                fillColor={
+                  zone.specialPricing
+                    ? 'rgba(0, 0, 0, 0.05)'
+                    : 'rgba(0, 0, 0, 0.03)'
+                }
+              />
+
+              {/* Zone center marker */}
+              <Marker
+                coordinate={zone.center}
+                title={zone.name}
+                description={
+                  zone.specialPricing
+                    ? 'Special delivery area'
+                    : 'Delivery available'
+                }
+                pinColor="#000000"
+              />
+            </React.Fragment>
+          ))}
 
         {/* Current delivery location marker */}
         {deliveryLocation?.coordinate && (
@@ -182,35 +200,47 @@ const LocationPickerScreen: React.FC<LocationPickerScreenProps> = ({
           </Marker>
         )}
       </MapView>
-      
+
       {/* Bottom action bar */}
-      <View style={[styles.bottomBar, { paddingBottom: insets.bottom > 0 ? insets.bottom : 16 }]}>
-        <TouchableOpacity style={styles.useLocationButton} onPress={() => {
-          const selectedLocation = deliveryLocation || {
-            id: 'current_map_location',
-            title: 'Selected Location',
-            coordinate: { 
-              latitude: mapRegion.latitude,
-              longitude: mapRegion.longitude
-            }
-          };
-          handleLocationSelect(selectedLocation);
-        }}>
+      <View
+        style={[
+          styles.bottomBar,
+          { paddingBottom: insets.bottom > 0 ? insets.bottom : 16 },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.useLocationButton}
+          onPress={() => {
+            const selectedLocation = deliveryLocation || {
+              id: 'current_map_location',
+              title: 'Selected Location',
+              coordinate: {
+                latitude: mapRegion.latitude,
+                longitude: mapRegion.longitude,
+              },
+            };
+            handleLocationSelect(selectedLocation);
+          }}
+        >
           <Text style={styles.useLocationButtonText}>Use This Location</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.currentLocationButton} onPress={async () => {
-          const currentLocation = await GoogleMapsService.getCurrentLocation();
-          if (currentLocation?.coordinate) {
-            setMapRegion({
-              latitude: currentLocation.coordinate.latitude,
-              longitude: currentLocation.coordinate.longitude,
-              latitudeDelta: 0.02,
-              longitudeDelta: 0.02,
-            });
-            handleLocationSelect(currentLocation);
-          }
-        }}>
+
+        <TouchableOpacity
+          style={styles.currentLocationButton}
+          onPress={async () => {
+            const currentLocation =
+              await GoogleMapsService.getCurrentLocation();
+            if (currentLocation?.coordinate) {
+              setMapRegion({
+                latitude: currentLocation.coordinate.latitude,
+                longitude: currentLocation.coordinate.longitude,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+              });
+              handleLocationSelect(currentLocation);
+            }
+          }}
+        >
           <Ionicons name="locate" size={24} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
@@ -328,4 +358,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LocationPickerScreen; 
+export default LocationPickerScreen;

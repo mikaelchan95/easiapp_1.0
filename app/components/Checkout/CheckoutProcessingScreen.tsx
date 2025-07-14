@@ -1,12 +1,10 @@
 import React, { useContext, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  StatusBar 
-} from 'react-native';
+import { View, Text, StyleSheet, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { AppContext } from '../../context/AppContext';
 import { useCheckout } from '../../context/CheckoutContext';
@@ -25,14 +23,15 @@ export default function CheckoutProcessingScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" backgroundColor={COLORS.background} />
-      
+
       <View style={styles.content}>
         <ProcessingStep />
-        
+
         <View style={styles.messageContainer}>
           <Text style={styles.processingTitle}>Processing Your Order</Text>
           <Text style={styles.processingSubtitle}>
-            Please wait while we confirm your order details and prepare for delivery.
+            Please wait while we confirm your order details and prepare for
+            delivery.
           </Text>
         </View>
       </View>

@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface CalendarDay {
@@ -19,23 +25,23 @@ interface DeliveryCalendarProps {
 
 const DeliveryCalendar: React.FC<DeliveryCalendarProps> = ({
   onSelectDate,
-  selectedDate
+  selectedDate,
 }) => {
   const [calendarDays, setCalendarDays] = useState<CalendarDay[]>([]);
-  
+
   // Generate calendar days for the next 14 days
   useEffect(() => {
     const today = new Date();
     const days: CalendarDay[] = [];
-    
+
     for (let i = 0; i < 14; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
-      
+
       // Format date as ISO string (YYYY-MM-DD)
       const dateString = date.toISOString().split('T')[0];
       const isSelected = selectedDate === dateString;
-      
+
       days.push({
         date,
         dayNumber: date.getDate(),
@@ -43,32 +49,32 @@ const DeliveryCalendar: React.FC<DeliveryCalendarProps> = ({
         monthName: getMonthName(date),
         isToday: i === 0,
         isSelectable: true, // All future days are selectable
-        isSelected
+        isSelected,
       });
     }
-    
+
     setCalendarDays(days);
   }, [selectedDate]);
-  
+
   const getDayName = (date: Date): string => {
     return date.toLocaleDateString('en-US', { weekday: 'short' });
   };
-  
+
   const getMonthName = (date: Date): string => {
     return date.toLocaleDateString('en-US', { month: 'short' });
   };
-  
+
   const handleSelectDay = (date: Date) => {
     const dateString = date.toISOString().split('T')[0];
     onSelectDate(dateString);
   };
-  
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Select Delivery Date</Text>
-      
-      <ScrollView 
-        horizontal 
+
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.daysContainer}
       >
@@ -79,36 +85,41 @@ const DeliveryCalendar: React.FC<DeliveryCalendarProps> = ({
               styles.dayCard,
               day.isToday && styles.todayCard,
               day.isSelected && styles.selectedCard,
-              !day.isSelectable && styles.disabledCard
+              !day.isSelectable && styles.disabledCard,
             ]}
             onPress={() => day.isSelectable && handleSelectDay(day.date)}
             disabled={!day.isSelectable}
           >
-            <Text style={[
-              styles.dayName,
-              day.isSelected && styles.selectedText,
-              day.isToday && styles.todayText
-            ]}>
+            <Text
+              style={[
+                styles.dayName,
+                day.isSelected && styles.selectedText,
+                day.isToday && styles.todayText,
+              ]}
+            >
               {day.dayName}
             </Text>
-            <View style={[
-              styles.dayNumber,
-              day.isSelected && styles.selectedDayNumber
-            ]}>
-              <Text style={[
-                styles.dayNumberText,
-                day.isSelected && styles.selectedDayNumberText
-              ]}>
+            <View
+              style={[
+                styles.dayNumber,
+                day.isSelected && styles.selectedDayNumber,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.dayNumberText,
+                  day.isSelected && styles.selectedDayNumberText,
+                ]}
+              >
                 {day.dayNumber}
               </Text>
             </View>
-            <Text style={[
-              styles.monthName,
-              day.isSelected && styles.selectedText
-            ]}>
+            <Text
+              style={[styles.monthName, day.isSelected && styles.selectedText]}
+            >
               {day.monthName}
             </Text>
-            
+
             {day.isToday && (
               <View style={styles.todayBadge}>
                 <Text style={styles.todayBadgeText}>Today</Text>
@@ -207,4 +218,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DeliveryCalendar; 
+export default DeliveryCalendar;

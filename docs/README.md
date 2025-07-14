@@ -7,6 +7,7 @@ Comprehensive documentation for the EASI app credit payment system and platform 
 This documentation is organized into distinct sections for different user types and use cases:
 
 ### 📖 User Documentation
+
 **For end users, company managers, and billing staff**
 
 - **[User Guides](./user-guides/)** - Complete user documentation
@@ -17,6 +18,7 @@ This documentation is organized into distinct sections for different user types 
   - [FAQ](./user-guides/faq.md) - Frequently asked questions
 
 ### 🔧 Administrative Documentation
+
 **For system administrators and billing managers**
 
 - **[Admin Guides](./admin-guides/)** - System administration
@@ -26,6 +28,7 @@ This documentation is organized into distinct sections for different user types 
   - [Security & Compliance](./admin-guides/security-compliance.md) - Security policies and procedures
 
 ### 💻 Developer Documentation
+
 **For developers, integrators, and technical teams**
 
 - **[Developer Guides](./developer-guides/)** - Technical implementation
@@ -35,6 +38,7 @@ This documentation is organized into distinct sections for different user types 
   - [Testing Strategy](./developer-guides/testing-strategy-guide.md) - Testing approaches
 
 ### 🔌 API Documentation
+
 **For developers working with the payment system APIs**
 
 - **[API Reference](./api-reference/)** - Complete API documentation
@@ -44,6 +48,7 @@ This documentation is organized into distinct sections for different user types 
   - [Database Functions](./api-reference/database-functions.md) - PostgreSQL functions
 
 ### 🛠️ Troubleshooting & Support
+
 **For resolving issues and getting help**
 
 - **[Troubleshooting](./troubleshooting/)** - Issue resolution
@@ -55,11 +60,15 @@ This documentation is organized into distinct sections for different user types 
 ## 📁 Legacy Documentation Structure
 
 ### 🔧 Setup & Configuration
+
 **Location:** [`setup/`](setup/)
+
 - [`SUPABASE_SETUP.md`](setup/SUPABASE_SETUP.md) - Complete Supabase backend setup guide
 
 ### 🏗 Implementation Guides
+
 **Location:** [`implementation/`](implementation/)
+
 - [`PROFILE-B2B-IMPLEMENTATION.md`](implementation/PROFILE-B2B-IMPLEMENTATION.md) - B2B profile management system
 - [`REWARDS-SYSTEM-IMPLEMENTATION.md`](implementation/REWARDS-SYSTEM-IMPLEMENTATION.md) - Loyalty rewards system
 - [`PURCHASING-EXPERIENCE-IMPLEMENTATION.md`](implementation/PURCHASING-EXPERIENCE-IMPLEMENTATION.md) - Enhanced buying flow
@@ -69,7 +78,9 @@ This documentation is organized into distinct sections for different user types 
 - [`UBER_STYLE_LOCATION_PICKER.md`](implementation/UBER_STYLE_LOCATION_PICKER.md) - Uber-style location picker
 
 ### 🐛 Fixes & Technical Solutions
+
 **Location:** [`fixes/`](fixes/)
+
 - [`URGENT_BUG_FIXES.md`](fixes/URGENT_BUG_FIXES.md) - Critical bug fixes
 - [`GOOGLE_MAPS_API_LOCATION_FIX.md`](fixes/GOOGLE_MAPS_API_LOCATION_FIX.md) - Google Maps integration fixes
 - [`LOCATION_FEATURE_IMPROVEMENTS.md`](fixes/LOCATION_FEATURE_IMPROVEMENTS.md) - Location feature enhancements
@@ -81,7 +92,9 @@ This documentation is organized into distinct sections for different user types 
 - [`location-consistency-fixes.md`](fixes/location-consistency-fixes.md) - Location consistency improvements
 
 ### 🎨 UI/UX Documentation
+
 **Location:** [`ui-ux/`](ui-ux/)
+
 - [`BUYING_PROCESS_UX_EXECUTIVE_SUMMARY.md`](ui-ux/BUYING_PROCESS_UX_EXECUTIVE_SUMMARY.md) - Buying process UX overview
 - [`CART_UX_IMPROVEMENTS.md`](ui-ux/CART_UX_IMPROVEMENTS.md) - Shopping cart enhancements
 - [`THEME-IMPROVEMENTS.md`](ui-ux/THEME-IMPROVEMENTS.md) - Design system improvements
@@ -95,7 +108,9 @@ This documentation is organized into distinct sections for different user types 
 - [`cart-ui-fixes-implemented.md`](ui-ux/cart-ui-fixes-implemented.md) - Cart UI fixes
 
 ### 🧪 Testing & Validation
+
 **Location:** [`testing/`](testing/)
+
 - [`UI_UX_TESTING_COMPREHENSIVE_REPORT.md`](testing/UI_UX_TESTING_COMPREHENSIVE_REPORT.md) - Comprehensive testing report
 - [`IPHONE-UX-TEST-RESULTS.md`](testing/IPHONE-UX-TEST-RESULTS.md) - iPhone UX testing results
 - [`PURCHASE_PROCESS_TESTING_REPORT.md`](testing/PURCHASE_PROCESS_TESTING_REPORT.md) - Purchase flow testing
@@ -103,24 +118,29 @@ This documentation is organized into distinct sections for different user types 
 - [`TESTING_SUMMARY_FINAL.md`](testing/TESTING_SUMMARY_FINAL.md) - Final testing summary
 
 ### 📋 Project Management
+
 **Location:** [`project-management/`](project-management/)
+
 - Documentation for project planning and tracking (to be organized)
 
 ## Key Features Documented
 
 ### 💳 Credit Payment System
+
 - **Partial Payment Processing** - Process payments against multiple invoices with flexible allocation strategies
 - **Real-time Balance Monitoring** - WebSocket-based real-time credit balance and payment updates
 - **Payment Allocation** - Oldest-first, largest-first, and manual allocation strategies
 - **Comprehensive Audit Trail** - Complete tracking of all payment and credit operations
 
 ### 🏗️ Technical Architecture
+
 - **Edge Functions** - Deno-based serverless functions for payment processing
 - **Database Design** - PostgreSQL schema with row-level security and audit trails
 - **WebSocket Protocol** - Real-time communication for balance updates
 - **Security Model** - JWT authentication, RBAC, and comprehensive security policies
 
 ### 📊 Administrative Features
+
 - **Billing Dashboard** - Comprehensive admin interface for billing management
 - **Credit Management** - Tools for managing company credit limits and adjustments
 - **Reporting & Analytics** - Payment analytics and financial reporting
@@ -129,18 +149,21 @@ This documentation is organized into distinct sections for different user types 
 ## Getting Started
 
 ### For End Users
+
 1. Start with the [Quick Start Guide](./user-guides/quick-start-guide.md)
 2. Review [Partial Payment Processing](./user-guides/partial-payment-guide.md) for payment features
 3. Set up [Real-time Monitoring](./user-guides/real-time-balance-guide.md) for balance updates
 4. Check [FAQ](./user-guides/faq.md) for common questions
 
 ### For Administrators
+
 1. Review [System Administration Guide](./admin-guides/system-administration-guide.md)
 2. Configure [Billing Settings](./admin-guides/billing-configuration-guide.md)
 3. Set up [User Access Management](./admin-guides/user-access-management.md)
 4. Implement [Security Procedures](./admin-guides/security-compliance.md)
 
 ### For Developers
+
 1. Understand the [Database Schema](./developer-guides/database-schema-reference.md)
 2. Review [API Documentation](./api-reference/) for integration
 3. Check [Integration Examples](./developer-guides/integration-examples.md) for code samples
@@ -149,21 +172,25 @@ This documentation is organized into distinct sections for different user types 
 ## 🗺 Legacy Navigation Guide
 
 ### For New Developers
+
 1. Start with [`setup/SUPABASE_SETUP.md`](setup/SUPABASE_SETUP.md) for backend setup
 2. Review [`implementation/`](implementation/) for feature understanding
 3. Check [`testing/`](testing/) for validation procedures
 
 ### For Bug Fixes
+
 1. Check [`fixes/`](fixes/) for existing solutions
 2. Review related UI/UX documentation in [`ui-ux/`](ui-ux/)
 3. Validate with testing guides in [`testing/`](testing/)
 
 ### For UI/UX Work
+
 1. Review design system in [`ui-ux/THEME-IMPROVEMENTS.md`](ui-ux/THEME-IMPROVEMENTS.md)
 2. Check existing improvements in [`ui-ux/`](ui-ux/)
 3. Follow testing procedures in [`testing/`](testing/)
 
 ### For Feature Implementation
+
 1. Review similar implementations in [`implementation/`](implementation/)
 2. Check for related fixes in [`fixes/`](fixes/)
 3. Plan testing using guides in [`testing/`](testing/)
@@ -179,6 +206,7 @@ This documentation is organized into distinct sections for different user types 
 ## 🔄 Maintenance
 
 This documentation structure should be maintained as the project evolves:
+
 - Add new documents to appropriate categories
 - Update cross-references when moving files
 - Keep the main README.md updated with new features

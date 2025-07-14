@@ -1,6 +1,16 @@
-import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  ReactNode,
+  useEffect,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DeliveryAddress, DeliverySlot, PaymentMethod } from '../types/checkout';
+import {
+  DeliveryAddress,
+  DeliverySlot,
+  PaymentMethod,
+} from '../types/checkout';
 
 interface CheckoutState {
   deliveryAddress: DeliveryAddress | null;
@@ -30,15 +40,21 @@ const initialState: CheckoutState = {
   error: null,
 };
 
-const CheckoutContext = createContext<{
-  state: CheckoutState;
-  dispatch: React.Dispatch<CheckoutAction>;
-  isCheckoutComplete: () => boolean;
-} | undefined>(undefined);
+const CheckoutContext = createContext<
+  | {
+      state: CheckoutState;
+      dispatch: React.Dispatch<CheckoutAction>;
+      isCheckoutComplete: () => boolean;
+    }
+  | undefined
+>(undefined);
 
 const STORAGE_KEY = '@checkout_data';
 
-function checkoutReducer(state: CheckoutState, action: CheckoutAction): CheckoutState {
+function checkoutReducer(
+  state: CheckoutState,
+  action: CheckoutAction
+): CheckoutState {
   switch (action.type) {
     case 'SET_DELIVERY_ADDRESS':
       return { ...state, deliveryAddress: action.payload };
@@ -61,7 +77,9 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
   }
 }
 
-export const CheckoutProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const CheckoutProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [state, dispatch] = useReducer(checkoutReducer, initialState);
 
   // Load saved checkout data on mount
@@ -100,7 +118,12 @@ export const CheckoutProvider: React.FC<{ children: ReactNode }> = ({ children }
     if (!state.isProcessing && !state.error) {
       saveData();
     }
-  }, [state.deliveryAddress, state.deliverySlot, state.paymentMethod, state.orderNotes]);
+  }, [
+    state.deliveryAddress,
+    state.deliverySlot,
+    state.paymentMethod,
+    state.orderNotes,
+  ]);
 
   const isCheckoutComplete = () => {
     return !!(

@@ -50,15 +50,19 @@ export const PointsHistoryModal: React.FC<PointsHistoryModalProps> = ({
     } else {
       setLoading(true);
     }
-    
+
     setError(null);
 
     try {
       let pointsTransactions: PointsTransaction[] = [];
-      
+
       if (companyId) {
         // Load company user transactions
-        const companyTransactions = await pointsService.getUserCompanyPointsTransactions(userId, companyId);
+        const companyTransactions =
+          await pointsService.getUserCompanyPointsTransactions(
+            userId,
+            companyId
+          );
         pointsTransactions = companyTransactions;
       } else {
         // Load individual user transactions - this would need to be implemented
@@ -80,9 +84,11 @@ export const PointsHistoryModal: React.FC<PointsHistoryModalProps> = ({
     loadTransactions(true);
   };
 
-  const groupTransactionsByDate = (transactions: PointsTransaction[]): GroupedTransaction[] => {
+  const groupTransactionsByDate = (
+    transactions: PointsTransaction[]
+  ): GroupedTransaction[] => {
     const grouped: { [key: string]: PointsTransaction[] } = {};
-    
+
     transactions.forEach(transaction => {
       const date = new Date(transaction.createdAt).toDateString();
       if (!grouped[date]) {
@@ -119,24 +125,24 @@ export const PointsHistoryModal: React.FC<PointsHistoryModalProps> = ({
 
   const getTransactionDescription = (transaction: PointsTransaction) => {
     const metadata = transaction.metadata || {};
-    
+
     switch (transaction.transactionType) {
       case 'earned_purchase':
-        return metadata.orderId 
+        return metadata.orderId
           ? `Purchase reward - Order #${metadata.orderId}`
           : 'Purchase reward';
       case 'earned_bonus':
         return metadata.reason || 'Bonus points';
       case 'redeemed_voucher':
-        return metadata.voucherCode 
+        return metadata.voucherCode
           ? `Voucher redeemed - ${metadata.voucherCode}`
           : 'Voucher redemption';
       case 'points_transfer_in':
-        return metadata.fromUser 
+        return metadata.fromUser
           ? `Transfer from ${metadata.fromUser}`
           : 'Points transfer received';
       case 'points_transfer_out':
-        return metadata.toUser 
+        return metadata.toUser
           ? `Transfer to ${metadata.toUser}`
           : 'Points transfer sent';
       case 'expired':
@@ -159,10 +165,10 @@ export const PointsHistoryModal: React.FC<PointsHistoryModalProps> = ({
     } else if (date.toDateString() === yesterday.toDateString()) {
       return 'Yesterday';
     } else {
-      return date.toLocaleDateString('en-SG', { 
-        day: 'numeric', 
-        month: 'short', 
-        year: 'numeric' 
+      return date.toLocaleDateString('en-SG', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
       });
     }
   };
@@ -177,13 +183,13 @@ export const PointsHistoryModal: React.FC<PointsHistoryModalProps> = ({
   const renderTransaction = ({ item }: { item: PointsTransaction }) => {
     const icon = getTransactionIcon(item.transactionType);
     const isPositive = item.pointsAmount > 0;
-    
+
     return (
       <View style={styles.transactionItem}>
         <View style={styles.transactionIcon}>
           <Ionicons name={icon.name as any} size={20} color={icon.color} />
         </View>
-        
+
         <View style={styles.transactionContent}>
           <Text style={styles.transactionDescription}>
             {getTransactionDescription(item)}
@@ -192,13 +198,16 @@ export const PointsHistoryModal: React.FC<PointsHistoryModalProps> = ({
             {formatTime(item.createdAt)}
           </Text>
         </View>
-        
+
         <View style={styles.transactionAmount}>
-          <Text style={[
-            styles.pointsAmount,
-            { color: isPositive ? COLORS.success : COLORS.error }
-          ]}>
-            {isPositive ? '+' : ''}{formatNumber(item.pointsAmount)}
+          <Text
+            style={[
+              styles.pointsAmount,
+              { color: isPositive ? COLORS.success : COLORS.error },
+            ]}
+          >
+            {isPositive ? '+' : ''}
+            {formatNumber(item.pointsAmount)}
           </Text>
           <Text style={styles.balanceAfter}>
             Balance: {formatNumber(item.pointsBalanceAfter)}
@@ -211,7 +220,7 @@ export const PointsHistoryModal: React.FC<PointsHistoryModalProps> = ({
   const renderDateGroup = ({ item }: { item: GroupedTransaction }) => (
     <View style={styles.dateGroup}>
       <Text style={styles.dateHeader}>{formatDate(item.date)}</Text>
-      {item.transactions.map((transaction) => (
+      {item.transactions.map(transaction => (
         <View key={transaction.id}>
           {renderTransaction({ item: transaction })}
         </View>
@@ -243,7 +252,11 @@ export const PointsHistoryModal: React.FC<PointsHistoryModalProps> = ({
           </View>
         ) : error ? (
           <View style={styles.errorContainer}>
-            <Ionicons name="alert-circle-outline" size={48} color={COLORS.textSecondary} />
+            <Ionicons
+              name="alert-circle-outline"
+              size={48}
+              color={COLORS.textSecondary}
+            />
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity
               style={styles.retryButton}
@@ -254,17 +267,22 @@ export const PointsHistoryModal: React.FC<PointsHistoryModalProps> = ({
           </View>
         ) : groupedTransactions.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="receipt-outline" size={48} color={COLORS.textSecondary} />
+            <Ionicons
+              name="receipt-outline"
+              size={48}
+              color={COLORS.textSecondary}
+            />
             <Text style={styles.emptyTitle}>No Points History</Text>
             <Text style={styles.emptyText}>
-              Your points transactions will appear here once you start earning or using points.
+              Your points transactions will appear here once you start earning
+              or using points.
             </Text>
           </View>
         ) : (
           <FlatList
             data={groupedTransactions}
             renderItem={renderDateGroup}
-            keyExtractor={(item) => item.date}
+            keyExtractor={item => item.date}
             contentContainerStyle={styles.listContainer}
             refreshControl={
               <RefreshControl

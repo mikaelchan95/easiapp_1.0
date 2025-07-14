@@ -1,13 +1,18 @@
-export type NotificationType = 
-  | 'order_status' 
-  | 'payment' 
-  | 'approval' 
-  | 'credit_alert' 
-  | 'billing' 
-  | 'system' 
+export type NotificationType =
+  | 'order_status'
+  | 'payment'
+  | 'approval'
+  | 'credit_alert'
+  | 'billing'
+  | 'system'
   | 'marketing';
 
-export type NotificationPriority = 'low' | 'medium' | 'normal' | 'high' | 'urgent';
+export type NotificationPriority =
+  | 'low'
+  | 'medium'
+  | 'normal'
+  | 'high'
+  | 'urgent';
 
 export interface NotificationData {
   id: string;

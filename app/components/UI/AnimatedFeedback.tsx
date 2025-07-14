@@ -5,7 +5,7 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
-  TouchableOpacity
+  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS } from '../../utils/theme';
@@ -39,7 +39,7 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
   showCartAnimation = false,
   streakCount = 0,
   progressValue = 0,
-  action
+  action,
 }) => {
   // Animation values
   const translateY = useRef(new Animated.Value(100)).current;
@@ -50,50 +50,50 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
   // Create a separate animated value for JS-driven animations
   const jsProgressAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Track actual visibility state
   const [isVisible, setIsVisible] = useState(false);
-  
+
   // Hide timer ref
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Handle visibility changes
   useEffect(() => {
     if (visible) {
       setIsVisible(true);
-      
+
       // Clear any existing hide timer
       if (hideTimerRef.current) {
         clearTimeout(hideTimerRef.current);
       }
-      
+
       // Show animation
       Animated.parallel([
         Animated.timing(translateY, {
           toValue: 0,
           duration: 300,
           easing: Animations.TIMING.easeOut,
-          useNativeDriver: true
+          useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 1,
           duration: 300,
           easing: Animations.TIMING.easeOut,
-          useNativeDriver: true
+          useNativeDriver: true,
         }),
         Animated.timing(scale, {
           toValue: 1,
           duration: 300,
           easing: Animations.TIMING.easeOut,
-          useNativeDriver: true
-        })
+          useNativeDriver: true,
+        }),
       ]).start();
-      
+
       // Animate cart bounce if this is a success type and cart animation is enabled
       if ((type === 'success' || type === 'streak') && showCartAnimation) {
         Animations.heartbeatAnimation(cartBounce);
       }
-      
+
       // Animate progress bar if available
       if (progressValue > 0) {
         jsProgressAnim.setValue(0);
@@ -101,20 +101,20 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
           toValue: Math.min(progressValue, 1),
           duration: 800,
           easing: Animations.TIMING.easeOut,
-          useNativeDriver: false
+          useNativeDriver: false,
         }).start();
       }
-      
+
       // Animate rotation for streak/level up
       if (type === 'streak' || type === 'levelUp') {
         Animated.timing(rotateAnim, {
           toValue: 1,
           duration: 800,
           easing: Animations.TIMING.easeInOut,
-          useNativeDriver: true
+          useNativeDriver: true,
         }).start();
       }
-      
+
       // Set hide timer (not for loading type)
       if (type !== 'loading') {
         hideTimerRef.current = setTimeout(() => {
@@ -125,14 +125,14 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
       // Hide animation
       hideAnimation();
     }
-    
+
     return () => {
       if (hideTimerRef.current) {
         clearTimeout(hideTimerRef.current);
       }
     };
   }, [visible, type, showCartAnimation, progressValue]);
-  
+
   // Hide animation function
   const hideAnimation = () => {
     Animated.parallel([
@@ -140,14 +140,14 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
         toValue: 100,
         duration: 200,
         easing: Animations.TIMING.easeIn,
-        useNativeDriver: true
+        useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 0,
         duration: 200,
         easing: Animations.TIMING.easeIn,
-        useNativeDriver: true
-      })
+        useNativeDriver: true,
+      }),
     ]).start(({ finished }) => {
       if (finished) {
         setIsVisible(false);
@@ -157,7 +157,7 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
       }
     });
   };
-  
+
   // Get icon based on type
   const getIcon = () => {
     switch (type) {
@@ -178,15 +178,19 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
         return <AnimatedLoader />;
       case 'streak':
         return (
-          <Animated.View style={{ 
-            transform: [
-              { scale: cartBounce },
-              { rotate: rotateAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0deg', '360deg']
-              })}
-            ] 
-          }}>
+          <Animated.View
+            style={{
+              transform: [
+                { scale: cartBounce },
+                {
+                  rotate: rotateAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '360deg'],
+                  }),
+                },
+              ],
+            }}
+          >
             <View style={styles.streakBadge}>
               <Text style={styles.streakText}>🔥</Text>
             </View>
@@ -194,15 +198,19 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
         );
       case 'levelUp':
         return (
-          <Animated.View style={{ 
-            transform: [
-              { scale: cartBounce },
-              { rotate: rotateAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0deg', '360deg']
-              })}
-            ] 
-          }}>
+          <Animated.View
+            style={{
+              transform: [
+                { scale: cartBounce },
+                {
+                  rotate: rotateAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '360deg'],
+                  }),
+                },
+              ],
+            }}
+          >
             <View style={styles.levelUpBadge}>
               <Ionicons name="star" size={20} color="#FFFFFF" />
             </View>
@@ -210,7 +218,7 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
         );
     }
   };
-  
+
   // Get background color based on type
   const getBackgroundColor = () => {
     switch (type) {
@@ -228,96 +236,90 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
         return '#4A148C'; // Deep purple for level ups
     }
   };
-  
+
   // Animated loading spinner
   const AnimatedLoader = () => {
     const spinValue = useRef(new Animated.Value(0)).current;
-    
+
     useEffect(() => {
       Animated.loop(
         Animated.timing(spinValue, {
           toValue: 1,
           duration: 1000,
           easing: Animations.TIMING.easeInOut,
-          useNativeDriver: true
+          useNativeDriver: true,
         })
       ).start();
     }, []);
-    
+
     const spin = spinValue.interpolate({
       inputRange: [0, 1],
-      outputRange: ['0deg', '360deg']
+      outputRange: ['0deg', '360deg'],
     });
-    
+
     return (
       <Animated.View style={{ transform: [{ rotate: spin }] }}>
         <View style={styles.loaderCircle} />
       </Animated.View>
     );
   };
-  
+
   if (!visible && !isVisible) {
     return null;
   }
-  
+
   const isSpecialType = type === 'streak' || type === 'levelUp';
-  
+
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.container,
         {
           backgroundColor: getBackgroundColor(),
-          transform: [
-            { translateY: translateY },
-            { scale: scale }
-          ],
+          transform: [{ translateY: translateY }, { scale: scale }],
           opacity: opacity,
-          ...(position === 'top' ? styles.topPosition : styles.bottomPosition)
+          ...(position === 'top' ? styles.topPosition : styles.bottomPosition),
         },
-        isSpecialType && styles.specialContainer
+        isSpecialType && styles.specialContainer,
       ]}
     >
-      <View style={styles.iconContainer}>
-        {getIcon()}
-      </View>
+      <View style={styles.iconContainer}>{getIcon()}</View>
       <View style={styles.contentContainer}>
-        <Text style={[
-          styles.message,
-          isSpecialType && styles.specialMessage
-        ]}>
+        <Text style={[styles.message, isSpecialType && styles.specialMessage]}>
           {message}
         </Text>
-        
+
         {/* Progress bar if needed */}
         {progressValue > 0 && (
           <View style={styles.progressContainer}>
             <View style={styles.progressTrack}>
-              <Animated.View 
+              <Animated.View
                 style={[
                   styles.progressFill,
-                  { 
+                  {
                     width: jsProgressAnim.interpolate({
                       inputRange: [0, 1],
-                      outputRange: ['0%', '100%']
-                    }) 
+                      outputRange: ['0%', '100%'],
+                    }),
                   },
-                  isSpecialType && styles.specialProgressFill
-                ]} 
+                  isSpecialType && styles.specialProgressFill,
+                ]}
               />
             </View>
             {streakCount > 0 && (
-              <Text style={[
-                styles.progressText,
-                isSpecialType && styles.specialProgressText
-              ]}>
+              <Text
+                style={[
+                  styles.progressText,
+                  isSpecialType && styles.specialProgressText,
+                ]}
+              >
                 Streak: {streakCount}x
               </Text>
             )}
           </View>
         )}
       </View>
-      
+
       {/* Action button if provided */}
       {action && (
         <TouchableOpacity
@@ -325,10 +327,12 @@ const AnimatedFeedback: React.FC<AnimatedFeedbackProps> = ({
           onPress={action.onPress}
           activeOpacity={0.7}
         >
-          <Text style={[
-            styles.actionText,
-            isSpecialType && styles.specialActionText
-          ]}>
+          <Text
+            style={[
+              styles.actionText,
+              isSpecialType && styles.specialActionText,
+            ]}
+          >
             {action.label}
           </Text>
         </TouchableOpacity>
@@ -443,7 +447,7 @@ const styles = StyleSheet.create({
   },
   specialActionText: {
     color: '#FFFFFF',
-  }
+  },
 });
 
-export default AnimatedFeedback; 
+export default AnimatedFeedback;

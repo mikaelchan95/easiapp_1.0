@@ -1,12 +1,12 @@
 import React, { useRef, useReducer, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  Pressable, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
   Animated,
   ActivityIndicator,
-  AccessibilityInfo
+  AccessibilityInfo,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -21,7 +21,7 @@ const useReducedMotion = () => {
     // In a real app, this would check the OS accessibility settings
     return false; // For now, defaulting to false
   }, false);
-  
+
   return reducedMotion;
 };
 
@@ -29,14 +29,14 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
   currentLocation,
   onPress,
   isLoading = false,
-  inHeaderNav = false
+  inHeaderNav = false,
 }) => {
   // Animation values
   const scaleValue = useRef(new Animated.Value(1)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const arrowRotation = useRef(new Animated.Value(0)).current;
   const [arrowFlipped, setArrowFlipped] = useState(false);
-  
+
   const reducedMotion = useReducedMotion();
 
   // Handle press in - apply dark overlay and scale down
@@ -53,7 +53,7 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
       Animated.timing(overlayOpacity, {
         toValue: 0.15,
         duration: 200,
-        useNativeDriver: true
+        useNativeDriver: true,
       }).start();
     } else {
       // Full animation with scale and overlay
@@ -62,14 +62,14 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
           toValue: 0.98,
           duration: Animations.DURATION.short,
           easing: Animations.TIMING.easeOut,
-          useNativeDriver: true
+          useNativeDriver: true,
         }),
         Animated.timing(overlayOpacity, {
           toValue: 0.15,
           duration: Animations.DURATION.short,
           easing: Animations.TIMING.easeOut,
-          useNativeDriver: true
-        })
+          useNativeDriver: true,
+        }),
       ]).start();
     }
   };
@@ -81,7 +81,7 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
       Animated.timing(overlayOpacity, {
         toValue: 0,
         duration: 200,
-        useNativeDriver: true
+        useNativeDriver: true,
       }).start();
     } else {
       // Full animation
@@ -90,14 +90,14 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
           toValue: 1,
           friction: 5,
           tension: 300,
-          useNativeDriver: true
+          useNativeDriver: true,
         }),
         Animated.timing(overlayOpacity, {
           toValue: 0,
           duration: 100,
           easing: Animations.TIMING.easeOut,
-          useNativeDriver: true
-        })
+          useNativeDriver: true,
+        }),
       ]).start();
     }
   };
@@ -111,13 +111,13 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
         toValue: arrowFlipped ? 0 : 1,
         friction: 8,
         tension: 100,
-        useNativeDriver: true
+        useNativeDriver: true,
       }).start();
     }
-    
+
     // Call the onPress handler
     onPress();
-    
+
     // Announce to screen readers
     AccessibilityInfo.announceForAccessibility('Opening location picker');
   };
@@ -125,78 +125,93 @@ const LocationHeader: React.FC<LocationHeaderProps> = ({
   // Calculate arrow rotation interpolation
   const arrowRotationInterpolation = arrowRotation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '180deg']
+    outputRange: ['0deg', '180deg'],
   });
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.container,
         inHeaderNav ? styles.inHeaderContainer : null,
         {
-          transform: [{ scale: scaleValue }]
-        }
+          transform: [{ scale: scaleValue }],
+        },
       ]}
     >
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={handlePress}
-        style={[styles.pressable, inHeaderNav ? styles.inHeaderPressable : null]}
+        style={[
+          styles.pressable,
+          inHeaderNav ? styles.inHeaderPressable : null,
+        ]}
         accessibilityRole="button"
         accessibilityLabel={`Current delivery location: ${currentLocation}. Tap to change location.`}
         accessibilityHint="Opens location picker to select a new delivery address"
         accessible={true}
       >
-        <View style={[styles.content, inHeaderNav ? styles.inHeaderContent : null]}>
+        <View
+          style={[styles.content, inHeaderNav ? styles.inHeaderContent : null]}
+        >
           {/* Location icon */}
           <View style={styles.iconContainer}>
-            <Ionicons 
-              name="location" 
-              size={inHeaderNav ? 18 : 20} 
-              color={COLORS.primary} 
+            <Ionicons
+              name="location"
+              size={inHeaderNav ? 18 : 20}
+              color={COLORS.primary}
             />
           </View>
-          
+
           {/* Location text */}
           <View style={styles.textContainer}>
-            <Text style={[styles.label, inHeaderNav ? styles.inHeaderLabel : null]}>Deliver to</Text>
-            <Text style={[styles.location, inHeaderNav ? styles.inHeaderLocation : null]} numberOfLines={1}>
+            <Text
+              style={[styles.label, inHeaderNav ? styles.inHeaderLabel : null]}
+            >
+              Deliver to
+            </Text>
+            <Text
+              style={[
+                styles.location,
+                inHeaderNav ? styles.inHeaderLocation : null,
+              ]}
+              numberOfLines={1}
+            >
               {currentLocation}
             </Text>
           </View>
-          
+
           {/* Right side - loading or arrow */}
           <View style={styles.rightContainer}>
             {isLoading ? (
-              <ActivityIndicator 
-                size="small" 
+              <ActivityIndicator
+                size="small"
                 color={COLORS.primary}
                 accessibilityLabel="Loading current location"
               />
             ) : (
               <Animated.View
                 style={{
-                  transform: [{ rotate: arrowRotationInterpolation }]
+                  transform: [{ rotate: arrowRotationInterpolation }],
                 }}
               >
-                <Ionicons 
-                  name="chevron-down" 
-                  size={inHeaderNav ? 18 : 20} 
+                <Ionicons
+                  name="chevron-down"
+                  size={inHeaderNav ? 18 : 20}
                   color={COLORS.textSecondary}
                 />
               </Animated.View>
             )}
           </View>
         </View>
-        
+
         {/* Touch feedback overlay */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.overlay,
             {
-              opacity: overlayOpacity
-            }
+              opacity: overlayOpacity,
+            },
           ]}
           pointerEvents="none"
         />
@@ -210,7 +225,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderRadius: 12,
     ...SHADOWS.light,
-    marginBottom: SPACING.sm
+    marginBottom: SPACING.sm,
   },
   inHeaderContainer: {
     marginBottom: 0,
@@ -218,63 +233,63 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0,
     shadowRadius: 0,
-    elevation: 0
+    elevation: 0,
   },
   pressable: {
     minHeight: 56, // Increased height for better visibility
     borderRadius: 12,
     overflow: 'hidden',
-    position: 'relative'
+    position: 'relative',
   },
   inHeaderPressable: {
-    minHeight: 40
+    minHeight: 40,
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm + 4, // Increased padding for better visibility
-    minHeight: 56 // Ensuring minimum height
+    minHeight: 56, // Ensuring minimum height
   },
   inHeaderContent: {
     paddingVertical: SPACING.xs,
-    minHeight: 40
+    minHeight: 40,
   },
   iconContainer: {
     marginRight: SPACING.sm,
     width: 24,
     height: 24,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   textContainer: {
     flex: 1,
-    marginRight: SPACING.sm
+    marginRight: SPACING.sm,
   },
   label: {
     ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
     marginBottom: 2,
     fontSize: 13, // Slightly larger
-    fontWeight: '500' // Medium weight for better visibility
+    fontWeight: '500', // Medium weight for better visibility
   },
   inHeaderLabel: {
-    fontSize: 11
+    fontSize: 11,
   },
   location: {
     ...TYPOGRAPHY.body,
     fontWeight: '600',
     color: COLORS.text,
-    fontSize: 16 // Slightly larger
+    fontSize: 16, // Slightly larger
   },
   inHeaderLocation: {
-    fontSize: 14
+    fontSize: 14,
   },
   rightContainer: {
     width: 24,
     height: 24,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   overlay: {
     position: 'absolute',
@@ -283,8 +298,8 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: COLORS.primary,
-    borderRadius: 12
-  }
+    borderRadius: 12,
+  },
 });
 
 export default LocationHeader;

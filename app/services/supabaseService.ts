@@ -1,13 +1,13 @@
 import { supabase, supabaseAdmin } from '../../utils/supabase';
 import { createClient } from '@supabase/supabase-js';
-import { 
-  User, 
-  Company, 
-  CompanyUser, 
-  IndividualUser, 
-  UserPermissions, 
+import {
+  User,
+  Company,
+  CompanyUser,
+  IndividualUser,
+  UserPermissions,
   CompanyUserRole,
-  isCompanyUser 
+  isCompanyUser,
 } from '../types/user';
 import { LocationSuggestion } from '../types/location';
 
@@ -24,12 +24,12 @@ const convertToISODate = (dateString: string): string => {
       // Format like "Friday, July 11" - add current year if missing
       const currentYear = new Date().getFullYear();
       const parts = dateString.split(',').map(s => s.trim());
-      
+
       if (parts.length === 2) {
         // "Friday, July 11" -> "July 11, 2025"
         const monthDay = parts[1].trim();
         const dateWithYear = `${monthDay}, ${currentYear}`;
-        
+
         // Try a more explicit parsing approach
         const date = new Date(dateWithYear);
         if (!isNaN(date.getTime()) && date.getFullYear() === currentYear) {
@@ -38,14 +38,14 @@ const convertToISODate = (dateString: string): string => {
         }
       }
     }
-    
+
     // Try to parse as-is
     const date = new Date(dateString);
     if (!isNaN(date.getTime())) {
       const isoDate = date.toISOString().split('T')[0];
       return isoDate;
     }
-    
+
     // Fallback to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -72,7 +72,15 @@ export interface Order {
   id: string;
   orderNumber: string;
   date: string;
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'out_for_delivery' | 'delivered' | 'cancelled' | 'returned';
+  status:
+    | 'pending'
+    | 'confirmed'
+    | 'preparing'
+    | 'ready'
+    | 'out_for_delivery'
+    | 'delivered'
+    | 'cancelled'
+    | 'returned';
   total: number;
   items: OrderItem[];
   deliveryAddress: string;
@@ -148,7 +156,7 @@ interface DatabaseUserPermissions {
 
 // Transformation functions
 const transformDatabaseUserToUser = (
-  dbUser: DatabaseUser, 
+  dbUser: DatabaseUser,
   permissions?: DatabaseUserPermissions
 ): User => {
   const baseUser = {
@@ -172,19 +180,21 @@ const transformDatabaseUserToUser = (
       role: dbUser.role,
       department: dbUser.department,
       position: dbUser.position,
-      permissions: permissions ? transformDatabasePermissionsToPermissions(permissions) : {
-        canCreateOrders: false,
-        canApproveOrders: false,
-        canViewAllOrders: false,
-        canManageUsers: false,
-        canInviteUsers: false,
-        canSetPermissions: false,
-        canEditCompanyInfo: false,
-        canManageBilling: false,
-        canViewReports: false,
-        canViewTradePrice: false,
-        canAccessExclusiveProducts: false,
-      },
+      permissions: permissions
+        ? transformDatabasePermissionsToPermissions(permissions)
+        : {
+            canCreateOrders: false,
+            canApproveOrders: false,
+            canViewAllOrders: false,
+            canManageUsers: false,
+            canInviteUsers: false,
+            canSetPermissions: false,
+            canEditCompanyInfo: false,
+            canManageBilling: false,
+            canViewReports: false,
+            canViewTradePrice: false,
+            canAccessExclusiveProducts: false,
+          },
       joinedCompanyAt: dbUser.joined_company_at || dbUser.created_at,
     };
     return companyUser;
@@ -200,7 +210,9 @@ const transformDatabaseUserToUser = (
   }
 };
 
-const transformDatabasePermissionsToPermissions = (dbPermissions: DatabaseUserPermissions): UserPermissions => ({
+const transformDatabasePermissionsToPermissions = (
+  dbPermissions: DatabaseUserPermissions
+): UserPermissions => ({
   canCreateOrders: dbPermissions.can_create_orders,
   canApproveOrders: dbPermissions.can_approve_orders,
   canViewAllOrders: dbPermissions.can_view_all_orders,
@@ -215,7 +227,9 @@ const transformDatabasePermissionsToPermissions = (dbPermissions: DatabaseUserPe
   canAccessExclusiveProducts: dbPermissions.can_access_exclusive_products,
 });
 
-const transformDatabaseCompanyToCompany = (dbCompany: DatabaseCompany): Company => ({
+const transformDatabaseCompanyToCompany = (
+  dbCompany: DatabaseCompany
+): Company => ({
   id: dbCompany.id,
   name: dbCompany.name,
   companyName: dbCompany.company_name,
@@ -247,12 +261,15 @@ export const supabaseService = {
   // Expose the supabase client for direct access
   supabase,
   supabaseAdmin,
-  
+
   // User operations
   async getCurrentUser(): Promise<User | null> {
     try {
-      const { data: { user: authUser }, error } = await supabase.auth.getUser();
-      
+      const {
+        data: { user: authUser },
+        error,
+      } = await supabase.auth.getUser();
+
       if (error) {
         // Don't log "Auth session missing" as an error - it's normal when not signed in
         if (!error.message?.includes('Auth session missing')) {
@@ -260,7 +277,7 @@ export const supabaseService = {
         }
         return null;
       }
-      
+
       if (!authUser) return null;
 
       const { data: dbUser, error: userError } = await supabase
@@ -302,9 +319,8 @@ export const supabaseService = {
           .select('*')
           .eq('id', userId)
           .maybeSingle();
-        
+
         if (!adminError && adminUser) {
-          
           // Get permissions for company users
           let permissions: DatabaseUserPermissions | undefined;
           if (adminUser.account_type === 'company') {
@@ -313,30 +329,36 @@ export const supabaseService = {
               .select('*')
               .eq('user_id', adminUser.id)
               .maybeSingle();
-            
+
             if (dbPermissions) {
               permissions = dbPermissions;
             }
           }
-          
+
           return transformDatabaseUserToUser(adminUser, permissions);
         }
       } catch (adminError) {
         // Admin query failed, will fallback to regular query
       }
-      
+
       // Fallback to regular client with generous timeout
       const queryPromise = supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
-      
+
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Database query timeout after 15 seconds')), 15000);
+        setTimeout(
+          () => reject(new Error('Database query timeout after 15 seconds')),
+          15000
+        );
       });
-      
-      let { data: dbUser, error: userError } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
+      let { data: dbUser, error: userError } = (await Promise.race([
+        queryPromise,
+        timeoutPromise,
+      ])) as any;
 
       if (userError) {
         console.error('❌ Supabase user query error:', userError);
@@ -344,13 +366,16 @@ export const supabaseService = {
       }
       if (!dbUser) {
         // Try to find by email if this is Mikael's ID
-        if (userId === '654ae924-3d69-40e2-83dc-1141aa3e4081' || userId === '33333333-3333-3333-3333-333333333333') {
+        if (
+          userId === '654ae924-3d69-40e2-83dc-1141aa3e4081' ||
+          userId === '33333333-3333-3333-3333-333333333333'
+        ) {
           const { data: emailUser, error: emailError } = await supabase
             .from('users')
             .select('*')
             .eq('email', 'mikael@thewinery.com.sg')
             .maybeSingle();
-          
+
           if (!emailError && emailUser) {
             dbUser = emailUser;
           } else {
@@ -376,7 +401,7 @@ export const supabaseService = {
       }
 
       const transformedUser = transformDatabaseUserToUser(dbUser, permissions);
-      
+
       return transformedUser;
     } catch (error) {
       console.error('❌ Error in getUserById:', error);
@@ -386,19 +411,25 @@ export const supabaseService = {
 
   async getUserByEmail(email: string): Promise<User | null> {
     try {
-      
       // Add timeout to prevent hanging
       const queryPromise = supabase
         .from('users')
         .select('*')
         .eq('email', email.toLowerCase().trim())
         .maybeSingle();
-      
+
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Database email query timeout after 5 seconds')), 5000);
+        setTimeout(
+          () =>
+            reject(new Error('Database email query timeout after 5 seconds')),
+          5000
+        );
       });
-      
-      const { data: dbUser, error: userError } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
+      const { data: dbUser, error: userError } = (await Promise.race([
+        queryPromise,
+        timeoutPromise,
+      ])) as any;
 
       if (userError) {
         console.error('❌ Supabase user email query error:', userError);
@@ -423,7 +454,7 @@ export const supabaseService = {
       }
 
       const transformedUser = transformDatabaseUserToUser(dbUser, permissions);
-      
+
       return transformedUser;
     } catch (error) {
       console.error('❌ Error in getUserByEmail:', error);
@@ -431,7 +462,10 @@ export const supabaseService = {
     }
   },
 
-  async updateUser(userId: string, updates: Partial<User>): Promise<User | null> {
+  async updateUser(
+    userId: string,
+    updates: Partial<User>
+  ): Promise<User | null> {
     try {
       // Prepare database updates
       const dbUpdates: Partial<DatabaseUser> = {
@@ -467,7 +501,8 @@ export const supabaseService = {
           can_manage_billing: updates.permissions.canManageBilling,
           can_view_reports: updates.permissions.canViewReports,
           can_view_trade_price: updates.permissions.canViewTradePrice,
-          can_access_exclusive_products: updates.permissions.canAccessExclusiveProducts,
+          can_access_exclusive_products:
+            updates.permissions.canAccessExclusiveProducts,
           updated_at: new Date().toISOString(),
         };
 
@@ -505,13 +540,14 @@ export const supabaseService = {
 
   async getCompanyTeamMembers(companyId: string): Promise<CompanyUser[]> {
     try {
-      
       const { data, error } = await supabase
         .from('users')
-        .select(`
+        .select(
+          `
           *,
           user_permissions (*)
-        `)
+        `
+        )
         .eq('company_id', companyId)
         .eq('account_type', 'company');
 
@@ -520,7 +556,6 @@ export const supabaseService = {
         return [];
       }
 
-      
       if (!data || data.length === 0) {
         return [];
       }
@@ -530,7 +565,10 @@ export const supabaseService = {
       for (const dbUser of data) {
         try {
           const permissions = dbUser.user_permissions?.[0];
-          const transformedUser = transformDatabaseUserToUser(dbUser, permissions);
+          const transformedUser = transformDatabaseUserToUser(
+            dbUser,
+            permissions
+          );
           if (transformedUser && transformedUser.accountType === 'company') {
             teamMembers.push(transformedUser as CompanyUser);
           }
@@ -547,7 +585,10 @@ export const supabaseService = {
     }
   },
 
-  async updateCompany(companyId: string, updates: Partial<Company>): Promise<Company | null> {
+  async updateCompany(
+    companyId: string,
+    updates: Partial<Company>
+  ): Promise<Company | null> {
     try {
       const dbUpdates: Partial<DatabaseCompany> = {
         name: updates.name,
@@ -584,9 +625,11 @@ export const supabaseService = {
     }
   },
 
-  async updateCompanyStats(companyId: string, stats: { totalOrders?: number; totalSpent?: number; pointsEarned?: number }): Promise<boolean> {
+  async updateCompanyStats(
+    companyId: string,
+    stats: { totalOrders?: number; totalSpent?: number; pointsEarned?: number }
+  ): Promise<boolean> {
     try {
-      
       // Get current company data
       const { data: currentCompany, error: fetchError } = await supabase
         .from('companies')
@@ -602,7 +645,6 @@ export const supabaseService = {
       // Calculate new credit (deduct purchase amount from available credit)
       const currentCredit = currentCompany.current_credit || 0;
       const newCredit = currentCredit - (stats.totalSpent || 0);
-      
 
       // Update company with new credit balance
       const { error: updateError } = await supabase
@@ -622,7 +664,7 @@ export const supabaseService = {
       // 1. Add a company_rewards table to track points/rewards
       // 2. Add a company_purchases table to track all staff purchases
       // 3. Update company tier based on total spending
-      
+
       return true;
     } catch (error) {
       console.error('Error updating company stats:', error);
@@ -634,10 +676,12 @@ export const supabaseService = {
     try {
       const { data: dbUsers, error: usersError } = await supabase
         .from('users')
-        .select(`
+        .select(
+          `
           *,
           user_permissions (*)
-        `)
+        `
+        )
         .eq('company_id', companyId)
         .eq('account_type', 'company');
 
@@ -656,8 +700,11 @@ export const supabaseService = {
   // Check current authentication status
   async getCurrentAuthUser(): Promise<any> {
     try {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
       if (error) {
         // Don't log "Auth session missing" as an error - it's normal when not signed in
         if (!error.message?.includes('Auth session missing')) {
@@ -665,7 +712,7 @@ export const supabaseService = {
         }
         return null;
       }
-      
+
       return user;
     } catch (error) {
       // Don't log auth session missing errors
@@ -683,10 +730,19 @@ export const supabaseService = {
   },
 
   // Authentication operations
-  async signUp(email: string, password: string, userData: Partial<User>): Promise<User | null> {
+  async signUp(
+    email: string,
+    password: string,
+    userData: Partial<User>
+  ): Promise<User | null> {
     try {
-      console.log('🔐 Starting signup process for:', email, 'as', userData.accountType);
-      
+      console.log(
+        '🔐 Starting signup process for:',
+        email,
+        'as',
+        userData.accountType
+      );
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -696,8 +752,8 @@ export const supabaseService = {
             account_type: userData.accountType || 'individual',
             phone: userData.phone || '',
             role: userData.role || null,
-          }
-        }
+          },
+        },
       });
 
       if (authError) {
@@ -714,10 +770,10 @@ export const supabaseService = {
       // Handle company account creation
       if (userData.accountType === 'company') {
         console.log('🏢 Creating company account for first user (admin)');
-        
+
         // Generate company ID
         const companyId = crypto.randomUUID();
-        
+
         // Create company record first
         const companyData: Partial<DatabaseCompany> = {
           id: companyId,
@@ -793,7 +849,10 @@ export const supabaseService = {
           .insert([permissionsData]);
 
         if (permissionsError) {
-          console.error('❌ Error creating admin permissions:', permissionsError);
+          console.error(
+            '❌ Error creating admin permissions:',
+            permissionsError
+          );
           throw permissionsError;
         }
 
@@ -801,14 +860,17 @@ export const supabaseService = {
       } else {
         // Individual account
         console.log('👤 Creating individual account');
-        
+
         const userProfileData: Partial<DatabaseUser> = {
           id: authData.user.id,
           name: userData.name || '',
           email: email,
           phone: userData.phone || '',
           account_type: 'individual',
-          member_since: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          member_since: new Date().toLocaleDateString('en-US', {
+            month: 'long',
+            year: 'numeric',
+          }),
           total_orders: 0,
           total_spent: 0,
           created_at: new Date().toISOString(),
@@ -820,7 +882,10 @@ export const supabaseService = {
           .insert([userProfileData]);
 
         if (userError) {
-          console.error('❌ Error creating individual user profile:', userError);
+          console.error(
+            '❌ Error creating individual user profile:',
+            userError
+          );
           throw userError;
         }
 
@@ -836,8 +901,8 @@ export const supabaseService = {
 
   // Sign up with company invitation
   async signUpWithCompanyInvite(
-    email: string, 
-    password: string, 
+    email: string,
+    password: string,
     inviteData: {
       companyId: string;
       role: CompanyUserRole;
@@ -858,8 +923,8 @@ export const supabaseService = {
             role: inviteData.role,
             department: inviteData.department,
             position: inviteData.position,
-          }
-        }
+          },
+        },
       });
 
       if (authError) throw authError;
@@ -875,11 +940,12 @@ export const supabaseService = {
   async signIn(email: string, password: string): Promise<User | null> {
     try {
       console.log('🔐 Attempting Supabase Auth sign in for:', email);
-      
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
       if (authError) {
         console.error('❌ Supabase auth error:', authError);
@@ -902,7 +968,7 @@ export const supabaseService = {
 
       const user = await this.getUserById(authData.user.id);
       console.log('✅ User profile loaded:', user?.name);
-      
+
       return user;
     } catch (error) {
       console.error('❌ Error signing in user:', error);
@@ -916,7 +982,7 @@ export const supabaseService = {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: 'easiapp://reset-password', // Deep link for mobile app
       });
-      
+
       if (error) throw error;
       return true;
     } catch (error) {
@@ -929,9 +995,9 @@ export const supabaseService = {
   async updatePassword(newPassword: string): Promise<boolean> {
     try {
       const { error } = await supabase.auth.updateUser({
-        password: newPassword
+        password: newPassword,
       });
-      
+
       if (error) throw error;
       return true;
     } catch (error) {
@@ -941,15 +1007,17 @@ export const supabaseService = {
   },
 
   // Social sign in (Google, Apple, etc.)
-  async signInWithProvider(provider: 'google' | 'apple' | 'github'): Promise<any> {
+  async signInWithProvider(
+    provider: 'google' | 'apple' | 'github'
+  ): Promise<any> {
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: 'easiapp://auth/callback', // Deep link for mobile app
-        }
+        },
       });
-      
+
       if (error) throw error;
       return data;
     } catch (error) {
@@ -961,7 +1029,7 @@ export const supabaseService = {
   async signOut(): Promise<boolean> {
     try {
       console.log('🔄 Starting Supabase auth signOut...');
-      
+
       // Try global scope first for complete sign out
       try {
         const { error } = await supabase.auth.signOut({ scope: 'global' });
@@ -970,7 +1038,7 @@ export const supabaseService = {
         return true;
       } catch (globalError) {
         console.log('⚠️ Global signOut failed, trying local:', globalError);
-        
+
         // Fallback to local scope
         const { error } = await supabase.auth.signOut({ scope: 'local' });
         if (error) throw error;
@@ -984,7 +1052,11 @@ export const supabaseService = {
   },
 
   // Utility functions
-  async uploadProfileImage(userId: string, imageFile: File | Blob, fileName?: string): Promise<string | null> {
+  async uploadProfileImage(
+    userId: string,
+    imageFile: File | Blob,
+    fileName?: string
+  ): Promise<string | null> {
     try {
       const fileExt = fileName?.split('.').pop() || 'jpg';
       const uniqueFileName = `${userId}-${Date.now()}.${fileExt}`;
@@ -994,17 +1066,19 @@ export const supabaseService = {
         .from('profile-images')
         .upload(filePath, imageFile, {
           cacheControl: '3600',
-          upsert: false
+          upsert: false,
         });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('profile-images')
-        .getPublicUrl(filePath);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('profile-images').getPublicUrl(filePath);
 
       // Update user profile with new image URL
-      await this.updateUser(userId, { profileImage: publicUrl } as Partial<User>);
+      await this.updateUser(userId, {
+        profileImage: publicUrl,
+      } as Partial<User>);
 
       return publicUrl;
     } catch (error) {
@@ -1022,10 +1096,8 @@ export const supabaseService = {
     offset?: number;
   }): Promise<Product[]> {
     try {
-      let query = supabase
-        .from('products')
-        .select('*');
-      
+      let query = supabase.from('products').select('*');
+
       // Don't add is_active filter since the column doesn't exist in the current database
       // When the database is properly set up, uncomment: query = query.eq('is_active', true);
 
@@ -1038,7 +1110,9 @@ export const supabaseService = {
       }
 
       if (filters?.search) {
-        query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+        query = query.or(
+          `name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
+        );
       }
 
       if (filters?.limit) {
@@ -1046,15 +1120,18 @@ export const supabaseService = {
       }
 
       if (filters?.offset) {
-        query = query.range(filters.offset, filters.offset + (filters.limit || 50) - 1);
+        query = query.range(
+          filters.offset,
+          filters.offset + (filters.limit || 50) - 1
+        );
       }
 
       query = query.order('created_at', { ascending: false });
 
       const { data: products, error } = await query;
-      
+
       if (error) throw error;
-      
+
       // Transform database products to app Product format
       return products.map(p => ({
         id: p.id,
@@ -1063,7 +1140,11 @@ export const supabaseService = {
         price: p.retail_price,
         originalPrice: p.original_price,
         category: p.category,
-        imageUrl: p.image_url ? (p.image_url.startsWith('http') ? p.image_url : getSupabaseStorageUrl('product-images', p.image_url)) : null,
+        imageUrl: p.image_url
+          ? p.image_url.startsWith('http')
+            ? p.image_url
+            : getSupabaseStorageUrl('product-images', p.image_url)
+          : null,
         retailPrice: p.retail_price,
         tradePrice: p.trade_price,
         rating: p.rating,
@@ -1082,14 +1163,11 @@ export const supabaseService = {
 
   async getProductById(productId: string): Promise<Product | null> {
     try {
-      let query = supabase
-        .from('products')
-        .select('*')
-        .eq('id', productId);
-      
+      let query = supabase.from('products').select('*').eq('id', productId);
+
       // Don't add is_active filter since the column doesn't exist in the current database
       // When the database is properly set up, uncomment: query = query.eq('is_active', true);
-      
+
       const { data: product, error } = await query.maybeSingle();
 
       if (error) throw error;
@@ -1128,12 +1206,18 @@ export const supabaseService = {
     position?: string
   ): Promise<CompanyUser | null> {
     try {
-      console.log('🔍 Inviting team member:', { companyId, email, role, department, position });
-      
+      console.log('🔍 Inviting team member:', {
+        companyId,
+        email,
+        role,
+        department,
+        position,
+      });
+
       // In a real app, you'd send an email invitation and create a pending user
       // For now, we'll create the user directly
       const newUserId = crypto.randomUUID();
-      
+
       const dbUser: Partial<DatabaseUser> = {
         id: newUserId,
         name: email.split('@')[0], // Temporary name from email
@@ -1163,9 +1247,9 @@ export const supabaseService = {
 
       console.log('✅ Successfully inserted user:', insertedUser);
 
-      const newMember = await this.getUserById(newUserId) as CompanyUser;
+      const newMember = (await this.getUserById(newUserId)) as CompanyUser;
       console.log('✅ Retrieved new member:', newMember);
-      
+
       return newMember;
     } catch (error) {
       console.error('❌ Error inviting team member:', error);
@@ -1216,7 +1300,8 @@ export const supabaseService = {
           can_manage_billing: updates.permissions.canManageBilling,
           can_view_reports: updates.permissions.canViewReports,
           can_view_trade_price: updates.permissions.canViewTradePrice,
-          can_access_exclusive_products: updates.permissions.canAccessExclusiveProducts,
+          can_access_exclusive_products:
+            updates.permissions.canAccessExclusiveProducts,
           updated_at: new Date().toISOString(),
         };
 
@@ -1238,7 +1323,7 @@ export const supabaseService = {
   async removeTeamMember(userId: string): Promise<boolean> {
     try {
       console.log('🗑️ Removing team member:', userId);
-      
+
       const { data, error } = await supabase
         .from('users')
         .delete()
@@ -1249,15 +1334,19 @@ export const supabaseService = {
         console.error('❌ Error removing team member:', error);
         throw error;
       }
-      
+
       console.log('✅ Successfully removed team member:', data);
-      
+
       // Check if any rows were actually deleted
       if (!data || data.length === 0) {
-        console.warn('⚠️ No rows were deleted - this might be due to RLS policies or the user not existing');
-        throw new Error('No rows were deleted. User may not exist or you may not have permission to delete this user.');
+        console.warn(
+          '⚠️ No rows were deleted - this might be due to RLS policies or the user not existing'
+        );
+        throw new Error(
+          'No rows were deleted. User may not exist or you may not have permission to delete this user.'
+        );
       }
-      
+
       return true;
     } catch (error) {
       console.error('❌ Error removing team member:', error);
@@ -1268,13 +1357,15 @@ export const supabaseService = {
   async getTeamMembersByCompany(companyId: string): Promise<CompanyUser[]> {
     try {
       console.log('🔍 Fetching team members for company:', companyId);
-      
+
       const { data: dbUsers, error: usersError } = await supabase
         .from('users')
-        .select(`
+        .select(
+          `
           *,
           user_permissions (*)
-        `)
+        `
+        )
         .eq('company_id', companyId)
         .eq('account_type', 'company')
         .order('created_at', { ascending: true });
@@ -1284,11 +1375,18 @@ export const supabaseService = {
         throw usersError;
       }
 
-      console.log('📊 Raw team members from DB:', dbUsers?.length || 0, 'users');
+      console.log(
+        '📊 Raw team members from DB:',
+        dbUsers?.length || 0,
+        'users'
+      );
 
       const transformedUsers = dbUsers.map(dbUser => {
         const permissions = dbUser.user_permissions?.[0];
-        const transformed = transformDatabaseUserToUser(dbUser, permissions) as CompanyUser;
+        const transformed = transformDatabaseUserToUser(
+          dbUser,
+          permissions
+        ) as CompanyUser;
         console.log('🔄 Transformed user:', transformed.name, transformed.id);
         return transformed;
       });
@@ -1302,13 +1400,15 @@ export const supabaseService = {
   },
 
   // Demo authentication method for testing
-  async demoAuthentication(userType: 'individual' | 'company_admin' | 'company_staff' = 'individual'): Promise<User | null> {
+  async demoAuthentication(
+    userType: 'individual' | 'company_admin' | 'company_staff' = 'individual'
+  ): Promise<User | null> {
     try {
       console.log('🎭 Demo authentication for user type:', userType);
-      
+
       // Create a demo user based on type
       let demoUser: User;
-      
+
       if (userType === 'individual') {
         demoUser = {
           id: 'demo-individual-user',
@@ -1321,13 +1421,22 @@ export const supabaseService = {
           lastLogin: new Date().toISOString(),
           memberSince: 'January 2024',
           totalOrders: 5,
-          totalSpent: 1250.50,
+          totalSpent: 1250.5,
         } as IndividualUser;
       } else {
         demoUser = {
-          id: userType === 'company_admin' ? 'demo-company-admin' : 'demo-company-staff',
-          name: userType === 'company_admin' ? 'Demo Company Admin' : 'Demo Company Staff',
-          email: userType === 'company_admin' ? 'admin@company.com' : 'staff@company.com',
+          id:
+            userType === 'company_admin'
+              ? 'demo-company-admin'
+              : 'demo-company-staff',
+          name:
+            userType === 'company_admin'
+              ? 'Demo Company Admin'
+              : 'Demo Company Staff',
+          email:
+            userType === 'company_admin'
+              ? 'admin@company.com'
+              : 'staff@company.com',
           phone: '+65 9123 4567',
           accountType: 'company',
           companyId: '11111111-1111-1111-1111-111111111111',
@@ -1354,7 +1463,7 @@ export const supabaseService = {
           lastLogin: new Date().toISOString(),
         } as CompanyUser;
       }
-      
+
       console.log('✅ Demo authentication successful:', demoUser);
       return demoUser;
     } catch (error) {
@@ -1364,7 +1473,10 @@ export const supabaseService = {
   },
 
   // Real-time subscriptions using Supabase Realtime
-  subscribeToUserChanges(userId: string, callback: (user: User | null) => void) {
+  subscribeToUserChanges(
+    userId: string,
+    callback: (user: User | null) => void
+  ) {
     console.log('🔔 Setting up user changes subscription for:', userId);
     return supabase
       .channel(`user-changes-${userId}`)
@@ -1376,18 +1488,21 @@ export const supabaseService = {
           table: 'users',
           filter: `id=eq.${userId}`,
         },
-        async (payload) => {
+        async payload => {
           console.log('👤 User data changed:', payload);
           const user = await this.getUserById(userId);
           callback(user);
         }
       )
-      .subscribe((status) => {
+      .subscribe(status => {
         console.log('🔔 User subscription status:', status);
       });
   },
 
-  subscribeToCompanyChanges(companyId: string, callback: (company: Company | null) => void) {
+  subscribeToCompanyChanges(
+    companyId: string,
+    callback: (company: Company | null) => void
+  ) {
     console.log('🔔 Setting up company changes subscription for:', companyId);
     return supabase
       .channel(`company-changes-${companyId}`)
@@ -1399,13 +1514,13 @@ export const supabaseService = {
           table: 'companies',
           filter: `id=eq.${companyId}`,
         },
-        async (payload) => {
+        async payload => {
           console.log('🏢 Company data changed:', payload);
           const company = await this.getCompanyById(companyId);
           callback(company);
         }
       )
-      .subscribe((status) => {
+      .subscribe(status => {
         console.log('🔔 Company subscription status:', status);
       });
   },
@@ -1423,19 +1538,22 @@ export const supabaseService = {
           table: 'orders',
           filter: `user_id=eq.${userId}`,
         },
-        async (payload) => {
+        async payload => {
           console.log('📦 Order data changed:', payload);
           const orders = await this.getUserOrders(userId);
           callback(orders);
         }
       )
-      .subscribe((status) => {
+      .subscribe(status => {
         console.log('🔔 Orders subscription status:', status);
       });
   },
 
   // Real-time order status updates
-  subscribeToOrderStatusChanges(orderId: string, callback: (order: Order | null) => void) {
+  subscribeToOrderStatusChanges(
+    orderId: string,
+    callback: (order: Order | null) => void
+  ) {
     console.log('🔔 Setting up order status subscription for:', orderId);
     return supabase
       .channel(`order-status-${orderId}`)
@@ -1447,13 +1565,13 @@ export const supabaseService = {
           table: 'orders',
           filter: `id=eq.${orderId}`,
         },
-        async (payload) => {
+        async payload => {
           console.log('📦 Order status changed:', payload);
           const order = await this.getOrderById(orderId);
           callback(order);
         }
       )
-      .subscribe((status) => {
+      .subscribe(status => {
         console.log('🔔 Order status subscription status:', status);
       });
   },
@@ -1470,84 +1588,100 @@ export const supabaseService = {
           schema: 'public',
           table: 'orders',
         },
-        (payload) => {
+        payload => {
           console.log('📦 Global order change:', payload);
           callback(payload);
         }
       )
-      .subscribe((status) => {
+      .subscribe(status => {
         console.log('🔔 Global orders subscription status:', status);
       });
   },
 
   // Upload profile image from React Native URI
-  async uploadProfileImageFromUri(userId: string, imageUri: string, fileName?: string): Promise<string | null> {
+  async uploadProfileImageFromUri(
+    userId: string,
+    imageUri: string,
+    fileName?: string
+  ): Promise<string | null> {
     try {
       console.log('📸 Starting profile image upload for user:', userId);
-      
+
       // Create a unique file name
       const fileExt = fileName?.split('.').pop() || 'jpg';
       const uniqueFileName = `${userId}-${Date.now()}.${fileExt}`;
-      
+
       // Read the image file as array buffer for React Native
       const response = await fetch(imageUri);
       const arrayBuffer = await response.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
-      
+
       console.log('📁 Image data created, size:', uint8Array.length, 'bytes');
-      
+
       // Create service role client for storage upload (bypasses RLS)
       const serviceRoleClient = createClient(
         'https://vqxnkxaeriizizfmqvua.supabase.co',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeG5reGFlcmlpeml6Zm1xdnVhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjAwMzM4MiwiZXhwIjoyMDY3NTc5MzgyfQ.y7sQCIqVduJ7Le3IkEGR-wSoOhppjRjqsC6GvEJAZEw',
         {
-          auth: { autoRefreshToken: false, persistSession: false }
+          auth: { autoRefreshToken: false, persistSession: false },
         }
       );
-      
+
       const storageClient = serviceRoleClient.storage;
-      
+
       const { data, error } = await storageClient
         .from('profile-images')
         .upload(uniqueFileName, uint8Array, {
           cacheControl: '3600',
           upsert: true,
-          contentType: 'image/jpeg'
+          contentType: 'image/jpeg',
         });
-      
+
       if (error) {
         console.error('❌ Upload error:', error);
-        
+
         // If bucket doesn't exist, provide helpful error message
         if (error.message.includes('Bucket not found')) {
-          console.error('💡 The profile-images bucket needs to be created in Supabase Dashboard');
-          console.error('   Go to Storage > Create Bucket > Name: profile-images > Public: true');
+          console.error(
+            '💡 The profile-images bucket needs to be created in Supabase Dashboard'
+          );
+          console.error(
+            '   Go to Storage > Create Bucket > Name: profile-images > Public: true'
+          );
         }
-        
+
         throw error;
       }
-      
+
       console.log('✅ Upload successful:', data.path);
-      
+
       // Get the public URL
-      const { data: { publicUrl } } = serviceRoleClient.storage
+      const {
+        data: { publicUrl },
+      } = serviceRoleClient.storage
         .from('profile-images')
         .getPublicUrl(uniqueFileName);
-      
+
       console.log('🔗 Public URL generated:', publicUrl);
       console.log('🔗 File name uploaded:', uniqueFileName);
-      
+
       // Test if the URL is accessible
       try {
         const testResponse = await fetch(publicUrl, { method: 'HEAD' });
-        console.log('🔗 URL accessibility test:', testResponse.status, testResponse.statusText);
+        console.log(
+          '🔗 URL accessibility test:',
+          testResponse.status,
+          testResponse.statusText
+        );
       } catch (urlError) {
         console.error('❌ URL not accessible:', urlError);
       }
-      
+
       // Update user profile with new image URL in database
-      await this.updateUser(userId, { profileImage: publicUrl } as Partial<User>);
-      
+      await this.updateUser(userId, {
+        profileImage: publicUrl,
+      } as Partial<User>);
+
       return publicUrl;
     } catch (error) {
       console.error('❌ Error uploading profile image:', error);
@@ -1559,7 +1693,7 @@ export const supabaseService = {
   async seedCompanyData(company: Company): Promise<boolean> {
     try {
       console.log('🌱 Seeding company data to Supabase:', company.name);
-      
+
       // Transform company data to database format
       const companyData: Partial<DatabaseCompany> = {
         id: company.id,
@@ -1582,17 +1716,17 @@ export const supabaseService = {
         created_at: company.createdAt,
         updated_at: company.updatedAt,
       };
-      
+
       // Insert or update company
       const { error } = await supabase
         .from('companies')
         .upsert([companyData], { onConflict: 'id' });
-      
+
       if (error) {
         console.error('❌ Error seeding company:', error);
         return false;
       }
-      
+
       console.log('✅ Company seeded successfully:', company.name);
       return true;
     } catch (error) {
@@ -1605,7 +1739,7 @@ export const supabaseService = {
   async seedUserData(user: User): Promise<boolean> {
     try {
       console.log('🌱 Seeding user data to Supabase:', user.name);
-      
+
       // Transform user data to database format
       const userData: Partial<DatabaseUser> = {
         id: user.id,
@@ -1617,8 +1751,13 @@ export const supabaseService = {
         role: isCompanyUser(user) ? user.role : undefined,
         department: isCompanyUser(user) ? user.department : undefined,
         position: isCompanyUser(user) ? user.position : undefined,
-        joined_company_at: isCompanyUser(user) ? user.joinedCompanyAt : undefined,
-        member_since: user.accountType === 'individual' ? (user as any).memberSince : undefined,
+        joined_company_at: isCompanyUser(user)
+          ? user.joinedCompanyAt
+          : undefined,
+        member_since:
+          user.accountType === 'individual'
+            ? (user as any).memberSince
+            : undefined,
         total_orders: user.totalOrders,
         total_spent: user.totalSpent,
         profile_image: user.profileImage,
@@ -1626,17 +1765,17 @@ export const supabaseService = {
         last_login: user.lastLogin,
         updated_at: new Date().toISOString(),
       };
-      
+
       // Insert or update user
       const { error: userError } = await supabase
         .from('users')
         .upsert([userData], { onConflict: 'id' });
-      
+
       if (userError) {
         console.error('❌ Error seeding user:', userError);
         return false;
       }
-      
+
       // If company user, also seed permissions
       if (isCompanyUser(user) && user.permissions) {
         const permissionsData = {
@@ -1646,22 +1785,23 @@ export const supabaseService = {
           can_manage_team: user.permissions.canManageTeam,
           can_approve_orders: user.permissions.canApproveOrders,
           can_view_trade_price: user.permissions.canViewTradePrice,
-          can_access_exclusive_products: user.permissions.canAccessExclusiveProducts,
+          can_access_exclusive_products:
+            user.permissions.canAccessExclusiveProducts,
           order_limit: user.permissions.orderLimit,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
-        
+
         const { error: permError } = await supabase
           .from('user_permissions')
           .upsert([permissionsData], { onConflict: 'user_id' });
-        
+
         if (permError) {
           console.error('❌ Error seeding user permissions:', permError);
           return false;
         }
       }
-      
+
       console.log('✅ User seeded successfully:', user.name);
       return true;
     } catch (error) {
@@ -1675,49 +1815,52 @@ export const supabaseService = {
     console.log('❌ Mock data seeding disabled - use live authentication only');
     return false;
   },
-  
+
   // Award points for completed orders
-  async awardPointsForOrder(userId: string, orderTotal: number, orderId: string): Promise<void> {
+  async awardPointsForOrder(
+    userId: string,
+    orderTotal: number,
+    orderId: string
+  ): Promise<void> {
     try {
       // Calculate points earned (2 points per dollar)
       const pointsEarned = Math.floor(orderTotal * 2);
-      
+
       console.log(`🎯 Awarding ${pointsEarned} points for order ${orderId}`);
-      
+
       // Get current user points
       const { data: user, error: userError } = await supabase
         .from('users')
         .select('points, lifetime_points')
         .eq('id', userId)
         .single();
-      
+
       if (userError || !user) {
         console.error('❌ Error fetching user for points update:', userError);
         return;
       }
-      
+
       const newPoints = (user.points || 0) + pointsEarned;
       const newLifetimePoints = (user.lifetime_points || 0) + pointsEarned;
-      
+
       // Update user points
       const { error: updateError } = await supabase
         .from('users')
-        .update({ 
+        .update({
           points: newPoints,
           lifetime_points: newLifetimePoints,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', userId);
-      
+
       if (updateError) {
         console.error('❌ Error updating user points:', updateError);
         return;
       }
-      
+
       // Log the points transaction to audit trail
-      const { error: auditError } = await supabase
-        .from('points_audit')
-        .insert([{
+      const { error: auditError } = await supabase.from('points_audit').insert([
+        {
           id: crypto.randomUUID(),
           user_id: userId,
           company_id: null, // Individual order
@@ -1728,20 +1871,22 @@ export const supabaseService = {
           reference_id: orderId,
           reference_type: 'order',
           description: `Points earned from order purchase ($${orderTotal})`,
-          metadata: { 
+          metadata: {
             order_total: orderTotal,
             points_earned: pointsEarned,
-            rate: '2 points per dollar'
+            rate: '2 points per dollar',
           },
-          created_at: new Date().toISOString()
-        }]);
-      
+          created_at: new Date().toISOString(),
+        },
+      ]);
+
       if (auditError) {
         console.error('❌ Error logging points audit:', auditError);
       }
-      
-      console.log(`✅ Points awarded: ${pointsEarned} points (${user.points || 0} → ${newPoints})`);
-      
+
+      console.log(
+        `✅ Points awarded: ${pointsEarned} points (${user.points || 0} → ${newPoints})`
+      );
     } catch (error) {
       console.error('❌ Error awarding points:', error);
     }
@@ -1762,49 +1907,59 @@ export const supabaseService = {
   }): Promise<{ orderId: string; orderNumber: string } | null> {
     try {
       console.log('🛒 Creating order for user:', orderData.userId);
-      
+
       // Check if user is authenticated
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         console.error('❌ User not authenticated - cannot create order');
         throw new Error('Authentication required to create orders');
       }
-      
+
       console.log('✅ User authenticated, creating order...');
-      
+
       // Generate order number
       const currentYear = new Date().getFullYear();
       const orderNumber = `ORD-${currentYear}-${String(Math.floor(Math.random() * 999999)).padStart(6, '0')}`;
-      
+
       // Determine payment method and status based on order type
       let paymentMethod = 'credit_card';
       let paymentStatus = 'pending';
       let isCompanyCredit = false;
-      
+
       // Check if this is a company credit order (company paying with credit terms)
-      if (orderData.companyId && orderData.paymentMethod && 
-          ['COD', 'NET7', 'NET30', 'NET60'].includes(orderData.paymentMethod.type)) {
+      if (
+        orderData.companyId &&
+        orderData.paymentMethod &&
+        ['COD', 'NET7', 'NET30', 'NET60'].includes(orderData.paymentMethod.type)
+      ) {
         // Company credit order - use company's payment terms
         const { data: company, error: companyError } = await supabase
           .from('companies')
           .select('payment_terms')
           .eq('id', orderData.companyId)
           .single();
-        
+
         if (company && !companyError) {
-          paymentMethod = orderData.paymentMethod.type || company.payment_terms || 'NET30';
+          paymentMethod =
+            orderData.paymentMethod.type || company.payment_terms || 'NET30';
           paymentStatus = 'paid'; // Company orders are automatically "paid" via credit
           isCompanyCredit = true;
-          console.log(`🏢 Company credit order - using payment terms: ${paymentMethod}`);
+          console.log(
+            `🏢 Company credit order - using payment terms: ${paymentMethod}`
+          );
         }
       } else {
         // Individual order or company user paying with personal payment method
         paymentMethod = orderData.paymentMethod?.type || 'credit_card';
         paymentStatus = 'pending';
         isCompanyCredit = false;
-        console.log(`👤 Individual/personal payment - using payment method: ${paymentMethod}`);
+        console.log(
+          `👤 Individual/personal payment - using payment method: ${paymentMethod}`
+        );
       }
-      
+
       // Create order
       const orderInsert = {
         user_id: session.user.id, // Use authenticated user's ID instead of passed userId
@@ -1819,7 +1974,9 @@ export const supabaseService = {
         payment_method: paymentMethod,
         payment_status: paymentStatus,
         delivery_address: JSON.stringify(orderData.deliveryAddress), // Store as JSONB
-        delivery_date: orderData.deliverySlot?.date ? convertToISODate(orderData.deliverySlot.date) : null,
+        delivery_date: orderData.deliverySlot?.date
+          ? convertToISODate(orderData.deliverySlot.date)
+          : null,
         delivery_time_slot: orderData.deliverySlot?.timeSlot || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -1842,7 +1999,7 @@ export const supabaseService = {
       const orderItems = orderData.items.map((item, index) => {
         // Handle both UUID and string IDs - convert mock IDs to real UUIDs
         let productId = item.product.id;
-        
+
         // If it's a simple string like "1", "2", etc., map to actual database UUIDs
         if (typeof productId === 'string' && productId.match(/^\d+$/)) {
           // Map mock product IDs to actual database product UUIDs
@@ -1856,18 +2013,22 @@ export const supabaseService = {
             '7': '5a072d32-2d9b-4533-8172-f749713d172d', // Hennessy Paradis
             '8': '06c5452a-0376-444d-a141-0f65f9b4fa19', // Johnnie Walker Blue Label
           };
-          
-          productId = mockToUuidMap[productId] || 'f60fc98b-6a76-4a66-9f65-b9b2078644d4';
-          console.log(`🔄 Mapped mock product ID ${item.product.id} to UUID ${productId} (${item.product.name})`);
+
+          productId =
+            mockToUuidMap[productId] || 'f60fc98b-6a76-4a66-9f65-b9b2078644d4';
+          console.log(
+            `🔄 Mapped mock product ID ${item.product.id} to UUID ${productId} (${item.product.name})`
+          );
         }
-        
+
         return {
           order_id: order.id,
           product_id: productId,
           product_name: item.product.name,
           quantity: item.quantity,
           unit_price: item.product.retailPrice || item.product.price,
-          total_price: item.quantity * (item.product.retailPrice || item.product.price),
+          total_price:
+            item.quantity * (item.product.retailPrice || item.product.price),
           product_image_url: item.product.image || item.product.imageUrl,
           created_at: new Date().toISOString(),
         };
@@ -1886,31 +2047,37 @@ export const supabaseService = {
 
       // For company credit orders, deduct the order amount from available credit
       if (isCompanyCredit && paymentStatus === 'paid') {
-        console.log('💳 Deducting order amount from available company credit...');
-        
+        console.log(
+          '💳 Deducting order amount from available company credit...'
+        );
+
         const { data: company, error: creditError } = await supabase
           .from('companies')
           .select('current_credit, credit_limit')
           .eq('id', orderData.companyId)
           .single();
-        
+
         if (company && !creditError) {
           // current_credit represents available credit (credit_limit - credit_used)
           const newAvailableCredit = company.current_credit - orderData.total;
-          
+
           const { error: updateError } = await supabase
             .from('companies')
             .update({ current_credit: newAvailableCredit })
             .eq('id', orderData.companyId);
-          
+
           if (updateError) {
             console.error('❌ Error updating company credit:', updateError);
           } else {
-            console.log(`💰 Company available credit updated: $${company.current_credit} → $${newAvailableCredit}`);
-            
+            console.log(
+              `💰 Company available credit updated: $${company.current_credit} → $${newAvailableCredit}`
+            );
+
             // Warn if credit limit is exceeded
             if (newAvailableCredit < 0) {
-              console.log(`⚠️  Company is over credit limit by $${Math.abs(newAvailableCredit)}`);
+              console.log(
+                `⚠️  Company is over credit limit by $${Math.abs(newAvailableCredit)}`
+              );
             }
           }
         }
@@ -1920,7 +2087,11 @@ export const supabaseService = {
       if (!isCompanyCredit && paymentStatus === 'pending') {
         // For individual orders, award points immediately (simulating instant payment processing)
         console.log('🎯 Awarding points for individual order...');
-        await this.awardPointsForOrder(session.user.id, orderData.total, order.id);
+        await this.awardPointsForOrder(
+          session.user.id,
+          orderData.total,
+          order.id
+        );
       }
 
       // Status history is automatically created by database trigger
@@ -1937,10 +2108,11 @@ export const supabaseService = {
   async getUserOrders(userId: string, limit?: number): Promise<Order[]> {
     try {
       console.log('📋 Fetching orders for user:', userId);
-      
+
       let query = supabase
         .from('orders')
-        .select(`
+        .select(
+          `
           *,
           order_items (
             product_id,
@@ -1950,7 +2122,8 @@ export const supabaseService = {
             total_price,
             product_image_url
           )
-        `)
+        `
+        )
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -1967,22 +2140,27 @@ export const supabaseService = {
 
       console.log('📋 Found', orders?.length || 0, 'orders');
 
-      return orders?.map(order => ({
-        id: order.id,
-        orderNumber: order.order_number,
-        date: order.created_at.split('T')[0],
-        status: order.status,
-        total: order.total,
-        items: order.order_items.map(item => ({
-          id: item.product_id,
-          name: item.product_name,
-          quantity: item.quantity,
-          price: item.unit_price,
-          image: item.product_image_url,
-        })),
-        deliveryAddress: typeof order.delivery_address === 'string' ? order.delivery_address : JSON.stringify(order.delivery_address),
-        estimatedDelivery: order.delivery_date,
-      })) || [];
+      return (
+        orders?.map(order => ({
+          id: order.id,
+          orderNumber: order.order_number,
+          date: order.created_at.split('T')[0],
+          status: order.status,
+          total: order.total,
+          items: order.order_items.map(item => ({
+            id: item.product_id,
+            name: item.product_name,
+            quantity: item.quantity,
+            price: item.unit_price,
+            image: item.product_image_url,
+          })),
+          deliveryAddress:
+            typeof order.delivery_address === 'string'
+              ? order.delivery_address
+              : JSON.stringify(order.delivery_address),
+          estimatedDelivery: order.delivery_date,
+        })) || []
+      );
     } catch (error) {
       console.error('❌ Error fetching user orders:', error);
       return [];
@@ -1992,13 +2170,17 @@ export const supabaseService = {
   async getOrderById(orderId: string): Promise<Order | null> {
     try {
       console.log('📋 Fetching order:', orderId);
-      
+
       // Check if orderId is a UUID or order number
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
-      
+      const isUuid =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          orderId
+        );
+
       const { data: order, error } = await supabase
         .from('orders')
-        .select(`
+        .select(
+          `
           *,
           order_items (
             product_id,
@@ -2008,7 +2190,8 @@ export const supabaseService = {
             total_price,
             product_image_url
           )
-        `)
+        `
+        )
         .eq(isUuid ? 'id' : 'order_number', orderId)
         .single();
 
@@ -2032,7 +2215,10 @@ export const supabaseService = {
           price: item.unit_price,
           image: item.product_image_url,
         })),
-        deliveryAddress: typeof order.delivery_address === 'string' ? order.delivery_address : JSON.stringify(order.delivery_address),
+        deliveryAddress:
+          typeof order.delivery_address === 'string'
+            ? order.delivery_address
+            : JSON.stringify(order.delivery_address),
         estimatedDelivery: order.delivery_date,
       };
     } catch (error) {
@@ -2048,10 +2234,11 @@ export const supabaseService = {
   async getOrdersByStatus(userId: string, status: string): Promise<Order[]> {
     try {
       console.log('📋 Fetching orders by status:', status, 'for user:', userId);
-      
+
       const { data: orders, error } = await supabase
         .from('orders')
-        .select(`
+        .select(
+          `
           *,
           order_items (
             product_id,
@@ -2061,7 +2248,8 @@ export const supabaseService = {
             total_price,
             product_image_url
           )
-        `)
+        `
+        )
         .eq('user_id', userId)
         .eq('status', status)
         .order('created_at', { ascending: false });
@@ -2071,22 +2259,27 @@ export const supabaseService = {
         throw error;
       }
 
-      return orders?.map(order => ({
-        id: order.id,
-        orderNumber: order.order_number,
-        date: order.created_at.split('T')[0],
-        status: order.status,
-        total: order.total,
-        items: order.order_items.map(item => ({
-          id: item.product_id,
-          name: item.product_name,
-          quantity: item.quantity,
-          price: item.unit_price,
-          image: item.product_image_url,
-        })),
-        deliveryAddress: typeof order.delivery_address === 'string' ? order.delivery_address : JSON.stringify(order.delivery_address),
-        estimatedDelivery: order.delivery_date,
-      })) || [];
+      return (
+        orders?.map(order => ({
+          id: order.id,
+          orderNumber: order.order_number,
+          date: order.created_at.split('T')[0],
+          status: order.status,
+          total: order.total,
+          items: order.order_items.map(item => ({
+            id: item.product_id,
+            name: item.product_name,
+            quantity: item.quantity,
+            price: item.unit_price,
+            image: item.product_image_url,
+          })),
+          deliveryAddress:
+            typeof order.delivery_address === 'string'
+              ? order.delivery_address
+              : JSON.stringify(order.delivery_address),
+          estimatedDelivery: order.delivery_date,
+        })) || []
+      );
     } catch (error) {
       console.error('❌ Error fetching orders by status:', error);
       return [];
@@ -2096,10 +2289,11 @@ export const supabaseService = {
   async searchOrders(userId: string, query: string): Promise<Order[]> {
     try {
       console.log('🔍 Searching orders for user:', userId, 'query:', query);
-      
+
       const { data: orders, error } = await supabase
         .from('orders')
-        .select(`
+        .select(
+          `
           *,
           order_items (
             product_id,
@@ -2109,7 +2303,8 @@ export const supabaseService = {
             total_price,
             product_image_url
           )
-        `)
+        `
+        )
         .eq('user_id', userId)
         .or(`order_number.ilike.%${query}%`)
         .order('created_at', { ascending: false });
@@ -2119,22 +2314,27 @@ export const supabaseService = {
         throw error;
       }
 
-      return orders?.map(order => ({
-        id: order.id,
-        orderNumber: order.order_number,
-        date: order.created_at.split('T')[0],
-        status: order.status,
-        total: order.total,
-        items: order.order_items.map(item => ({
-          id: item.product_id,
-          name: item.product_name,
-          quantity: item.quantity,
-          price: item.unit_price,
-          image: item.product_image_url,
-        })),
-        deliveryAddress: typeof order.delivery_address === 'string' ? order.delivery_address : JSON.stringify(order.delivery_address),
-        estimatedDelivery: order.delivery_date,
-      })) || [];
+      return (
+        orders?.map(order => ({
+          id: order.id,
+          orderNumber: order.order_number,
+          date: order.created_at.split('T')[0],
+          status: order.status,
+          total: order.total,
+          items: order.order_items.map(item => ({
+            id: item.product_id,
+            name: item.product_name,
+            quantity: item.quantity,
+            price: item.unit_price,
+            image: item.product_image_url,
+          })),
+          deliveryAddress:
+            typeof order.delivery_address === 'string'
+              ? order.delivery_address
+              : JSON.stringify(order.delivery_address),
+          estimatedDelivery: order.delivery_date,
+        })) || []
+      );
     } catch (error) {
       console.error('❌ Error searching orders:', error);
       return [];
@@ -2142,15 +2342,18 @@ export const supabaseService = {
   },
 
   // Utility function to update order status (for testing real-time updates)
-  async updateOrderStatus(orderId: string, newStatus: 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled'): Promise<boolean> {
+  async updateOrderStatus(
+    orderId: string,
+    newStatus: 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled'
+  ): Promise<boolean> {
     try {
       console.log('📦 Updating order status:', orderId, 'to', newStatus);
-      
+
       const { error } = await supabase
         .from('orders')
-        .update({ 
+        .update({
           status: newStatus,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', orderId);
 
@@ -2173,68 +2376,83 @@ export const supabaseService = {
   // Test function to simulate order progression (for demo purposes)
   async simulateOrderProgression(orderId: string): Promise<void> {
     console.log('🎭 Simulating order progression for:', orderId);
-    
+
     // Get the order details to check delivery slot
     const { data: order, error } = await supabase
       .from('orders')
       .select('delivery_date, delivery_time_slot, created_at')
       .eq('id', orderId)
       .single();
-    
+
     if (error || !order) {
       console.error('❌ Could not get order details for progression:', error);
       return;
     }
-    
+
     const now = new Date();
     const deliveryDate = new Date(order.delivery_date);
     const isToday = deliveryDate.toDateString() === now.toDateString();
-    
+
     // Parse delivery time slot (e.g., "12pm - 3pm")
     const timeSlot = order.delivery_time_slot;
     const [startTime, endTime] = timeSlot.split(' - ');
-    
+
     // Calculate realistic timing based on delivery slot
     let preparingDelay, outForDeliveryDelay, deliveredDelay;
-    
+
     if (isToday) {
       // For same-day delivery, use realistic timing
       preparingDelay = 2 * 60 * 1000; // 2 minutes to start preparing
       outForDeliveryDelay = 15 * 60 * 1000; // 15 minutes before delivery window
-      
+
       // Calculate when the delivery window starts
       const deliveryWindowStart = this.parseTimeSlot(startTime);
       const deliveryWindowEnd = this.parseTimeSlot(endTime);
-      
+
       // Schedule delivery for middle of the window
       const deliveryTime = new Date(deliveryDate);
       deliveryTime.setHours(
-        Math.floor((deliveryWindowStart.getHours() + deliveryWindowEnd.getHours()) / 2)
+        Math.floor(
+          (deliveryWindowStart.getHours() + deliveryWindowEnd.getHours()) / 2
+        )
       );
-      
+
       const timeToDelivery = deliveryTime.getTime() - now.getTime();
       deliveredDelay = Math.max(timeToDelivery, 20 * 60 * 1000); // At least 20 minutes
     } else {
       // For next-day delivery, use demo timing
       preparingDelay = 5 * 60 * 1000; // 5 minutes
-      outForDeliveryDelay = 30 * 60 * 1000; // 30 minutes 
+      outForDeliveryDelay = 30 * 60 * 1000; // 30 minutes
       deliveredDelay = 60 * 60 * 1000; // 1 hour (for demo)
     }
-    
-    console.log(`📅 Order ${orderId} scheduled for delivery on ${deliveryDate.toDateString()} at ${timeSlot}`);
-    console.log(`⏰ Preparing in ${preparingDelay / 1000}s, Out for delivery in ${outForDeliveryDelay / 1000}s, Delivered in ${deliveredDelay / 1000}s`);
-    
+
+    console.log(
+      `📅 Order ${orderId} scheduled for delivery on ${deliveryDate.toDateString()} at ${timeSlot}`
+    );
+    console.log(
+      `⏰ Preparing in ${preparingDelay / 1000}s, Out for delivery in ${outForDeliveryDelay / 1000}s, Delivered in ${deliveredDelay / 1000}s`
+    );
+
     // Schedule status updates
-    setTimeout(() => this.updateOrderStatus(orderId, 'preparing'), preparingDelay);
-    setTimeout(() => this.updateOrderStatus(orderId, 'out_for_delivery'), outForDeliveryDelay);
-    setTimeout(() => this.updateOrderStatus(orderId, 'delivered'), deliveredDelay);
+    setTimeout(
+      () => this.updateOrderStatus(orderId, 'preparing'),
+      preparingDelay
+    );
+    setTimeout(
+      () => this.updateOrderStatus(orderId, 'out_for_delivery'),
+      outForDeliveryDelay
+    );
+    setTimeout(
+      () => this.updateOrderStatus(orderId, 'delivered'),
+      deliveredDelay
+    );
   },
-  
+
   // Helper function to parse time slot
   parseTimeSlot(timeStr: string): Date {
     const today = new Date();
     const time = timeStr.toLowerCase();
-    
+
     let hours = 0;
     if (time.includes('am')) {
       hours = parseInt(time.replace('am', ''));
@@ -2243,7 +2461,7 @@ export const supabaseService = {
       hours = parseInt(time.replace('pm', ''));
       if (hours !== 12) hours += 12; // Convert to 24-hour format
     }
-    
+
     const result = new Date(today);
     result.setHours(hours, 0, 0, 0);
     return result;
@@ -2253,12 +2471,12 @@ export const supabaseService = {
   async testUserDataUpdate(userId: string): Promise<boolean> {
     try {
       console.log('🧪 Testing real-time user data update for:', userId);
-      
+
       const { error } = await supabase
         .from('users')
-        .update({ 
+        .update({
           last_login: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', userId);
 
@@ -2267,7 +2485,9 @@ export const supabaseService = {
         return false;
       }
 
-      console.log('✅ User data updated - real-time listeners should be triggered');
+      console.log(
+        '✅ User data updated - real-time listeners should be triggered'
+      );
       return true;
     } catch (error) {
       console.error('❌ Error testing user data update:', error);
@@ -2278,11 +2498,11 @@ export const supabaseService = {
   async testCompanyDataUpdate(companyId: string): Promise<boolean> {
     try {
       console.log('🧪 Testing real-time company data update for:', companyId);
-      
+
       const { error } = await supabase
         .from('companies')
-        .update({ 
-          updated_at: new Date().toISOString()
+        .update({
+          updated_at: new Date().toISOString(),
         })
         .eq('id', companyId);
 
@@ -2291,7 +2511,9 @@ export const supabaseService = {
         return false;
       }
 
-      console.log('✅ Company data updated - real-time listeners should be triggered');
+      console.log(
+        '✅ Company data updated - real-time listeners should be triggered'
+      );
       return true;
     } catch (error) {
       console.error('❌ Error testing company data update:', error);
@@ -2302,31 +2524,41 @@ export const supabaseService = {
   // Helper to trigger real-time demo
   async triggerRealTimeDemo(userId: string, companyId?: string): Promise<void> {
     console.log('🎭 Starting real-time demo...');
-    
+
     // Update user data every 10 seconds
     setTimeout(() => this.testUserDataUpdate(userId), 3000);
     setTimeout(() => this.testUserDataUpdate(userId), 13000);
-    
+
     // Update company data if available
     if (companyId) {
       setTimeout(() => this.testCompanyDataUpdate(companyId), 7000);
       setTimeout(() => this.testCompanyDataUpdate(companyId), 17000);
     }
-    
+
     console.log('🎭 Real-time demo scheduled - watch for updates!');
   },
 
   // Location management functions
-  async saveUserLocation(userId: string, location: LocationSuggestion, isCurrent: boolean = false): Promise<boolean> {
+  async saveUserLocation(
+    userId: string,
+    location: LocationSuggestion,
+    isCurrent: boolean = false
+  ): Promise<boolean> {
     try {
       // Validate that we have valid coordinates
-      if (!location.coordinate || location.coordinate.latitude === 0 || location.coordinate.longitude === 0) {
+      if (
+        !location.coordinate ||
+        location.coordinate.latitude === 0 ||
+        location.coordinate.longitude === 0
+      ) {
         return false;
       }
-      
+
       // Generate a unique location ID if not provided
-      const locationId = location.id || `loc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+      const locationId =
+        location.id ||
+        `loc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
       const locationData = {
         user_id: userId,
         location_id: locationId,
@@ -2335,7 +2567,8 @@ export const supabaseService = {
         location_type: 'recent', // Force to 'recent' for location history
         latitude: Number(location.coordinate?.latitude || 0),
         longitude: Number(location.coordinate?.longitude || 0),
-        address: location.formattedAddress || location.subtitle || location.title,
+        address:
+          location.formattedAddress || location.subtitle || location.title,
         is_current: isCurrent,
         last_used_at: new Date().toISOString(),
         usage_count: 1,
@@ -2362,9 +2595,9 @@ export const supabaseService = {
 
       const { data: savedData, error } = await supabaseAdmin
         .from('user_locations')
-        .upsert([locationData], { 
+        .upsert([locationData], {
           onConflict: 'user_id,location_id',
-          ignoreDuplicates: false 
+          ignoreDuplicates: false,
         })
         .select();
 
@@ -2372,7 +2605,7 @@ export const supabaseService = {
         console.error('❌ Error saving location:', error);
         return false;
       }
-      
+
       return true;
     } catch (error) {
       console.error('❌ Error saving location:', error);
@@ -2380,7 +2613,9 @@ export const supabaseService = {
     }
   },
 
-  async getCurrentUserLocation(userId: string): Promise<LocationSuggestion | null> {
+  async getCurrentUserLocation(
+    userId: string
+  ): Promise<LocationSuggestion | null> {
     try {
       const { data: location, error } = await supabase
         .from('user_locations')
@@ -2414,10 +2649,13 @@ export const supabaseService = {
     }
   },
 
-  async getUserLocationHistory(userId: string, limit: number = 10): Promise<LocationSuggestion[]> {
+  async getUserLocationHistory(
+    userId: string,
+    limit: number = 10
+  ): Promise<LocationSuggestion[]> {
     try {
       console.log('📍 Getting location history for user:', userId);
-      
+
       const { data: locations, error } = await supabase
         .from('user_locations')
         .select('*')
@@ -2442,7 +2680,10 @@ export const supabaseService = {
         id: location.location_id,
         title: location.title,
         subtitle: location.subtitle || location.address || '',
-        type: (location.location_type || 'recent') as 'suggestion' | 'recent' | 'favorite',
+        type: (location.location_type || 'recent') as
+          | 'suggestion'
+          | 'recent'
+          | 'favorite',
         coordinate: {
           latitude: parseFloat(location.latitude.toString()),
           longitude: parseFloat(location.longitude.toString()),
@@ -2458,10 +2699,12 @@ export const supabaseService = {
     }
   },
 
-  async getUserFavoriteLocations(userId: string): Promise<LocationSuggestion[]> {
+  async getUserFavoriteLocations(
+    userId: string
+  ): Promise<LocationSuggestion[]> {
     try {
       console.log('📍 Getting favorite locations for user:', userId);
-      
+
       const { data: locations, error } = await supabase
         .from('user_locations')
         .select('*')
@@ -2490,10 +2733,13 @@ export const supabaseService = {
     }
   },
 
-  async toggleLocationFavorite(userId: string, locationId: string): Promise<boolean> {
+  async toggleLocationFavorite(
+    userId: string,
+    locationId: string
+  ): Promise<boolean> {
     try {
       console.log('📍 Toggling favorite for location:', locationId);
-      
+
       // First get the current favorite status
       const { data: location, error: getError } = await supabase
         .from('user_locations')
@@ -2515,9 +2761,9 @@ export const supabaseService = {
       // Toggle the favorite status
       const { error: updateError } = await supabaseAdmin
         .from('user_locations')
-        .update({ 
+        .update({
           is_favorite: !location.is_favorite,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('user_id', userId)
         .eq('location_id', locationId);
@@ -2535,12 +2781,15 @@ export const supabaseService = {
     }
   },
 
-  async setCurrentLocation(userId: string, locationId: string): Promise<boolean> {
+  async setCurrentLocation(
+    userId: string,
+    locationId: string
+  ): Promise<boolean> {
     try {
       // Optimized: Use single transaction to update both in one operation
       const { error } = await supabaseAdmin.rpc('set_user_current_location', {
         user_id: userId,
-        location_id: locationId
+        location_id: locationId,
       });
 
       if (error) {
@@ -2553,10 +2802,10 @@ export const supabaseService = {
 
         const { error: updateError } = await supabaseAdmin
           .from('user_locations')
-          .update({ 
+          .update({
             is_current: true,
             last_used_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq('user_id', userId)
           .eq('location_id', locationId);
@@ -2575,7 +2824,10 @@ export const supabaseService = {
   },
 
   // Real-time location subscriptions - returns all user locations
-  subscribeToUserLocationChanges(userId: string, callback: (locations: any[]) => void) {
+  subscribeToUserLocationChanges(
+    userId: string,
+    callback: (locations: any[]) => void
+  ) {
     return supabase
       .channel(`location-changes-${userId}`)
       .on(
@@ -2586,9 +2838,12 @@ export const supabaseService = {
           table: 'user_locations',
           filter: `user_id=eq.${userId}`,
         },
-        async (payload) => {
+        async payload => {
           // Only process actual database changes, not heartbeats
-          if (payload.eventType && ['INSERT', 'UPDATE', 'DELETE'].includes(payload.eventType)) {
+          if (
+            payload.eventType &&
+            ['INSERT', 'UPDATE', 'DELETE'].includes(payload.eventType)
+          ) {
             try {
               const { data: locations, error } = await supabase
                 .from('user_locations')
@@ -2604,7 +2859,10 @@ export const supabaseService = {
 
               callback(locations || []);
             } catch (error) {
-              console.error('❌ Error in location subscription callback:', error);
+              console.error(
+                '❌ Error in location subscription callback:',
+                error
+              );
               callback([]);
             }
           }
@@ -2617,7 +2875,7 @@ export const supabaseService = {
   async seedDefaultLocations(userId: string): Promise<boolean> {
     try {
       console.log('📍 Seeding default locations for user:', userId);
-      
+
       const defaultLocations = [
         {
           user_id: userId,
@@ -2687,10 +2945,10 @@ export const supabaseService = {
             table: 'orders',
             filter: `id=eq.${orderId}`,
           },
-          (payload) => {
+          payload => {
             console.log('📦 Order update received:', payload);
             // Fetch the complete order data and call callback
-            this.getOrderById(orderId).then((order) => {
+            this.getOrderById(orderId).then(order => {
               if (order) {
                 callback(order);
               }
@@ -2707,4 +2965,4 @@ export const supabaseService = {
   },
 };
 
-export default supabaseService; 
+export default supabaseService;

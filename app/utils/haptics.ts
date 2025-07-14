@@ -52,7 +52,7 @@ export const HapticFeedback = {
     if (isIOS) {
       Haptics.selectionAsync();
     }
-  }
+  },
 };
 
 // Haptic patterns for complex interactions
@@ -85,5 +85,5 @@ export const HapticPatterns = {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       }, 200);
     }
-  }
+  },
 };

@@ -1,16 +1,16 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
   StatusBar,
   Alert,
   Modal,
   TextInput,
   RefreshControl,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -18,7 +18,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { AppContext } from '../../context/AppContext';
 import MobileHeader from '../Layout/MobileHeader';
-import { isCompanyUser, CompanyUser, CompanyUserRole, getDefaultPermissionsByRole, UserPermissions } from '../../types/user';
+import {
+  isCompanyUser,
+  CompanyUser,
+  CompanyUserRole,
+  getDefaultPermissionsByRole,
+  UserPermissions,
+} from '../../types/user';
 import { supabaseService } from '../../services/supabaseService';
 import TouchableScale from '../UI/TouchableScale';
 
@@ -36,22 +42,24 @@ export default function TeamManagementScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { state } = useContext(AppContext);
-  
+
   // State management
   const [teamMembers, setTeamMembers] = useState<CompanyUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [editModalData, setEditModalData] = useState<EditModalData | null>(null);
-  
+  const [editModalData, setEditModalData] = useState<EditModalData | null>(
+    null
+  );
+
   // Invite form state
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteDepartment, setInviteDepartment] = useState('');
   const [invitePosition, setInvitePosition] = useState('');
   const [selectedRole, setSelectedRole] = useState<CompanyUserRole>('staff');
   const [inviteLoading, setInviteLoading] = useState(false);
-  
+
   const { user, company } = state;
 
   // Load team members
@@ -60,7 +68,7 @@ export default function TeamManagementScreen() {
       console.log('⚠️ No company ID available');
       return;
     }
-    
+
     try {
       console.log('🔍 Loading team members for company:', company.id);
       const members = await supabaseService.getTeamMembersByCompany(company.id);
@@ -90,9 +98,9 @@ export default function TeamManagementScreen() {
         <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
         <View style={[styles.statusBarSpacer, { height: insets.top }]} />
         <View style={styles.headerContainer}>
-          <MobileHeader 
-            title="Team Management" 
-            showBackButton={true} 
+          <MobileHeader
+            title="Team Management"
+            showBackButton={true}
             showSearch={false}
             showCartButton={false}
           />
@@ -109,21 +117,31 @@ export default function TeamManagementScreen() {
 
   const getRoleColor = (role: CompanyUserRole) => {
     switch (role) {
-      case 'superadmin': return '#9C27B0';
-      case 'manager': return '#2196F3';
-      case 'approver': return '#FF9800';
-      case 'staff': return '#4CAF50';
-      default: return COLORS.textSecondary;
+      case 'superadmin':
+        return '#9C27B0';
+      case 'manager':
+        return '#2196F3';
+      case 'approver':
+        return '#FF9800';
+      case 'staff':
+        return '#4CAF50';
+      default:
+        return COLORS.textSecondary;
     }
   };
 
   const getRoleIcon = (role: CompanyUserRole) => {
     switch (role) {
-      case 'superadmin': return 'shield';
-      case 'manager': return 'people';
-      case 'approver': return 'verified-user';
-      case 'staff': return 'person';
-      default: return 'person';
+      case 'superadmin':
+        return 'shield';
+      case 'manager':
+        return 'people';
+      case 'approver':
+        return 'verified-user';
+      case 'staff':
+        return 'person';
+      default:
+        return 'person';
     }
   };
 
@@ -132,9 +150,9 @@ export default function TeamManagementScreen() {
       Alert.alert('Error', 'Please enter an email address');
       return;
     }
-    
+
     if (!company?.id) return;
-    
+
     setInviteLoading(true);
     try {
       console.log('🔄 Starting invite process...');
@@ -145,14 +163,17 @@ export default function TeamManagementScreen() {
         inviteDepartment.trim() || undefined,
         invitePosition.trim() || undefined
       );
-      
+
       if (newMember) {
         console.log('✅ Invite successful, reloading team members...');
         // Reload team members from database to ensure consistency
         await loadTeamMembers();
         setInviteModalVisible(false);
         resetInviteForm();
-        Alert.alert('Success', `Team member ${inviteEmail} has been added successfully!`);
+        Alert.alert(
+          'Success',
+          `Team member ${inviteEmail} has been added successfully!`
+        );
       } else {
         Alert.alert('Error', 'Failed to add team member. Please try again.');
       }
@@ -173,10 +194,13 @@ export default function TeamManagementScreen() {
 
   const handleEditUser = (member: CompanyUser) => {
     if (!canManageUsers) {
-      Alert.alert('Permission Denied', 'You do not have permission to manage users');
+      Alert.alert(
+        'Permission Denied',
+        'You do not have permission to manage users'
+      );
       return;
     }
-    
+
     setEditModalData({
       user: member,
       name: member.name,
@@ -184,14 +208,14 @@ export default function TeamManagementScreen() {
       role: member.role,
       department: member.department || '',
       position: member.position || '',
-      permissions: { ...member.permissions }
+      permissions: { ...member.permissions },
     });
     setEditModalVisible(true);
   };
 
   const handleSaveEdit = async () => {
     if (!editModalData) return;
-    
+
     try {
       console.log('🔄 Starting edit process...');
       const updatedMember = await supabaseService.updateTeamMember(
@@ -202,10 +226,10 @@ export default function TeamManagementScreen() {
           role: editModalData.role,
           department: editModalData.department,
           position: editModalData.position,
-          permissions: editModalData.permissions
+          permissions: editModalData.permissions,
         }
       );
-      
+
       if (updatedMember) {
         console.log('✅ Edit successful, reloading team members...');
         // Reload team members from database to ensure consistency
@@ -224,22 +248,25 @@ export default function TeamManagementScreen() {
 
   const handleRemoveUser = (member: CompanyUser) => {
     if (!canManageUsers) {
-      Alert.alert('Permission Denied', 'You do not have permission to manage users');
+      Alert.alert(
+        'Permission Denied',
+        'You do not have permission to manage users'
+      );
       return;
     }
-    
+
     if (member.id === user.id) {
       Alert.alert('Error', 'You cannot remove yourself from the team');
       return;
     }
-    
+
     Alert.alert(
       'Remove Team Member',
       `Are you sure you want to remove ${member.name} from the team? This action cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Remove', 
+        {
+          text: 'Remove',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -257,15 +284,15 @@ export default function TeamManagementScreen() {
               console.error('❌ Error removing user:', error);
               Alert.alert('Error', 'Failed to remove team member');
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
 
   const renderTeamMember = (member: CompanyUser) => {
     const isCurrentUser = member.id === user.id;
-    
+
     return (
       <TouchableScale
         key={member.id}
@@ -275,14 +302,19 @@ export default function TeamManagementScreen() {
         activeScale={0.98}
       >
         <View style={styles.memberHeader}>
-          <View style={[styles.memberAvatar, { backgroundColor: getRoleColor(member.role) + '20' }]}>
-            <MaterialIcons 
-              name={getRoleIcon(member.role)} 
-              size={24} 
-              color={getRoleColor(member.role)} 
+          <View
+            style={[
+              styles.memberAvatar,
+              { backgroundColor: getRoleColor(member.role) + '20' },
+            ]}
+          >
+            <MaterialIcons
+              name={getRoleIcon(member.role)}
+              size={24}
+              color={getRoleColor(member.role)}
             />
           </View>
-          
+
           <View style={styles.memberInfo}>
             <View style={styles.memberNameRow}>
               <Text style={styles.memberName}>{member.name}</Text>
@@ -293,11 +325,12 @@ export default function TeamManagementScreen() {
               )}
             </View>
             <Text style={styles.memberPosition}>
-              {member.position || 'No position'} • {member.department || 'No department'}
+              {member.position || 'No position'} •{' '}
+              {member.department || 'No department'}
             </Text>
             <Text style={styles.memberEmail}>{member.email}</Text>
           </View>
-          
+
           {canManageUsers && !isCurrentUser && (
             <TouchableOpacity
               style={styles.removeButton}
@@ -308,14 +341,24 @@ export default function TeamManagementScreen() {
             </TouchableOpacity>
           )}
         </View>
-        
+
         <View style={styles.memberFooter}>
-          <View style={[styles.roleBadge, { backgroundColor: getRoleColor(member.role) + '20' }]}>
-            <Text style={[styles.roleBadgeText, { color: getRoleColor(member.role) }]}>
+          <View
+            style={[
+              styles.roleBadge,
+              { backgroundColor: getRoleColor(member.role) + '20' },
+            ]}
+          >
+            <Text
+              style={[
+                styles.roleBadgeText,
+                { color: getRoleColor(member.role) },
+              ]}
+            >
               {member.role.toUpperCase()}
             </Text>
           </View>
-          
+
           <View style={styles.memberPermissions}>
             {member.permissions?.canApproveOrders && (
               <View style={styles.permissionChip}>
@@ -351,15 +394,18 @@ export default function TeamManagementScreen() {
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Invite Team Member</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => setInviteModalVisible(false)}
               style={styles.modalCloseButton}
             >
               <Ionicons name="close" size={24} color={COLORS.text} />
             </TouchableOpacity>
           </View>
-          
-          <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+
+          <ScrollView
+            style={styles.modalBody}
+            showsVerticalScrollIndicator={false}
+          >
             <Text style={styles.inputLabel}>Email Address *</Text>
             <TextInput
               style={styles.textInput}
@@ -370,7 +416,7 @@ export default function TeamManagementScreen() {
               autoCapitalize="none"
               editable={!inviteLoading}
             />
-            
+
             <Text style={styles.inputLabel}>Department</Text>
             <TextInput
               style={styles.textInput}
@@ -379,7 +425,7 @@ export default function TeamManagementScreen() {
               onChangeText={setInviteDepartment}
               editable={!inviteLoading}
             />
-            
+
             <Text style={styles.inputLabel}>Position</Text>
             <TextInput
               style={styles.textInput}
@@ -388,36 +434,45 @@ export default function TeamManagementScreen() {
               onChangeText={setInvitePosition}
               editable={!inviteLoading}
             />
-            
+
             <Text style={styles.inputLabel}>Role *</Text>
             <View style={styles.roleSelector}>
-              {(['staff', 'approver', 'manager'] as CompanyUserRole[]).map(role => (
-                <TouchableOpacity
-                  key={role}
-                  style={[
-                    styles.roleOption,
-                    selectedRole === role && styles.roleOptionSelected
-                  ]}
-                  onPress={() => setSelectedRole(role)}
-                  disabled={inviteLoading}
-                >
-                  <MaterialIcons 
-                    name={getRoleIcon(role)} 
-                    size={20} 
-                    color={selectedRole === role ? '#FFFFFF' : getRoleColor(role)} 
-                  />
-                  <Text style={[
-                    styles.roleOptionText,
-                    selectedRole === role && styles.roleOptionTextSelected
-                  ]}>
-                    {role.charAt(0).toUpperCase() + role.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {(['staff', 'approver', 'manager'] as CompanyUserRole[]).map(
+                role => (
+                  <TouchableOpacity
+                    key={role}
+                    style={[
+                      styles.roleOption,
+                      selectedRole === role && styles.roleOptionSelected,
+                    ]}
+                    onPress={() => setSelectedRole(role)}
+                    disabled={inviteLoading}
+                  >
+                    <MaterialIcons
+                      name={getRoleIcon(role)}
+                      size={20}
+                      color={
+                        selectedRole === role ? '#FFFFFF' : getRoleColor(role)
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.roleOptionText,
+                        selectedRole === role && styles.roleOptionTextSelected,
+                      ]}
+                    >
+                      {role.charAt(0).toUpperCase() + role.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              )}
             </View>
-            
-            <TouchableOpacity 
-              style={[styles.inviteButton, inviteLoading && styles.inviteButtonDisabled]}
+
+            <TouchableOpacity
+              style={[
+                styles.inviteButton,
+                inviteLoading && styles.inviteButtonDisabled,
+              ]}
               onPress={handleInviteUser}
               activeOpacity={0.7}
               disabled={inviteLoading}
@@ -436,7 +491,7 @@ export default function TeamManagementScreen() {
 
   const renderEditModal = () => {
     if (!editModalData) return null;
-    
+
     return (
       <Modal
         animationType="slide"
@@ -448,83 +503,117 @@ export default function TeamManagementScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Edit Team Member</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setEditModalVisible(false)}
                 style={styles.modalCloseButton}
               >
                 <Ionicons name="close" size={24} color={COLORS.text} />
               </TouchableOpacity>
             </View>
-            
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+
+            <ScrollView
+              style={styles.modalBody}
+              showsVerticalScrollIndicator={false}
+            >
               <Text style={styles.inputLabel}>Name</Text>
               <TextInput
                 style={styles.textInput}
                 placeholder="Enter name"
                 value={editModalData.name}
-                onChangeText={(text) => setEditModalData(prev => prev ? {...prev, name: text} : null)}
+                onChangeText={text =>
+                  setEditModalData(prev =>
+                    prev ? { ...prev, name: text } : null
+                  )
+                }
               />
-              
+
               <Text style={styles.inputLabel}>Email</Text>
               <TextInput
                 style={styles.textInput}
                 placeholder="Enter email"
                 value={editModalData.email}
-                onChangeText={(text) => setEditModalData(prev => prev ? {...prev, email: text} : null)}
+                onChangeText={text =>
+                  setEditModalData(prev =>
+                    prev ? { ...prev, email: text } : null
+                  )
+                }
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
-              
+
               <Text style={styles.inputLabel}>Department</Text>
               <TextInput
                 style={styles.textInput}
                 placeholder="Enter department"
                 value={editModalData.department}
-                onChangeText={(text) => setEditModalData(prev => prev ? {...prev, department: text} : null)}
+                onChangeText={text =>
+                  setEditModalData(prev =>
+                    prev ? { ...prev, department: text } : null
+                  )
+                }
               />
-              
+
               <Text style={styles.inputLabel}>Position</Text>
               <TextInput
                 style={styles.textInput}
                 placeholder="Enter position"
                 value={editModalData.position}
-                onChangeText={(text) => setEditModalData(prev => prev ? {...prev, position: text} : null)}
+                onChangeText={text =>
+                  setEditModalData(prev =>
+                    prev ? { ...prev, position: text } : null
+                  )
+                }
               />
-              
+
               <Text style={styles.inputLabel}>Role</Text>
               <View style={styles.roleSelector}>
-                {(['staff', 'approver', 'manager'] as CompanyUserRole[]).map(role => (
-                  <TouchableOpacity
-                    key={role}
-                    style={[
-                      styles.roleOption,
-                      editModalData.role === role && styles.roleOptionSelected
-                    ]}
-                    onPress={() => {
-                      const newPermissions = getDefaultPermissionsByRole(role);
-                      setEditModalData(prev => prev ? {
-                        ...prev, 
-                        role,
-                        permissions: newPermissions
-                      } : null);
-                    }}
-                  >
-                    <MaterialIcons 
-                      name={getRoleIcon(role)} 
-                      size={20} 
-                      color={editModalData.role === role ? '#FFFFFF' : getRoleColor(role)} 
-                    />
-                    <Text style={[
-                      styles.roleOptionText,
-                      editModalData.role === role && styles.roleOptionTextSelected
-                    ]}>
-                      {role.charAt(0).toUpperCase() + role.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                {(['staff', 'approver', 'manager'] as CompanyUserRole[]).map(
+                  role => (
+                    <TouchableOpacity
+                      key={role}
+                      style={[
+                        styles.roleOption,
+                        editModalData.role === role &&
+                          styles.roleOptionSelected,
+                      ]}
+                      onPress={() => {
+                        const newPermissions =
+                          getDefaultPermissionsByRole(role);
+                        setEditModalData(prev =>
+                          prev
+                            ? {
+                                ...prev,
+                                role,
+                                permissions: newPermissions,
+                              }
+                            : null
+                        );
+                      }}
+                    >
+                      <MaterialIcons
+                        name={getRoleIcon(role)}
+                        size={20}
+                        color={
+                          editModalData.role === role
+                            ? '#FFFFFF'
+                            : getRoleColor(role)
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.roleOptionText,
+                          editModalData.role === role &&
+                            styles.roleOptionTextSelected,
+                        ]}
+                      >
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                )}
               </View>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.inviteButton}
                 onPress={handleSaveEdit}
                 activeOpacity={0.7}
@@ -544,16 +633,18 @@ export default function TeamManagementScreen() {
         <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
         <View style={[styles.statusBarSpacer, { height: insets.top }]} />
         <View style={styles.headerContainer}>
-          <MobileHeader 
-            title="Team Management" 
-            showBackButton={true} 
+          <MobileHeader
+            title="Team Management"
+            showBackButton={true}
             showSearch={false}
             showCartButton={false}
           />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.text} />
-          <Text style={[styles.noDataText, { marginTop: SPACING.sm }]}>Loading team members...</Text>
+          <Text style={[styles.noDataText, { marginTop: SPACING.sm }]}>
+            Loading team members...
+          </Text>
         </View>
       </View>
     );
@@ -562,21 +653,21 @@ export default function TeamManagementScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
-      
+
       <View style={[styles.statusBarSpacer, { height: insets.top }]} />
-      
+
       <View style={styles.headerContainer}>
-        <MobileHeader 
-          title="Team Management" 
-          showBackButton={true} 
+        <MobileHeader
+          title="Team Management"
+          showBackButton={true}
           showSearch={false}
           showCartButton={false}
         />
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollContainer}
-        contentContainerStyle={styles.scrollContent} 
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -618,16 +709,21 @@ export default function TeamManagementScreen() {
 
         {/* Team Members List */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Team Members ({teamMembers.length})</Text>
+          <Text style={styles.sectionTitle}>
+            Team Members ({teamMembers.length})
+          </Text>
           {teamMembers.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={64} color={COLORS.textSecondary} />
+              <Ionicons
+                name="people-outline"
+                size={64}
+                color={COLORS.textSecondary}
+              />
               <Text style={styles.emptyStateTitle}>No team members yet</Text>
               <Text style={styles.emptyStateText}>
-                {canInviteUsers 
-                  ? 'Start building your team by inviting members' 
-                  : 'Ask an admin to invite team members'
-                }
+                {canInviteUsers
+                  ? 'Start building your team by inviting members'
+                  : 'Ask an admin to invite team members'}
               </Text>
             </View>
           ) : (
@@ -674,7 +770,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     ...SHADOWS.light,
   },
-  
+
   // Stats Card
   statsCard: {
     backgroundColor: COLORS.card,
@@ -703,7 +799,7 @@ const styles = StyleSheet.create({
     height: 32,
     backgroundColor: COLORS.border,
   },
-  
+
   // Add Member Button
   addMemberButton: {
     backgroundColor: COLORS.text,
@@ -722,7 +818,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: SPACING.sm,
   },
-  
+
   // Section
   section: {
     marginBottom: SPACING.lg,
@@ -732,7 +828,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
     paddingHorizontal: 4,
   },
-  
+
   // Empty State
   emptyState: {
     alignItems: 'center',
@@ -749,7 +845,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
   },
-  
+
   // Member Card
   memberCard: {
     backgroundColor: COLORS.card,
@@ -843,7 +939,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.tiny,
     color: COLORS.textSecondary,
   },
-  
+
   // Modal
   modalOverlay: {
     flex: 1,
@@ -937,8 +1033,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
   },
-  
+
   bottomPadding: {
     height: 100,
   },
-}); 
+});

@@ -23,7 +23,9 @@ interface BiometricSetting {
 
 export const BiometricSettings: React.FC = () => {
   const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometricType, setBiometricType] = useState<'fingerprint' | 'face' | 'none'>('none');
+  const [biometricType, setBiometricType] = useState<
+    'fingerprint' | 'face' | 'none'
+  >('none');
   const [isEnabled, setIsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -38,12 +40,21 @@ export const BiometricSettings: React.FC = () => {
       if (compatible) {
         const enrolled = await LocalAuthentication.isEnrolledAsync();
         if (enrolled) {
-          const authTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
-          
-          if (authTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+          const authTypes =
+            await LocalAuthentication.supportedAuthenticationTypesAsync();
+
+          if (
+            authTypes.includes(
+              LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION
+            )
+          ) {
             setBiometricType('face');
             setBiometricAvailable(true);
-          } else if (authTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+          } else if (
+            authTypes.includes(
+              LocalAuthentication.AuthenticationType.FINGERPRINT
+            )
+          ) {
             setBiometricType('fingerprint');
             setBiometricAvailable(true);
           }
@@ -75,7 +86,10 @@ export const BiometricSettings: React.FC = () => {
         type: biometricType,
         lastUpdated: new Date().toISOString(),
       };
-      await AsyncStorage.setItem(BIOMETRIC_SETTINGS_KEY, JSON.stringify(settings));
+      await AsyncStorage.setItem(
+        BIOMETRIC_SETTINGS_KEY,
+        JSON.stringify(settings)
+      );
     } catch (error) {
       console.error('Error saving biometric settings:', error);
     }
@@ -165,11 +179,7 @@ export const BiometricSettings: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Ionicons 
-          name={getBiometricIcon()} 
-          size={32} 
-          color={COLORS.primary} 
-        />
+        <Ionicons name={getBiometricIcon()} size={32} color={COLORS.primary} />
         <Text style={styles.title}>Biometric Authentication</Text>
       </View>
 
@@ -178,9 +188,12 @@ export const BiometricSettings: React.FC = () => {
           <View style={styles.card}>
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Enable {getBiometricName()}</Text>
+                <Text style={styles.settingTitle}>
+                  Enable {getBiometricName()}
+                </Text>
                 <Text style={styles.settingDescription}>
-                  Use {getBiometricName().toLowerCase()} to quickly sign in to your account
+                  Use {getBiometricName().toLowerCase()} to quickly sign in to
+                  your account
                 </Text>
               </View>
               <Switch
@@ -195,23 +208,40 @@ export const BiometricSettings: React.FC = () => {
 
           {isEnabled && (
             <TouchableOpacity style={styles.testButton} onPress={testBiometric}>
-              <Ionicons name="checkmark-circle-outline" size={20} color={COLORS.primary} />
-              <Text style={styles.testButtonText}>Test {getBiometricName()}</Text>
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={20}
+                color={COLORS.primary}
+              />
+              <Text style={styles.testButtonText}>
+                Test {getBiometricName()}
+              </Text>
             </TouchableOpacity>
           )}
 
           <View style={styles.infoCard}>
-            <Ionicons name="information-circle-outline" size={20} color={COLORS.textSecondary} />
+            <Ionicons
+              name="information-circle-outline"
+              size={20}
+              color={COLORS.textSecondary}
+            />
             <Text style={styles.infoText}>
-              Your biometric data is stored securely on your device and never leaves it.
-              We only receive a success or failure response when you authenticate.
+              Your biometric data is stored securely on your device and never
+              leaves it. We only receive a success or failure response when you
+              authenticate.
             </Text>
           </View>
         </>
       ) : (
         <View style={styles.unavailableCard}>
-          <Ionicons name="lock-closed-outline" size={48} color={COLORS.textSecondary} />
-          <Text style={styles.unavailableTitle}>Biometric Authentication Unavailable</Text>
+          <Ionicons
+            name="lock-closed-outline"
+            size={48}
+            color={COLORS.textSecondary}
+          />
+          <Text style={styles.unavailableTitle}>
+            Biometric Authentication Unavailable
+          </Text>
           <Text style={styles.unavailableText}>
             {Platform.OS === 'ios'
               ? 'Please enable Face ID or Touch ID in your device settings and try again.'

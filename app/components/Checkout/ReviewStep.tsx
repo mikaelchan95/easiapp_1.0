@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { DeliveryAddress, DeliverySlot, PaymentMethod } from '../../types/checkout';
+import {
+  DeliveryAddress,
+  DeliverySlot,
+  PaymentMethod,
+} from '../../types/checkout';
 import { TYPOGRAPHY, COLORS, SPACING, SHADOWS } from '../../utils/theme';
 import { formatFinancialAmount } from '../../utils/formatting';
 import { getProductImageSource } from '../../utils/imageUtils';
@@ -34,13 +38,13 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
   paymentMethod,
   subtotal,
   deliveryFee,
-  total
+  total,
 }) => {
   // Animation values
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(30))[0];
   const cardScaleAnim = useState(new Animated.Value(0.95))[0];
-  
+
   // Mount animation
   useEffect(() => {
     Animated.parallel([
@@ -70,27 +74,28 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
         <Ionicons name="alert-circle" size={48} color="#F44336" />
         <Text style={styles.errorTitle}>Incomplete Information</Text>
         <Text style={styles.errorText}>
-          Please go back and complete all previous steps before reviewing your order.
+          Please go back and complete all previous steps before reviewing your
+          order.
         </Text>
       </View>
     );
   }
-  
+
   return (
     <View style={styles.container}>
       <Animated.View
         style={{
           opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }]
+          transform: [{ translateY: slideAnim }],
         }}
       >
         {/* Items */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.section,
             {
-              transform: [{ scale: cardScaleAnim }]
-            }
+              transform: [{ scale: cardScaleAnim }],
+            },
           ]}
         >
           <View style={styles.sectionHeader}>
@@ -99,35 +104,52 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             </View>
             <View style={styles.sectionHeaderContent}>
               <Text style={styles.sectionTitle}>Order Items</Text>
-              <Text style={styles.sectionSubtitle}>{cart.length} {cart.length === 1 ? 'item' : 'items'}</Text>
+              <Text style={styles.sectionSubtitle}>
+                {cart.length} {cart.length === 1 ? 'item' : 'items'}
+              </Text>
             </View>
           </View>
-          
+
           {cart.map((item, index) => {
-            const imageSource = getProductImageSource(item.product.imageUrl, item.product.name);
+            const imageSource = getProductImageSource(
+              item.product.imageUrl,
+              item.product.name
+            );
             return (
-              <View key={item.product.id} style={[styles.itemRow, index === cart.length - 1 && styles.lastItemRow]}>
-                <Image 
-                  source={imageSource || { uri: 'https://images.unsplash.com/photo-1568213816046-0ee1c42bd559?w=400&h=400&fit=crop' }} 
-                  style={styles.itemImage} 
+              <View
+                key={item.product.id}
+                style={[
+                  styles.itemRow,
+                  index === cart.length - 1 && styles.lastItemRow,
+                ]}
+              >
+                <Image
+                  source={
+                    imageSource || {
+                      uri: 'https://images.unsplash.com/photo-1568213816046-0ee1c42bd559?w=400&h=400&fit=crop',
+                    }
+                  }
+                  style={styles.itemImage}
                 />
                 <View style={styles.itemInfo}>
                   <Text style={styles.itemName}>{item.product.name}</Text>
                   <Text style={styles.itemMeta}>Qty: {item.quantity}</Text>
                 </View>
-                <Text style={styles.itemPrice}>{formatFinancialAmount(item.product.price * item.quantity)}</Text>
+                <Text style={styles.itemPrice}>
+                  {formatFinancialAmount(item.product.price * item.quantity)}
+                </Text>
               </View>
             );
           })}
         </Animated.View>
-        
+
         {/* Delivery Details */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.section,
             {
-              transform: [{ scale: cardScaleAnim }]
-            }
+              transform: [{ scale: cardScaleAnim }],
+            },
           ]}
         >
           <View style={styles.sectionHeader}>
@@ -139,64 +161,64 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
               <Text style={styles.sectionSubtitle}>Address and timing</Text>
             </View>
           </View>
-        
-        <View style={styles.detailRow}>
-          <View style={styles.detailIconContainer}>
-            <Ionicons name="location" size={20} color="#1a1a1a" />
-          </View>
-          <View style={styles.detailContent}>
-            <Text style={styles.detailLabel}>Address</Text>
-            <Text style={styles.detailText}>
-              {address.name}
-            </Text>
-            <Text style={styles.detailText}>
-              {address.address}{address.unitNumber ? `, ${address.unitNumber}` : ''}
-            </Text>
-            <Text style={styles.detailText}>
-              Singapore {address.postalCode}
-            </Text>
-            <Text style={styles.detailText}>{address.phone}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.detailRow}>
-          <View style={styles.detailIconContainer}>
-            <Ionicons name="calendar" size={20} color="#1a1a1a" />
-          </View>
-          <View style={styles.detailContent}>
-            <Text style={styles.detailLabel}>Delivery Date</Text>
-            <Text style={styles.detailText}>{deliverySlot.date}</Text>
-            <View style={styles.badgeContainer}>
-              {deliverySlot.sameDayAvailable && (
-                <View style={styles.sameDayBadge}>
-                  <Text style={styles.sameDayText}>Same Day</Text>
-                </View>
-              )}
+
+          <View style={styles.detailRow}>
+            <View style={styles.detailIconContainer}>
+              <Ionicons name="location" size={20} color="#1a1a1a" />
+            </View>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Address</Text>
+              <Text style={styles.detailText}>{address.name}</Text>
+              <Text style={styles.detailText}>
+                {address.address}
+                {address.unitNumber ? `, ${address.unitNumber}` : ''}
+              </Text>
+              <Text style={styles.detailText}>
+                Singapore {address.postalCode}
+              </Text>
+              <Text style={styles.detailText}>{address.phone}</Text>
             </View>
           </View>
-        </View>
-        
-        <View style={styles.detailRow}>
-          <View style={styles.detailIconContainer}>
-            <Ionicons name="time" size={20} color="#1a1a1a" />
+
+          <View style={styles.detailRow}>
+            <View style={styles.detailIconContainer}>
+              <Ionicons name="calendar" size={20} color="#1a1a1a" />
+            </View>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Delivery Date</Text>
+              <Text style={styles.detailText}>{deliverySlot.date}</Text>
+              <View style={styles.badgeContainer}>
+                {deliverySlot.sameDayAvailable && (
+                  <View style={styles.sameDayBadge}>
+                    <Text style={styles.sameDayText}>Same Day</Text>
+                  </View>
+                )}
+              </View>
+            </View>
           </View>
-          <View style={styles.detailContent}>
-            <Text style={styles.detailLabel}>Time Slot</Text>
-            <Text style={styles.detailText}>{deliverySlot.timeSlot}</Text>
-            <Text style={styles.queueText}>
-              {deliverySlot.queueCount} {deliverySlot.queueCount === 1 ? 'order' : 'orders'} ahead
-            </Text>
+
+          <View style={styles.detailRow}>
+            <View style={styles.detailIconContainer}>
+              <Ionicons name="time" size={20} color="#1a1a1a" />
+            </View>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Time Slot</Text>
+              <Text style={styles.detailText}>{deliverySlot.timeSlot}</Text>
+              <Text style={styles.queueText}>
+                {deliverySlot.queueCount}{' '}
+                {deliverySlot.queueCount === 1 ? 'order' : 'orders'} ahead
+              </Text>
+            </View>
           </View>
-        </View>
         </Animated.View>
-        
+
         {/* Payment Method */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.section,
             {
-              transform: [{ scale: cardScaleAnim }]
-            }
+              transform: [{ scale: cardScaleAnim }],
+            },
           ]}
         >
           <View style={styles.sectionHeader}>
@@ -208,36 +230,46 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
               <Text style={styles.sectionSubtitle}>How you'll pay</Text>
             </View>
           </View>
-        
-        <View style={styles.paymentRow}>
-          <View style={styles.paymentIconContainer}>
-            <Ionicons name={paymentMethod.icon as any} size={20} color="#fff" />
+
+          <View style={styles.paymentRow}>
+            <View style={styles.paymentIconContainer}>
+              <Ionicons
+                name={paymentMethod.icon as any}
+                size={20}
+                color="#fff"
+              />
+            </View>
+            <View style={styles.paymentInfo}>
+              <Text style={styles.paymentName}>{paymentMethod.name}</Text>
+              {paymentMethod.id === 'digital_cod' && (
+                <Text style={styles.paymentDescription}>Pay on delivery</Text>
+              )}
+              {paymentMethod.id === 'wallet' && (
+                <Text style={styles.paymentDescription}>
+                  Payment from digital wallet
+                </Text>
+              )}
+              {paymentMethod.id === 'credit' && (
+                <Text style={styles.paymentDescription}>
+                  Added to your credit account
+                </Text>
+              )}
+              {paymentMethod.id === 'card' && (
+                <Text style={styles.paymentDescription}>
+                  Will be charged on confirmation
+                </Text>
+              )}
+            </View>
           </View>
-          <View style={styles.paymentInfo}>
-            <Text style={styles.paymentName}>{paymentMethod.name}</Text>
-            {paymentMethod.id === 'digital_cod' && (
-              <Text style={styles.paymentDescription}>Pay on delivery</Text>
-            )}
-            {paymentMethod.id === 'wallet' && (
-              <Text style={styles.paymentDescription}>Payment from digital wallet</Text>
-            )}
-            {paymentMethod.id === 'credit' && (
-              <Text style={styles.paymentDescription}>Added to your credit account</Text>
-            )}
-            {paymentMethod.id === 'card' && (
-              <Text style={styles.paymentDescription}>Will be charged on confirmation</Text>
-            )}
-          </View>
-        </View>
         </Animated.View>
-        
+
         {/* Order Summary */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.summarySection,
             {
-              transform: [{ scale: cardScaleAnim }]
-            }
+              transform: [{ scale: cardScaleAnim }],
+            },
           ]}
         >
           <View style={styles.sectionHeader}>
@@ -249,29 +281,34 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
               <Text style={styles.sectionSubtitle}>Total breakdown</Text>
             </View>
           </View>
-        
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Subtotal</Text>
-          <Text style={styles.summaryValue}>{formatFinancialAmount(subtotal)}</Text>
-        </View>
-        
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Delivery Fee</Text>
-          <Text style={styles.summaryValue}>
-            {deliveryFee === 0 ? 'FREE' : formatFinancialAmount(deliveryFee)}
-          </Text>
-        </View>
-        
-        <View style={[styles.summaryRow, styles.totalRow]}>
-          <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.totalValue}>{formatFinancialAmount(total)}</Text>
-        </View>
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Subtotal</Text>
+            <Text style={styles.summaryValue}>
+              {formatFinancialAmount(subtotal)}
+            </Text>
+          </View>
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Delivery Fee</Text>
+            <Text style={styles.summaryValue}>
+              {deliveryFee === 0 ? 'FREE' : formatFinancialAmount(deliveryFee)}
+            </Text>
+          </View>
+
+          <View style={[styles.summaryRow, styles.totalRow]}>
+            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalValue}>
+              {formatFinancialAmount(total)}
+            </Text>
+          </View>
         </Animated.View>
-        
+
         {/* Policy Note */}
         <View style={styles.policyNote}>
           <Text style={styles.policyText}>
-            By placing your order, you agree to our Terms of Service and Privacy Policy.
+            By placing your order, you agree to our Terms of Service and Privacy
+            Policy.
           </Text>
         </View>
       </Animated.View>
@@ -533,4 +570,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ReviewStep; 
+export default ReviewStep;

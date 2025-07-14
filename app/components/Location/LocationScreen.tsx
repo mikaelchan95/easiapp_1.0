@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  StyleSheet, 
-  SafeAreaView
-} from 'react-native';
+import { View, StyleSheet, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GoogleMapsService } from '../../services/googleMapsService';
-import { LocationSuggestion, SavedAddress, DeliveryDetails } from '../../types/location';
+import {
+  LocationSuggestion,
+  SavedAddress,
+  DeliveryDetails,
+} from '../../types/location';
 import LocationSelectionUI from './LocationSelectionUI';
 import { HapticFeedback } from '../../utils/haptics';
 
@@ -19,13 +19,15 @@ interface LocationScreenProps {
 /**
  * Main screen for location selection, integrating all location-related components
  */
-export default function LocationScreen({ onLocationSelect }: LocationScreenProps) {
+export default function LocationScreen({
+  onLocationSelect,
+}: LocationScreenProps) {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  
+
   // State for saved addresses
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
-  
+
   // Load saved addresses when component mounts
   useEffect(() => {
     const loadSavedAddresses = async () => {
@@ -36,7 +38,7 @@ export default function LocationScreen({ onLocationSelect }: LocationScreenProps
         console.error('Error loading saved addresses:', error);
       }
     };
-    
+
     loadSavedAddresses();
   }, []);
 
@@ -44,7 +46,7 @@ export default function LocationScreen({ onLocationSelect }: LocationScreenProps
   const handleLocationSelect = (location: LocationSuggestion) => {
     // Add to recent locations
     GoogleMapsService.addToRecentLocations(location);
-    
+
     // Call parent callback if provided
     if (onLocationSelect) {
       onLocationSelect(location);
@@ -55,11 +57,11 @@ export default function LocationScreen({ onLocationSelect }: LocationScreenProps
       }
     }
   };
-  
+
   // Handle address details submission
   const handleAddressDetailsSubmit = (details: DeliveryDetails) => {
     HapticFeedback.success();
-    
+
     // Pass details back to previous screen or perform navigation
     if (navigation.canGoBack()) {
       navigation.goBack();
@@ -69,24 +71,24 @@ export default function LocationScreen({ onLocationSelect }: LocationScreenProps
   // Handle saving a new address
   const handleSaveAddress = async (address: SavedAddress) => {
     HapticFeedback.success();
-    
+
     try {
       // Generate unique ID if not provided
       if (!address.id) {
         address.id = `address_${Date.now()}`;
       }
-      
+
       // Set timestamps
       address.createdAt = new Date();
       address.updatedAt = new Date();
-      
+
       // Save to storage
       await GoogleMapsService.saveAddress(address);
-      
+
       // Update local state
       const updatedAddresses = await GoogleMapsService.getSavedAddresses();
       setSavedAddresses(updatedAddresses);
-      
+
       // Navigate back or show success message
       if (navigation.canGoBack()) {
         navigation.goBack();
@@ -97,10 +99,7 @@ export default function LocationScreen({ onLocationSelect }: LocationScreenProps
   };
 
   return (
-    <SafeAreaView style={[
-      styles.container,
-      { paddingTop: insets.top }
-    ]}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <LocationSelectionUI
         onLocationSelect={handleLocationSelect}
         onAddressDetailsSubmit={handleAddressDetailsSubmit}

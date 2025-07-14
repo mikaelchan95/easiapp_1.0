@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../utils/theme';
-import companyBillingService, { CompanyBillingStatus } from '../../services/companyBillingService';
+import companyBillingService, {
+  CompanyBillingStatus,
+} from '../../services/companyBillingService';
 
 interface CompanyCreditOverviewProps {
   companyId: string;
@@ -17,7 +25,8 @@ export const CompanyCreditOverview: React.FC<CompanyCreditOverviewProps> = ({
   onRefresh,
   showHeader = true,
 }) => {
-  const [billingStatus, setBillingStatus] = useState<CompanyBillingStatus | null>(null);
+  const [billingStatus, setBillingStatus] =
+    useState<CompanyBillingStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,15 +37,16 @@ export const CompanyCreditOverview: React.FC<CompanyCreditOverviewProps> = ({
   const loadBillingStatus = async () => {
     setLoading(true);
     setError(null);
-    
-    const { data, error: fetchError } = await companyBillingService.getCompanyBillingStatus(companyId);
-    
+
+    const { data, error: fetchError } =
+      await companyBillingService.getCompanyBillingStatus(companyId);
+
     if (fetchError) {
       setError(fetchError);
     } else {
       setBillingStatus(data || null);
     }
-    
+
     setLoading(false);
   };
 
@@ -61,7 +71,10 @@ export const CompanyCreditOverview: React.FC<CompanyCreditOverviewProps> = ({
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.loadingContainer]} testID="credit-overview-loading">
+      <View
+        style={[styles.container, styles.loadingContainer]}
+        testID="credit-overview-loading"
+      >
         <ActivityIndicator size="large" color={theme.colors.text.primary} />
         <Text style={styles.loadingText}>Loading credit information...</Text>
       </View>
@@ -70,8 +83,15 @@ export const CompanyCreditOverview: React.FC<CompanyCreditOverviewProps> = ({
 
   if (error) {
     return (
-      <View style={[styles.container, styles.errorContainer]} testID="credit-overview-error">
-        <Ionicons name="alert-circle-outline" size={48} color={theme.colors.text.secondary} />
+      <View
+        style={[styles.container, styles.errorContainer]}
+        testID="credit-overview-error"
+      >
+        <Ionicons
+          name="alert-circle-outline"
+          size={48}
+          color={theme.colors.text.secondary}
+        />
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
           <Text style={styles.retryText}>Try Again</Text>
@@ -88,12 +108,18 @@ export const CompanyCreditOverview: React.FC<CompanyCreditOverviewProps> = ({
     );
   }
 
-  const creditStatusColor = getCreditStatusColor(billingStatus.credit_utilization, billingStatus.billing_status);
-  const creditStatusText = getCreditStatusText(billingStatus.credit_utilization, billingStatus.billing_status);
+  const creditStatusColor = getCreditStatusColor(
+    billingStatus.credit_utilization,
+    billingStatus.billing_status
+  );
+  const creditStatusText = getCreditStatusText(
+    billingStatus.credit_utilization,
+    billingStatus.billing_status
+  );
 
   return (
-    <TouchableOpacity 
-      style={styles.container} 
+    <TouchableOpacity
+      style={styles.container}
       onPress={onPress}
       activeOpacity={onPress ? 0.8 : 1}
       testID="credit-overview"
@@ -105,15 +131,24 @@ export const CompanyCreditOverview: React.FC<CompanyCreditOverviewProps> = ({
             <Text style={styles.subtitle}>{billingStatus.company_name}</Text>
           </View>
           <View style={styles.headerActions}>
-            <View style={[styles.statusBadge, { backgroundColor: creditStatusColor }]}>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: creditStatusColor },
+              ]}
+            >
               <Text style={styles.statusText}>{creditStatusText}</Text>
             </View>
-            <TouchableOpacity 
-              style={styles.refreshButton} 
+            <TouchableOpacity
+              style={styles.refreshButton}
               onPress={handleRefresh}
               testID="refresh-button"
             >
-              <Ionicons name="refresh-outline" size={20} color={theme.colors.text.primary} />
+              <Ionicons
+                name="refresh-outline"
+                size={20}
+                color={theme.colors.text.primary}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -129,13 +164,13 @@ export const CompanyCreditOverview: React.FC<CompanyCreditOverviewProps> = ({
         </View>
         <View style={styles.progressContainer}>
           <View style={styles.progressBackground}>
-            <View 
+            <View
               style={[
                 styles.progressFill,
-                { 
+                {
                   width: `${Math.min(billingStatus.credit_utilization, 100)}%`,
-                  backgroundColor: creditStatusColor
-                }
+                  backgroundColor: creditStatusColor,
+                },
               ]}
             />
           </View>
@@ -150,15 +185,24 @@ export const CompanyCreditOverview: React.FC<CompanyCreditOverviewProps> = ({
           </Text>
           <Text style={styles.metricLabel}>Available Credit</Text>
           <View style={styles.metricSubtext}>
-            <Ionicons 
-              name={billingStatus.current_credit >= 0 ? "trending-up" : "trending-down"} 
-              size={12} 
-              color={billingStatus.current_credit >= 0 ? '#10B981' : '#EF4444'} 
+            <Ionicons
+              name={
+                billingStatus.current_credit >= 0
+                  ? 'trending-up'
+                  : 'trending-down'
+              }
+              size={12}
+              color={billingStatus.current_credit >= 0 ? '#10B981' : '#EF4444'}
             />
-            <Text style={[
-              styles.metricSubtextLabel,
-              { color: billingStatus.current_credit >= 0 ? '#10B981' : '#EF4444' }
-            ]}>
+            <Text
+              style={[
+                styles.metricSubtextLabel,
+                {
+                  color:
+                    billingStatus.current_credit >= 0 ? '#10B981' : '#EF4444',
+                },
+              ]}
+            >
               {billingStatus.current_credit >= 0 ? 'Available' : 'Overlimit'}
             </Text>
           </View>
@@ -170,7 +214,8 @@ export const CompanyCreditOverview: React.FC<CompanyCreditOverviewProps> = ({
           </Text>
           <Text style={styles.metricLabel}>Credit Used</Text>
           <Text style={styles.metricSubtextLabel}>
-            of {companyBillingService.formatCurrency(billingStatus.credit_limit)}
+            of{' '}
+            {companyBillingService.formatCurrency(billingStatus.credit_limit)}
           </Text>
         </View>
       </View>
@@ -181,16 +226,23 @@ export const CompanyCreditOverview: React.FC<CompanyCreditOverviewProps> = ({
           <View style={styles.invoiceHeader}>
             <Text style={styles.invoiceTitle}>Latest Invoice</Text>
             <View style={styles.invoiceStatus}>
-              <View style={[
-                styles.invoiceStatusDot,
-                { backgroundColor: companyBillingService.getPaymentStatusColor(billingStatus.latest_invoice.status) }
-              ]} />
+              <View
+                style={[
+                  styles.invoiceStatusDot,
+                  {
+                    backgroundColor:
+                      companyBillingService.getPaymentStatusColor(
+                        billingStatus.latest_invoice.status
+                      ),
+                  },
+                ]}
+              />
               <Text style={styles.invoiceStatusText}>
                 {billingStatus.latest_invoice.status.toUpperCase()}
               </Text>
             </View>
           </View>
-          
+
           <View style={styles.invoiceDetails}>
             <View style={styles.invoiceDetail}>
               <Text style={styles.invoiceDetailLabel}>Invoice #</Text>
@@ -201,29 +253,47 @@ export const CompanyCreditOverview: React.FC<CompanyCreditOverviewProps> = ({
             <View style={styles.invoiceDetail}>
               <Text style={styles.invoiceDetailLabel}>Amount</Text>
               <Text style={styles.invoiceDetailValue}>
-                {companyBillingService.formatCurrency(billingStatus.latest_invoice.billing_amount)}
+                {companyBillingService.formatCurrency(
+                  billingStatus.latest_invoice.billing_amount
+                )}
               </Text>
             </View>
             <View style={styles.invoiceDetail}>
               <Text style={styles.invoiceDetailLabel}>Due Date</Text>
-              <Text style={[
-                styles.invoiceDetailValue,
-                { 
-                  color: companyBillingService.isInvoiceOverdue(billingStatus.latest_invoice.payment_due_date) 
-                    ? '#EF4444' 
-                    : theme.colors.text.primary 
-                }
-              ]}>
-                {companyBillingService.formatDate(billingStatus.latest_invoice.payment_due_date)}
+              <Text
+                style={[
+                  styles.invoiceDetailValue,
+                  {
+                    color: companyBillingService.isInvoiceOverdue(
+                      billingStatus.latest_invoice.payment_due_date
+                    )
+                      ? '#EF4444'
+                      : theme.colors.text.primary,
+                  },
+                ]}
+              >
+                {companyBillingService.formatDate(
+                  billingStatus.latest_invoice.payment_due_date
+                )}
               </Text>
             </View>
           </View>
 
-          {companyBillingService.isInvoiceOverdue(billingStatus.latest_invoice.payment_due_date) && (
+          {companyBillingService.isInvoiceOverdue(
+            billingStatus.latest_invoice.payment_due_date
+          ) && (
             <View style={styles.overdueWarning}>
               <Ionicons name="warning" size={16} color="#EF4444" />
               <Text style={styles.overdueText}>
-                Overdue by {String(Math.abs(companyBillingService.getDaysUntilDue(billingStatus.latest_invoice.payment_due_date)))} days
+                Overdue by{' '}
+                {String(
+                  Math.abs(
+                    companyBillingService.getDaysUntilDue(
+                      billingStatus.latest_invoice.payment_due_date
+                    )
+                  )
+                )}{' '}
+                days
               </Text>
             </View>
           )}
@@ -233,13 +303,21 @@ export const CompanyCreditOverview: React.FC<CompanyCreditOverviewProps> = ({
       {/* Payment Terms */}
       <View style={styles.paymentTermsSection}>
         <Text style={styles.paymentTermsLabel}>Payment Terms</Text>
-        <Text style={styles.paymentTermsValue}>{billingStatus.payment_terms}</Text>
+        <Text style={styles.paymentTermsValue}>
+          {billingStatus.payment_terms}
+        </Text>
       </View>
 
       {onPress && (
         <View style={styles.actionButton}>
-          <Text style={styles.actionButtonText}>View Full Billing Dashboard</Text>
-          <Ionicons name="chevron-forward" size={16} color={theme.colors.text.secondary} />
+          <Text style={styles.actionButtonText}>
+            View Full Billing Dashboard
+          </Text>
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={theme.colors.text.secondary}
+          />
         </View>
       )}
     </TouchableOpacity>

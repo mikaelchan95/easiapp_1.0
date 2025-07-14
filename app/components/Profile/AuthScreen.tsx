@@ -31,10 +31,10 @@ export default function AuthScreen() {
     }
 
     setIsLoading(true);
-    
+
     try {
       const user = await signIn(email, password);
-      
+
       if (user) {
         Alert.alert('Success', `Welcome back, ${user.name}!`);
       } else {
@@ -51,7 +51,7 @@ export default function AuthScreen() {
   const handleDemoLogin = async () => {
     setEmail('mikael@thewinery.com.sg');
     setPassword('demo123');
-    
+
     // Small delay to show the auto-fill
     setTimeout(() => {
       handleAuth();
@@ -59,14 +59,14 @@ export default function AuthScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
-      
+
       <View style={[styles.statusBarSpacer, { height: insets.top }]} />
-      
+
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
@@ -142,10 +142,9 @@ export default function AuthScreen() {
             activeOpacity={0.8}
           >
             <Text style={styles.toggleButtonText}>
-              {isSignUp 
-                ? 'Already have an account? Sign In' 
-                : "Don't have an account? Sign Up"
-              }
+              {isSignUp
+                ? 'Already have an account? Sign In'
+                : "Don't have an account? Sign Up"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -263,4 +262,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
   },
-}); 
+});

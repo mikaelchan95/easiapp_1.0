@@ -120,20 +120,29 @@ const mockAppState = {
   userLocations: [],
   tabBarVisible: true,
   purchaseAchievement: { visible: false, data: null },
-  userStats: { totalPoints: 0, currentLevel: 1, totalSavings: 0, orderCount: 0 },
+  userStats: {
+    totalPoints: 0,
+    currentLevel: 1,
+    totalSavings: 0,
+    orderCount: 0,
+  },
   userSettings: {} as any,
 };
 
 const mockAppDispatch = jest.fn();
 
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <AppContext.Provider value={{ state: mockAppState, dispatch: mockAppDispatch }}>
+  <AppContext.Provider
+    value={{ state: mockAppState, dispatch: mockAppDispatch }}
+  >
     {children}
   </AppContext.Provider>
 );
 
 describe('BillingDashboard', () => {
-  const mockCompanyBillingService = companyBillingService as jest.Mocked<typeof companyBillingService>;
+  const mockCompanyBillingService = companyBillingService as jest.Mocked<
+    typeof companyBillingService
+  >;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -221,8 +230,8 @@ describe('BillingDashboard', () => {
 
     const { getByText } = render(
       <TestWrapper>
-        <BillingDashboard 
-          {...defaultProps} 
+        <BillingDashboard
+          {...defaultProps}
           onNavigateToInvoices={onNavigateToInvoices}
         />
       </TestWrapper>
@@ -241,8 +250,8 @@ describe('BillingDashboard', () => {
 
     const { getByText } = render(
       <TestWrapper>
-        <BillingDashboard 
-          {...defaultProps} 
+        <BillingDashboard
+          {...defaultProps}
           onNavigateToPaymentHistory={onNavigateToPaymentHistory}
         />
       </TestWrapper>
@@ -345,7 +354,9 @@ describe('BillingDashboard', () => {
     // Simulate pull to refresh
     fireEvent(getByTestId('billing-dashboard'), 'refresh');
 
-    expect(mockCompanyBillingService.getCompanyBillingData).toHaveBeenCalledTimes(2);
+    expect(
+      mockCompanyBillingService.getCompanyBillingData
+    ).toHaveBeenCalledTimes(2);
   });
 
   it('displays monthly spending comparison', async () => {
@@ -409,7 +420,7 @@ describe('BillingDashboard', () => {
   it('formats large currency amounts correctly', async () => {
     const largeAmountData = {
       ...mockBillingData,
-      currentBalance: 125000.50,
+      currentBalance: 125000.5,
       creditLimit: 200000,
     };
 
@@ -449,8 +460,8 @@ describe('BillingDashboard', () => {
 
     const { getByText } = render(
       <TestWrapper>
-        <BillingDashboard 
-          {...defaultProps} 
+        <BillingDashboard
+          {...defaultProps}
           onNavigateToSettings={onNavigateToSettings}
         />
       </TestWrapper>

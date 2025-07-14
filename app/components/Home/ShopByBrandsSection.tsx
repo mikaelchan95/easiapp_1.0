@@ -1,11 +1,11 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
   ScrollView,
-  Image 
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SvgXml } from 'react-native-svg';
@@ -49,7 +49,7 @@ const FEATURED_BRANDS: Brand[] = [
     logo: require('../../assets/brands/Macallan-logo.jpg'),
     logoType: 'image',
     productCount: 8,
-    category: 'Scotch Whisky'
+    category: 'Scotch Whisky',
   },
   {
     id: 'hennessy',
@@ -57,7 +57,7 @@ const FEATURED_BRANDS: Brand[] = [
     logo: require('../../assets/brands/Hennessy-Logo.png'),
     logoType: 'image',
     productCount: 5,
-    category: 'Cognac'
+    category: 'Cognac',
   },
   {
     id: 'lumina',
@@ -65,7 +65,7 @@ const FEATURED_BRANDS: Brand[] = [
     logo: require('../../assets/brands/Lumina.png'),
     logoType: 'image',
     productCount: 4,
-    category: 'Liqueur'
+    category: 'Liqueur',
   },
   {
     id: 'dom-perignon',
@@ -73,7 +73,7 @@ const FEATURED_BRANDS: Brand[] = [
     logo: require('../../assets/brands/Dom-Perignon-Logo.jpg'),
     logoType: 'image',
     productCount: 3,
-    category: 'Champagne'
+    category: 'Champagne',
   },
   {
     id: 'eldoria',
@@ -81,7 +81,7 @@ const FEATURED_BRANDS: Brand[] = [
     logo: require('../../assets/brands/Eldoria.png'),
     logoType: 'image',
     productCount: 6,
-    category: 'Premium Spirits'
+    category: 'Premium Spirits',
   },
   {
     id: 'louis-xiii',
@@ -89,7 +89,7 @@ const FEATURED_BRANDS: Brand[] = [
     logo: require('../../assets/brands/Louis-13_-300x300-1.webp'),
     logoType: 'image',
     productCount: 2,
-    category: 'Cognac'
+    category: 'Cognac',
   },
   {
     id: 'lush',
@@ -97,7 +97,7 @@ const FEATURED_BRANDS: Brand[] = [
     logo: require('../../assets/brands/Lush.png'),
     logoType: 'image',
     productCount: 5,
-    category: 'Fruit Liqueur'
+    category: 'Fruit Liqueur',
   },
   {
     id: 'johnnie-walker',
@@ -106,7 +106,7 @@ const FEATURED_BRANDS: Brand[] = [
     logoType: 'svg',
     svgContent: JOHNNIE_WALKER_SVG,
     productCount: 7,
-    category: 'Scotch Whisky'
+    category: 'Scotch Whisky',
   },
   {
     id: 'hofman',
@@ -114,7 +114,7 @@ const FEATURED_BRANDS: Brand[] = [
     logo: require('../../assets/brands/Hofman.png'),
     logoType: 'image',
     productCount: 3,
-    category: 'Peach Liqueur'
+    category: 'Peach Liqueur',
   },
   {
     id: 'regalia',
@@ -122,7 +122,7 @@ const FEATURED_BRANDS: Brand[] = [
     logo: require('../../assets/brands/Regalia.jpg'),
     logoType: 'image',
     productCount: 4,
-    category: 'Premium Spirits'
+    category: 'Premium Spirits',
   },
   {
     id: 'francois-dion',
@@ -130,8 +130,8 @@ const FEATURED_BRANDS: Brand[] = [
     logo: require('../../assets/brands/Francois Dion.png'),
     logoType: 'image',
     productCount: 2,
-    category: 'Fine Cognac'
-  }
+    category: 'Fine Cognac',
+  },
 ];
 
 interface ShopByBrandsSectionProps {
@@ -139,7 +139,10 @@ interface ShopByBrandsSectionProps {
   onViewAll: () => void;
 }
 
-export default function ShopByBrandsSection({ onBrandPress, onViewAll }: ShopByBrandsSectionProps) {
+export default function ShopByBrandsSection({
+  onBrandPress,
+  onViewAll,
+}: ShopByBrandsSectionProps) {
   const handleBrandPress = (brand: Brand) => {
     HapticFeedback.selection();
     onBrandPress(brand);
@@ -165,7 +168,7 @@ export default function ShopByBrandsSection({ onBrandPress, onViewAll }: ShopByB
 
     if (brand.logo) {
       return (
-        <Image 
+        <Image
           source={brand.logo}
           style={styles.brandLogoImage}
           resizeMode="contain"
@@ -192,9 +195,7 @@ export default function ShopByBrandsSection({ onBrandPress, onViewAll }: ShopByB
       accessibilityRole="button"
       accessibilityLabel={`Shop ${brand.name} products`}
     >
-      <View style={styles.brandLogoContainer}>
-        {renderBrandLogo(brand)}
-      </View>
+      <View style={styles.brandLogoContainer}>{renderBrandLogo(brand)}</View>
     </TouchableOpacity>
   );
 
@@ -203,13 +204,18 @@ export default function ShopByBrandsSection({ onBrandPress, onViewAll }: ShopByB
       {/* Section Header - Match ProductSectionCard pattern */}
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Ionicons name="storefront" size={20} color={COLORS.primary} style={styles.icon} />
+          <Ionicons
+            name="storefront"
+            size={20}
+            color={COLORS.primary}
+            style={styles.icon}
+          />
           <Text style={styles.title}>Shop by Brands</Text>
           <View style={styles.countBadge}>
             <Text style={styles.countText}>{FEATURED_BRANDS.length}</Text>
           </View>
         </View>
-        
+
         <TouchableOpacity
           style={styles.viewAllButton}
           onPress={handleViewAllPress}
@@ -224,8 +230,8 @@ export default function ShopByBrandsSection({ onBrandPress, onViewAll }: ShopByB
       </View>
 
       {/* Brands Grid */}
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.brandsContainer}
         style={styles.brandsScrollView}

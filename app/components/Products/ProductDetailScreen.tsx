@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { 
-  View, 
-  Text, 
-  Image, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
   Dimensions,
   ImageSourcePropType,
   FlatList,
   StatusBar,
-  Animated
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -23,11 +23,7 @@ import BuyButton from '../UI/BuyButton';
 import AnimatedFeedback from '../UI/AnimatedFeedback';
 import { CartNotificationContext } from '../../context/CartNotificationContext';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
-import { 
-  getProductPrice, 
-  formatPrice,
-  UserRole
-} from '../../utils/pricing';
+import { getProductPrice, formatPrice, UserRole } from '../../utils/pricing';
 import { formatFinancialAmount } from '../../utils/formatting';
 
 const { width } = Dimensions.get('window');
@@ -35,10 +31,13 @@ const { width } = Dimensions.get('window');
 // Cart Badge Component
 const CartBadge: React.FC = () => {
   const { state } = useContext(AppContext);
-  const cartItemCount = state.cart.reduce((total, item) => total + item.quantity, 0);
-  
+  const cartItemCount = state.cart.reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
+
   if (cartItemCount === 0) return null;
-  
+
   return (
     <View style={styles.cartBadge}>
       <Text style={styles.cartBadgeText}>
@@ -66,66 +65,86 @@ export default function ProductDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<RootStackParamList, 'ProductDetail'>>();
   const { id } = route.params || {};
-  
+
   if (!id) {
     return null; // or return an error screen
   }
-  
+
   // Use AppContext
   const { dispatch, state } = useContext(AppContext);
   const baseProduct = state.products.find(p => p.id === id);
   const insets = useSafeAreaInsets();
-  
+
   // Enhanced product with additional UI properties
-  const product: ExtendedProduct | undefined = baseProduct ? {
-    ...baseProduct,
-    sku: baseProduct.sku || `SKU-${baseProduct.id}`,
-    volumeOptions: [
-      { size: baseProduct.volume || '700ml', price: baseProduct.retailPrice || baseProduct.price || 0 },
-      { size: '1L', price: (baseProduct.retailPrice || baseProduct.price || 0) * 1.4 },
-      { size: '1.75L', price: (baseProduct.retailPrice || baseProduct.price || 0) * 2.2 }
-    ],
-    tastingNotes: baseProduct.description || 'A premium product with exceptional quality and craftsmanship.',
-    sameDayEligible: (baseProduct.retailPrice || baseProduct.price || 0) < 300
-  } : undefined;
+  const product: ExtendedProduct | undefined = baseProduct
+    ? {
+        ...baseProduct,
+        sku: baseProduct.sku || `SKU-${baseProduct.id}`,
+        volumeOptions: [
+          {
+            size: baseProduct.volume || '700ml',
+            price: baseProduct.retailPrice || baseProduct.price || 0,
+          },
+          {
+            size: '1L',
+            price: (baseProduct.retailPrice || baseProduct.price || 0) * 1.4,
+          },
+          {
+            size: '1.75L',
+            price: (baseProduct.retailPrice || baseProduct.price || 0) * 2.2,
+          },
+        ],
+        tastingNotes:
+          baseProduct.description ||
+          'A premium product with exceptional quality and craftsmanship.',
+        sameDayEligible:
+          (baseProduct.retailPrice || baseProduct.price || 0) < 300,
+      }
+    : undefined;
   const { showCartNotification } = useContext(CartNotificationContext);
-  
+
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const [addProgress, setAddProgress] = useState(0);
   const [showProgressAnimation, setShowProgressAnimation] = useState(false);
-  
+
   // Collapsible widget state
   const [isBusinessInfoExpanded, setIsBusinessInfoExpanded] = useState(false);
-  
+
   // Feedback state for errors and messages
   const [feedback, setFeedback] = useState({
     visible: false,
     type: 'success' as 'success' | 'error' | 'info' | 'loading',
-    message: ''
+    message: '',
   });
   const [selectedVolume, setSelectedVolume] = useState<VolumeOption | null>(
-    product?.volumeOptions && product.volumeOptions.length > 0 
-      ? product.volumeOptions[0] 
+    product?.volumeOptions && product.volumeOptions.length > 0
+      ? product.volumeOptions[0]
       : null
   );
 
   // Use centralized pricing for current product
-  const currentProductForPricing = product ? {
-    ...product,
-    retailPrice: selectedVolume ? selectedVolume.price : product.price,
-    tradePrice: selectedVolume ? selectedVolume.price * 0.85 : product.price * 0.85,
-    image: product.imageUrl,
-    sku: `SKU-${product.id}`,
-  } : null;
+  const currentProductForPricing = product
+    ? {
+        ...product,
+        retailPrice: selectedVolume ? selectedVolume.price : product.price,
+        tradePrice: selectedVolume
+          ? selectedVolume.price * 0.85
+          : product.price * 0.85,
+        image: product.imageUrl,
+        sku: `SKU-${product.id}`,
+      }
+    : null;
 
   const userRole = getUserRole(state.user);
-  
+
   // Get current price and remove GST
-  const currentPriceWithGST = currentProductForPricing ? getProductPrice(currentProductForPricing, userRole) : 0;
+  const currentPriceWithGST = currentProductForPricing
+    ? getProductPrice(currentProductForPricing, userRole)
+    : 0;
   const currentPrice = currentPriceWithGST / 1.09;
-  
+
   // Since stock management was removed, always show as in stock
   const currentInStock = true;
 
@@ -137,23 +156,23 @@ export default function ProductDetailScreen() {
 
   const handleAddToCart = () => {
     if (!currentProductForPricing || isAdding) return; // Prevent multiple clicks
-    
+
     // Set loading state
     setIsAdding(true);
-    
+
     // Add to cart immediately (optimistic update)
-    dispatch({ 
-      type: 'ADD_TO_CART', 
-      payload: { 
-        product: currentProductForPricing, 
-        quantity: quantity 
-      } 
+    dispatch({
+      type: 'ADD_TO_CART',
+      payload: {
+        product: currentProductForPricing,
+        quantity: quantity,
+      },
     });
-    
+
     // Show success feedback
     setJustAdded(true);
     showCartNotification(product.name, quantity);
-    
+
     // Reset states after animation
     setTimeout(() => {
       setIsAdding(false);
@@ -161,18 +180,17 @@ export default function ProductDetailScreen() {
     }, 1500);
   };
 
-
   return (
     <View style={styles.container}>
       {/* Status Bar */}
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Enhanced Header with Safe Area */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
-            <TouchableOpacity 
-              style={styles.backButton} 
+            <TouchableOpacity
+              style={styles.backButton}
               onPress={() => navigation.goBack()}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               accessibilityLabel="Go back"
@@ -182,23 +200,25 @@ export default function ProductDetailScreen() {
               <Ionicons name="chevron-back" size={24} color={COLORS.text} />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle} numberOfLines={1}>
               Product Details
             </Text>
           </View>
-          
+
           <View style={styles.headerRight}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.headerIconButton}
-              onPress={() => {/* Add share functionality */}}
+              onPress={() => {
+                /* Add share functionality */
+              }}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Ionicons name="share-outline" size={22} color={COLORS.text} />
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.cartButton}
               onPress={() => navigation.navigate('Main', { screen: 'Cart' })}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -213,14 +233,22 @@ export default function ProductDetailScreen() {
         </View>
       </View>
 
-      <ScrollView 
-        style={[styles.scroll, { backgroundColor: COLORS.card }]} 
+      <ScrollView
+        style={[styles.scroll, { backgroundColor: COLORS.card }]}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
       >
         {/* Product Image */}
         <View style={styles.imageContainer}>
-          <Image source={typeof product.imageUrl === 'string' ? { uri: product.imageUrl } : product.imageUrl} style={styles.image} resizeMode="cover" />
+          <Image
+            source={
+              typeof product.imageUrl === 'string'
+                ? { uri: product.imageUrl }
+                : product.imageUrl
+            }
+            style={styles.image}
+            resizeMode="cover"
+          />
         </View>
 
         {/* Continuous Content Section */}
@@ -229,50 +257,74 @@ export default function ProductDetailScreen() {
           <View style={styles.categoryRow}>
             <Text style={styles.categoryText}>{product.category}</Text>
           </View>
-          
+
           {/* Product Name */}
           <Text style={styles.productName}>{product.name}</Text>
-          
+
           {/* Price */}
           <View style={styles.priceSection}>
-            <Text style={styles.mainPrice}>{formatFinancialAmount(currentPrice)}</Text>
+            <Text style={styles.mainPrice}>
+              {formatFinancialAmount(currentPrice)}
+            </Text>
             <Text style={styles.priceSubtext}>
-              {userRole === 'trade' ? 'Trade Price (excl. GST)' : 'Retail Price (excl. GST)'}
+              {userRole === 'trade'
+                ? 'Trade Price (excl. GST)'
+                : 'Retail Price (excl. GST)'}
             </Text>
           </View>
 
           {/* Product Details */}
           <View style={styles.sectionDivider} />
           <Text style={styles.sectionTitle}>Product Details</Text>
-          
+
           <View style={styles.detailsGrid}>
             <View style={styles.detailItem}>
               <View style={styles.detailLeft}>
-                <Ionicons name="barcode-outline" size={18} color={COLORS.textSecondary} />
+                <Ionicons
+                  name="barcode-outline"
+                  size={18}
+                  color={COLORS.textSecondary}
+                />
                 <Text style={styles.detailLabel}>SKU</Text>
               </View>
               <Text style={styles.detailValue}>{product.sku}</Text>
             </View>
             <View style={styles.detailItem}>
               <View style={styles.detailLeft}>
-                <Ionicons name="cube-outline" size={18} color={COLORS.textSecondary} />
+                <Ionicons
+                  name="cube-outline"
+                  size={18}
+                  color={COLORS.textSecondary}
+                />
                 <Text style={styles.detailLabel}>Volume</Text>
               </View>
-              <Text style={styles.detailValue}>{product.volume || '700ml'}</Text>
+              <Text style={styles.detailValue}>
+                {product.volume || '700ml'}
+              </Text>
             </View>
             <View style={styles.detailItem}>
               <View style={styles.detailLeft}>
-                <Ionicons name="checkmark-circle-outline" size={18} color={COLORS.success} />
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={18}
+                  color={COLORS.success}
+                />
                 <Text style={styles.detailLabel}>Stock</Text>
               </View>
               <Text style={styles.detailValue}>In Stock</Text>
             </View>
             <View style={styles.detailItem}>
               <View style={styles.detailLeft}>
-                <Ionicons name="pricetag-outline" size={18} color={COLORS.textSecondary} />
+                <Ionicons
+                  name="pricetag-outline"
+                  size={18}
+                  color={COLORS.textSecondary}
+                />
                 <Text style={styles.detailLabel}>Unit Price</Text>
               </View>
-              <Text style={styles.detailValue}>{formatFinancialAmount(currentPrice)}</Text>
+              <Text style={styles.detailValue}>
+                {formatFinancialAmount(currentPrice)}
+              </Text>
             </View>
           </View>
 
@@ -282,27 +334,30 @@ export default function ProductDetailScreen() {
               <View style={styles.sectionDivider} />
               <Text style={styles.sectionTitle}>Select Size</Text>
               <View style={styles.volumeOptions}>
-                {product.volumeOptions.map((option) => (
+                {product.volumeOptions.map(option => (
                   <TouchableOpacity
                     key={option.size}
                     style={[
                       styles.volumeOption,
-                      selectedVolume?.size === option.size && styles.selectedVolumeOption
+                      selectedVolume?.size === option.size &&
+                        styles.selectedVolumeOption,
                     ]}
                     onPress={() => handleSelectVolume(option)}
                   >
-                    <Text 
+                    <Text
                       style={[
                         styles.volumeText,
-                        selectedVolume?.size === option.size && styles.selectedVolumeText
+                        selectedVolume?.size === option.size &&
+                          styles.selectedVolumeText,
                       ]}
                     >
                       {option.size}
                     </Text>
-                    <Text 
+                    <Text
                       style={[
                         styles.volumePrice,
-                        selectedVolume?.size === option.size && styles.selectedVolumeText
+                        selectedVolume?.size === option.size &&
+                          styles.selectedVolumeText,
                       ]}
                     >
                       {formatFinancialAmount(option.price)}
@@ -312,85 +367,155 @@ export default function ProductDetailScreen() {
               </View>
             </>
           )}
-          
+
           {/* Business Information */}
           <View style={styles.sectionDivider} />
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.businessHeader}
             onPress={() => setIsBusinessInfoExpanded(!isBusinessInfoExpanded)}
           >
             <View style={styles.businessHeaderLeft}>
-              <Ionicons name="information-circle-outline" size={22} color={COLORS.text} />
-              <Text style={styles.businessTitle}>Delivery, Return & Security</Text>
+              <Ionicons
+                name="information-circle-outline"
+                size={22}
+                color={COLORS.text}
+              />
+              <Text style={styles.businessTitle}>
+                Delivery, Return & Security
+              </Text>
             </View>
-            <Ionicons 
-              name={isBusinessInfoExpanded ? "chevron-up" : "chevron-down"} 
-              size={20} 
-              color={COLORS.textSecondary} 
+            <Ionicons
+              name={isBusinessInfoExpanded ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={COLORS.textSecondary}
             />
           </TouchableOpacity>
-          
+
           {isBusinessInfoExpanded && (
             <View style={styles.businessContent}>
               <View style={styles.businessSection}>
                 <View style={styles.businessSectionHeader}>
                   <Ionicons name="car-outline" size={18} color={COLORS.text} />
-                  <Text style={styles.businessSectionTitle}>Delivery (Singapore Only)</Text>
+                  <Text style={styles.businessSectionTitle}>
+                    Delivery (Singapore Only)
+                  </Text>
                 </View>
                 <View style={styles.businessItems}>
                   <View style={styles.businessItem}>
-                    <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
-                    <Text style={styles.businessPoint}>Standard: 2-3 business days</Text>
+                    <Ionicons
+                      name="time-outline"
+                      size={14}
+                      color={COLORS.textSecondary}
+                    />
+                    <Text style={styles.businessPoint}>
+                      Standard: 2-3 business days
+                    </Text>
                   </View>
                   <View style={styles.businessItem}>
-                    <Ionicons name="flash-outline" size={14} color={COLORS.textSecondary} />
-                    <Text style={styles.businessPoint}>Express: Next business day</Text>
+                    <Ionicons
+                      name="flash-outline"
+                      size={14}
+                      color={COLORS.textSecondary}
+                    />
+                    <Text style={styles.businessPoint}>
+                      Express: Next business day
+                    </Text>
                   </View>
                   <View style={styles.businessItem}>
-                    <Ionicons name="gift-outline" size={14} color={COLORS.success} />
-                    <Text style={styles.businessPoint}>Free delivery on orders over $500</Text>
+                    <Ionicons
+                      name="gift-outline"
+                      size={14}
+                      color={COLORS.success}
+                    />
+                    <Text style={styles.businessPoint}>
+                      Free delivery on orders over $500
+                    </Text>
                   </View>
                 </View>
               </View>
-              
+
               <View style={styles.businessSection}>
                 <View style={styles.businessSectionHeader}>
-                  <Ionicons name="return-up-back-outline" size={18} color={COLORS.text} />
+                  <Ionicons
+                    name="return-up-back-outline"
+                    size={18}
+                    color={COLORS.text}
+                  />
                   <Text style={styles.businessSectionTitle}>Returns</Text>
                 </View>
                 <View style={styles.businessItems}>
                   <View style={styles.businessItem}>
-                    <Ionicons name="calendar-outline" size={14} color={COLORS.textSecondary} />
-                    <Text style={styles.businessPoint}>30-day return window from delivery</Text>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={14}
+                      color={COLORS.textSecondary}
+                    />
+                    <Text style={styles.businessPoint}>
+                      30-day return window from delivery
+                    </Text>
                   </View>
                   <View style={styles.businessItem}>
-                    <Ionicons name="cube-outline" size={14} color={COLORS.textSecondary} />
-                    <Text style={styles.businessPoint}>Original packaging required</Text>
+                    <Ionicons
+                      name="cube-outline"
+                      size={14}
+                      color={COLORS.textSecondary}
+                    />
+                    <Text style={styles.businessPoint}>
+                      Original packaging required
+                    </Text>
                   </View>
                   <View style={styles.businessItem}>
-                    <Ionicons name="chatbox-outline" size={14} color={COLORS.textSecondary} />
-                    <Text style={styles.businessPoint}>Contact support for RMA number</Text>
+                    <Ionicons
+                      name="chatbox-outline"
+                      size={14}
+                      color={COLORS.textSecondary}
+                    />
+                    <Text style={styles.businessPoint}>
+                      Contact support for RMA number
+                    </Text>
                   </View>
                 </View>
               </View>
-              
+
               <View style={styles.businessSection}>
                 <View style={styles.businessSectionHeader}>
-                  <Ionicons name="shield-checkmark-outline" size={18} color={COLORS.text} />
+                  <Ionicons
+                    name="shield-checkmark-outline"
+                    size={18}
+                    color={COLORS.text}
+                  />
                   <Text style={styles.businessSectionTitle}>Security</Text>
                 </View>
                 <View style={styles.businessItems}>
                   <View style={styles.businessItem}>
-                    <Ionicons name="lock-closed-outline" size={14} color={COLORS.textSecondary} />
-                    <Text style={styles.businessPoint}>SSL encrypted transactions</Text>
+                    <Ionicons
+                      name="lock-closed-outline"
+                      size={14}
+                      color={COLORS.textSecondary}
+                    />
+                    <Text style={styles.businessPoint}>
+                      SSL encrypted transactions
+                    </Text>
                   </View>
                   <View style={styles.businessItem}>
-                    <Ionicons name="card-outline" size={14} color={COLORS.textSecondary} />
-                    <Text style={styles.businessPoint}>Business credit terms available</Text>
+                    <Ionicons
+                      name="card-outline"
+                      size={14}
+                      color={COLORS.textSecondary}
+                    />
+                    <Text style={styles.businessPoint}>
+                      Business credit terms available
+                    </Text>
                   </View>
                   <View style={styles.businessItem}>
-                    <Ionicons name="people-outline" size={14} color={COLORS.textSecondary} />
-                    <Text style={styles.businessPoint}>Dedicated account support</Text>
+                    <Ionicons
+                      name="people-outline"
+                      size={14}
+                      color={COLORS.textSecondary}
+                    />
+                    <Text style={styles.businessPoint}>
+                      Dedicated account support
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -401,25 +526,39 @@ export default function ProductDetailScreen() {
       </ScrollView>
 
       {/* Enhanced Bottom Actions */}
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <View
+        style={[
+          styles.bottomBar,
+          { paddingBottom: Math.max(insets.bottom, 16) },
+        ]}
+      >
         <View style={styles.bottomContent}>
           {/* Price Summary Row */}
           <View style={styles.priceSummaryRow}>
             <View style={styles.totalPriceSection}>
               <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalPrice}>{formatFinancialAmount(currentPrice * quantity)}</Text>
+              <Text style={styles.totalPrice}>
+                {formatFinancialAmount(currentPrice * quantity)}
+              </Text>
             </View>
-            
+
             {/* Quantity Selector */}
             <View style={styles.qtySelector}>
               <TouchableOpacity
-                style={[styles.qtyButton, quantity <= 1 && styles.qtyButtonDisabled]}
+                style={[
+                  styles.qtyButton,
+                  quantity <= 1 && styles.qtyButtonDisabled,
+                ]}
                 onPress={() => setQuantity(Math.max(1, quantity - 1))}
                 disabled={quantity <= 1}
                 activeOpacity={0.7}
                 hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
-                <Ionicons name="remove" size={20} color={quantity <= 1 ? COLORS.inactive : COLORS.text} />
+                <Ionicons
+                  name="remove"
+                  size={20}
+                  color={quantity <= 1 ? COLORS.inactive : COLORS.text}
+                />
               </TouchableOpacity>
               <View style={styles.qtyValueContainer}>
                 <Text style={styles.qtyValue}>{quantity}</Text>
@@ -434,33 +573,45 @@ export default function ProductDetailScreen() {
               </TouchableOpacity>
             </View>
           </View>
-          
+
           {/* Action Buttons Row */}
           <View style={styles.actionButtonsRow}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.addToCartButton}
               onPress={handleAddToCart}
               disabled={isAdding}
             >
               {isAdding ? (
                 <View style={styles.buttonContent}>
-                  <Ionicons name="hourglass-outline" size={20} color={COLORS.accent} />
+                  <Ionicons
+                    name="hourglass-outline"
+                    size={20}
+                    color={COLORS.accent}
+                  />
                   <Text style={styles.addToCartText}>Adding...</Text>
                 </View>
               ) : justAdded ? (
                 <View style={styles.buttonContent}>
-                  <Ionicons name="checkmark-circle" size={20} color={COLORS.accent} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={20}
+                    color={COLORS.accent}
+                  />
                   <Text style={styles.addToCartText}>Added!</Text>
                 </View>
               ) : (
                 <View style={styles.buttonContent}>
-                  <Ionicons name="cart-outline" size={20} color={COLORS.accent} />
+                  <Ionicons
+                    name="cart-outline"
+                    size={20}
+                    color={COLORS.accent}
+                  />
                   <Text style={styles.addToCartText}>Add to Cart</Text>
                 </View>
               )}
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.buyNowButton}
               onPress={() => {
                 handleAddToCart();
@@ -477,16 +628,12 @@ export default function ProductDetailScreen() {
           </View>
         </View>
       </View>
-      
+
       {/* Feedback notification */}
       <AnimatedFeedback
         type={justAdded ? 'success' : isAdding ? 'loading' : 'info'}
         message={
-          justAdded 
-            ? `Added to cart!`
-            : isAdding 
-              ? 'Adding to cart...' 
-              : ''
+          justAdded ? `Added to cart!` : isAdding ? 'Adding to cart...' : ''
         }
         visible={isAdding || justAdded}
         position="bottom"
@@ -494,7 +641,7 @@ export default function ProductDetailScreen() {
         streakCount={0}
         progressValue={showProgressAnimation ? addProgress : 0}
       />
-      
+
       {/* Error feedback */}
       <AnimatedFeedback
         type={feedback.type}
@@ -589,7 +736,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  
+
   // Continuous Content Section
   contentSection: {
     backgroundColor: COLORS.card,
@@ -633,14 +780,14 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
     marginVertical: SPACING.md,
   },
-  
+
   // Section Title
   sectionTitle: {
     ...TYPOGRAPHY.h3,
     marginBottom: SPACING.sm,
     fontWeight: '600',
   },
-  
+
   // Product Details
   detailsGrid: {
     gap: SPACING.xs,
@@ -772,7 +919,7 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     paddingTop: SPACING.lg,
   },
-  
+
   // Price Summary Row
   priceSummaryRow: {
     flexDirection: 'row',
@@ -793,7 +940,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.text,
   },
-  
+
   // Enhanced Quantity Selector
   qtySelector: {
     flexDirection: 'row',
@@ -830,7 +977,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
-  
+
   // Action Buttons Row
   actionButtonsRow: {
     flexDirection: 'row',
@@ -944,4 +1091,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-}); 
+});

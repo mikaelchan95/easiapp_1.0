@@ -52,7 +52,11 @@ export const UserPointsCard: React.FC<UserPointsCardProps> = ({
         disabled={!onPress}
       >
         <View style={styles.errorContent}>
-          <Ionicons name="alert-circle-outline" size={20} color={COLORS.textSecondary} />
+          <Ionicons
+            name="alert-circle-outline"
+            size={20}
+            color={COLORS.textSecondary}
+          />
           <Text style={styles.errorText}>Unable to load points</Text>
         </View>
       </TouchableOpacity>
@@ -68,7 +72,9 @@ export const UserPointsCard: React.FC<UserPointsCardProps> = ({
       <View style={styles.compactRow}>
         <View style={styles.compactItem}>
           <Ionicons name="star" size={16} color={COLORS.warning} />
-          <Text style={styles.compactValue}>{formatNumber(userPoints.points_balance)}</Text>
+          <Text style={styles.compactValue}>
+            {formatNumber(userPoints.points_balance)}
+          </Text>
           <Text style={styles.compactLabel}>Points</Text>
         </View>
         <View style={styles.divider} />
@@ -79,7 +85,11 @@ export const UserPointsCard: React.FC<UserPointsCardProps> = ({
         </View>
       </View>
       {onPress && (
-        <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={COLORS.textSecondary}
+        />
       )}
     </View>
   ) : (
@@ -91,19 +101,27 @@ export const UserPointsCard: React.FC<UserPointsCardProps> = ({
         </View>
         {onPress && (
           <TouchableOpacity onPress={onPress}>
-            <Ionicons name="time-outline" size={20} color={COLORS.textSecondary} />
+            <Ionicons
+              name="time-outline"
+              size={20}
+              color={COLORS.textSecondary}
+            />
           </TouchableOpacity>
         )}
       </View>
 
       <View style={styles.mainBalance}>
         <Text style={styles.balanceLabel}>Current Balance</Text>
-        <Text style={styles.balanceValue}>{formatNumber(userPoints.points_balance)}</Text>
+        <Text style={styles.balanceValue}>
+          {formatNumber(userPoints.points_balance)}
+        </Text>
       </View>
 
       <View style={styles.statsRow}>
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>{formatNumber(userPoints.lifetime_points)}</Text>
+          <Text style={styles.statValue}>
+            {formatNumber(userPoints.lifetime_points)}
+          </Text>
           <Text style={styles.statLabel}>Lifetime Points</Text>
         </View>
         <View style={styles.statDivider} />

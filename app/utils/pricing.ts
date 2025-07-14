@@ -52,7 +52,10 @@ export const getPriceWithGST = (basePrice: number): number => {
 /**
  * Get the final price for a product (base price + GST)
  */
-export const getProductPrice = (product: Product, userRole: UserRole): number => {
+export const getProductPrice = (
+  product: Product,
+  userRole: UserRole
+): number => {
   const basePrice = getBasePrice(product, userRole);
   return getPriceWithGST(basePrice);
 };
@@ -60,16 +63,20 @@ export const getProductPrice = (product: Product, userRole: UserRole): number =>
 /**
  * Get price breakdown for display
  */
-export const getPriceBreakdown = (product: Product, userRole: UserRole, quantity: number = 1) => {
+export const getPriceBreakdown = (
+  product: Product,
+  userRole: UserRole,
+  quantity: number = 1
+) => {
   const basePrice = getBasePrice(product, userRole);
   const unitBasePrice = basePrice;
   const unitGST = calculateGST(basePrice);
   const unitTotal = getPriceWithGST(basePrice);
-  
+
   const totalBasePrice = unitBasePrice * quantity;
   const totalGST = unitGST * quantity;
   const totalWithGST = unitTotal * quantity;
-  
+
   return {
     unitBasePrice: Number(unitBasePrice.toFixed(2)),
     unitGST: Number(unitGST.toFixed(2)),
@@ -77,7 +84,7 @@ export const getPriceBreakdown = (product: Product, userRole: UserRole, quantity
     totalBasePrice: Number(totalBasePrice.toFixed(2)),
     totalGST: Number(totalGST.toFixed(2)),
     totalWithGST: Number(totalWithGST.toFixed(2)),
-    quantity
+    quantity,
   };
 };
 
@@ -91,51 +98,61 @@ export const formatPrice = (price: number): string => {
 /**
  * Calculate cart totals with GST breakdown
  */
-export const calculateCartTotals = (cartItems: CartItem[], userRole: UserRole) => {
+export const calculateCartTotals = (
+  cartItems: CartItem[],
+  userRole: UserRole
+) => {
   const subtotal = cartItems.reduce((total, item) => {
     const basePrice = getBasePrice(item.product, userRole);
-    return total + (basePrice * item.quantity);
+    return total + basePrice * item.quantity;
   }, 0);
-  
+
   const gst = calculateGST(subtotal);
   const total = subtotal + gst;
-  
+
   return {
     subtotal: Number(subtotal.toFixed(2)),
     gst: Number(gst.toFixed(2)),
-    total: Number(total.toFixed(2))
+    total: Number(total.toFixed(2)),
   };
 };
 
 /**
  * Calculate delivery fee based on order total and delivery type
  */
-export const calculateDeliveryFee = (orderTotal: number, deliveryType: 'standard' | 'express' = 'standard'): number => {
+export const calculateDeliveryFee = (
+  orderTotal: number,
+  deliveryType: 'standard' | 'express' = 'standard'
+): number => {
   // Free delivery over $150
   if (orderTotal >= 150) {
     return 0;
   }
-  
+
   // Standard delivery fee
   if (deliveryType === 'standard') {
-    return 5.00;
+    return 5.0;
   }
-  
+
   // Express delivery fee
-  return 8.00;
+  return 8.0;
 };
 
 /**
  * Calculate order total including delivery
  */
-export const calculateOrderTotal = (cartItems: CartItem[], userRole: UserRole, deliveryType: 'standard' | 'express' = 'standard') => {
+export const calculateOrderTotal = (
+  cartItems: CartItem[],
+  userRole: UserRole,
+  deliveryType: 'standard' | 'express' = 'standard'
+) => {
   const cartTotals = calculateCartTotals(cartItems, userRole);
   const deliveryFee = calculateDeliveryFee(cartTotals.total, deliveryType);
-  
+
   return {
     ...cartTotals,
     deliveryFee: Number(deliveryFee.toFixed(2)),
-    finalTotal: Number((cartTotals.total + deliveryFee).toFixed(2))
+    finalTotal: Number((cartTotals.total + deliveryFee).toFixed(2)),
   };
 };
 

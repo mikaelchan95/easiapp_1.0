@@ -9,12 +9,12 @@ const DeliveryLocationScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { setDeliveryLocation } = useDeliveryLocation();
-  
+
   const handleLocationSelect = async (location: LocationSuggestion) => {
     try {
       // Set the selected location globally
       await setDeliveryLocation(location);
-      
+
       // Check if we should return to a specific screen
       const params = route.params as any;
       if (params?.returnToScreen) {

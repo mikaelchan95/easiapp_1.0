@@ -13,7 +13,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../utils/theme';
-import companyBillingService, { BillingSettings } from '../../services/companyBillingService';
+import companyBillingService, {
+  BillingSettings,
+} from '../../services/companyBillingService';
 
 interface BillingSettingsProps {
   companyId: string;
@@ -43,7 +45,9 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
   const [sendReminders, setSendReminders] = useState(true);
   const [reminderDays, setReminderDays] = useState('7,3,1');
   const [lateFeeEnabled, setLateFeeEnabled] = useState(false);
-  const [lateFeeType, setLateFeeType] = useState<'percentage' | 'fixed'>('percentage');
+  const [lateFeeType, setLateFeeType] = useState<'percentage' | 'fixed'>(
+    'percentage'
+  );
   const [lateFeeAmount, setLateFeeAmount] = useState('5');
   const [gracePeriodDays, setGracePeriodDays] = useState('7');
 
@@ -55,7 +59,8 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
     setLoading(true);
     setError(null);
 
-    const { data, error: fetchError } = await companyBillingService.getBillingSettings(companyId);
+    const { data, error: fetchError } =
+      await companyBillingService.getBillingSettings(companyId);
 
     if (fetchError) {
       setError(fetchError);
@@ -96,7 +101,10 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
 
       const gracePeriod = parseInt(gracePeriodDays);
       if (gracePeriod < 0 || gracePeriod > 30) {
-        Alert.alert('Validation Error', 'Grace period must be between 0 and 30 days');
+        Alert.alert(
+          'Validation Error',
+          'Grace period must be between 0 and 30 days'
+        );
         setSaving(false);
         return;
       }
@@ -134,10 +142,11 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
         grace_period_days: gracePeriod,
       };
 
-      const { data, error: saveError } = await companyBillingService.updateBillingSettings(
-        companyId,
-        updatedSettings
-      );
+      const { data, error: saveError } =
+        await companyBillingService.updateBillingSettings(
+          companyId,
+          updatedSettings
+        );
 
       if (saveError) {
         setError(saveError);
@@ -170,9 +179,7 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
   const renderSection = (title: string, children: React.ReactNode) => (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.sectionContent}>
-        {children}
-      </View>
+      <View style={styles.sectionContent}>{children}</View>
     </View>
   );
 
@@ -185,15 +192,20 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
     <View style={styles.toggleRow}>
       <View style={styles.toggleInfo}>
         <Text style={styles.toggleLabel}>{label}</Text>
-        {description && <Text style={styles.toggleDescription}>{description}</Text>}
+        {description && (
+          <Text style={styles.toggleDescription}>{description}</Text>
+        )}
       </View>
       <Switch
         value={value}
-        onValueChange={(val) => {
+        onValueChange={val => {
           onValueChange(val);
           markChanged();
         }}
-        trackColor={{ false: theme.colors.frame, true: theme.colors.text.primary }}
+        trackColor={{
+          false: theme.colors.frame,
+          true: theme.colors.text.primary,
+        }}
         thumbColor={value ? theme.colors.canvas : '#f4f3f4'}
       />
     </View>
@@ -212,7 +224,7 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
       <TextInput
         style={[styles.input, multiline && styles.multilineInput]}
         value={value}
-        onChangeText={(text) => {
+        onChangeText={text => {
           onChangeText(text);
           markChanged();
         }}
@@ -233,22 +245,24 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
     <View style={styles.pickerGroup}>
       <Text style={styles.inputLabel}>{label}</Text>
       <View style={styles.pickerContainer}>
-        {options.map((option) => (
+        {options.map(option => (
           <TouchableOpacity
             key={option.value}
             style={[
               styles.pickerOption,
-              value === option.value && styles.selectedPickerOption
+              value === option.value && styles.selectedPickerOption,
             ]}
             onPress={() => {
               onValueChange(option.value);
               markChanged();
             }}
           >
-            <Text style={[
-              styles.pickerOptionText,
-              value === option.value && styles.selectedPickerOptionText
-            ]}>
+            <Text
+              style={[
+                styles.pickerOptionText,
+                value === option.value && styles.selectedPickerOptionText,
+              ]}
+            >
               {option.label}
             </Text>
           </TouchableOpacity>
@@ -269,7 +283,11 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
   if (error) {
     return (
       <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle-outline" size={48} color={theme.colors.text.secondary} />
+        <Ionicons
+          name="alert-circle-outline"
+          size={48}
+          color={theme.colors.text.secondary}
+        />
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={loadSettings}>
           <Text style={styles.retryText}>Try Again</Text>
@@ -283,7 +301,11 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
+          <Ionicons
+            name="chevron-back"
+            size={24}
+            color={theme.colors.text.primary}
+          />
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Billing Settings</Text>
@@ -294,7 +316,8 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* General Settings */}
-        {renderSection('General Settings', (
+        {renderSection(
+          'General Settings',
           <>
             {renderPicker(
               'Billing Frequency',
@@ -306,7 +329,7 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
               ],
               setBillingFrequency
             )}
-            
+
             {renderInput(
               'Billing Day of Month',
               billingDayOfMonth,
@@ -322,10 +345,11 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
               'Automatically generate and send invoices'
             )}
           </>
-        ))}
+        )}
 
         {/* Email Settings */}
-        {renderSection('Email Settings', (
+        {renderSection(
+          'Email Settings',
           <>
             {renderInput(
               'Primary Billing Email',
@@ -351,18 +375,20 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
               'Automatically send reminder emails before due dates'
             )}
 
-            {sendReminders && renderInput(
-              'Reminder Days',
-              reminderDays,
-              setReminderDays,
-              'Days before due date (e.g., 7,3,1)',
-              'numeric'
-            )}
+            {sendReminders &&
+              renderInput(
+                'Reminder Days',
+                reminderDays,
+                setReminderDays,
+                'Days before due date (e.g., 7,3,1)',
+                'numeric'
+              )}
           </>
-        ))}
+        )}
 
         {/* Late Fee Settings */}
-        {renderSection('Late Fee Settings', (
+        {renderSection(
+          'Late Fee Settings',
           <>
             {renderToggle(
               'Enable Late Fees',
@@ -384,7 +410,9 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
                 )}
 
                 {renderInput(
-                  lateFeeType === 'percentage' ? 'Late Fee Percentage' : 'Late Fee Amount (SGD)',
+                  lateFeeType === 'percentage'
+                    ? 'Late Fee Percentage'
+                    : 'Late Fee Amount (SGD)',
                   lateFeeAmount,
                   setLateFeeAmount,
                   lateFeeType === 'percentage' ? '5' : '50.00',
@@ -401,16 +429,21 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
               </>
             )}
           </>
-        ))}
+        )}
 
         {/* Help Section */}
         <View style={styles.helpSection}>
           <Text style={styles.helpTitle}>Need Help?</Text>
           <Text style={styles.helpText}>
-            Contact support for assistance with billing configuration or if you need custom billing terms.
+            Contact support for assistance with billing configuration or if you
+            need custom billing terms.
           </Text>
           <TouchableOpacity style={styles.helpButton}>
-            <Ionicons name="help-circle-outline" size={16} color={theme.colors.text.primary} />
+            <Ionicons
+              name="help-circle-outline"
+              size={16}
+              color={theme.colors.text.primary}
+            />
             <Text style={styles.helpButtonText}>Contact Support</Text>
           </TouchableOpacity>
         </View>
@@ -419,16 +452,16 @@ export const BillingSettingsScreen: React.FC<BillingSettingsProps> = ({
       {/* Action Buttons */}
       {hasChanges && (
         <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            style={styles.resetButton} 
+          <TouchableOpacity
+            style={styles.resetButton}
             onPress={handleReset}
             disabled={saving}
           >
             <Text style={styles.resetButtonText}>Reset</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.saveButton, saving && styles.savingButton]} 
+
+          <TouchableOpacity
+            style={[styles.saveButton, saving && styles.savingButton]}
             onPress={handleSave}
             disabled={saving}
           >
