@@ -93,7 +93,7 @@ export type RootStackParamList = {
   EditCompanyInfo: undefined;
   EditTeamMember: { userId: string };
   BillingInvoices: undefined;
-  BillingDashboard: undefined;
+  // BillingDashboard: undefined; // Duplicate removed
   CreditPayment: undefined;
   // Approval workflow screens
   OrderApprovalList: {
@@ -119,6 +119,10 @@ export type RootStackParamList = {
   BillingSettings: { 
     companyId?: string; 
     companyName?: string; 
+  };
+  InvoiceGeneration: undefined;
+  InvoiceViewer: { 
+    invoiceId?: string; 
   };
   InvoicesList: {
     companyId?: string;
@@ -213,7 +217,7 @@ export type AppStackParamList = {
   EditCompanyInfo: undefined;
   EditTeamMember: { userId: string };
   BillingInvoices: undefined;
-  BillingDashboard: undefined;
+  // BillingDashboard: undefined; // Duplicate removed
   CreditPayment: undefined;
   // Approval workflow screens
   OrderApprovalList: {
@@ -239,6 +243,10 @@ export type AppStackParamList = {
   BillingSettings: { 
     companyId?: string; 
     companyName?: string; 
+  };
+  InvoiceGeneration: undefined;
+  InvoiceViewer: { 
+    invoiceId?: string; 
   };
   InvoicesList: {
     companyId?: string;
