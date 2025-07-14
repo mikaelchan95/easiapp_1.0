@@ -303,7 +303,10 @@ export default function RewardsScreen() {
   const [showHistory, setShowHistory] = useState(false);
   const [redeeming, setRedeeming] = useState<string | null>(null);
   const [showExpiringPoints, setShowExpiringPoints] = useState(false);
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+  const [claimedReward, setClaimedReward] = useState<string>('');
   const insets = useSafeAreaInsets();
+  const notificationAnim = useRef(new Animated.Value(-100)).current;
 
   const user = appState.user;
 
@@ -489,15 +492,45 @@ export default function RewardsScreen() {
     return Math.min(Math.max(progress, 0), 100);
   }, [state.userRewards?.lifetimePoints, state.userRewards?.tier]);
 
+  const showNotification = (rewardTitle: string) => {
+    setClaimedReward(rewardTitle);
+    setShowSuccessNotification(true);
+
+    // Animate notification in
+    Animated.spring(notificationAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 8,
+    }).start();
+
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+      Animated.timing(notificationAnim, {
+        toValue: -100,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setShowSuccessNotification(false);
+      });
+    }, 3000);
+  };
+
   const handleRedeem = async (rewardId: string) => {
     setRedeeming(rewardId);
-    const success = await redeemReward(rewardId);
-    setRedeeming(null);
 
-    if (success) {
-      // Show success feedback
-      // In real app, would show a toast/notification
-    }
+    // Find the reward item for notification
+    const reward = state.rewardsCatalog.find(r => r.id === rewardId);
+
+    // Add a small delay to show loading state
+    setTimeout(async () => {
+      const success = await redeemReward(rewardId);
+      setRedeeming(null);
+
+      if (success && reward) {
+        showNotification(reward.title);
+      }
+    }, 1000);
   };
 
   const filteredRewards =
@@ -506,16 +539,18 @@ export default function RewardsScreen() {
       : state.rewardsCatalog.filter(r => r.type === selectedCategory);
 
   const categories = [
-    { id: 'all', label: 'All' },
-    { id: 'voucher', label: 'Vouchers' },
-    { id: 'bundle', label: 'Bundles' },
-    { id: 'swag', label: 'Merch' },
+    { id: 'all', label: 'All Rewards' },
+    { id: 'voucher', label: 'Instant Savings' },
+    { id: 'bundle', label: 'Exclusive Bundles' },
+    { id: 'swag', label: 'Limited Edition' },
   ];
 
   const renderRewardItem = ({
     item,
+    index,
   }: {
     item: (typeof state.rewardsCatalog)[0];
+    index: number;
   }) => {
     const canRedeem = (state.userRewards?.points || 0) >= item.points;
     const isRedeeming = redeeming === item.id;
@@ -531,49 +566,121 @@ export default function RewardsScreen() {
       }
     };
 
+    const getRewardTypeColor = () => {
+      switch (item.type) {
+        case 'voucher':
+          return COLORS.text;
+        case 'bundle':
+          return COLORS.textSecondary;
+        default:
+          return COLORS.text;
+      }
+    };
+
     return (
-      <View style={styles.rewardCard}>
-        <View style={styles.rewardHeader}>
-          <View style={styles.rewardIconContainer}>
-            <Ionicons name={getRewardIcon()} size={20} color={COLORS.text} />
-          </View>
-          <View style={styles.rewardContent}>
-            <Text style={styles.rewardTitle}>{item.title}</Text>
-            <Text style={styles.rewardDescription}>{item.description}</Text>
-          </View>
-        </View>
-
-        <View style={styles.rewardFooter}>
-          <View style={styles.rewardPointsContainer}>
-            <Text style={styles.rewardPoints}>
-              {item.points.toLocaleString()}
-            </Text>
-            <Text style={styles.rewardPointsLabel}>points</Text>
-          </View>
-
-          <TouchableOpacity
-            style={[
-              styles.redeemButton,
-              !canRedeem && styles.redeemButtonDisabled,
-            ]}
-            onPress={() => handleRedeem(item.id)}
-            disabled={!canRedeem || isRedeeming}
-            activeOpacity={0.7}
-          >
-            {isRedeeming ? (
-              <ActivityIndicator size="small" color={COLORS.accent} />
-            ) : (
-              <Text
+      <View
+        style={[styles.rewardCard, !canRedeem && styles.rewardCardDisabled]}
+      >
+        <TouchableOpacity
+          activeOpacity={0.95}
+          style={styles.rewardCardTouchable}
+        >
+          {/* Enhanced header with better visual hierarchy */}
+          <View style={styles.rewardHeader}>
+            <View style={styles.rewardTopRow}>
+              <View
                 style={[
-                  styles.redeemButtonText,
-                  !canRedeem && styles.redeemButtonTextDisabled,
+                  styles.rewardIconContainer,
+                  { backgroundColor: COLORS.background },
                 ]}
               >
-                {canRedeem ? 'Redeem' : 'Insufficient'}
+                <Ionicons
+                  name={getRewardIcon()}
+                  size={24}
+                  color={getRewardTypeColor()}
+                />
+              </View>
+              <View style={styles.rewardTypeContainer}>
+                <Text style={styles.rewardType}>{item.type.toUpperCase()}</Text>
+              </View>
+            </View>
+
+            <View style={styles.rewardPointsHeader}>
+              <Text style={styles.rewardPointsValue}>
+                {item.points.toLocaleString()}
               </Text>
-            )}
-          </TouchableOpacity>
-        </View>
+              <Text style={styles.rewardPointsLabel}>pts</Text>
+            </View>
+          </View>
+
+          {/* Enhanced content section */}
+          <View style={styles.rewardContent}>
+            <Text style={styles.rewardTitle} numberOfLines={2}>
+              {item.title}
+            </Text>
+            <Text style={styles.rewardDescription} numberOfLines={3}>
+              {item.description}
+            </Text>
+          </View>
+
+          {/* Enhanced footer with improved button */}
+          <View style={styles.rewardFooter}>
+            <View style={styles.rewardMetaInfo}>
+              {!canRedeem && (
+                <Text style={styles.rewardAvailability}>
+                  {`${(item.points - (state.userRewards?.points || 0)).toLocaleString()} more points needed`}
+                </Text>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.redeemButton,
+                !canRedeem && styles.redeemButtonDisabled,
+                isRedeeming && styles.redeemButtonLoading,
+              ]}
+              onPress={() => handleRedeem(item.id)}
+              disabled={!canRedeem || isRedeeming}
+              activeOpacity={0.9}
+            >
+              {isRedeeming ? (
+                <View style={styles.redeemButtonContent}>
+                  <ActivityIndicator size="small" color={COLORS.accent} />
+                  <Text style={[styles.redeemButtonText, { marginLeft: 8 }]}>
+                    Claiming...
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.redeemButtonContent}>
+                  <Text
+                    style={[
+                      styles.redeemButtonText,
+                      !canRedeem && styles.redeemButtonTextDisabled,
+                    ]}
+                  >
+                    {canRedeem ? 'Claim' : 'Keep Earning'}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Progress indicator for insufficient points */}
+          {!canRedeem && (
+            <View style={styles.rewardProgressContainer}>
+              <View style={styles.rewardProgressBar}>
+                <View
+                  style={[
+                    styles.rewardProgressFill,
+                    {
+                      width: `${Math.min(((state.userRewards?.points || 0) / item.points) * 100, 100)}%`,
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
     );
   };
@@ -581,6 +688,31 @@ export default function RewardsScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
+
+      {/* Success Notification */}
+      {showSuccessNotification && (
+        <Animated.View
+          style={[
+            styles.successNotification,
+            {
+              top: insets.top + 10,
+              transform: [{ translateY: notificationAnim }],
+            },
+          ]}
+        >
+          <View style={styles.notificationContent}>
+            <View style={styles.notificationIcon}>
+              <Ionicons name="checkmark" size={20} color={COLORS.accent} />
+            </View>
+            <View style={styles.notificationText}>
+              <Text style={styles.notificationTitle}>Reward Claimed!</Text>
+              <Text style={styles.notificationSubtitle} numberOfLines={1}>
+                {claimedReward}
+              </Text>
+            </View>
+          </View>
+        </Animated.View>
+      )}
 
       {/* Header Container */}
       <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
@@ -835,22 +967,17 @@ export default function RewardsScreen() {
             <View style={styles.catalogTitleContainer}>
               <Ionicons
                 name="gift"
-                size={20}
+                size={24}
                 color={COLORS.primary}
                 style={styles.catalogIcon}
               />
-              <Text style={styles.catalogTitle}>Redeem Rewards</Text>
-              <View style={styles.catalogCountBadge}>
-                <Text style={styles.catalogCountText}>
-                  {filteredRewards.length}
-                </Text>
-              </View>
+              <Text style={styles.catalogTitle}>Rewards</Text>
             </View>
             <TouchableOpacity
               style={styles.catalogViewAllButton}
               onPress={() => navigation.navigate('RewardsAnalytics')}
             >
-              <Text style={styles.catalogViewAllText}>View All</Text>
+              <Text style={styles.catalogViewAllText}>See All</Text>
               <Ionicons
                 name="chevron-forward"
                 size={16}
@@ -859,43 +986,89 @@ export default function RewardsScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Category Filter */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.categoryScroll}
-          >
-            {categories.map(category => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryButton,
-                  selectedCategory === category.id &&
-                    styles.categoryButtonActive,
-                ]}
-                onPress={() => setSelectedCategory(category.id)}
-              >
-                <Text
-                  style={[
-                    styles.categoryButtonText,
-                    selectedCategory === category.id &&
-                      styles.categoryButtonTextActive,
-                  ]}
-                >
-                  {category.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          {/* Enhanced Category Filter */}
+          <View style={styles.categoryFilterContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.categoryScroll}
+              contentContainerStyle={styles.categoryScrollContent}
+            >
+              {categories.map(category => {
+                const isActive = selectedCategory === category.id;
 
-          {/* Rewards List */}
-          <FlatList
-            data={filteredRewards}
-            renderItem={renderRewardItem}
-            keyExtractor={item => item.id}
-            scrollEnabled={false}
-            contentContainerStyle={styles.rewardsList}
-          />
+                return (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[
+                      styles.categoryButton,
+                      isActive && styles.categoryButtonActive,
+                    ]}
+                    onPress={() => setSelectedCategory(category.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryButtonText,
+                        isActive && styles.categoryButtonTextActive,
+                      ]}
+                    >
+                      {category.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* Rewards List with Loading State */}
+          {state.rewardsCatalog.length === 0 ? (
+            <View style={styles.rewardsLoadingContainer}>
+              <View style={styles.rewardsLoadingCard}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+                <Text style={styles.rewardsLoadingText}>
+                  Discovering Your Rewards
+                </Text>
+                <Text style={styles.rewardsLoadingSubtext}>
+                  We're curating the perfect rewards just for you
+                </Text>
+              </View>
+            </View>
+          ) : filteredRewards.length === 0 ? (
+            <View style={styles.rewardsEmptyContainer}>
+              <View style={styles.rewardsEmptyCard}>
+                <Ionicons
+                  name="search-outline"
+                  size={48}
+                  color={COLORS.textSecondary}
+                />
+                <Text style={styles.rewardsEmptyTitle}>
+                  No rewards in this category
+                </Text>
+                <Text style={styles.rewardsEmptyText}>
+                  Don't worry! We have plenty of other amazing rewards waiting
+                  for you
+                </Text>
+                <TouchableOpacity
+                  style={styles.rewardsEmptyButton}
+                  onPress={() => setSelectedCategory('all')}
+                >
+                  <Text style={styles.rewardsEmptyButtonText}>
+                    Browse All Rewards
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredRewards}
+              renderItem={renderRewardItem}
+              keyExtractor={item => item.id}
+              scrollEnabled={false}
+              contentContainerStyle={styles.rewardsList}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
         </View>
 
         {/* Bottom Padding */}
@@ -1142,31 +1315,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.lg,
   },
   catalogTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   catalogIcon: {
-    marginRight: SPACING.element,
-  },
-  catalogTitle: {
-    ...TYPOGRAPHY.h3,
-    fontWeight: '700',
-    color: COLORS.primary,
     marginRight: SPACING.sm,
   },
-  catalogCountBadge: {
-    backgroundColor: COLORS.primary + '20',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  catalogCountText: {
-    ...TYPOGRAPHY.caption,
+  catalogTitle: {
+    ...TYPOGRAPHY.h2,
+    fontWeight: '700',
     color: COLORS.primary,
-    fontWeight: '600',
+  },
+  catalogSubtitle: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.lg,
+    lineHeight: 22,
   },
   catalogViewAllButton: {
     flexDirection: 'row',
@@ -1184,24 +1352,34 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     marginRight: 4,
   },
+  categoryFilterContainer: {
+    marginBottom: SPACING.xl,
+  },
   categoryScroll: {
     marginBottom: SPACING.md,
   },
-  categoryButton: {
+  categoryScrollContent: {
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    marginRight: SPACING.sm,
+    gap: SPACING.md,
+  },
+  categoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     backgroundColor: COLORS.card,
-    borderRadius: 20,
+    borderRadius: 28,
     borderWidth: 1,
     borderColor: COLORS.border,
+    minHeight: 48,
   },
   categoryButtonActive: {
     backgroundColor: COLORS.text,
     borderColor: COLORS.text,
+    ...SHADOWS.light,
   },
   categoryButtonText: {
-    ...TYPOGRAPHY.bodySmall,
+    ...TYPOGRAPHY.body,
     fontWeight: '500',
     color: COLORS.text,
   },
@@ -1214,74 +1392,211 @@ const styles = StyleSheet.create({
   rewardsList: {
     paddingBottom: SPACING.xl,
   },
+  rewardsLoadingContainer: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xl,
+  },
+  rewardsLoadingCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: SPACING.xl,
+    alignItems: 'center',
+    ...SHADOWS.light,
+  },
+  rewardsLoadingText: {
+    ...TYPOGRAPHY.h5,
+    color: COLORS.text,
+    marginTop: SPACING.md,
+    fontWeight: '600',
+  },
+  rewardsLoadingSubtext: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
+    textAlign: 'center',
+  },
+  rewardsEmptyContainer: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xl,
+  },
+  rewardsEmptyCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: SPACING.xl,
+    alignItems: 'center',
+    ...SHADOWS.light,
+  },
+  rewardsEmptyTitle: {
+    ...TYPOGRAPHY.h5,
+    color: COLORS.text,
+    marginTop: SPACING.md,
+    fontWeight: '600',
+  },
+  rewardsEmptyText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  rewardsEmptyButton: {
+    backgroundColor: COLORS.text,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: 12,
+    marginTop: SPACING.md,
+    ...SHADOWS.light,
+  },
+  rewardsEmptyButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.accent,
+    fontWeight: '600',
+  },
   rewardCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 12,
-    padding: SPACING.lg,
+    borderRadius: 16,
     marginBottom: SPACING.md,
-    ...SHADOWS.light,
+    ...SHADOWS.medium,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  rewardCardDisabled: {
+    opacity: 0.7,
+    backgroundColor: COLORS.background,
+  },
+  rewardCardTouchable: {
+    padding: SPACING.lg,
   },
   rewardHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: SPACING.md,
   },
+  rewardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   rewardIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  rewardContent: {
+  rewardTypeContainer: {
     flex: 1,
   },
+  rewardType: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  rewardPointsHeader: {
+    alignItems: 'flex-end',
+  },
+  rewardPointsValue: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.text,
+    fontWeight: '700',
+    lineHeight: 24,
+  },
+  rewardPointsLabel: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  rewardContent: {
+    marginBottom: SPACING.md,
+  },
   rewardTitle: {
-    ...TYPOGRAPHY.h5,
+    ...TYPOGRAPHY.h4,
     marginBottom: SPACING.xs,
     color: COLORS.text,
+    fontWeight: '600',
+    lineHeight: 22,
   },
   rewardDescription: {
-    ...TYPOGRAPHY.caption,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
+    lineHeight: 20,
   },
   rewardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: SPACING.sm,
   },
-  rewardPointsContainer: {
-    alignItems: 'flex-start',
+  rewardMetaInfo: {
+    flex: 1,
+    marginRight: SPACING.md,
   },
-  rewardPoints: {
-    ...TYPOGRAPHY.h5,
-    color: COLORS.text,
-    fontWeight: '600',
-  },
-  rewardPointsLabel: {
-    ...TYPOGRAPHY.small,
+  rewardAvailability: {
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
-    marginTop: 2,
+    fontWeight: '500',
   },
   redeemButton: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.text,
-    borderRadius: 8,
-    minWidth: 80,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.success,
+    borderRadius: 12,
+    minWidth: 120,
+    minHeight: 44,
+    justifyContent: 'center',
     alignItems: 'center',
+    ...SHADOWS.light,
+    shadowColor: COLORS.success,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   redeemButtonDisabled: {
     backgroundColor: COLORS.border,
+    shadowColor: 'rgba(0,0,0,0.1)',
+    shadowOpacity: 0.1,
+  },
+  redeemButtonLoading: {
+    backgroundColor: COLORS.success,
+    shadowColor: COLORS.success,
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  redeemButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   redeemButtonText: {
-    ...TYPOGRAPHY.bodySmall,
+    ...TYPOGRAPHY.button,
     color: COLORS.accent,
     fontWeight: '600',
+    fontSize: 18,
   },
   redeemButtonTextDisabled: {
     color: COLORS.textSecondary,
+  },
+  rewardProgressContainer: {
+    marginTop: SPACING.sm,
+  },
+  rewardProgressBar: {
+    height: 3,
+    backgroundColor: COLORS.border,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  rewardProgressFill: {
+    height: '100%',
+    backgroundColor: COLORS.text,
+    borderRadius: 2,
   },
 
   // Modal Styles
@@ -1347,7 +1662,7 @@ const styles = StyleSheet.create({
   // Quick Actions Card
   quickActionsCard: {
     marginHorizontal: SPACING.md,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.xl,
     padding: SPACING.lg,
     backgroundColor: COLORS.card,
     borderRadius: 12,
@@ -1501,7 +1816,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
   },
   loadingText: {
-    ...TYPOGRAPHY.bodyLarge,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
     marginTop: SPACING.md,
   },
@@ -1512,11 +1827,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
   },
   authRequiredText: {
-    ...TYPOGRAPHY.bodyLarge,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
     marginTop: SPACING.md,
     marginBottom: SPACING.lg,
     textAlign: 'center',
+  },
+  modalSubtitle: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+  },
+  historyUser: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
+  },
+  historyPointsContainer: {
+    alignItems: 'flex-end',
+  },
+  historyBalance: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+  },
+  emptyText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: SPACING.sm,
+  },
+  emptySubtext: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: SPACING.xs,
   },
   signInButton: {
     backgroundColor: COLORS.primary,
@@ -1529,5 +1879,48 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.button,
     color: COLORS.accent,
     fontWeight: '600',
+  },
+
+  // Success Notification
+  successNotification: {
+    position: 'absolute',
+    left: SPACING.md,
+    right: SPACING.md,
+    zIndex: 1000,
+    backgroundColor: COLORS.success,
+    borderRadius: 16,
+    ...SHADOWS.medium,
+    shadowColor: COLORS.success,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  notificationContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+  },
+  notificationIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.accent + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.md,
+  },
+  notificationText: {
+    flex: 1,
+  },
+  notificationTitle: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.accent,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  notificationSubtitle: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.accent,
+    opacity: 0.9,
   },
 });
