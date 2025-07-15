@@ -1950,13 +1950,9 @@ export const supabaseService = {
       let paymentStatus = 'pending';
       let isCompanyCredit = false;
 
-      // Check if this is a company credit order (company paying with credit terms)
-      if (
-        orderData.companyId &&
-        orderData.paymentMethod &&
-        ['COD', 'NET7', 'NET30', 'NET60'].includes(orderData.paymentMethod.type)
-      ) {
-        // Company credit order - use company's payment terms
+      // Check if this is a company order
+      if (orderData.companyId) {
+        // Company order - use company's payment terms
         const { data: company, error: companyError } = await supabase
           .from('companies')
           .select('payment_terms')
@@ -1964,16 +1960,23 @@ export const supabaseService = {
           .single();
 
         if (company && !companyError) {
-          paymentMethod =
-            orderData.paymentMethod.type || company.payment_terms || 'NET30';
+          paymentMethod = company.payment_terms || 'NET30';
           paymentStatus = 'paid'; // Company orders are automatically "paid" via credit
           isCompanyCredit = true;
           console.log(
             `🏢 Company credit order - using payment terms: ${paymentMethod}`
           );
+        } else {
+          // Fallback to NET30 if company payment terms not found
+          paymentMethod = 'NET30';
+          paymentStatus = 'paid';
+          isCompanyCredit = true;
+          console.log(
+            `🏢 Company credit order - using fallback payment terms: ${paymentMethod}`
+          );
         }
       } else {
-        // Individual order or company user paying with personal payment method
+        // Individual order
         paymentMethod = orderData.paymentMethod?.type || 'credit_card';
         paymentStatus = 'pending';
         isCompanyCredit = false;
@@ -2141,11 +2144,19 @@ export const supabaseService = {
         }
       }
 
-      // Award points for individual orders when payment is confirmed
+      // Award points for orders when payment is confirmed
       let pointsAwarded = null;
       if (!isCompanyCredit && paymentStatus === 'pending') {
         // For individual orders, award points immediately (simulating instant payment processing)
         console.log('🎯 Awarding points for individual order...');
+        pointsAwarded = await this.awardPointsForOrder(
+          session.user.id,
+          orderData.total,
+          order.id
+        );
+      } else if (isCompanyCredit && paymentStatus === 'paid') {
+        // For company orders, award points immediately since they're "paid" via credit
+        console.log('🎯 Awarding points for company order...');
         pointsAwarded = await this.awardPointsForOrder(
           session.user.id,
           orderData.total,
