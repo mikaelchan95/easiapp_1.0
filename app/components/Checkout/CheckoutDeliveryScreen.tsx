@@ -97,7 +97,7 @@ export default function CheckoutDeliveryScreen() {
           subtotal={state.cart.reduce(
             (sum, item) =>
               sum +
-              (item.product.trade_price || item.product.retail_price) *
+              (item.product.tradePrice || item.product.retailPrice) *
                 item.quantity,
             0
           )}
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.xs,
+    paddingTop: SPACING.md,
     paddingBottom: 0,
     backgroundColor: COLORS.card,
   },

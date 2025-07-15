@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...TYPOGRAPHY.h4,
-    fontWeight: '800',
+    fontWeight: '700',
     color: COLORS.text,
     marginBottom: 2,
     letterSpacing: -0.3,
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   },
   itemPrice: {
     ...TYPOGRAPHY.body,
-    fontWeight: '800',
+    fontWeight: '700',
     color: COLORS.text,
     minWidth: 80,
     textAlign: 'right',
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     ...TYPOGRAPHY.small,
-    fontWeight: '800',
+    fontWeight: '700',
     marginBottom: 4,
     color: COLORS.text,
     letterSpacing: 0.3,
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
   },
   sameDayText: {
     ...TYPOGRAPHY.small,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#FF9800',
     letterSpacing: 0.3,
   },
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   },
   paymentName: {
     ...TYPOGRAPHY.body,
-    fontWeight: '800',
+    fontWeight: '700',
     marginBottom: 4,
     color: COLORS.text,
     letterSpacing: -0.2,
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     ...TYPOGRAPHY.body,
-    fontWeight: '800',
+    fontWeight: '700',
     color: COLORS.text,
     letterSpacing: -0.2,
   },
@@ -529,13 +529,13 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     ...TYPOGRAPHY.h4,
-    fontWeight: '800',
+    fontWeight: '700',
     color: COLORS.text,
     letterSpacing: -0.3,
   },
   totalValue: {
     ...TYPOGRAPHY.h2,
-    fontWeight: '800',
+    fontWeight: '700',
     color: COLORS.text,
     letterSpacing: -0.5,
   },

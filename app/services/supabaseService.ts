@@ -771,8 +771,12 @@ export const supabaseService = {
       if (userData.accountType === 'company') {
         console.log('🏢 Creating company account for first user (admin)');
 
-        // Generate company ID
-        const companyId = crypto.randomUUID();
+        // Generate company ID - simple UUID generator for React Native
+        const companyId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          const r = Math.random() * 16 | 0;
+          const v = c == 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
 
         // Create company record first
         const companyData: Partial<DatabaseCompany> = {
@@ -1216,7 +1220,11 @@ export const supabaseService = {
 
       // In a real app, you'd send an email invitation and create a pending user
       // For now, we'll create the user directly
-      const newUserId = crypto.randomUUID();
+      const newUserId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
 
       const dbUser: Partial<DatabaseUser> = {
         id: newUserId,
@@ -1859,30 +1867,30 @@ export const supabaseService = {
       }
 
       // Log the points transaction to audit trail
-      const { error: auditError } = await supabase.from('points_audit').insert([
-        {
-          id: crypto.randomUUID(),
-          user_id: userId,
-          company_id: null, // Individual order
-          transaction_type: 'earned_purchase',
-          points_amount: pointsEarned,
-          points_balance_before: user.points || 0,
-          points_balance_after: newPoints,
-          reference_id: orderId,
-          reference_type: 'order',
-          description: `Points earned from order purchase ($${orderTotal})`,
-          metadata: {
-            order_total: orderTotal,
-            points_earned: pointsEarned,
-            rate: '2 points per dollar',
-          },
-          created_at: new Date().toISOString(),
-        },
-      ]);
+      // TODO: Create points_audit table in database migration
+      // const { error: auditError } = await supabase.from('points_audit').insert([
+      //   {
+      //     user_id: userId,
+      //     company_id: null, // Individual order
+      //     transaction_type: 'earned_purchase',
+      //     points_amount: pointsEarned,
+      //     points_balance_before: user.points || 0,
+      //     points_balance_after: newPoints,
+      //     reference_id: orderId,
+      //     reference_type: 'order',
+      //     description: `Points earned from order purchase ($${orderTotal})`,
+      //     metadata: {
+      //       order_total: orderTotal,
+      //       points_earned: pointsEarned,
+      //       rate: '2 points per dollar',
+      //     },
+      //     created_at: new Date().toISOString(),
+      //   },
+      // ]);
 
-      if (auditError) {
-        console.error('❌ Error logging points audit:', auditError);
-      }
+      // if (auditError) {
+      //   console.error('❌ Error logging points audit:', auditError);
+      // }
 
       console.log(
         `✅ Points awarded: ${pointsEarned} points (${user.points || 0} → ${newPoints})`
@@ -1918,6 +1926,7 @@ export const supabaseService = {
       }
 
       console.log('✅ User authenticated, creating order...');
+      console.log('📋 Order data received:', JSON.stringify(orderData, null, 2));
 
       // Generate order number
       const currentYear = new Date().getFullYear();
@@ -1966,6 +1975,7 @@ export const supabaseService = {
         company_id: orderData.companyId || null,
         order_number: orderNumber,
         status: 'pending',
+        order_type: orderData.companyId ? 'company' : 'standard',
         subtotal: orderData.subtotal,
         gst: orderData.gst,
         delivery_fee: orderData.deliveryFee,
@@ -1973,6 +1983,7 @@ export const supabaseService = {
         currency: 'SGD',
         payment_method: paymentMethod,
         payment_status: paymentStatus,
+        approval_status: orderData.companyId ? 'pending' : 'not_required',
         delivery_address: JSON.stringify(orderData.deliveryAddress), // Store as JSONB
         delivery_date: orderData.deliverySlot?.date
           ? convertToISODate(orderData.deliverySlot.date)
@@ -1982,23 +1993,33 @@ export const supabaseService = {
         updated_at: new Date().toISOString(),
       };
 
+      console.log('📝 Order insert data:', JSON.stringify(orderInsert, null, 2));
+
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert([orderInsert])
         .select()
         .single();
 
-      if (orderError) {
+      if (orderError || !order) {
         console.error('❌ Error creating order:', orderError);
-        throw orderError;
+        throw orderError || new Error('Order creation failed - no data returned');
       }
 
       console.log('✅ Order created:', order.id);
 
       // Create order items
-      const orderItems = orderData.items.map((item, index) => {
+      const orderItems = await Promise.all(
+        orderData.items.map(async (item, index) => {
+        console.log(`🔍 Processing item ${index + 1}:`, JSON.stringify(item, null, 2));
+        
         // Handle both UUID and string IDs - convert mock IDs to real UUIDs
-        let productId = item.product.id;
+        let productId = item.product_id || item.product?.id;
+        
+        if (!productId) {
+          console.error('❌ Missing product ID for item:', item);
+          throw new Error(`Missing product ID for item at index ${index}`);
+        }
 
         // If it's a simple string like "1", "2", etc., map to actual database UUIDs
         if (typeof productId === 'string' && productId.match(/^\d+$/)) {
@@ -2017,22 +2038,46 @@ export const supabaseService = {
           productId =
             mockToUuidMap[productId] || 'f60fc98b-6a76-4a66-9f65-b9b2078644d4';
           console.log(
-            `🔄 Mapped mock product ID ${item.product.id} to UUID ${productId} (${item.product.name})`
+            `🔄 Mapped mock product ID ${item.product_id || item.product?.id} to UUID ${productId} (${item.product_name || item.product?.name})`
           );
+        }
+
+        // Fetch product details from database if not provided
+        let productName = item.product_name || item.product?.name;
+        let unitPrice = item.unit_price || item.product?.tradePrice || item.product?.retailPrice || item.product?.price;
+        let imageUrl = item.product?.image || item.product?.imageUrl;
+
+        if (!productName || !unitPrice) {
+          console.log(`🔍 Fetching product details for ID: ${productId}`);
+          const { data: product, error: productError } = await supabase
+            .from('products')
+            .select('name, retail_price, trade_price, image_url')
+            .eq('id', productId)
+            .single();
+
+          if (product && !productError) {
+            productName = productName || product.name;
+            unitPrice = unitPrice || product.retail_price;
+            imageUrl = imageUrl || product.image_url;
+            console.log(`✅ Product details fetched: ${product.name} - $${product.retail_price}`);
+          } else {
+            console.error(`❌ Failed to fetch product details for ID: ${productId}`, productError);
+            throw new Error(`Failed to fetch product details for ID: ${productId}`);
+          }
         }
 
         return {
           order_id: order.id,
           product_id: productId,
-          product_name: item.product.name,
+          product_name: productName,
           quantity: item.quantity,
-          unit_price: item.product.retailPrice || item.product.price,
-          total_price:
-            item.quantity * (item.product.retailPrice || item.product.price),
-          product_image_url: item.product.image || item.product.imageUrl,
+          unit_price: unitPrice,
+          total_price: item.total_price || (item.quantity * unitPrice),
+          product_image_url: imageUrl,
           created_at: new Date().toISOString(),
         };
-      });
+      })
+      );
 
       const { error: itemsError } = await supabase
         .from('order_items')
