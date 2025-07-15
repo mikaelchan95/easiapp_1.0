@@ -70,7 +70,7 @@ export default function CheckoutReviewScreen() {
       const orderData = {
         userId: state.user?.id,
         companyId:
-          state.user?.account_type === 'company' ? state.company?.id : null,
+          state.user?.accountType === 'company' ? state.company?.id : null,
         items: state.cart.map(item => ({
           product_id: item.product.id,
           product_name: item.product.name,
@@ -95,14 +95,38 @@ export default function CheckoutReviewScreen() {
       const result = await supabaseService.createOrder(orderData);
 
       if (result && result.orderId && result.orderNumber) {
+        const { orderId, orderNumber, pointsAwarded } = result;
+
+        // Update user points in AppContext if points were awarded
+        if (pointsAwarded && state.user) {
+          dispatch({
+            type: 'UPDATE_USER_PROFILE',
+            payload: {
+              points: pointsAwarded.currentPoints,
+            },
+          });
+        }
+
         // Clear cart and checkout state
         dispatch({ type: 'CLEAR_CART' });
         checkoutDispatch({ type: 'RESET_CHECKOUT' });
 
+        // Show purchase achievement to trigger points award in RewardsContext
+        // Use the actual points earned from the database
+        const pointsEarned = pointsAwarded?.pointsEarned || Math.floor(orderSummary.finalTotal * 2);
+        dispatch({
+          type: 'SHOW_PURCHASE_ACHIEVEMENT',
+          payload: {
+            pointsEarned,
+            orderId: orderNumber,
+            orderTotal: orderSummary.finalTotal,
+          },
+        });
+
         // Navigate directly to success screen
         navigation.navigate('OrderSuccess' as never, {
-          orderId: result.orderId,
-          orderNumber: result.orderNumber,
+          orderId: orderId,
+          orderNumber: orderNumber,
           total: orderSummary.finalTotal,
           deliveryDate: checkoutState.deliverySlot?.date,
           deliveryTime: checkoutState.deliverySlot?.timeSlot,

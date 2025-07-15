@@ -87,85 +87,61 @@ const transformDatabaseProductToProduct = (
   };
 };
 
-// Helper function to check if a column exists
-const checkColumnExists = async (
-  tableName: string,
-  columnName: string
-): Promise<boolean> => {
-  try {
-    const { data, error } = await supabase.rpc('check_column_exists', {
-      table_name: tableName,
-      column_name: columnName,
-    });
-    return data === true;
-  } catch {
-    // If the RPC doesn't exist, try a simple query to test
-    try {
-      await supabase.from(tableName).select(columnName).limit(0);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-};
+// Column existence check function removed as it's not used
 
 export const productsService = {
   // Get products with filters
   async getProducts(filters: ProductFilters = {}): Promise<Product[]> {
-    try {
-      let query = supabase.from('products').select('*');
+    let query = supabase.from('products').select('*');
 
-      // Add is_active filter (column exists in database)
-      query = query.eq('is_active', true);
+    // Add is_active filter (column exists in database)
+    query = query.eq('is_active', true);
 
-      // Apply filters
-      if (filters.category && filters.category !== 'all') {
-        query = query.eq('category', filters.category);
-      }
+    // Apply filters
+    if (filters.category && filters.category !== 'all') {
+      query = query.eq('category', filters.category);
+    }
 
-      if (filters.featured) {
-        query = query.eq('is_featured', true);
-      }
+    if (filters.featured) {
+      query = query.eq('is_featured', true);
+    }
 
-      if (filters.search) {
-        query = query.or(
-          `name.ilike.%${filters.search}%,description.ilike.%${filters.search}%,category.ilike.%${filters.search}%`
+    if (filters.search) {
+      query = query.or(
+        `name.ilike.%${filters.search}%,description.ilike.%${filters.search}%,category.ilike.%${filters.search}%`
+      );
+    }
+
+    if (filters.priceRange) {
+      query = query
+        .gte('retail_price', filters.priceRange.min)
+        .lte('retail_price', filters.priceRange.max);
+    }
+
+    // Apply sorting
+    const sortBy = filters.sortBy || 'created_at';
+    const sortOrder = filters.sortOrder || 'desc';
+    query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+
+    // Apply pagination
+    if (filters.limit) {
+      if (filters.offset) {
+        query = query.range(
+          filters.offset,
+          filters.offset + filters.limit - 1
         );
+      } else {
+        query = query.limit(filters.limit);
       }
+    }
 
-      if (filters.priceRange) {
-        query = query
-          .gte('retail_price', filters.priceRange.min)
-          .lte('retail_price', filters.priceRange.max);
-      }
+    const { data: products, error } = await query;
 
-      // Apply sorting
-      const sortBy = filters.sortBy || 'created_at';
-      const sortOrder = filters.sortOrder || 'desc';
-      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
-
-      // Apply pagination
-      if (filters.limit) {
-        if (filters.offset) {
-          query = query.range(
-            filters.offset,
-            filters.offset + filters.limit - 1
-          );
-        } else {
-          query = query.limit(filters.limit);
-        }
-      }
-
-      const { data: products, error } = await query;
-
-      if (error) {
-        throw error;
-      }
-
-      return products ? products.map(transformDatabaseProductToProduct) : [];
-    } catch (error) {
+    if (error) {
       throw error;
     }
+
+    return products ? products.map(transformDatabaseProductToProduct) : [];
   },
 
   // Get single product by ID
