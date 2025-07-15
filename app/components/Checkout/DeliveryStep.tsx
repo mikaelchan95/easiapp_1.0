@@ -431,6 +431,7 @@ const DeliveryStep: React.FC<DeliveryStepProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.background,
+    paddingHorizontal: SPACING.md,
   },
   title: {
     ...TYPOGRAPHY.h1,
@@ -445,7 +446,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   section: {
-    marginHorizontal: SPACING.md,
     marginBottom: SPACING.lg,
   },
   sectionHeader: {
@@ -483,8 +483,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderRadius: 20,
     padding: SPACING.lg,
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.lg,
     ...SHADOWS.medium,
     elevation: 6,
   },
@@ -576,8 +575,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderRadius: 20,
     padding: SPACING.lg,
-    marginHorizontal: SPACING.md,
-    marginTop: SPACING.sm,
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.md,
     ...SHADOWS.medium,
     elevation: 6,
   },
@@ -670,7 +669,8 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   calendarContainer: {
-    marginHorizontal: 0, // Remove negative margin for better consistency
+    marginBottom: SPACING.sm,
+    marginHorizontal: -SPACING.xs,
   },
   deliveryEstimate: {
     backgroundColor: COLORS.card,

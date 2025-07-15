@@ -7,7 +7,6 @@ import {
   ScrollView,
   Animated,
   StatusBar,
-  Dimensions,
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,7 +21,6 @@ import * as Animations from '../../utils/animations';
 
 type OrderSuccessRouteProp = RouteProp<RootStackParamList, 'OrderSuccess'>;
 
-const { width } = Dimensions.get('window');
 
 const OrderSuccessScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -45,7 +43,6 @@ const OrderSuccessScreen: React.FC = () => {
   ]).current;
 
   // State
-  const [showConfetti, setShowConfetti] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
   // Order tracking steps
@@ -122,11 +119,7 @@ const OrderSuccessScreen: React.FC = () => {
       Animated.parallel(cardAnimSequence).start();
     }, 1000);
 
-    // Show confetti effect
-    setTimeout(() => {
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 3000);
-    }, 500);
+    // Removed confetti animation for cleaner design
   }, []);
 
   const handleTrackOrder = () => {
@@ -162,51 +155,56 @@ const OrderSuccessScreen: React.FC = () => {
       ]}
     >
       <View style={styles.progressHeader}>
-        <Ionicons name="timeline" size={24} color={COLORS.text} />
-        <Text style={styles.progressTitle}>Order Progress</Text>
-      </View>
-
-      <View style={styles.progressTrack}>
-        <Animated.View
-          style={[
-            styles.progressBar,
-            {
-              width: progressAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0%', '100%'],
-              }),
-            },
-          ]}
-        />
+        <View style={styles.progressHeaderLeft}>
+          <Ionicons name="checkmark-circle" size={28} color={COLORS.success} />
+          <View style={styles.progressHeaderText}>
+            <Text style={styles.progressTitle}>Order Confirmed</Text>
+            <Text style={styles.progressSubtitle}>#{orderId?.slice(-8)}</Text>
+          </View>
+        </View>
+        <View style={styles.statusBadge}>
+          <Text style={styles.statusBadgeText}>Confirmed</Text>
+        </View>
       </View>
 
       <View style={styles.progressSteps}>
         {orderSteps.map((step, index) => (
           <View key={step.id} style={styles.progressStep}>
-            <View
-              style={[
-                styles.stepIndicator,
-                step.completed && styles.stepIndicatorCompleted,
-              ]}
-            >
-              {step.completed ? (
-                <Ionicons name="checkmark" size={16} color={COLORS.accent} />
-              ) : (
-                <Ionicons
-                  name={step.icon as any}
-                  size={16}
-                  color={COLORS.inactive}
+            <View style={styles.stepLine}>
+              <View
+                style={[
+                  styles.stepIndicator,
+                  step.completed && styles.stepIndicatorCompleted,
+                ]}
+              >
+                {step.completed ? (
+                  <Ionicons name="checkmark" size={14} color={COLORS.accent} />
+                ) : (
+                  <View style={styles.stepIndicatorEmpty} />
+                )}
+              </View>
+              {index < orderSteps.length - 1 && (
+                <View
+                  style={[
+                    styles.stepConnector,
+                    step.completed && styles.stepConnectorCompleted,
+                  ]}
                 />
               )}
             </View>
-            <Text
-              style={[
-                styles.stepText,
-                step.completed && styles.stepTextCompleted,
-              ]}
-            >
-              {step.title}
-            </Text>
+            <View style={styles.stepContent}>
+              <Text
+                style={[
+                  styles.stepText,
+                  step.completed && styles.stepTextCompleted,
+                ]}
+              >
+                {step.title}
+              </Text>
+              {step.completed && (
+                <Text style={styles.stepTime}>Just now</Text>
+              )}
+            </View>
           </View>
         ))}
       </View>
@@ -231,34 +229,33 @@ const OrderSuccessScreen: React.FC = () => {
       ]}
     >
       <View style={styles.summaryHeader}>
-        <Ionicons name="receipt" size={24} color={COLORS.text} />
-        <Text style={styles.summaryTitle}>Order Summary</Text>
+        <Text style={styles.summaryTitle}>Order Details</Text>
       </View>
 
-      <View style={styles.orderInfo}>
-        <View style={styles.orderRow}>
-          <Text style={styles.orderLabel}>Order Number</Text>
-          <Text style={styles.orderValue}>{orderId}</Text>
+      <View style={styles.orderDetailsGrid}>
+        <View style={styles.orderDetailItem}>
+          <Text style={styles.detailLabel}>Order Number</Text>
+          <Text style={styles.detailValue}>#{orderId?.slice(-8)}</Text>
         </View>
-
-        <View style={styles.orderRow}>
-          <Text style={styles.orderLabel}>Total Amount</Text>
-          <Text style={styles.orderTotal}>
+        <View style={styles.orderDetailItem}>
+          <Text style={styles.detailLabel}>Total Amount</Text>
+          <Text style={styles.detailValuePrimary}>
             {formatFinancialAmount(total || 0)}
           </Text>
         </View>
-
-        <View style={styles.orderRow}>
-          <Text style={styles.orderLabel}>Estimated Delivery</Text>
-          <Text style={styles.orderValue}>
-            {deliveryDate}, {deliveryTime}
-          </Text>
+        <View style={styles.orderDetailItem}>
+          <Text style={styles.detailLabel}>Delivery Date</Text>
+          <Text style={styles.detailValue}>{deliveryDate}</Text>
+        </View>
+        <View style={styles.orderDetailItem}>
+          <Text style={styles.detailLabel}>Time Slot</Text>
+          <Text style={styles.detailValue}>{deliveryTime}</Text>
         </View>
       </View>
 
       {recentOrderItems.length > 0 && (
         <View style={styles.itemsSection}>
-          <Text style={styles.itemsTitle}>Items Ordered</Text>
+          <Text style={styles.itemsTitle}>Items ({recentOrderItems.length})</Text>
           {recentOrderItems.map((item, index) => (
             <View key={item.product.id} style={styles.orderItem}>
               <Image
@@ -270,7 +267,7 @@ const OrderSuccessScreen: React.FC = () => {
                 style={styles.itemImage}
               />
               <View style={styles.itemInfo}>
-                <Text style={styles.itemName} numberOfLines={1}>
+                <Text style={styles.itemName} numberOfLines={2}>
                   {item.product.name}
                 </Text>
                 <Text style={styles.itemQuantity}>Qty: {item.quantity}</Text>
@@ -305,27 +302,27 @@ const OrderSuccessScreen: React.FC = () => {
       ]}
     >
       <View style={styles.nextStepsHeader}>
-        <Ionicons name="bulb" size={24} color="#FF9800" />
+        <Ionicons name="information-circle" size={24} color={COLORS.text} />
         <Text style={styles.nextStepsTitle}>What's Next?</Text>
       </View>
 
       <View style={styles.nextStepsList}>
         <View style={styles.nextStepItem}>
-          <Ionicons name="mail" size={20} color={COLORS.primary} />
+          <Ionicons name="mail" size={20} color={COLORS.text} />
           <Text style={styles.nextStepText}>
             You'll receive an email confirmation shortly
           </Text>
         </View>
 
         <View style={styles.nextStepItem}>
-          <Ionicons name="notifications" size={20} color={COLORS.primary} />
+          <Ionicons name="notifications" size={20} color={COLORS.text} />
           <Text style={styles.nextStepText}>
             We'll send push notifications for order updates
           </Text>
         </View>
 
         <View style={styles.nextStepItem}>
-          <Ionicons name="location" size={20} color={COLORS.primary} />
+          <Ionicons name="location" size={20} color={COLORS.text} />
           <Text style={styles.nextStepText}>
             Track your order in real-time once it ships
           </Text>
@@ -336,75 +333,25 @@ const OrderSuccessScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.success} />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
 
-      {/* Enhanced Header with Gradient */}
+      {/* Standard Header */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
         <View style={styles.headerContent}>
-          <Animated.View
-            style={[
-              styles.successIcon,
-              {
-                opacity: fadeAnim,
-                transform: [
-                  { scale: scaleAnim },
-                  {
-                    rotate: checkmarkAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0deg', '360deg'],
-                    }),
-                  },
-                ],
-              },
-            ]}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.navigate('Main', { screen: 'Home' })}
+            activeOpacity={0.7}
           >
-            <Ionicons name="checkmark-circle" size={80} color={COLORS.accent} />
-          </Animated.View>
+            <Ionicons name="close" size={24} color={COLORS.text} />
+          </TouchableOpacity>
 
-          <Animated.View
-            style={{
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            }}
-          >
-            <Text style={styles.headerTitle}>Order Confirmed!</Text>
-            <Text style={styles.headerSubtitle}>
-              Thank you for your order. We're preparing it for delivery.
-            </Text>
-          </Animated.View>
+          <Text style={styles.headerTitle}>Order Confirmed</Text>
+          
+          <View style={styles.headerSpacer} />
         </View>
-
-        {/* Confetti Effect */}
-        {showConfetti && (
-          <View style={styles.confettiContainer}>
-            {[...Array(20)].map((_, i) => (
-              <Animated.View
-                key={i}
-                style={[
-                  styles.confettiPiece,
-                  {
-                    left: Math.random() * width,
-                    backgroundColor: [
-                      COLORS.success,
-                      COLORS.primary,
-                      '#FF9800',
-                      '#E91E63',
-                    ][i % 4],
-                    transform: [
-                      {
-                        translateY: fadeAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [-20, 400],
-                        }),
-                      },
-                    ],
-                  },
-                ]}
-              />
-            ))}
-          </View>
-        )}
       </View>
+
 
       <ScrollView
         style={styles.scrollView}
@@ -437,7 +384,7 @@ const OrderSuccessScreen: React.FC = () => {
             onPress={handleTrackOrder}
             activeOpacity={0.8}
           >
-            <Ionicons name="navigate" size={24} color={COLORS.accent} />
+            <Ionicons name="navigate" size={20} color={COLORS.accent} />
             <Text style={styles.primaryButtonText}>Track Your Order</Text>
           </TouchableOpacity>
 
@@ -472,52 +419,41 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
-    backgroundColor: COLORS.success,
-    paddingBottom: SPACING.xl,
-    position: 'relative',
-    overflow: 'hidden',
+    backgroundColor: COLORS.card,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    ...SHADOWS.light,
   },
   headerContent: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.lg,
+    paddingVertical: SPACING.md,
+    minHeight: 56,
   },
-  successIcon: {
-    marginBottom: SPACING.lg,
-    shadowColor: 'rgba(0,0,0,0.2)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.light,
   },
   headerTitle: {
-    ...TYPOGRAPHY.h1,
-    fontSize: 32,
-    fontWeight: '800',
-    color: COLORS.accent,
+    ...TYPOGRAPHY.h2,
+    fontWeight: '700',
     textAlign: 'center',
-    marginBottom: SPACING.sm,
+    color: COLORS.text,
+    letterSpacing: -0.5,
   },
-  headerSubtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.accent,
-    textAlign: 'center',
-    fontWeight: '500',
-    opacity: 0.9,
-  },
-  confettiContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    pointerEvents: 'none',
-  },
-  confettiPiece: {
-    position: 'absolute',
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  headerSpacer: {
+    width: 44,
+    height: 44,
   },
   scrollView: {
     flex: 1,
@@ -540,58 +476,98 @@ const styles = StyleSheet.create({
   progressHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: SPACING.lg,
+  },
+  progressHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  progressHeaderText: {
+    marginLeft: SPACING.md,
   },
   progressTitle: {
     ...TYPOGRAPHY.h3,
     fontWeight: '700',
     color: COLORS.text,
-    marginLeft: SPACING.md,
+    marginBottom: 2,
   },
-  progressTrack: {
-    height: 4,
-    backgroundColor: COLORS.border,
-    borderRadius: 2,
-    marginBottom: SPACING.lg,
-    overflow: 'hidden',
+  progressSubtitle: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
   },
-  progressBar: {
-    height: '100%',
+  statusBadge: {
     backgroundColor: COLORS.success,
-    borderRadius: 2,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: 12,
+  },
+  statusBadgeText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.accent,
+    fontWeight: '600',
+    fontSize: 12,
   },
   progressSteps: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: SPACING.md,
   },
   progressStep: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  stepLine: {
     alignItems: 'center',
-    flex: 1,
+    marginRight: SPACING.md,
+    minHeight: 48,
   },
   stepIndicator: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: COLORS.background,
     borderWidth: 2,
     borderColor: COLORS.border,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.xs,
   },
   stepIndicatorCompleted: {
-    backgroundColor: COLORS.success,
-    borderColor: COLORS.success,
+    backgroundColor: COLORS.text,
+    borderColor: COLORS.text,
+  },
+  stepIndicatorEmpty: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.inactive,
+  },
+  stepConnector: {
+    width: 2,
+    height: 32,
+    backgroundColor: COLORS.border,
+    marginTop: 4,
+  },
+  stepConnectorCompleted: {
+    backgroundColor: COLORS.text,
+  },
+  stepContent: {
+    flex: 1,
+    paddingTop: 2,
   },
   stepText: {
-    ...TYPOGRAPHY.caption,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
-    textAlign: 'center',
     fontWeight: '500',
+    marginBottom: 2,
   },
   stepTextCompleted: {
-    color: COLORS.success,
-    fontWeight: '700',
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  stepTime: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    fontSize: 12,
   },
 
   // Summary Card
@@ -604,44 +580,46 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: SPACING.lg,
   },
   summaryTitle: {
     ...TYPOGRAPHY.h3,
     fontWeight: '700',
     color: COLORS.text,
-    marginLeft: SPACING.md,
   },
-  orderInfo: {
-    marginBottom: SPACING.md,
-  },
-  orderRow: {
+  orderDetailsGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
+    flexWrap: 'wrap',
+    marginBottom: SPACING.lg,
+    gap: SPACING.md,
   },
-  orderLabel: {
-    ...TYPOGRAPHY.body,
+  orderDetailItem: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: SPACING.md,
+  },
+  detailLabel: {
+    ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
     fontWeight: '500',
+    marginBottom: 4,
   },
-  orderValue: {
+  detailValue: {
     ...TYPOGRAPHY.body,
     color: COLORS.text,
-    fontWeight: '700',
+    fontWeight: '600',
   },
-  orderTotal: {
+  detailValuePrimary: {
     ...TYPOGRAPHY.h4,
-    color: COLORS.success,
-    fontWeight: '800',
+    color: COLORS.text,
+    fontWeight: '700',
   },
   itemsSection: {
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    paddingTop: SPACING.md,
+    paddingTop: SPACING.lg,
   },
   itemsTitle: {
     ...TYPOGRAPHY.h4,
@@ -653,12 +631,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: SPACING.md,
+    paddingVertical: SPACING.xs,
   },
   itemImage: {
-    width: 50,
-    height: 50,
+    width: 56,
+    height: 56,
     borderRadius: 8,
     marginRight: SPACING.md,
+    backgroundColor: COLORS.background,
   },
   itemInfo: {
     flex: 1,
@@ -667,26 +647,31 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 2,
+    marginBottom: 4,
+    lineHeight: 20,
   },
   itemQuantity: {
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
+    fontWeight: '500',
   },
   itemPrice: {
     ...TYPOGRAPHY.body,
     fontWeight: '700',
     color: COLORS.text,
+    textAlign: 'right',
   },
 
   // Next Steps Card
   nextStepsCard: {
-    backgroundColor: '#FFF8E1',
+    backgroundColor: COLORS.card,
     borderRadius: 20,
     padding: SPACING.lg,
     marginBottom: SPACING.lg,
     borderWidth: 1,
-    borderColor: '#FFE082',
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
+    elevation: 6,
   },
   nextStepsHeader: {
     flexDirection: 'row',
@@ -728,6 +713,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...SHADOWS.medium,
     elevation: 6,
+    minHeight: 56,
   },
   primaryButtonText: {
     ...TYPOGRAPHY.h4,
