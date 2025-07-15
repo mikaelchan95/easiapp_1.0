@@ -1,4 +1,7 @@
-import { supabase } from './supabaseService';
+import supabaseService from './supabaseService';
+import { synchronousBalanceService } from './synchronousBalanceService';
+
+const { supabase } = supabaseService;
 
 // ===== TypeScript Interfaces =====
 
@@ -146,14 +149,12 @@ class CompanyBillingService {
         return { data: null, error: 'Invalid company ID provided' };
       }
 
-      // First get company basic info
-      const { data: companyData, error: companyError } = await supabase
-        .from('companies')
-        .select('id, company_name, credit_limit, credit_used, payment_terms')
-        .eq('id', companyId)
-        .single();
+      // Use synchronous service for consistent balance data
+      const { data: summaryData, error: summaryError } = await supabase.rpc('get_company_balance_summary', {
+        p_company_id: companyId
+      });
 
-      if (companyError || !companyData) {
+      if (summaryError || !summaryData) {
         return { data: null, error: 'Company not found or access denied' };
       }
 
@@ -166,42 +167,23 @@ class CompanyBillingService {
         .limit(1)
         .single();
 
-      // Calculate credit metrics
-      const currentCredit = companyData.credit_limit - companyData.credit_used;
-      const creditUtilization =
-        companyData.credit_limit > 0
-          ? (companyData.credit_used / companyData.credit_limit) * 100
-          : 0;
-
-      // Determine billing status
-      let billingStatus: CompanyBillingStatus['billing_status'] =
-        'good_standing';
-      if (currentCredit < 0) {
-        billingStatus = 'overlimit';
-      } else if (creditUtilization >= 90) {
-        billingStatus = 'critical';
-      } else if (creditUtilization >= 75) {
-        billingStatus = 'warning';
-      }
-
       const result: CompanyBillingStatus = {
-        id: companyData.id,
+        id: companyId,
         company_id: companyId,
-        company_name: companyData.company_name,
-        credit_limit: companyData.credit_limit,
-        credit_used: companyData.credit_used,
-        current_credit: currentCredit,
-        credit_utilization: creditUtilization,
-        billing_status: billingStatus,
-        payment_terms: companyData.payment_terms || 'NET30',
+        company_name: summaryData.company_name,
+        credit_limit: summaryData.credit_limit,
+        credit_used: summaryData.credit_used,
+        current_credit: summaryData.available_credit,
+        credit_utilization: summaryData.credit_utilization,
+        billing_status: summaryData.status,
+        payment_terms: 'NET30',
         latest_invoice: latestInvoice || undefined,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        updated_at: summaryData.last_updated,
       };
 
       return { data: result, error: null };
     } catch (error) {
-      console.error('Error fetching company billing status:', error);
       return { data: null, error: 'Failed to fetch billing status' };
     }
   }
@@ -400,6 +382,7 @@ class CompanyBillingService {
     }
   ): Promise<ServiceResponse<CompanyPayment>> {
     try {
+      // First record the payment
       const { data: payment, error } = await supabase
         .from('company_payments')
         .insert({
@@ -419,30 +402,26 @@ class CompanyBillingService {
         return { data: null, error: error.message };
       }
 
-      // Update credit used if payment is confirmed
-      if (payment) {
-        const { data: companyData } = await supabase
-          .from('companies')
-          .select('credit_used')
-          .eq('id', companyId)
-          .single();
+      // Apply payment to balance atomically
+      const balanceResult = await synchronousBalanceService.applyPaymentToCompany(
+        companyId,
+        payment.id,
+        paymentData.amount,
+        paymentData.notes || `Payment via ${paymentData.method}`
+      );
 
-        if (companyData) {
-          await supabase
-            .from('companies')
-            .update({
-              credit_used: Math.max(
-                0,
-                companyData.credit_used - paymentData.amount
-              ),
-            })
-            .eq('id', companyId);
-        }
+      if (!balanceResult.success) {
+        // Rollback payment if balance update fails
+        await supabase
+          .from('company_payments')
+          .update({ status: 'failed' })
+          .eq('id', payment.id);
+        
+        return { data: null, error: balanceResult.error };
       }
 
       return { data: payment, error: null };
     } catch (error) {
-      console.error('Error recording payment:', error);
       return { data: null, error: 'Failed to record payment' };
     }
   }

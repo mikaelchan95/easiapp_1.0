@@ -296,17 +296,6 @@ export const productsService = {
         },
         payload => {
           // Only log significant changes in development
-          if (
-            __DEV__ &&
-            payload.eventType &&
-            ['INSERT', 'UPDATE', 'DELETE'].includes(payload.eventType)
-          ) {
-            console.log(
-              'Product change:',
-              payload.eventType,
-              payload.new?.name || payload.old?.name
-            );
-          }
           callback(payload);
         }
       )

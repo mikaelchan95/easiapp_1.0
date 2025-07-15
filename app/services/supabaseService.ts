@@ -245,6 +245,8 @@ const transformDatabaseCompanyToCompany = (
   totalPoints: dbCompany.total_points,
   pointsEarnedThisMonth: dbCompany.points_earned_this_month,
   pointsRedeemedThisMonth: dbCompany.points_redeemed_this_month,
+  lifetimePointsEarned: dbCompany.lifetime_points_earned,
+  tierLevel: dbCompany.tier_level,
   approvalSettings: {
     requireApproval: dbCompany.require_approval || false,
     approvalThreshold: dbCompany.approval_threshold,
@@ -531,6 +533,35 @@ export const supabaseService = {
 
       if (error) throw error;
       if (!dbCompany) return null;
+
+      // Get current user's company points
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
+
+      if (authUser) {
+        const { data: userCompanyPoints, error: pointsError } = await supabase
+          .from('user_company_points')
+          .select('points_earned, points_redeemed, lifetime_points_earned, current_balance, tier_level')
+          .eq('user_id', authUser.id)
+          .eq('company_id', companyId)
+          .maybeSingle();
+
+        if (!pointsError && userCompanyPoints) {
+          // Update company with user's points data
+          dbCompany.total_points = userCompanyPoints.current_balance || 0;
+          dbCompany.lifetime_points_earned = userCompanyPoints.lifetime_points_earned || 0;
+          dbCompany.tier_level = userCompanyPoints.tier_level || 'Bronze';
+          
+          console.log('💎 Company points loaded from user_company_points:', {
+            companyId,
+            userId: authUser.id,
+            totalPoints: userCompanyPoints.current_balance,
+            lifetimePoints: userCompanyPoints.lifetime_points_earned,
+            tierLevel: userCompanyPoints.tier_level
+          });
+        }
+      }
 
       return transformDatabaseCompanyToCompany(dbCompany);
     } catch (error) {
@@ -1486,7 +1517,6 @@ export const supabaseService = {
     userId: string,
     callback: (user: User | null) => void
   ) {
-    console.log('🔔 Setting up user changes subscription for:', userId);
     return supabase
       .channel(`user-changes-${userId}`)
       .on(
@@ -1498,21 +1528,17 @@ export const supabaseService = {
           filter: `id=eq.${userId}`,
         },
         async payload => {
-          console.log('👤 User data changed:', payload);
           const user = await this.getUserById(userId);
           callback(user);
         }
       )
-      .subscribe(status => {
-        console.log('🔔 User subscription status:', status);
-      });
+      .subscribe();
   },
 
   subscribeToCompanyChanges(
     companyId: string,
     callback: (company: Company | null) => void
   ) {
-    console.log('🔔 Setting up company changes subscription for:', companyId);
     return supabase
       .channel(`company-changes-${companyId}`)
       .on(
@@ -1524,19 +1550,15 @@ export const supabaseService = {
           filter: `id=eq.${companyId}`,
         },
         async payload => {
-          console.log('🏢 Company data changed:', payload);
           const company = await this.getCompanyById(companyId);
           callback(company);
         }
       )
-      .subscribe(status => {
-        console.log('🔔 Company subscription status:', status);
-      });
+      .subscribe();
   },
 
   // Real-time order subscriptions
   subscribeToUserOrders(userId: string, callback: (orders: Order[]) => void) {
-    console.log('🔔 Setting up orders subscription for user:', userId);
     return supabase
       .channel(`orders-${userId}`)
       .on(
@@ -1548,14 +1570,11 @@ export const supabaseService = {
           filter: `user_id=eq.${userId}`,
         },
         async payload => {
-          console.log('📦 Order data changed:', payload);
           const orders = await this.getUserOrders(userId);
           callback(orders);
         }
       )
-      .subscribe(status => {
-        console.log('🔔 Orders subscription status:', status);
-      });
+      .subscribe();
   },
 
   // Real-time order status updates
@@ -1563,7 +1582,6 @@ export const supabaseService = {
     orderId: string,
     callback: (order: Order | null) => void
   ) {
-    console.log('🔔 Setting up order status subscription for:', orderId);
     return supabase
       .channel(`order-status-${orderId}`)
       .on(
@@ -1575,19 +1593,15 @@ export const supabaseService = {
           filter: `id=eq.${orderId}`,
         },
         async payload => {
-          console.log('📦 Order status changed:', payload);
           const order = await this.getOrderById(orderId);
           callback(order);
         }
       )
-      .subscribe(status => {
-        console.log('🔔 Order status subscription status:', status);
-      });
+      .subscribe();
   },
 
   // Subscribe to all order changes for real-time updates
   subscribeToAllOrderChanges(callback: (payload: any) => void) {
-    console.log('🔔 Setting up global order changes subscription');
     return supabase
       .channel('all-order-changes')
       .on(
@@ -1598,13 +1612,10 @@ export const supabaseService = {
           table: 'orders',
         },
         payload => {
-          console.log('📦 Global order change:', payload);
           callback(payload);
         }
       )
-      .subscribe(status => {
-        console.log('🔔 Global orders subscription status:', status);
-      });
+      .subscribe();
   },
 
   // Upload profile image from React Native URI
@@ -1921,6 +1932,8 @@ export const supabaseService = {
     gst: number;
     deliveryFee: number;
     total: number;
+    appliedVoucherId?: string;
+    voucherDiscount?: number;
   }): Promise<{ 
     orderId: string; 
     orderNumber: string; 
@@ -2105,6 +2118,36 @@ export const supabaseService = {
       }
 
       console.log('✅ Order items created');
+
+      // Process voucher usage if applicable
+      if (orderData.appliedVoucherId && orderData.voucherDiscount && orderData.voucherDiscount > 0) {
+        console.log('🎫 Processing voucher usage:', orderData.appliedVoucherId);
+        
+        try {
+          // Update voucher status to 'used'
+          const { error: voucherError } = await supabase
+            .from('user_vouchers')
+            .update({
+              voucher_status: 'used',
+              used_at: new Date().toISOString(),
+              used_in_order_id: order.id,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', orderData.appliedVoucherId)
+            .eq('user_id', session.user.id)
+            .eq('voucher_status', 'active'); // Only update if still active
+
+          if (voucherError) {
+            console.error('❌ Error updating voucher status:', voucherError);
+            // Continue with order creation even if voucher update fails
+          } else {
+            console.log('✅ Voucher marked as used');
+          }
+        } catch (voucherError) {
+          console.error('❌ Error processing voucher:', voucherError);
+          // Continue with order creation even if voucher processing fails
+        }
+      }
 
       // For company credit orders, deduct the order amount from available credit
       if (isCompanyCredit && paymentStatus === 'paid') {
@@ -2421,7 +2464,6 @@ export const supabaseService = {
     newStatus: 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled'
   ): Promise<boolean> {
     try {
-      console.log('📦 Updating order status:', orderId, 'to', newStatus);
 
       const { error } = await supabase
         .from('orders')
@@ -3020,7 +3062,6 @@ export const supabaseService = {
             filter: `id=eq.${orderId}`,
           },
           payload => {
-            console.log('📦 Order update received:', payload);
             // Fetch the complete order data and call callback
             this.getOrderById(orderId).then(order => {
               if (order) {

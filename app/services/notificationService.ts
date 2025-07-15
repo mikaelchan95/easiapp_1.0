@@ -129,7 +129,6 @@ class NotificationService {
             : null, // null means immediate
       });
 
-      console.log('📱 Scheduled notification:', identifier);
       return identifier;
     } catch (error) {
       console.error('Error scheduling notification:', error);
@@ -183,7 +182,6 @@ class NotificationService {
   async cancelNotification(identifier: string): Promise<void> {
     try {
       await Notifications.cancelScheduledNotificationAsync(identifier);
-      console.log('❌ Cancelled notification:', identifier);
     } catch (error) {
       console.error('Error cancelling notification:', error);
     }
@@ -192,7 +190,6 @@ class NotificationService {
   async cancelAllNotifications(): Promise<void> {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
-      console.log('❌ Cancelled all notifications');
     } catch (error) {
       console.error('Error cancelling all notifications:', error);
     }
@@ -207,10 +204,6 @@ class NotificationService {
       await this.scheduleOrderStatusUpdate(orderId, 'out_for_delivery', 20); // 20 seconds later
       await this.scheduleOrderStatusUpdate(orderId, 'delivered', 30); // 30 seconds later
 
-      console.log(
-        '🔔 Simulated order progress notifications scheduled for order:',
-        orderId
-      );
     } catch (error) {
       console.error('Error simulating order progress:', error);
     }

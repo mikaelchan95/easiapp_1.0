@@ -22,9 +22,6 @@ import MobileHeader from '../Layout/MobileHeader';
 import { isCompanyUser } from '../../types/user';
 import { formatStatCurrency, formatPercentage } from '../../utils/formatting';
 import { HapticFeedback } from '../../utils/haptics';
-import BreadcrumbNavigation, {
-  createBreadcrumbs,
-} from '../Navigation/BreadcrumbNavigation';
 
 export default function CompanyProfileScreen() {
   const navigation = useNavigation();
@@ -120,11 +117,6 @@ export default function CompanyProfileScreen() {
           <View style={styles.headerRight} />
         </View>
 
-        {/* Breadcrumb Navigation */}
-        <BreadcrumbNavigation
-          items={createBreadcrumbs('CompanyProfile')}
-          showBackButton={false}
-        />
 
         {/* Company Header Card - Now in header like ProfileScreen */}
         <View style={styles.headerCard}>
@@ -268,7 +260,16 @@ export default function CompanyProfileScreen() {
                 style={styles.paymentButton}
                 onPress={() => {
                   HapticFeedback.medium();
-                  navigation.navigate('CreditPayment');
+                  console.log('Credit payment button pressed');
+                  console.log('Company data:', company);
+                  console.log('User data:', user);
+                  console.log('Navigation:', navigation);
+                  try {
+                    navigation.navigate('CreditPayment');
+                    console.log('Navigation called successfully');
+                  } catch (error) {
+                    console.error('Navigation error:', error);
+                  }
                 }}
                 activeOpacity={0.8}
               >

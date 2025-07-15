@@ -28,6 +28,7 @@ interface ReviewStepProps {
   subtotal: number;
   deliveryFee: number;
   total: number;
+  voucherDiscount?: number;
   onPlaceOrder: () => void;
 }
 
@@ -39,6 +40,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
   subtotal,
   deliveryFee,
   total,
+  voucherDiscount = 0,
 }) => {
   // Animation values
   const fadeAnim = useState(new Animated.Value(0))[0];
@@ -296,6 +298,15 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             </Text>
           </View>
 
+          {voucherDiscount > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Voucher Discount</Text>
+              <Text style={[styles.summaryValue, styles.discountValue]}>
+                -{formatFinancialAmount(voucherDiscount)}
+              </Text>
+            </View>
+          )}
+
           <View style={[styles.summaryRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Total</Text>
             <Text style={styles.totalValue}>
@@ -520,6 +531,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.text,
     letterSpacing: -0.2,
+  },
+  discountValue: {
+    color: '#4CAF50',
   },
   totalRow: {
     borderTopWidth: 1,
