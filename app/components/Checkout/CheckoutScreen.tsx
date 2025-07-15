@@ -282,7 +282,7 @@ export default function CheckoutScreen() {
       const result = await supabaseService.createOrder(orderData);
 
       if (result && result.orderId && result.orderNumber) {
-        const { orderId, orderNumber } = result;
+        const { orderId, orderNumber, pointsAwarded } = result;
 
         // Schedule order notifications
         notificationService.simulateOrderProgress(orderNumber);
@@ -291,6 +291,16 @@ export default function CheckoutScreen() {
         setTimeout(() => {
           supabaseService.simulateOrderProgression(orderId);
         }, 10000);
+
+        // Update user points in AppContext if points were awarded
+        if (pointsAwarded && state.user) {
+          dispatch({
+            type: 'UPDATE_USER_PROFILE',
+            payload: {
+              points: pointsAwarded.currentPoints,
+            },
+          });
+        }
 
         // Wait for processing animation to complete
         setTimeout(() => {
@@ -308,6 +318,18 @@ export default function CheckoutScreen() {
             payload: {
               orderTotal: total,
               orderId: orderNumber,
+            },
+          });
+
+          // Show purchase achievement to trigger points award in RewardsContext
+          // Use the actual points earned from the database
+          const pointsEarned = pointsAwarded?.pointsEarned || Math.floor(total * 2);
+          dispatch({
+            type: 'SHOW_PURCHASE_ACHIEVEMENT',
+            payload: {
+              pointsEarned,
+              orderId: orderNumber,
+              orderTotal: total,
             },
           });
 
