@@ -10,6 +10,7 @@ import {
   isCompanyUser,
 } from '../types/user';
 import { LocationSuggestion } from '../types/location';
+import { Product } from '../utils/pricing';
 
 // Helper function to generate Supabase Storage URL
 const getSupabaseStorageUrl = (bucket: string, path: string): string => {
@@ -1829,7 +1830,7 @@ export const supabaseService = {
     userId: string,
     orderTotal: number,
     orderId: string
-  ): Promise<void> {
+  ): Promise<{ currentPoints: number; lifetimePoints: number; pointsEarned: number } | null> {
     try {
       // Calculate points earned (2 points per dollar)
       const pointsEarned = Math.floor(orderTotal * 2);
@@ -1895,8 +1896,16 @@ export const supabaseService = {
       console.log(
         `✅ Points awarded: ${pointsEarned} points (${user.points || 0} → ${newPoints})`
       );
+
+      // Return the updated points so the caller can update the AppContext
+      return {
+        currentPoints: newPoints,
+        lifetimePoints: newLifetimePoints,
+        pointsEarned: pointsEarned,
+      };
     } catch (error) {
       console.error('❌ Error awarding points:', error);
+      return null;
     }
   },
 
@@ -1912,7 +1921,11 @@ export const supabaseService = {
     gst: number;
     deliveryFee: number;
     total: number;
-  }): Promise<{ orderId: string; orderNumber: string } | null> {
+  }): Promise<{ 
+    orderId: string; 
+    orderNumber: string; 
+    pointsAwarded: { currentPoints: number; lifetimePoints: number; pointsEarned: number } | null 
+  } | null> {
     try {
       console.log('🛒 Creating order for user:', orderData.userId);
 
@@ -2129,10 +2142,11 @@ export const supabaseService = {
       }
 
       // Award points for individual orders when payment is confirmed
+      let pointsAwarded = null;
       if (!isCompanyCredit && paymentStatus === 'pending') {
         // For individual orders, award points immediately (simulating instant payment processing)
         console.log('🎯 Awarding points for individual order...');
-        await this.awardPointsForOrder(
+        pointsAwarded = await this.awardPointsForOrder(
           session.user.id,
           orderData.total,
           order.id
@@ -2143,7 +2157,11 @@ export const supabaseService = {
       // No need to manually create it here
 
       console.log('✅ Order created successfully:', orderNumber);
-      return { orderId: order.id, orderNumber };
+      return { 
+        orderId: order.id, 
+        orderNumber, 
+        pointsAwarded 
+      };
     } catch (error) {
       console.error('❌ Error creating order:', error);
       return null;
