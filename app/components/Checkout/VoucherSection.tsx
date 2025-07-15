@@ -25,23 +25,42 @@ export default function VoucherSection({
   onApplyVoucher,
   appliedVoucherId,
 }: VoucherSectionProps) {
-  const { state, dispatch } = useRewards();
+  const { state, dispatch, validateVoucherForCheckout } = useRewards();
   const [showVoucherModal, setShowVoucherModal] = useState(false);
   const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(
     appliedVoucherId || null
   );
+  const [validatingVoucher, setValidatingVoucher] = useState<string | null>(null);
 
-  const availableVouchers = state.userRewards.availableVouchers.filter(
-    v => !v.used
-  );
+  const availableVouchers = state.userRewards?.availableVouchers?.filter(
+    v => v.voucher_status === 'active' && new Date(v.expires_at) > new Date()
+  ) || [];
   const selectedVoucher = availableVouchers.find(
     v => v.id === selectedVoucherId
   );
 
-  const handleSelectVoucher = (voucherId: string, value: number) => {
-    setSelectedVoucherId(voucherId);
-    onApplyVoucher(voucherId, value);
-    setShowVoucherModal(false);
+
+  const handleSelectVoucher = async (voucherId: string, value: number) => {
+    setValidatingVoucher(voucherId);
+    
+    try {
+      // Validate voucher before applying
+      const validation = await validateVoucherForCheckout(voucherId, subtotal);
+      
+      if (validation.success && validation.canUse) {
+        setSelectedVoucherId(voucherId);
+        onApplyVoucher(voucherId, value);
+        setShowVoucherModal(false);
+      } else {
+        // Show error message
+        alert(validation.reason || validation.error || 'Voucher cannot be used');
+      }
+    } catch (error) {
+      console.error('Error validating voucher:', error);
+      alert('Failed to validate voucher. Please try again.');
+    } finally {
+      setValidatingVoucher(null);
+    }
   };
 
   const handleRemoveVoucher = () => {
@@ -77,10 +96,10 @@ export default function VoucherSection({
           <View style={styles.appliedVoucher}>
             <View style={styles.voucherInfo}>
               <Text style={styles.voucherValue}>
-                -S${selectedVoucher.value}
+                -S${selectedVoucher.voucher_value}
               </Text>
               <Text style={styles.voucherExpiry}>
-                Expires {formatDate(selectedVoucher.expiryDate)}
+                Expires {formatDate(selectedVoucher.expires_at)}
               </Text>
             </View>
             <Ionicons
@@ -147,17 +166,18 @@ export default function VoucherSection({
                 keyExtractor={item => item.id}
                 scrollEnabled={false}
                 renderItem={({ item }) => {
-                  const canUse = subtotal >= item.value;
+                  const canUse = subtotal >= item.voucher_value;
                   return (
                     <TouchableOpacity
                       style={[
                         styles.voucherCard,
                         !canUse && styles.voucherCardDisabled,
+                        validatingVoucher === item.id && styles.voucherCardValidating,
                       ]}
                       onPress={() =>
-                        canUse && handleSelectVoucher(item.id, item.value)
+                        canUse && validatingVoucher !== item.id && handleSelectVoucher(item.id, item.voucher_value)
                       }
-                      disabled={!canUse}
+                      disabled={!canUse || validatingVoucher === item.id}
                     >
                       <View style={styles.voucherCardContent}>
                         <View style={styles.voucherValueContainer}>
@@ -167,7 +187,7 @@ export default function VoucherSection({
                               !canUse && styles.textDisabled,
                             ]}
                           >
-                            S${item.value}
+                            S${item.voucher_value}
                           </Text>
                           <Text
                             style={[
@@ -185,7 +205,7 @@ export default function VoucherSection({
                               !canUse && styles.textDisabled,
                             ]}
                           >
-                            Rewards Voucher
+                            {item.metadata?.reward_title || 'Rewards Voucher'}
                           </Text>
                           <Text
                             style={[
@@ -193,21 +213,29 @@ export default function VoucherSection({
                               !canUse && styles.textDisabled,
                             ]}
                           >
-                            Valid till {formatDate(item.expiryDate)}
+                            Valid till {formatDate(item.expires_at)}
                           </Text>
                           {!canUse && (
                             <Text style={styles.voucherMinimum}>
-                              Min. order S${item.value} required
+                              Min. order S${item.voucher_value} required
                             </Text>
                           )}
                         </View>
                       </View>
                       {canUse && (
-                        <Ionicons
-                          name="chevron-forward"
-                          size={20}
-                          color={COLORS.textSecondary}
-                        />
+                        validatingVoucher === item.id ? (
+                          <Ionicons
+                            name="refresh"
+                            size={20}
+                            color={COLORS.textSecondary}
+                          />
+                        ) : (
+                          <Ionicons
+                            name="chevron-forward"
+                            size={20}
+                            color={COLORS.textSecondary}
+                          />
+                        )
                       )}
                     </TouchableOpacity>
                   );
@@ -380,5 +408,8 @@ const styles = StyleSheet.create({
   },
   textDisabled: {
     color: COLORS.textSecondary,
+  },
+  voucherCardValidating: {
+    opacity: 0.7,
   },
 });

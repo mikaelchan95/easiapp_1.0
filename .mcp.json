@@ -1,0 +1,24 @@
+{
+  "_comment": "Replace placeholder values with your actual API keys and tokens",
+  "mcpServers": {
+    "stripe": {
+      "command": "npx",
+      "args": ["@stripe/mcp", "--api-key", "sk_test_your_stripe_test_key_here"],
+      "env": {}
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["@supabase/mcp-server-supabase", "--project-ref", "vqxnkxaeriizizfmqvua"],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_your_supabase_access_token_here"
+      }
+    },
+    "github": {
+      "command": "npx",
+      "args": ["@edjl/github-mcp"],
+      "env": {
+        "GITHUB_TOKEN": "ghp_example_token_here"
+      }
+    }
+  }
+}

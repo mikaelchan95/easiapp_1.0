@@ -9,11 +9,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import {
-  realTimePaymentService,
-  BalanceUpdate,
-} from '../../services/realTimePaymentService';
-import { enhancedBillingService } from '../../services/enhancedBillingService';
+import { synchronousBalanceService, BalanceTransaction } from '../../services/synchronousBalanceService';
+import companyBillingService from '../../services/companyBillingService';
 import { theme } from '../../utils/theme';
 
 interface RealTimeBalanceWidgetProps {
@@ -38,10 +35,6 @@ export default function RealTimeBalanceWidget({
 }: RealTimeBalanceWidgetProps) {
   // Validate required props
   if (!companyId || typeof companyId !== 'string' || companyId.trim() === '') {
-    console.error(
-      '❌ RealTimeBalanceWidget: Invalid companyId provided:',
-      companyId
-    );
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>
@@ -54,8 +47,7 @@ export default function RealTimeBalanceWidget({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
-  const [isLive, setIsLive] = useState(false);
-  const [recentUpdates, setRecentUpdates] = useState<BalanceUpdate[]>([]);
+  const [recentUpdates, setRecentUpdates] = useState<BalanceTransaction[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<
     'connected' | 'disconnected' | 'connecting'
   >('disconnected');
@@ -66,29 +58,31 @@ export default function RealTimeBalanceWidget({
       setupRealTimeMonitoring();
 
       return () => {
-        enhancedBillingService.stopRealTimeMonitoring(companyId);
+        // Cleanup handled by unsubscribe function
       };
     }, [companyId])
   );
 
   const loadBalanceData = async () => {
     try {
-      const result = await enhancedBillingService.getLiveDashboard(companyId);
+      const result = await companyBillingService.getCompanyBillingStatus(companyId);
       if (result.data) {
         setBalanceData({
-          credit_limit: result.data.metrics.creditSummary.credit_limit,
-          credit_used: result.data.metrics.creditSummary.credit_used,
-          available_credit: result.data.metrics.creditSummary.available_credit,
-          utilization_percentage:
-            result.data.metrics.creditSummary.utilization_percentage,
-          status: result.data.metrics.creditSummary.status,
-          last_updated: new Date().toISOString(),
+          credit_limit: result.data.credit_limit,
+          credit_used: result.data.credit_used,
+          available_credit: result.data.current_credit,
+          utilization_percentage: result.data.credit_utilization,
+          status: result.data.billing_status === 'good_standing' ? 'good' : 
+                 result.data.billing_status === 'warning' ? 'warning' : 'critical',
+          last_updated: result.data.updated_at,
         });
-        setIsLive(result.data.is_live);
-        setRecentUpdates(result.data.recent_updates || []);
       }
+      
+      // Get recent balance updates
+      const updates = await synchronousBalanceService.getBalanceHistory(companyId, 10);
+      setRecentUpdates(updates);
     } catch (error) {
-      console.error('Error loading balance data:', error);
+      // Silent error handling - no console spam
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -98,47 +92,42 @@ export default function RealTimeBalanceWidget({
   const setupRealTimeMonitoring = async () => {
     setConnectionStatus('connecting');
 
-    const success = await enhancedBillingService.startRealTimeMonitoring(
-      companyId,
-      (update: BalanceUpdate) => {
-        handleBalanceUpdate(update);
-      },
-      error => {
-        console.error('Real-time monitoring error:', error);
-        setConnectionStatus('disconnected');
-      }
-    );
+    try {
+      // Subscribe to real-time balance updates using synchronous service
+      const unsubscribe = synchronousBalanceService.subscribeToBalanceChanges(
+        companyId,
+        handleBalanceUpdate
+      );
 
-    if (success) {
       setConnectionStatus('connected');
-      setIsLive(true);
-    } else {
+      return unsubscribe;
+    } catch (error) {
       setConnectionStatus('disconnected');
     }
   };
 
-  const handleBalanceUpdate = (update: BalanceUpdate) => {
-    if (__DEV__) console.log('Received balance update:', update);
-
-    // Update balance data
+  const handleBalanceUpdate = (transaction: BalanceTransaction) => {
+    // Update balance data with new transaction
     setBalanceData(prev => {
       if (!prev) return prev;
 
+      const newBalance = transaction.new_balance;
+      const newUtilization = prev.credit_limit > 0 
+        ? ((prev.credit_limit - newBalance) / prev.credit_limit) * 100 
+        : 0;
+
       return {
         ...prev,
-        available_credit: update.new_balance,
-        credit_used: prev.credit_limit - update.new_balance,
-        utilization_percentage:
-          ((prev.credit_limit - update.new_balance) / prev.credit_limit) * 100,
-        status: getBalanceStatus(
-          ((prev.credit_limit - update.new_balance) / prev.credit_limit) * 100
-        ),
-        last_updated: update.timestamp,
+        available_credit: newBalance,
+        credit_used: prev.credit_limit - newBalance,
+        utilization_percentage: newUtilization,
+        status: getBalanceStatus(newUtilization),
+        last_updated: transaction.created_at,
       };
     });
 
     // Add to recent updates
-    setRecentUpdates(prev => [update, ...prev.slice(0, 4)]);
+    setRecentUpdates(prev => [transaction, ...prev.slice(0, 9)]);
   };
 
   const getBalanceStatus = (

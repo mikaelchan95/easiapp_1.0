@@ -60,18 +60,17 @@ export const auditService = {
         orderId,
       });
 
-      const auditEntry: PointsAuditEntry = {
-        userId,
-        companyId: companyId || undefined,
-        transactionType: transactionType as PointsAuditEntry['transactionType'],
-        points,
-        previousBalance,
-        newBalance,
-        orderId,
+      const auditEntry = {
+        user_id: userId,
+        company_id: companyId || null,
+        transaction_type: transactionType,
+        points_change: points,
+        points_before: previousBalance,
+        points_after: newBalance,
+        order_id: orderId || null,
         description:
           description ||
           `${transactionType.replace('_', ' ')} - ${points} points`,
-        createdAt: new Date().toISOString(),
         metadata: metadata || {},
       };
 
@@ -80,7 +79,13 @@ export const auditService = {
         .insert(auditEntry);
 
       if (error) {
-        console.error('Error logging points transaction:', error);
+        console.error('Error logging points transaction:', {
+          error,
+          details: error.details,
+          message: error.message,
+          code: error.code,
+          auditEntry,
+        });
         return false;
       }
 
@@ -106,22 +111,27 @@ export const auditService = {
     metadata?: Record<string, any>
   ): Promise<boolean> {
     try {
-      const auditEntry: AuditLogEntry = {
-        userId,
-        companyId,
+      const auditEntry = {
+        user_id: userId,
+        company_id: companyId || null,
         action,
-        entityType,
-        entityId,
-        previousValue,
-        newValue,
+        entity_type: entityType,
+        entity_id: entityId || null,
+        previous_value: previousValue || null,
+        new_value: newValue || null,
         metadata: metadata || {},
-        createdAt: new Date().toISOString(),
       };
 
       const { error } = await supabase.from('audit_log').insert(auditEntry);
 
       if (error) {
-        console.error('Error logging audit entry:', error);
+        console.error('Error logging audit entry:', {
+          error,
+          details: error.details,
+          message: error.message,
+          code: error.code,
+          auditEntry,
+        });
         return false;
       }
 

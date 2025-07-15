@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PaymentMethod } from '../../types/checkout';
 import { TYPOGRAPHY, COLORS, SPACING, SHADOWS } from '../../utils/theme';
+import VoucherSection from './VoucherSection';
 
 // Payment method options
 const PAYMENT_METHODS: PaymentMethod[] = [
@@ -35,9 +36,18 @@ const PAYMENT_METHODS: PaymentMethod[] = [
 interface PaymentStepProps {
   onSelectMethod: (method: PaymentMethod) => void;
   total: number;
+  subtotal: number;
+  onVoucherApply?: (voucherId: string, value: number) => void;
+  appliedVoucherId?: string | null;
 }
 
-const PaymentStep: React.FC<PaymentStepProps> = ({ onSelectMethod, total }) => {
+const PaymentStep: React.FC<PaymentStepProps> = ({ 
+  onSelectMethod, 
+  total, 
+  subtotal, 
+  onVoucherApply, 
+  appliedVoucherId 
+}) => {
   const [selectedMethodId, setSelectedMethodId] = useState<string>(
     PAYMENT_METHODS[0].id
   );
@@ -62,6 +72,15 @@ const PaymentStep: React.FC<PaymentStepProps> = ({ onSelectMethod, total }) => {
 
   return (
     <View style={styles.container}>
+      {/* Voucher Section */}
+      {onVoucherApply && (
+        <VoucherSection
+          subtotal={subtotal}
+          onApplyVoucher={onVoucherApply}
+          appliedVoucherId={appliedVoucherId}
+        />
+      )}
+      
       <View style={styles.methodsContainer}>
         {PAYMENT_METHODS.map(method => {
           // Disable wallet option if balance is insufficient

@@ -792,6 +792,56 @@ export default function RewardsScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Company Voucher Management Card */}
+        {user && isCompanyUser(user) && (
+          <TouchableOpacity
+            style={styles.voucherManagementCard}
+            onPress={() => navigation.navigate('VoucherTracking')}
+            activeOpacity={0.95}
+          >
+            <View style={styles.voucherCardHeader}>
+              <View style={styles.voucherCardTitleContainer}>
+                <View style={styles.voucherCardIconContainer}>
+                  <Ionicons name="card" size={24} color={COLORS.text} />
+                </View>
+                <View style={styles.voucherCardTitleSection}>
+                  <Text style={styles.voucherCardTitle}>Company Vouchers</Text>
+                  <Text style={styles.voucherCardSubtitle}>
+                    Manage shared company vouchers
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.voucherCardAction}>
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={COLORS.textSecondary}
+                />
+              </View>
+            </View>
+            <View style={styles.voucherCardStats}>
+              <View style={styles.voucherStat}>
+                <Text style={styles.voucherStatNumber}>
+                  {state.userRewards?.availableVouchers?.filter(v => v.voucher_status === 'active').length || 0}
+                </Text>
+                <Text style={styles.voucherStatLabel}>Active</Text>
+              </View>
+              <View style={styles.voucherStat}>
+                <Text style={styles.voucherStatNumber}>
+                  {state.userRewards?.availableVouchers?.filter(v => v.voucher_status === 'used').length || 0}
+                </Text>
+                <Text style={styles.voucherStatLabel}>Used</Text>
+              </View>
+              <View style={styles.voucherStat}>
+                <Text style={styles.voucherStatNumber}>
+                  {state.userRewards?.availableVouchers?.filter(v => v.voucher_status === 'expired').length || 0}
+                </Text>
+                <Text style={styles.voucherStatLabel}>Expired</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        )}
+
         {/* Combined Progress/Expiring Points Carousel */}
         {(getPointsToNextTier() > 0 || urgentExpiringPoints.length > 0) && (
           <View style={styles.progressCard}>
@@ -947,16 +997,12 @@ export default function RewardsScreen() {
 
             <TouchableOpacity
               style={styles.quickActionItem}
-              onPress={() => navigation.navigate('RewardsAnalytics')}
+              onPress={() => navigation.navigate('VoucherTracking')}
             >
               <View style={styles.quickActionIcon}>
-                <Ionicons
-                  name="analytics-outline"
-                  size={24}
-                  color={COLORS.text}
-                />
+                <Ionicons name="card-outline" size={24} color={COLORS.text} />
               </View>
-              <Text style={styles.quickActionLabel}>Analytics</Text>
+              <Text style={styles.quickActionLabel}>Vouchers</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1700,6 +1746,81 @@ const styles = StyleSheet.create({
   // Bottom Padding
   bottomPadding: {
     height: SPACING.xxl,
+  },
+
+  // Voucher Management Card
+  voucherManagementCard: {
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.md,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: SPACING.lg,
+    ...SHADOWS.medium,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  voucherCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  voucherCardTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  voucherCardIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  voucherCardTitleSection: {
+    flex: 1,
+  },
+  voucherCardTitle: {
+    ...TYPOGRAPHY.h5,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  voucherCardSubtitle: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+  },
+  voucherCardAction: {
+    padding: SPACING.xs,
+  },
+  voucherCardStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  voucherStat: {
+    alignItems: 'center',
+  },
+  voucherStatNumber: {
+    ...TYPOGRAPHY.h4,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  voucherStatLabel: {
+    ...TYPOGRAPHY.tiny,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 
   // Profile Header Styles

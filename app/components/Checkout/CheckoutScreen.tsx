@@ -44,6 +44,8 @@ export default function CheckoutScreen() {
   const { state: checkoutState, dispatch: checkoutDispatch } = useCheckout();
   const { deliveryLocation } = useDeliveryLocation();
   const [orderCompleted, setOrderCompleted] = useState(false);
+  const [appliedVoucherId, setAppliedVoucherId] = useState<string | null>(null);
+  const [voucherDiscount, setVoucherDiscount] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Use checkout navigation hook
@@ -164,7 +166,7 @@ export default function CheckoutScreen() {
     )
   );
 
-  // Recalculate totals when user data or delivery slot changes
+  // Recalculate totals when user data, delivery slot, or voucher changes
   useEffect(() => {
     const newTotals = calculateOrderTotal(
       cartItems,
@@ -177,12 +179,13 @@ export default function CheckoutScreen() {
     state.user?.accountType,
     checkoutState.deliverySlot,
     cartItems.length,
+    voucherDiscount,
   ]);
 
   const subtotal = orderTotals.subtotal;
   const gst = orderTotals.gst;
   const deliveryFee = orderTotals.deliveryFee;
-  const total = orderTotals.finalTotal;
+  const total = Math.max(0, orderTotals.finalTotal - voucherDiscount); // Apply voucher discount to total
 
   // Animate step indicators when step changes
   useEffect(() => {
@@ -232,6 +235,18 @@ export default function CheckoutScreen() {
     });
   };
 
+  const handleVoucherApply = (voucherId: string, value: number) => {
+    if (voucherId === '') {
+      // Remove voucher
+      setAppliedVoucherId(null);
+      setVoucherDiscount(0);
+    } else {
+      // Apply voucher
+      setAppliedVoucherId(voucherId);
+      setVoucherDiscount(value);
+    }
+  };
+
   const handlePlaceOrder = async () => {
     if (
       !checkoutState.deliveryAddress ||
@@ -276,6 +291,8 @@ export default function CheckoutScreen() {
         gst: gst,
         deliveryFee: deliveryFee,
         total: total,
+        appliedVoucherId: appliedVoucherId,
+        voucherDiscount: voucherDiscount,
       };
 
       // Create order in database
@@ -464,6 +481,9 @@ export default function CheckoutScreen() {
             <PaymentStep
               onSelectMethod={handleSelectPaymentMethod}
               total={total}
+              subtotal={subtotal}
+              onVoucherApply={handleVoucherApply}
+              appliedVoucherId={appliedVoucherId}
             />
           )}
 
@@ -487,6 +507,7 @@ export default function CheckoutScreen() {
               subtotal={subtotal}
               deliveryFee={deliveryFee}
               total={total}
+              voucherDiscount={voucherDiscount}
               onPlaceOrder={handlePlaceOrder}
             />
           )}

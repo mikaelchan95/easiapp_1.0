@@ -432,15 +432,7 @@ class RealTimePaymentService {
         )
         .subscribe(status => {
           if (status === 'SUBSCRIBED') {
-            console.log(
-              '✅ Real-time monitoring started for company:',
-              companyId
-            );
           } else if (status === 'CLOSED') {
-            console.log(
-              '🔌 Real-time connection closed for company:',
-              companyId
-            );
             this.handleReconnection(companyId, onUpdate, onError);
           } else if (status === 'CHANNEL_ERROR') {
             console.error(
@@ -485,7 +477,6 @@ class RealTimePaymentService {
       // Reset reconnection attempts
       this.reconnectAttempts.delete(companyId);
 
-      console.log('🛑 Real-time monitoring stopped for company:', companyId);
     } catch (error) {
       console.error('Error stopping real-time monitoring:', error);
     }
@@ -746,7 +737,6 @@ class RealTimePaymentService {
     for (const companyId of companyIds) {
       await this.stopRealTimeMonitoring(companyId);
     }
-    console.log('🧹 Real-time payment service cleanup completed');
   }
 }
 

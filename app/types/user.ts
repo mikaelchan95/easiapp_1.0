@@ -83,6 +83,8 @@ export interface Company {
   totalPoints?: number;
   pointsEarnedThisMonth?: number;
   pointsRedeemedThisMonth?: number;
+  lifetimePointsEarned?: number;
+  tierLevel?: 'Bronze' | 'Silver' | 'Gold';
 
   // Order Settings
   approvalSettings: {

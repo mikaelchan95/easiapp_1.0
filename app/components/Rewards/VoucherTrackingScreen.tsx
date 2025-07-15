@@ -30,23 +30,26 @@ type TabType = 'vouchers' | 'points' | 'missing' | 'expiring';
 interface VoucherCardProps {
   voucher: any;
   onStatusUpdate?: (redemptionId: string, status: VoucherStatus) => void;
+  showUserAttribution?: boolean;
 }
 
 const VoucherCard: React.FC<VoucherCardProps> = ({
   voucher,
   onStatusUpdate,
+  showUserAttribution = false,
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const getStatusColor = (status: VoucherStatus) => {
     // Following workspace rules - using monochrome colors
     switch (status) {
-      case 'confirmed':
-        return COLORS.text; // Black for confirmed
-      case 'pending':
-        return COLORS.textSecondary; // Dark gray for pending
-      case 'expired':
-        return COLORS.inactive; // Gray for expired
+      case 'active':
+        return COLORS.text; // Black for active
       case 'used':
         return COLORS.textSecondary; // Dark gray for used
+      case 'expired':
+        return COLORS.inactive; // Gray for expired
+      case 'cancelled':
+        return COLORS.inactive; // Gray for cancelled
       default:
         return COLORS.text;
     }
@@ -54,14 +57,14 @@ const VoucherCard: React.FC<VoucherCardProps> = ({
 
   const getStatusIcon = (status: VoucherStatus) => {
     switch (status) {
-      case 'confirmed':
+      case 'active':
         return 'checkmark-circle-outline';
-      case 'pending':
-        return 'time-outline';
-      case 'expired':
-        return 'close-circle-outline';
       case 'used':
         return 'checkmark-done-outline';
+      case 'expired':
+        return 'close-circle-outline';
+      case 'cancelled':
+        return 'close-circle-outline';
       default:
         return 'help-circle-outline';
     }
@@ -70,14 +73,14 @@ const VoucherCard: React.FC<VoucherCardProps> = ({
   const getStatusBackground = (status: VoucherStatus) => {
     // Subtle background colors following workspace rules
     switch (status) {
-      case 'confirmed':
+      case 'active':
         return COLORS.text; // Black background
-      case 'pending':
-        return COLORS.border; // Light gray background
-      case 'expired':
-        return COLORS.inactive; // Gray background
       case 'used':
         return COLORS.textSecondary; // Dark gray background
+      case 'expired':
+        return COLORS.inactive; // Gray background
+      case 'cancelled':
+        return COLORS.inactive; // Gray background
       default:
         return COLORS.text;
     }
@@ -86,14 +89,14 @@ const VoucherCard: React.FC<VoucherCardProps> = ({
   const getStatusTextColor = (status: VoucherStatus) => {
     // Text color for status badges
     switch (status) {
-      case 'confirmed':
+      case 'active':
         return COLORS.card; // White text on black
-      case 'pending':
-        return COLORS.text; // Black text on light gray
-      case 'expired':
-        return COLORS.card; // White text on gray
       case 'used':
         return COLORS.card; // White text on dark gray
+      case 'expired':
+        return COLORS.card; // White text on gray
+      case 'cancelled':
+        return COLORS.card; // White text on gray
       default:
         return COLORS.card;
     }
@@ -108,7 +111,7 @@ const VoucherCard: React.FC<VoucherCardProps> = ({
   };
 
   const isExpiringSoon = () => {
-    const expiryDate = new Date(voucher.expiryDate);
+    const expiryDate = new Date(voucher.expires_at);
     const today = new Date();
     const daysUntilExpiry = Math.ceil(
       (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
@@ -117,107 +120,194 @@ const VoucherCard: React.FC<VoucherCardProps> = ({
   };
 
   return (
-    <View style={styles.voucherCard}>
+    <TouchableOpacity 
+      style={styles.voucherCard}
+      onPress={() => setIsExpanded(!isExpanded)}
+      activeOpacity={0.8}
+    >
+      {/* Header Section - Always Visible */}
       <View style={styles.voucherHeader}>
         <View style={styles.voucherValue}>
-          <Text style={styles.voucherAmount}>S${voucher.value}</Text>
+          <Text style={styles.voucherAmount}>S${voucher.voucher_value}</Text>
           <Text style={styles.voucherLabel}>Voucher</Text>
         </View>
 
-        <View style={styles.voucherStatus}>
+        <View style={styles.voucherHeaderRight}>
           <View
             style={[
               styles.statusBadge,
-              { backgroundColor: getStatusBackground(voucher.status) },
+              { backgroundColor: getStatusBackground(voucher.voucher_status) },
             ]}
           >
             <Ionicons
-              name={getStatusIcon(voucher.status)}
+              name={getStatusIcon(voucher.voucher_status)}
               size={14}
-              color={getStatusTextColor(voucher.status)}
+              color={getStatusTextColor(voucher.voucher_status)}
             />
             <Text
               style={[
                 styles.statusText,
-                { color: getStatusTextColor(voucher.status) },
+                { color: getStatusTextColor(voucher.voucher_status) },
               ]}
             >
-              {voucher.status.charAt(0).toUpperCase() + voucher.status.slice(1)}
+              {voucher.voucher_status.charAt(0).toUpperCase() + voucher.voucher_status.slice(1)}
             </Text>
           </View>
+          
+          <Ionicons
+            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color={COLORS.textSecondary}
+            style={styles.expandIcon}
+          />
         </View>
       </View>
 
-      <View style={styles.voucherDetails}>
-        <Text style={styles.voucherTitle}>{voucher.title}</Text>
-
-        <View style={styles.voucherMeta}>
-          <View style={styles.metaRow}>
-            <Ionicons
-              name="calendar-outline"
-              size={14}
-              color={COLORS.textSecondary}
-            />
-            <Text style={styles.metaText}>
-              Redeemed: {formatDate(voucher.redeemedDate)}
+      {/* Compact Info - Always Visible */}
+      <View style={styles.voucherCompact}>
+        <Text style={styles.voucherTitle} numberOfLines={1}>
+          {voucher.redemption?.reward?.title || 'Voucher'}
+        </Text>
+        
+        <View style={styles.compactMeta}>
+          <Text style={styles.compactText}>
+            Redeemed: {formatDate(voucher.issued_at)}
+          </Text>
+          {showUserAttribution && voucher.redeemedBy && (
+            <Text style={styles.compactText}>
+              by {voucher.redeemedBy.name}
             </Text>
-          </View>
+          )}
+        </View>
 
-          <View style={styles.metaRow}>
-            <Ionicons
-              name="time-outline"
-              size={14}
-              color={COLORS.textSecondary}
-            />
-            <Text style={styles.metaText}>
-              Expires: {formatDate(voucher.expiryDate)}
-            </Text>
-          </View>
+        {isExpiringSoon() && voucher.voucher_status === 'active' && (
+          <Text style={styles.expiryWarningCompact}>⚠️ Expires soon!</Text>
+        )}
+      </View>
 
-          {voucher.confirmationCode && (
+      {/* Expanded Details - Collapsible */}
+      {isExpanded && (
+        <View style={styles.voucherDetails}>
+          <View style={styles.voucherMeta}>
             <View style={styles.metaRow}>
               <Ionicons
-                name="receipt-outline"
-                size={14}
+                name="time-outline"
+                size={16}
                 color={COLORS.textSecondary}
               />
               <Text style={styles.metaText}>
-                Code: {voucher.confirmationCode}
+                Expires: {formatDate(voucher.expires_at)}
+              </Text>
+            </View>
+
+            {voucher.redemption?.confirmation_code && (
+              <View style={styles.metaRow}>
+                <Ionicons
+                  name="receipt-outline"
+                  size={16}
+                  color={COLORS.textSecondary}
+                />
+                <Text style={styles.metaText}>
+                  Code: {voucher.redemption.confirmation_code}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.metaRow}>
+              <Ionicons
+                name="star-outline"
+                size={16}
+                color={COLORS.textSecondary}
+              />
+              <Text style={styles.metaText}>
+                {voucher.redemption?.points_used?.toLocaleString() || 0} points used
+              </Text>
+            </View>
+
+            {showUserAttribution && voucher.redeemedBy && (
+              <View style={styles.metaRow}>
+                <Ionicons
+                  name="person-outline"
+                  size={16}
+                  color={COLORS.textSecondary}
+                />
+                <Text style={styles.metaText}>
+                  Redeemed by: {voucher.redeemedBy.name}
+                </Text>
+                {voucher.redeemedBy.email && (
+                  <Text style={styles.metaSubText}>
+                    {voucher.redeemedBy.email}
+                  </Text>
+                )}
+              </View>
+            )}
+
+            {voucher.used_at && (
+              <View style={styles.metaRow}>
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={16}
+                  color={COLORS.textSecondary}
+                />
+                <Text style={styles.metaText}>
+                  Used on: {formatDate(voucher.used_at)}
+                </Text>
+              </View>
+            )}
+
+            {voucher.used_in_order_id && (
+              <View style={styles.metaRow}>
+                <Ionicons
+                  name="receipt-outline"
+                  size={16}
+                  color={COLORS.textSecondary}
+                />
+                <Text style={styles.metaText}>
+                  Order: {voucher.used_in_order_id}
+                </Text>
+              </View>
+            )}
+
+            {voucher.usedBy && (
+              <View style={styles.metaRow}>
+                <Ionicons
+                  name="person-circle-outline"
+                  size={16}
+                  color={COLORS.textSecondary}
+                />
+                <Text style={styles.metaText}>
+                  Used by: {voucher.usedBy.name}
+                </Text>
+              </View>
+            )}
+
+            {voucher.companyName && (
+              <View style={styles.metaRow}>
+                <Ionicons
+                  name="business-outline"
+                  size={16}
+                  color={COLORS.textSecondary}
+                />
+                <Text style={styles.metaText}>
+                  Company: {voucher.companyName}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {isExpiringSoon() && voucher.voucher_status === 'active' && (
+            <View style={styles.expiryWarning}>
+              <Ionicons name="warning-outline" size={16} color={COLORS.text} />
+              <Text style={styles.expiryWarningText}>
+                This voucher expires in {Math.ceil(
+                  (new Date(voucher.expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                )} days!
               </Text>
             </View>
           )}
-
-          <View style={styles.metaRow}>
-            <Ionicons
-              name="star-outline"
-              size={14}
-              color={COLORS.textSecondary}
-            />
-            <Text style={styles.metaText}>
-              {voucher.pointsUsed.toLocaleString()} points used
-            </Text>
-          </View>
         </View>
-
-        {isExpiringSoon() && voucher.status === 'confirmed' && (
-          <View style={styles.expiryWarning}>
-            <Ionicons name="warning-outline" size={16} color={COLORS.text} />
-            <Text style={styles.expiryWarningText}>Expires soon!</Text>
-          </View>
-        )}
-
-        {voucher.usedDate && (
-          <View style={styles.usedInfo}>
-            <Text style={styles.usedText}>
-              Used on {formatDate(voucher.usedDate)}
-            </Text>
-            {voucher.orderId && (
-              <Text style={styles.orderText}>Order: {voucher.orderId}</Text>
-            )}
-          </View>
-        )}
-      </View>
-    </View>
+      )}
+    </TouchableOpacity>
   );
 };
 
@@ -405,6 +495,9 @@ export default function VoucherTrackingScreen() {
   const navigation = useNavigation();
   const { state } = useRewards();
   const [activeTab, setActiveTab] = useState<TabType>('vouchers');
+  const [selectedFilter, setSelectedFilter] = useState<
+    'all' | 'earned' | 'redeemed' | 'expired'
+  >('all');
   const insets = useSafeAreaInsets();
 
   const tabs = useMemo(
@@ -413,25 +506,25 @@ export default function VoucherTrackingScreen() {
         id: 'vouchers' as TabType,
         label: 'Vouchers',
         icon: 'card-outline',
-        count: state.userRewards.voucherRedemptions.length,
+        count: state.userRewards?.availableVouchers?.length || 0,
       },
       {
         id: 'points' as TabType,
         label: 'History',
         icon: 'time-outline',
-        count: state.userRewards.pointsHistory.length,
+        count: state.userRewards?.pointsHistory?.length || 0,
       },
       {
         id: 'missing' as TabType,
         label: 'Missing',
         icon: 'alert-circle-outline',
-        count: state.userRewards.missingPoints.length,
+        count: state.userRewards?.missingPoints?.length || 0,
       },
       {
         id: 'expiring' as TabType,
         label: 'Expiring',
         icon: 'hourglass-outline',
-        count: state.userRewards.pointsExpiring.length,
+        count: state.userRewards?.pointsExpiring?.length || 0,
       },
     ],
     [state.userRewards]
@@ -452,7 +545,11 @@ export default function VoucherTrackingScreen() {
   };
 
   const renderVouchersList = () => {
-    if (state.userRewards.voucherRedemptions.length === 0) {
+    const vouchers = state.userRewards?.availableVouchers || [];
+    
+    console.log('📋 Rendering vouchers list:', vouchers.length, 'vouchers');
+    
+    if (vouchers.length === 0) {
       return (
         <View style={styles.emptyState}>
           <Ionicons
@@ -471,7 +568,7 @@ export default function VoucherTrackingScreen() {
 
     return (
       <FlatList
-        data={state.userRewards.voucherRedemptions}
+        data={vouchers}
         renderItem={({ item }) => <VoucherCard voucher={item} />}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
@@ -481,11 +578,8 @@ export default function VoucherTrackingScreen() {
   };
 
   const renderPointsHistory = () => {
-    const [selectedFilter, setSelectedFilter] = useState<
-      'all' | 'earned' | 'redeemed' | 'expired'
-    >('all');
-
-    const filteredHistory = state.userRewards.pointsHistory.filter(item => {
+    const pointsHistory = state.userRewards?.pointsHistory || [];
+    const filteredHistory = pointsHistory.filter(item => {
       if (selectedFilter === 'all') return true;
       return item.type === selectedFilter;
     });
@@ -570,7 +664,8 @@ export default function VoucherTrackingScreen() {
   };
 
   const renderMissingPoints = () => {
-    if (state.userRewards.missingPoints.length === 0) {
+    const missingPoints = state.userRewards?.missingPoints || [];
+    if (missingPoints.length === 0) {
       return (
         <View style={styles.missingContainer}>
           <TouchableOpacity
@@ -608,7 +703,7 @@ export default function VoucherTrackingScreen() {
         </TouchableOpacity>
 
         <FlatList
-          data={state.userRewards.missingPoints}
+          data={missingPoints}
           renderItem={({ item }) => <MissingPointsCard entry={item} />}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.listContainer}
@@ -619,7 +714,8 @@ export default function VoucherTrackingScreen() {
   };
 
   const renderExpiringPoints = () => {
-    const urgentExpiringPoints = state.userRewards.pointsExpiring.filter(
+    const pointsExpiring = state.userRewards?.pointsExpiring || [];
+    const urgentExpiringPoints = pointsExpiring.filter(
       entry => {
         const expiryDate = new Date(entry.expiryDate);
         const today = new Date();
@@ -630,7 +726,7 @@ export default function VoucherTrackingScreen() {
       }
     );
 
-    if (state.userRewards.pointsExpiring.length === 0) {
+    if (pointsExpiring.length === 0) {
       return (
         <View style={styles.emptyState}>
           <Ionicons
@@ -659,7 +755,7 @@ export default function VoucherTrackingScreen() {
         )}
 
         <FlatList
-          data={state.userRewards.pointsExpiring}
+          data={pointsExpiring}
           renderItem={({ item }) => <ExpiringPointsCard entry={item} />}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.listContainer}
@@ -760,7 +856,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.xs,
   },
   tabScrollContent: {
     paddingHorizontal: SPACING.md,
@@ -770,10 +866,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: 24,
+    paddingVertical: SPACING.xs,
+    borderRadius: 20,
     backgroundColor: 'transparent',
-    minHeight: 44,
+    minHeight: 36,
   },
   tabActive: {
     backgroundColor: COLORS.text, // Black background for active tab
@@ -911,6 +1007,43 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontWeight: '600',
     marginTop: SPACING.xs,
+  },
+
+  // Collapsible VoucherCard styles
+  voucherHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  expandIcon: {
+    marginLeft: SPACING.xs,
+  },
+  voucherCompact: {
+    paddingTop: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  compactMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: SPACING.xs,
+  },
+  compactText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.textSecondary,
+  },
+  expiryWarningCompact: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.text,
+    fontWeight: '600',
+    marginTop: SPACING.xs,
+  },
+  metaSubText: {
+    ...TYPOGRAPHY.tiny,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs / 2,
+    marginLeft: SPACING.lg,
   },
 
   // Missing Points Cards - improved design
@@ -1067,18 +1200,20 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    maxHeight: 50,
   },
   filterScrollContent: {
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.xs,
     gap: SPACING.xs,
+    alignItems: 'center',
   },
   filterTab: {
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: 20,
+    paddingVertical: SPACING.xs,
+    borderRadius: 16,
     backgroundColor: 'transparent',
-    minHeight: 36,
+    minHeight: 28,
     justifyContent: 'center',
   },
   filterTabActive: {
