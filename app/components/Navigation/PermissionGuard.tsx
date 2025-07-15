@@ -1,6 +1,6 @@
-import React, { ReactNode, useContext } from 'react';
+import React, { ReactNode } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { AppContext } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../utils/theme';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -47,7 +47,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'view_analytics',
     'company_settings',
   ],
-  member: ['view_orders', 'create_orders', 'view_analytics'],
+  member: ['view_orders', 'create_orders', 'view_analytics', 'view_billing'],
   viewer: ['view_orders', 'view_analytics'],
 };
 
@@ -67,8 +67,16 @@ export default function PermissionGuard({
   fallback,
   showFallback = true,
 }: PermissionGuardProps) {
-  const { state } = useContext(AppContext);
-  const { user, company, userPermissions } = state;
+  const { profile: user, company, permissions: userPermissions, loading } = useAuth();
+
+  // Show loading state
+  if (loading) {
+    return (
+      <View style={styles.fallbackContainer}>
+        <Text style={styles.fallbackMessage}>Loading...</Text>
+      </View>
+    );
+  }
 
   // Check if user is authenticated
   if (!user) {
@@ -83,9 +91,12 @@ export default function PermissionGuard({
   // Check if company is required
   if (requireCompany && (!company || user.accountType !== 'company')) {
     if (!showFallback) return null;
+    const message = !company 
+      ? "Company data not loaded. Please try refreshing the app."
+      : "This feature is only available to company accounts.";
     return (
       fallback || (
-        <DefaultFallback message="This feature is only available to company accounts." />
+        <DefaultFallback message={message} />
       )
     );
   }
@@ -145,8 +156,7 @@ export default function PermissionGuard({
 
 // Helper hook to check permissions programmatically
 export function usePermissions() {
-  const { state } = useContext(AppContext);
-  const { user, company, userPermissions } = state;
+  const { profile: user, company, permissions: userPermissions } = useAuth();
 
   const hasPermission = (permission: Permission): boolean => {
     if (!user) return false;

@@ -6,8 +6,9 @@ import React, {
   useEffect,
 } from 'react';
 import { useAppContext } from './AppContext';
-import { pointsService } from '../services/pointsService';
+import { pointsService, RewardCatalogItem, UserVoucher } from '../services/pointsService';
 import { auditService } from '../services/auditService';
+import { supabase } from '../../utils/supabase';
 
 // Types
 export type TierLevel = 'Bronze' | 'Silver' | 'Gold';
@@ -47,6 +48,24 @@ export interface VoucherRedemption {
   usedDate?: string;
   orderId?: string; // Order where voucher was used
   confirmationCode?: string;
+  // User attribution
+  redeemedBy: {
+    id: string;
+    name: string;
+    email?: string;
+  };
+  usedBy?: {
+    id: string;
+    name: string;
+    email?: string;
+  };
+  // Company context
+  companyId?: string;
+  companyName?: string;
+  // Additional metadata
+  redemptionSource?: 'web' | 'mobile' | 'admin';
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 export interface MissingPointsEntry {
@@ -73,7 +92,7 @@ export interface RewardItem {
   title: string;
   description: string;
   points: number;
-  type: 'voucher' | 'bundle' | 'swag';
+  type: 'voucher' | 'bundle' | 'swag' | 'experience';
   value?: number; // For vouchers
   imageUrl?: string;
   stock?: number;
@@ -87,14 +106,9 @@ export interface UserRewards {
   yearlySpend: number; // 12-month rolling
   pointsHistory: PointsHistory[];
   redeemedRewards: string[]; // IDs of redeemed rewards
-  availableVouchers: {
-    id: string;
-    rewardId: string;
-    value: number;
-    expiryDate: string;
-    used: boolean;
-  }[];
+  availableVouchers: UserVoucher[];
   voucherRedemptions: VoucherRedemption[];
+  voucherHistory: VoucherRedemption[]; // Complete voucher history with user attribution
   missingPoints: MissingPointsEntry[];
   pointsExpiring: PointsExpiry[];
 }
@@ -104,6 +118,8 @@ interface RewardsState {
   rewardsCatalog: RewardItem[];
   loading: boolean;
   error: string | null;
+  vouchersLoading: boolean;
+  catalogLoading: boolean;
 }
 
 type RewardsAction =
@@ -124,6 +140,10 @@ type RewardsAction =
   | { type: 'LOAD_USER_REWARDS'; payload: UserRewards }
   | { type: 'CLEAR_USER_REWARDS' }
   | { type: 'SET_REWARDS_CATALOG'; payload: RewardItem[] }
+  | { type: 'SET_CATALOG_LOADING'; payload: boolean }
+  | { type: 'SET_VOUCHERS_LOADING'; payload: boolean }
+  | { type: 'LOAD_VOUCHERS'; payload: UserVoucher[] }
+  | { type: 'LOAD_VOUCHER_HISTORY'; payload: VoucherRedemption[] }
   | {
       type: 'REPORT_MISSING_POINTS';
       payload: {
@@ -158,47 +178,14 @@ const calculateTier = (lifetimePoints: number): TierLevel => {
   return 'Bronze';
 };
 
-// Mock rewards catalog
-const mockRewardsCatalog: RewardItem[] = [
-  {
-    id: 'voucher-500',
-    title: 'S$500 Voucher',
-    description: 'Redeem S$500 off your next order',
-    points: 20000,
-    type: 'voucher',
-    value: 500,
-  },
-  {
-    id: 'voucher-1500',
-    title: 'S$1,500 Voucher',
-    description: 'Redeem S$1,500 off your next order',
-    points: 50000,
-    type: 'voucher',
-    value: 1500,
-  },
-  {
-    id: 'bundle-120',
-    title: 'Volume Bundle Deal',
-    description: 'Buy 120 get 12 free on select products',
-    points: 100000,
-    type: 'bundle',
-  },
-  {
-    id: 'swag-bartool',
-    title: 'Premium Bar Tool Set',
-    description: 'Professional-grade bar tools with custom engraving',
-    points: 30000,
-    type: 'swag',
-    stock: 50,
-  },
-];
-
 // Initial state - no user rewards until authenticated
 const initialState: RewardsState = {
   userRewards: null,
-  rewardsCatalog: mockRewardsCatalog,
+  rewardsCatalog: [],
   loading: false,
   error: null,
+  vouchersLoading: false,
+  catalogLoading: false,
 };
 
 // Default user rewards for new users
@@ -211,6 +198,7 @@ const getDefaultUserRewards = (): UserRewards => ({
   redeemedRewards: [],
   availableVouchers: [],
   voucherRedemptions: [],
+  voucherHistory: [],
   missingPoints: [],
   pointsExpiring: [],
 });
@@ -333,6 +321,32 @@ const rewardsReducer = (
     case 'SET_REWARDS_CATALOG':
       return { ...state, rewardsCatalog: action.payload };
 
+    case 'SET_CATALOG_LOADING':
+      return { ...state, catalogLoading: action.payload };
+
+    case 'SET_VOUCHERS_LOADING':
+      return { ...state, vouchersLoading: action.payload };
+
+    case 'LOAD_VOUCHERS':
+      if (!state.userRewards) return state;
+      return {
+        ...state,
+        userRewards: {
+          ...state.userRewards,
+          availableVouchers: action.payload,
+        },
+      };
+
+    case 'LOAD_VOUCHER_HISTORY':
+      if (!state.userRewards) return state;
+      return {
+        ...state,
+        userRewards: {
+          ...state.userRewards,
+          voucherHistory: action.payload,
+        },
+      };
+
     case 'REPORT_MISSING_POINTS':
       if (!state.userRewards) return state;
       const newMissingEntry: MissingPointsEntry = {
@@ -419,7 +433,7 @@ const RewardsContext = createContext<
         category?: string
       ) => Promise<void>;
       redeemReward: (rewardId: string) => Promise<boolean>;
-      getAvailableVouchers: () => any[];
+      getAvailableVouchers: () => UserVoucher[];
       getTierBenefits: (tier: TierLevel) => string[];
       getPointsToNextTier: () => number;
       reportMissingPoints: (
@@ -436,6 +450,15 @@ const RewardsContext = createContext<
       ) => void;
       getExpiringPoints: (daysAhead?: number) => PointsExpiry[];
       getVouchersByStatus: (status: VoucherStatus) => VoucherRedemption[];
+      loadRewardsCatalog: () => Promise<void>;
+      loadUserVouchers: () => Promise<void>;
+      loadVoucherHistory: () => Promise<void>;
+      processExpiredVouchers: () => Promise<{ success: boolean; expiredCount: number; error?: string }>;
+      getVoucherStatusSummary: () => Promise<{ success: boolean; summary?: { active: number; used: number; expired: number; cancelled: number }; error?: string }>;
+      getVouchersExpiringSoon: (daysAhead?: number) => Promise<{ success: boolean; vouchers?: UserVoucher[]; error?: string }>;
+      validateVoucherForCheckout: (voucherId: string, orderTotal: number) => Promise<{ success: boolean; voucher?: UserVoucher; canUse: boolean; reason?: string; error?: string }>;
+      reactivateVoucher: (voucherId: string) => Promise<{ success: boolean; voucher?: UserVoucher; error?: string }>;
+      getVoucherUsageStats: () => Promise<{ success: boolean; stats?: { totalRedeemed: number; totalValue: number; usageRate: number }; error?: string }>;
     }
   | undefined
 >(undefined);
@@ -486,6 +509,24 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({
           'earned_purchase'
         );
 
+        // Log general audit entry for company points earning
+        await auditService.logAuditEntry(
+          appState.user.id,
+          'points_earned',
+          'points',
+          orderId,
+          { points: (appState.company?.totalPoints || 0) },
+          { points: (appState.company?.totalPoints || 0) + points },
+          appState.company?.id,
+          {
+            points_earned: points,
+            description: description,
+            category: category,
+            earning_method: 'purchase',
+            account_type: 'company',
+          }
+        );
+
         console.log('✅ Company points saved to database successfully');
       } else {
         // For individual users, save points to user account
@@ -513,10 +554,27 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({
             appState.user.points || 0,
             newTotalPoints,
             orderId,
-            'order',
             description,
             {
               category: category,
+              account_type: 'individual',
+            }
+          );
+
+          // Log general audit entry for points earning
+          await auditService.logAuditEntry(
+            appState.user.id,
+            'points_earned',
+            'points',
+            orderId,
+            { points: appState.user.points || 0 },
+            { points: newTotalPoints },
+            null,
+            {
+              points_earned: points,
+              description: description,
+              category: category,
+              earning_method: 'purchase',
             }
           );
 
@@ -543,40 +601,75 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({
       return false;
     }
 
-    // Update local state immediately
-    dispatch({ type: 'REDEEM_REWARD', payload: { rewardId } });
-
-    // Save updated points to database
     try {
-      const { supabaseService } = await import('../services/supabaseService');
-      const newTotalPoints = (appState.user.points || 0) - reward.points;
+      const { isCompanyUser } = await import('../types/user');
+      const companyId = isCompanyUser(appState.user) ? appState.company?.id || null : null;
 
-      console.log('💰 Saving redeemed points to database:', {
-        userId: appState.user.id,
-        currentPoints: appState.user.points,
-        pointsRedeemed: reward.points,
-        newTotal: newTotalPoints,
-      });
+      // Use pointsService to redeem the reward
+      const result = await pointsService.redeemReward(
+        appState.user.id,
+        companyId,
+        rewardId
+      );
 
-      const success = await supabaseService.updateUser(appState.user.id, {
-        points: newTotalPoints,
-      });
+      if (result.success) {
+        console.log('🎉 Redemption successful, reloading vouchers...');
+        
+        // Reload user vouchers to get updated counts
+        await loadUserVouchers();
+        
+        // Refresh user data to get updated points
+        if (appState.loadUserFromSupabase) {
+          await appState.loadUserFromSupabase(appState.user.id);
+        }
 
-      if (!success) {
-        console.error('❌ Failed to save redeemed points to database');
+        // Update points in local state
+        const newUserRewards = {
+          ...state.userRewards,
+          points: state.userRewards.points - reward.points,
+          redeemedRewards: [...state.userRewards.redeemedRewards, reward.id],
+        };
+
+        dispatch({ type: 'LOAD_USER_REWARDS', payload: newUserRewards });
+        
+        console.log('✅ Voucher reload completed, current vouchers:', state.userRewards?.availableVouchers?.length || 0);
+
+        // Log the successful redemption in points history
+        const redemptionHistory = {
+          id: Date.now().toString(),
+          date: new Date().toISOString().split('T')[0],
+          description: `Redeemed: ${reward.title}`,
+          points: -reward.points,
+          type: 'redeemed' as const,
+          orderId: result.redemption?.id,
+          category: 'voucher' as const,
+        };
+
+        if (state.userRewards.pointsHistory) {
+          const updatedHistory = [redemptionHistory, ...state.userRewards.pointsHistory];
+          dispatch({ type: 'LOAD_USER_REWARDS', payload: {
+            ...newUserRewards,
+            pointsHistory: updatedHistory,
+          }});
+        }
+
+        console.log('✅ Reward redeemed successfully');
+        return true;
       } else {
-        console.log('✅ Redeemed points saved to database successfully');
+        console.error('❌ Failed to redeem reward:', result.error);
+        dispatch({ type: 'SET_ERROR', payload: result.error || 'Failed to redeem reward' });
+        return false;
       }
     } catch (error) {
-      console.error('❌ Error saving redeemed points to database:', error);
+      console.error('❌ Error redeeming reward:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to redeem reward' });
+      return false;
     }
-
-    return true;
   };
 
   const getAvailableVouchers = () => {
     if (!state.userRewards) return [];
-    return state.userRewards.availableVouchers.filter(v => !v.used);
+    return state.userRewards.availableVouchers.filter(v => v.voucher_status === 'active');
   };
 
   const getTierBenefits = (tier: TierLevel): string[] => {
@@ -608,7 +701,7 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({
     return 0; // Already Gold
   };
 
-  const reportMissingPoints = (
+  const reportMissingPoints = async (
     orderId: string,
     orderDate: string,
     expectedPoints: number,
@@ -618,13 +711,40 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({
       console.warn('Cannot report missing points: user not authenticated');
       return;
     }
+    
     dispatch({
       type: 'REPORT_MISSING_POINTS',
       payload: { orderId, orderDate, expectedPoints, reason },
     });
+
+    // Log missing points report in audit trail
+    try {
+      await auditService.logAuditEntry(
+        appState.user.id,
+        'missing_points_reported',
+        'points',
+        orderId,
+        undefined,
+        {
+          order_id: orderId,
+          order_date: orderDate,
+          expected_points: expectedPoints,
+          reason: reason,
+          report_status: 'reported',
+        },
+        appState.company?.id,
+        {
+          report_date: new Date().toISOString(),
+          expected_points: expectedPoints,
+          reason: reason,
+        }
+      );
+    } catch (error) {
+      console.error('Error logging missing points report:', error);
+    }
   };
 
-  const updateVoucherStatus = (
+  const updateVoucherStatus = async (
     redemptionId: string,
     status: VoucherStatus,
     usedDate?: string,
@@ -634,10 +754,31 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({
       console.warn('Cannot update voucher status: user not authenticated');
       return;
     }
+    
     dispatch({
       type: 'UPDATE_VOUCHER_STATUS',
       payload: { redemptionId, status, usedDate, orderId },
     });
+
+    // Log voucher status change in audit trail
+    try {
+      await auditService.logVoucherEvent(
+        appState.user.id,
+        redemptionId,
+        status === 'used' ? 'redeemed' : 
+        status === 'expired' ? 'expired' : 
+        status === 'cancelled' ? 'cancelled' : 'created',
+        appState.company?.id,
+        {
+          voucher_status: status,
+          used_date: usedDate,
+          order_id: orderId,
+          status_change_date: new Date().toISOString(),
+        }
+      );
+    } catch (error) {
+      console.error('Error logging voucher status change:', error);
+    }
   };
 
   const getExpiringPoints = (daysAhead: number = 30): PointsExpiry[] => {
@@ -658,6 +799,185 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({
     );
   };
 
+  // Load rewards catalog from database
+  const loadRewardsCatalog = async () => {
+    dispatch({ type: 'SET_CATALOG_LOADING', payload: true });
+    try {
+      const catalogData = await pointsService.getRewardCatalog();
+      
+      // Transform catalog data to match RewardItem interface
+      const transformedCatalog: RewardItem[] = catalogData.map(item => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        points: item.points_required,
+        type: item.reward_type,
+        value: item.reward_value,
+        imageUrl: item.image_url,
+        stock: item.stock_quantity,
+        validityDays: item.validity_days,
+      }));
+
+      dispatch({ type: 'SET_REWARDS_CATALOG', payload: transformedCatalog });
+    } catch (error) {
+      console.error('Error loading rewards catalog:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to load rewards catalog' });
+    } finally {
+      dispatch({ type: 'SET_CATALOG_LOADING', payload: false });
+    }
+  };
+
+  // Load user vouchers from database
+  const loadUserVouchers = async () => {
+    if (!appState.user) return;
+    
+    console.log('🔄 Loading user vouchers...');
+    dispatch({ type: 'SET_VOUCHERS_LOADING', payload: true });
+    try {
+      const { isCompanyUser } = await import('../types/user');
+      const companyId = isCompanyUser(appState.user) ? appState.company?.id : undefined;
+      
+      console.log('📋 Loading vouchers for:', {
+        userId: appState.user.id,
+        companyId,
+        isCompany: isCompanyUser(appState.user),
+      });
+      
+      // Process expired vouchers first
+      await processExpiredVouchers();
+      
+      const vouchers = await pointsService.getUserVouchers(
+        appState.user.id,
+        companyId
+      );
+      
+      console.log('📦 Loaded vouchers:', vouchers.length, 'vouchers');
+      console.log('📦 Voucher details:', vouchers.map(v => ({ 
+        id: v.id, 
+        status: v.voucher_status, 
+        value: v.voucher_value 
+      })));
+      
+      dispatch({ type: 'LOAD_VOUCHERS', payload: vouchers });
+    } catch (error) {
+      console.error('Error loading user vouchers:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to load vouchers' });
+    } finally {
+      dispatch({ type: 'SET_VOUCHERS_LOADING', payload: false });
+    }
+  };
+
+  // Load voucher history with user attribution
+  const loadVoucherHistory = async () => {
+    if (!appState.user) return;
+    
+    console.log('🔄 Loading voucher history...');
+    try {
+      const { isCompanyUser } = await import('../types/user');
+      const companyId = isCompanyUser(appState.user) ? appState.company?.id : undefined;
+      
+      console.log('📋 Loading voucher history for:', {
+        userId: appState.user.id,
+        companyId,
+        isCompany: isCompanyUser(appState.user),
+      });
+      
+      const history = await pointsService.getVoucherHistory(
+        appState.user.id,
+        companyId
+      );
+      
+      console.log('📦 Loaded voucher history:', history.length, 'entries');
+      
+      // Transform the data to match VoucherRedemption interface
+      const transformedHistory = history.map(item => ({
+        id: item.id,
+        rewardId: item.redemption?.reward?.id || '',
+        title: item.redemption?.reward?.title || 'Unknown Reward',
+        value: item.voucher_value,
+        pointsUsed: item.redemption?.points_used || 0,
+        status: item.voucher_status,
+        redeemedDate: item.issued_at,
+        expiryDate: item.expires_at,
+        usedDate: item.used_at,
+        orderId: item.used_in_order_id,
+        confirmationCode: item.redemption?.confirmation_code,
+        redeemedBy: {
+          id: item.redemption?.redeemed_by?.id || item.user_id,
+          name: item.redemption?.redeemed_by?.name || 'Unknown User',
+          email: item.redemption?.redeemed_by?.email,
+        },
+        usedBy: item.used_by ? {
+          id: item.used_by.id,
+          name: item.used_by.name,
+          email: item.used_by.email,
+        } : undefined,
+        companyId: item.company_id,
+        companyName: appState.company?.name,
+        redemptionSource: 'mobile' as const,
+      }));
+      
+      dispatch({ type: 'LOAD_VOUCHER_HISTORY', payload: transformedHistory });
+    } catch (error) {
+      console.error('Error loading voucher history:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to load voucher history' });
+    }
+  };
+
+  // Voucher lifecycle management methods
+  const processExpiredVouchers = async () => {
+    return await pointsService.processExpiredVouchers();
+  };
+
+  const getVoucherStatusSummary = async () => {
+    if (!appState.user) {
+      return { success: false, error: 'User not authenticated' };
+    }
+    
+    const { isCompanyUser } = await import('../types/user');
+    const companyId = isCompanyUser(appState.user) ? appState.company?.id : undefined;
+    
+    return await pointsService.getVoucherStatusSummary(appState.user.id, companyId);
+  };
+
+  const getVouchersExpiringSoon = async (daysAhead: number = 7) => {
+    if (!appState.user) {
+      return { success: false, error: 'User not authenticated' };
+    }
+    
+    const { isCompanyUser } = await import('../types/user');
+    const companyId = isCompanyUser(appState.user) ? appState.company?.id : undefined;
+    
+    return await pointsService.getVouchersExpiringSoon(appState.user.id, daysAhead, companyId);
+  };
+
+  const validateVoucherForCheckout = async (voucherId: string, orderTotal: number) => {
+    if (!appState.user) {
+      return { success: false, canUse: false, error: 'User not authenticated' };
+    }
+    
+    return await pointsService.validateVoucherForCheckout(voucherId, appState.user.id, orderTotal);
+  };
+
+  const reactivateVoucher = async (voucherId: string) => {
+    if (!appState.user) {
+      return { success: false, error: 'User not authenticated' };
+    }
+    
+    return await pointsService.reactivateVoucher(voucherId, appState.user.id);
+  };
+
+  const getVoucherUsageStats = async () => {
+    if (!appState.user) {
+      return { success: false, error: 'User not authenticated' };
+    }
+    
+    const { isCompanyUser } = await import('../types/user');
+    const companyId = isCompanyUser(appState.user) ? appState.company?.id : undefined;
+    
+    return await pointsService.getVoucherUsageStats(appState.user.id, companyId);
+  };
+
   // Load user rewards when user changes
   useEffect(() => {
     if (appState.user) {
@@ -674,12 +994,14 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({
         // For company users, use company's total points
         if (isCompany && appState.company) {
           userRewards.points = appState.company.totalPoints || 0;
-          userRewards.lifetimePoints = appState.company.totalPoints || 0;
+          userRewards.lifetimePoints = appState.company.lifetimePointsEarned || appState.company.totalPoints || 0;
 
           console.log('✅ Company user rewards loaded:', {
             user: appState.user.name,
             company: appState.company.name,
             points: appState.company.totalPoints,
+            lifetimePoints: appState.company.lifetimePointsEarned,
+            tierLevel: appState.company.tierLevel,
           });
         } else {
           // For individual users, use user's points
@@ -699,12 +1021,17 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({
 
         dispatch({ type: 'LOAD_USER_REWARDS', payload: userRewards });
       });
+
+      // Load rewards catalog and user vouchers
+      loadRewardsCatalog();
+      loadUserVouchers();
+      loadVoucherHistory();
     } else {
       // Clear rewards when user logs out
       dispatch({ type: 'CLEAR_USER_REWARDS' });
       console.log('🧹 User rewards cleared');
     }
-  }, [appState.user?.id, appState.user?.points, appState.company?.totalPoints]);
+  }, [appState.user?.id, appState.user?.points, appState.company?.totalPoints, appState.company?.lifetimePointsEarned]);
 
   // Sync points when user or company points change (from database)
   useEffect(() => {
@@ -716,16 +1043,22 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({
         // For company users, sync with company points
         if (isCompany && appState.company) {
           const companyPoints = appState.company.totalPoints || 0;
-          if (companyPoints !== state.userRewards.points) {
+          const lifetimePoints = appState.company.lifetimePointsEarned || companyPoints;
+          
+          if (companyPoints !== state.userRewards.points || lifetimePoints !== state.userRewards.lifetimePoints) {
             const updatedRewards = {
               ...state.userRewards,
               points: companyPoints,
-              lifetimePoints: Math.max(
-                state.userRewards.lifetimePoints,
-                companyPoints
-              ),
+              lifetimePoints: lifetimePoints,
+              tier: calculateTier(lifetimePoints),
             };
             dispatch({ type: 'LOAD_USER_REWARDS', payload: updatedRewards });
+            
+            console.log('🔄 Company rewards synced:', {
+              points: companyPoints,
+              lifetimePoints: lifetimePoints,
+              tier: calculateTier(lifetimePoints),
+            });
           }
         } else {
           // For individual users, sync with user points
@@ -749,8 +1082,17 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({
   }, [
     appState.user?.points,
     appState.company?.totalPoints,
+    appState.company?.lifetimePointsEarned,
     state.userRewards?.points,
+    state.userRewards?.lifetimePoints,
   ]);
+
+  // Realtime subscription for database changes - DISABLED TO PREVENT SPAM
+  // TODO: Fix company loading issue and re-enable
+  // useEffect(() => {
+  //   if (!appState.user) return;
+  //   // Real-time subscription code will be re-enabled once company loading is fixed
+  // }, [appState.user?.id, appState.company?.id]);
 
   // Listen for purchase achievements to earn rewards points
   useEffect(() => {
@@ -783,6 +1125,32 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, [appState.purchaseAchievement.visible, appState.purchaseAchievement.data]);
 
+  // Periodically process expired vouchers
+  useEffect(() => {
+    if (appState.user && state.userRewards?.availableVouchers) {
+      const processExpiredVouchersTask = async () => {
+        try {
+          const result = await processExpiredVouchers();
+          if (result.success && result.expiredCount > 0) {
+            console.log(`🗓️ Processed ${result.expiredCount} expired vouchers`);
+            // Reload vouchers to update the UI
+            loadUserVouchers();
+          }
+        } catch (error) {
+          console.error('Error processing expired vouchers:', error);
+        }
+      };
+
+      // Run immediately
+      processExpiredVouchersTask();
+
+      // Set up interval to run every 30 minutes
+      const interval = setInterval(processExpiredVouchersTask, 30 * 60 * 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [appState.user?.id, state.userRewards?.availableVouchers?.length]);
+
   return (
     <RewardsContext.Provider
       value={{
@@ -797,6 +1165,15 @@ export const RewardsProvider: React.FC<{ children: ReactNode }> = ({
         updateVoucherStatus,
         getExpiringPoints,
         getVouchersByStatus,
+        loadRewardsCatalog,
+        loadUserVouchers,
+        loadVoucherHistory,
+        processExpiredVouchers,
+        getVoucherStatusSummary,
+        getVouchersExpiringSoon,
+        validateVoucherForCheckout,
+        reactivateVoucher,
+        getVoucherUsageStats,
       }}
     >
       {children}

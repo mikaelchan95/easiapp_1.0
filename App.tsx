@@ -24,6 +24,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Import app context
 import { AppProvider, AppContext } from './app/context/AppContext';
+import { AuthProvider } from './app/context/AuthContext';
 import { TransitionProvider } from './app/context/TransitionContext';
 import CartNotificationProvider, {
   CartNotificationContext,
@@ -1089,17 +1090,19 @@ export default function App() {
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <AppProvider>
-          <RewardsProvider>
-            <CheckoutProvider>
-              <CartNotificationProvider>
-                <TransitionProvider>
-                  <AppContent />
-                </TransitionProvider>
-              </CartNotificationProvider>
-            </CheckoutProvider>
-          </RewardsProvider>
-        </AppProvider>
+        <AuthProvider>
+          <AppProvider>
+            <RewardsProvider>
+              <CheckoutProvider>
+                <CartNotificationProvider>
+                  <TransitionProvider>
+                    <AppContent />
+                  </TransitionProvider>
+                </CartNotificationProvider>
+              </CheckoutProvider>
+            </RewardsProvider>
+          </AppProvider>
+        </AuthProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
   );
