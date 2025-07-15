@@ -117,7 +117,6 @@ export default function CompanyProfileScreen() {
           <View style={styles.headerRight} />
         </View>
 
-
         {/* Company Header Card - Now in header like ProfileScreen */}
         <View style={styles.headerCard}>
           <View style={styles.companyHeader}>
@@ -298,6 +297,93 @@ export default function CompanyProfileScreen() {
           )}
         </View>
 
+        {/* Enhanced Quick Actions - Moved above Contact Information */}
+        {user.permissions?.canEditCompanyInfo && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <View style={styles.actionsGrid}>
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => {
+                  HapticFeedback.medium();
+                  navigation.navigate('EditCompanyInfo');
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={styles.actionIconContainer}>
+                  <Ionicons
+                    name="create-outline"
+                    size={20}
+                    color={COLORS.text}
+                  />
+                </View>
+                <Text style={styles.actionText}>Edit</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => {
+                  HapticFeedback.medium();
+                  navigation.navigate('TeamManagement');
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={styles.actionIconContainer}>
+                  <Ionicons
+                    name="people-outline"
+                    size={20}
+                    color={COLORS.text}
+                  />
+                </View>
+                <Text style={styles.actionText}>Team</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => {
+                  HapticFeedback.medium();
+                  navigation.navigate('CompanyReports');
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={styles.actionIconContainer}>
+                  <Ionicons
+                    name="bar-chart-outline"
+                    size={20}
+                    color={COLORS.text}
+                  />
+                </View>
+                <Text style={styles.actionText}>Reports</Text>
+              </TouchableOpacity>
+
+              {/* Admin Billing Dashboard - Only for users with billing permissions */}
+              {user?.permissions?.canManageBilling && (
+                <TouchableOpacity
+                  style={[styles.actionCard, styles.adminActionCard]}
+                  onPress={() => {
+                    HapticFeedback.medium();
+                    navigation.navigate('AdminBillingDashboard');
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <View
+                    style={[styles.actionIconContainer, styles.adminActionIcon]}
+                  >
+                    <Ionicons
+                      name="card-outline"
+                      size={20}
+                      color={COLORS.accent}
+                    />
+                  </View>
+                  <Text style={[styles.actionText, styles.adminActionText]}>
+                    Billing
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
+
         {/* Enhanced Contact Information */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Contact Information</Text>
@@ -464,108 +550,6 @@ export default function CompanyProfileScreen() {
           </View>
         </View>
 
-        {/* Enhanced Quick Actions */}
-        {user.permissions?.canEditCompanyInfo && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-            <View style={styles.actionsGrid}>
-              <TouchableOpacity
-                style={styles.actionCard}
-                onPress={() => {
-                  HapticFeedback.medium();
-                  navigation.navigate('EditCompanyInfo');
-                }}
-                activeOpacity={0.8}
-              >
-                <View style={styles.actionIconContainer}>
-                  <Ionicons
-                    name="create-outline"
-                    size={24}
-                    color={COLORS.text}
-                  />
-                </View>
-                <Text style={styles.actionText}>Edit Info</Text>
-                <Text style={styles.actionDescription}>
-                  Update company details
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionCard}
-                onPress={() => {
-                  HapticFeedback.medium();
-                  navigation.navigate('TeamManagement');
-                }}
-                activeOpacity={0.8}
-              >
-                <View style={styles.actionIconContainer}>
-                  <Ionicons
-                    name="people-outline"
-                    size={24}
-                    color={COLORS.text}
-                  />
-                </View>
-                <Text style={styles.actionText}>Team</Text>
-                <Text style={styles.actionDescription}>
-                  Manage team members
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionCard}
-                onPress={() => {
-                  HapticFeedback.medium();
-                  navigation.navigate('CompanyReports');
-                }}
-                activeOpacity={0.8}
-              >
-                <View style={styles.actionIconContainer}>
-                  <Ionicons
-                    name="bar-chart-outline"
-                    size={24}
-                    color={COLORS.text}
-                  />
-                </View>
-                <Text style={styles.actionText}>Reports</Text>
-                <Text style={styles.actionDescription}>View analytics</Text>
-              </TouchableOpacity>
-
-              {/* Admin Billing Dashboard - Only for users with billing permissions */}
-              {user?.permissions?.canManageBilling && (
-                <TouchableOpacity
-                  style={[styles.actionCard, styles.adminActionCard]}
-                  onPress={() => {
-                    HapticFeedback.medium();
-                    navigation.navigate('AdminBillingDashboard');
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <View
-                    style={[styles.actionIconContainer, styles.adminActionIcon]}
-                  >
-                    <Ionicons
-                      name="card-outline"
-                      size={24}
-                      color={COLORS.accent}
-                    />
-                  </View>
-                  <Text style={[styles.actionText, styles.adminActionText]}>
-                    Admin Billing
-                  </Text>
-                  <Text
-                    style={[
-                      styles.actionDescription,
-                      styles.adminActionDescription,
-                    ]}
-                  >
-                    Manage billing & invoices
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        )}
-
         <View style={styles.bottomPadding} />
       </ScrollView>
     </View>
@@ -657,7 +641,7 @@ const styles = StyleSheet.create({
   },
   companyName: {
     ...TYPOGRAPHY.h2,
-    fontWeight: '800',
+    fontWeight: '600',
     marginBottom: 6,
     color: COLORS.text,
   },
@@ -674,13 +658,13 @@ const styles = StyleSheet.create({
   verificationText: {
     ...TYPOGRAPHY.small,
     color: '#4CAF50',
-    fontWeight: '700',
+    fontWeight: '600',
     marginLeft: 6,
     marginRight: SPACING.sm,
   },
   statusActive: {
     color: '#4CAF50',
-    fontWeight: '700',
+    fontWeight: '600',
   },
   companyMeta: {
     marginTop: SPACING.md,
@@ -733,7 +717,7 @@ const styles = StyleSheet.create({
   },
   widgetTitle: {
     ...TYPOGRAPHY.h4,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   creditStatus: {
     flexDirection: 'row',
@@ -761,7 +745,7 @@ const styles = StyleSheet.create({
   },
   creditAmount: {
     ...TYPOGRAPHY.h2,
-    fontWeight: '800',
+    fontWeight: '600',
     marginBottom: 6,
   },
   creditLabel: {
@@ -920,29 +904,30 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: SPACING.lg,
+    borderRadius: 12,
+    padding: SPACING.md,
     alignItems: 'center',
     flex: 1,
     ...SHADOWS.light,
     elevation: 4,
+    minHeight: 70,
   },
   actionIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
-    borderWidth: 2,
+    marginBottom: SPACING.xs,
+    borderWidth: 1,
     borderColor: COLORS.border,
   },
   actionText: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '700',
-    marginTop: SPACING.xs,
+    ...TYPOGRAPHY.small,
+    fontWeight: '600',
     textAlign: 'center',
+    color: COLORS.text,
   },
   actionDescription: {
     ...TYPOGRAPHY.small,
@@ -954,7 +939,7 @@ const styles = StyleSheet.create({
 
   // Admin-specific styles
   adminActionCard: {
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: COLORS.primary,
     backgroundColor: COLORS.card,
   },
