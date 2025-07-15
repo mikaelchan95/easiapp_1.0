@@ -21,7 +21,9 @@ import ReviewStep from './ReviewStep';
 import CheckoutStepIndicator from './CheckoutStepIndicator';
 import { supabaseService } from '../../services/supabaseService';
 import { calculateOrderTotal } from '../../utils/pricing';
+import { getUserRole } from '../../context/AppContext';
 import { HapticFeedback } from '../../utils/haptics';
+import { formatFinancialAmount } from '../../utils/formatting';
 
 // Default address object - created once to prevent re-render loops
 const DEFAULT_ADDRESS = {
@@ -55,37 +57,38 @@ export default function CheckoutReviewScreen() {
       setIsPlacingOrder(true);
       HapticFeedback.medium();
 
-      // Navigate to processing screen first
-      navigation.navigate('CheckoutProcessing' as never);
+      // Skip processing screen and go directly to order creation
 
       // Calculate totals
       const orderSummary = calculateOrderTotal(
         state.cart,
-        state.user?.account_type === 'company',
-        checkoutState.deliverySlot?.fee || 0
+        getUserRole(state.user),
+        checkoutState.deliverySlot?.id === 'express' ? 'express' : 'standard'
       );
 
       // Create order
       const orderData = {
-        user_id: state.user?.id,
-        company_id:
+        userId: state.user?.id,
+        companyId:
           state.user?.account_type === 'company' ? state.company?.id : null,
         items: state.cart.map(item => ({
           product_id: item.product.id,
+          product_name: item.product.name,
           quantity: item.quantity,
-          unit_price: item.product.trade_price || item.product.retail_price,
+          unit_price: item.product.tradePrice || item.product.retailPrice,
           total_price:
-            (item.product.trade_price || item.product.retail_price) *
+            (item.product.tradePrice || item.product.retailPrice) *
             item.quantity,
+          product: item.product, // Include full product object for fallback
         })),
-        delivery_address: checkoutState.deliveryAddress,
-        delivery_slot: checkoutState.deliverySlot,
-        payment_method: checkoutState.paymentMethod,
-        order_notes: checkoutState.orderNotes,
+        deliveryAddress: checkoutState.deliveryAddress,
+        deliverySlot: checkoutState.deliverySlot,
+        paymentMethod: checkoutState.paymentMethod,
+        orderNotes: checkoutState.orderNotes,
         subtotal: orderSummary.subtotal,
-        delivery_fee: orderSummary.deliveryFee,
+        deliveryFee: orderSummary.deliveryFee,
         gst: orderSummary.gst,
-        total_amount: orderSummary.total,
+        total: orderSummary.finalTotal,
         status: 'pending',
       };
 
@@ -96,16 +99,14 @@ export default function CheckoutReviewScreen() {
         dispatch({ type: 'CLEAR_CART' });
         checkoutDispatch({ type: 'RESET_CHECKOUT' });
 
-        // Navigate to success screen
-        setTimeout(() => {
-          navigation.navigate('OrderSuccess' as never, {
-            orderId: result.orderId,
-            orderNumber: result.orderNumber,
-            total: orderSummary.total,
-            deliveryDate: checkoutState.deliverySlot?.date,
-            deliveryTime: checkoutState.deliverySlot?.timeSlot,
-          });
-        }, 2000);
+        // Navigate directly to success screen
+        navigation.navigate('OrderSuccess' as never, {
+          orderId: result.orderId,
+          orderNumber: result.orderNumber,
+          total: orderSummary.finalTotal,
+          deliveryDate: checkoutState.deliverySlot?.date,
+          deliveryTime: checkoutState.deliverySlot?.timeSlot,
+        });
       } else {
         throw new Error('Failed to create order');
       }
@@ -122,8 +123,8 @@ export default function CheckoutReviewScreen() {
 
   const orderSummary = calculateOrderTotal(
     state.cart,
-    state.user?.account_type === 'company',
-    checkoutState.deliverySlot?.fee || 0
+    getUserRole(state.user),
+    checkoutState.deliverySlot?.id === 'express' ? 'express' : 'standard'
   );
 
   return (
@@ -178,7 +179,7 @@ export default function CheckoutReviewScreen() {
         <View style={styles.totalContainer}>
           <Text style={styles.totalLabel}>Total Amount</Text>
           <Text style={styles.totalAmount}>
-            ${orderSummary.total.toFixed(2)}
+            {formatFinancialAmount(orderSummary.finalTotal)}
           </Text>
         </View>
 
@@ -244,7 +245,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TYPOGRAPHY.h2,
-    fontWeight: '800',
+    fontWeight: '700',
     textAlign: 'center',
     color: COLORS.text,
     letterSpacing: -0.5,
@@ -281,7 +282,7 @@ const styles = StyleSheet.create({
   totalAmount: {
     ...TYPOGRAPHY.h2,
     color: COLORS.text,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: -0.5,
   },
   placeOrderButton: {

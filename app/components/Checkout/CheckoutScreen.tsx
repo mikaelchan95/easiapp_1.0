@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
   StatusBar,
@@ -18,16 +17,17 @@ import AddressStep from './AddressStep';
 import DeliveryStep from './DeliveryStep';
 import PaymentStep from './PaymentStep';
 import ReviewStep from './ReviewStep';
-import ProcessingStep from './ProcessingStep';
 
 import AnimatedButton from '../UI/AnimatedButton';
 import { COLORS, TYPOGRAPHY, SHADOWS, SPACING } from '../../utils/theme';
 import { AppContext, getUserRole } from '../../context/AppContext';
 import { useCheckout } from '../../context/CheckoutContext';
 import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
-import { useCheckoutNavigation } from '../../hooks/useCheckoutNavigation';
+import {
+  useCheckoutNavigation,
+  CheckoutStep,
+} from '../../hooks/useCheckoutNavigation';
 import { calculateOrderTotal } from '../../utils/pricing';
-import { HapticFeedback } from '../../utils/haptics';
 import notificationService from '../../services/notificationService';
 import { supabaseService } from '../../services/supabaseService';
 import { formatFinancialAmount } from '../../utils/formatting';
@@ -37,17 +37,11 @@ import {
   PaymentMethod,
 } from '../../types/checkout';
 
-const { width } = Dimensions.get('window');
-
 export default function CheckoutScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { state, dispatch } = React.useContext(AppContext);
-  const {
-    state: checkoutState,
-    dispatch: checkoutDispatch,
-    isCheckoutComplete,
-  } = useCheckout();
+  const { state: checkoutState, dispatch: checkoutDispatch } = useCheckout();
   const { deliveryLocation } = useDeliveryLocation();
   const [orderCompleted, setOrderCompleted] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -57,29 +51,33 @@ export default function CheckoutScreen() {
     currentStep,
     currentStepIndex,
     steps,
-    isAnimating,
-    slideAnim,
-    fadeAnim,
-    progressAnim,
     navigateToStep,
-    goToNextStep,
-    goToPreviousStep,
-    updateProgress,
-    validateStep,
+    nextStep: goToNextStep,
+    previousStep: goToPreviousStep,
     getStepTitle,
-    getProgressPercentage,
-    isStepCompleted,
-    isStepActive,
-  } = useCheckoutNavigation({
-    onStepChange: step => {
-      // Update progress animation when step changes
-      updateProgress();
-      // Scroll to top when step changes
-      if (scrollViewRef.current) {
-        scrollViewRef.current.scrollTo({ y: 0, animated: false });
-      }
-    },
-  });
+  } = useCheckoutNavigation();
+
+  // Animation states
+  const [isAnimating] = useState(false);
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+
+  // Validate step
+  const validateStep = (step: CheckoutStep, data: any) => {
+    switch (step) {
+      case 'address':
+        return !!data.address;
+      case 'delivery':
+        return !!data.deliverySlot;
+      case 'payment':
+        return !!data.paymentMethod;
+      case 'review':
+        return !!data.cartItems && data.cartItems.length > 0;
+      default:
+        return true;
+    }
+  };
 
   const stepAnimations = useRef([
     new Animated.Value(0),
@@ -94,43 +92,43 @@ export default function CheckoutScreen() {
     const userName = state.user?.name || 'Guest User';
     const userPhone = state.user?.phone || '+65 9123 4567';
 
-    if (deliveryLocation && !checkoutState.address) {
+    if (deliveryLocation && !checkoutState.deliveryAddress) {
       const postalCodeMatch = deliveryLocation.subtitle?.match(/\b\d{6}\b/);
       const postalCode = postalCodeMatch ? postalCodeMatch[0] : '';
-      const city = deliveryLocation.subtitle?.includes('Singapore')
-        ? 'Singapore'
-        : '';
 
       const address: DeliveryAddress = {
+        id: 'temp-' + Date.now(),
         name: userName,
-        street: deliveryLocation.title,
-        unit: '',
-        city: city,
+        address: deliveryLocation.title,
+        unitNumber: '',
         postalCode: postalCode,
         phone: userPhone,
         isDefault: false,
       };
 
-      checkoutDispatch({ type: 'SET_ADDRESS', payload: address });
-    } else if (!checkoutState.address) {
+      checkoutDispatch({ type: 'SET_DELIVERY_ADDRESS', payload: address });
+    } else if (!checkoutState.deliveryAddress) {
       // Default address if no delivery location is set
       const defaultAddress: DeliveryAddress = {
+        id: 'default-' + Date.now(),
         name: userName,
-        street: '123 Marina Bay Sands',
-        unit: '#12-34',
-        city: 'Singapore',
+        address: '123 Marina Bay Sands',
+        unitNumber: '#12-34',
         postalCode: '018956',
         phone: userPhone,
         isDefault: true,
       };
 
-      checkoutDispatch({ type: 'SET_ADDRESS', payload: defaultAddress });
+      checkoutDispatch({
+        type: 'SET_DELIVERY_ADDRESS',
+        payload: defaultAddress,
+      });
     }
   }, [
     state.user?.name,
     state.user?.phone,
     deliveryLocation,
-    checkoutState.address,
+    checkoutState.deliveryAddress,
     checkoutDispatch,
   ]);
 
@@ -204,11 +202,11 @@ export default function CheckoutScreen() {
   const handleUpdateAddress = (address: DeliveryAddress) => {
     if (isAnimating) return;
 
-    checkoutDispatch({ type: 'SET_ADDRESS', payload: address });
+    checkoutDispatch({ type: 'SET_DELIVERY_ADDRESS', payload: address });
 
     // Auto-advance to next step after address is set
     InteractionManager.runAfterInteractions(() => {
-      goToNextStep({ address });
+      goToNextStep();
     });
   };
 
@@ -219,7 +217,7 @@ export default function CheckoutScreen() {
 
     // Auto-advance to next step after slot is selected
     InteractionManager.runAfterInteractions(() => {
-      goToNextStep({ deliverySlot: slot });
+      goToNextStep();
     });
   };
 
@@ -230,13 +228,13 @@ export default function CheckoutScreen() {
 
     // Auto-advance to next step after payment method is selected
     InteractionManager.runAfterInteractions(() => {
-      goToNextStep({ paymentMethod: method });
+      goToNextStep();
     });
   };
 
   const handlePlaceOrder = async () => {
     if (
-      !checkoutState.address ||
+      !checkoutState.deliveryAddress ||
       !checkoutState.deliverySlot ||
       !checkoutState.paymentMethod
     ) {
@@ -271,7 +269,7 @@ export default function CheckoutScreen() {
             ? currentUser.companyId
             : undefined,
         items: cartItems,
-        deliveryAddress: `${checkoutState.address.street}${checkoutState.address.unit ? `, ${checkoutState.address.unit}` : ''}, ${checkoutState.address.city}, ${checkoutState.address.postalCode}`,
+        deliveryAddress: `${checkoutState.deliveryAddress.address}${checkoutState.deliveryAddress.unitNumber ? `, ${checkoutState.deliveryAddress.unitNumber}` : ''}, ${checkoutState.deliveryAddress.postalCode}`,
         deliverySlot: checkoutState.deliverySlot,
         paymentMethod: checkoutState.paymentMethod,
         subtotal: subtotal,
@@ -283,7 +281,7 @@ export default function CheckoutScreen() {
       // Create order in database
       const result = await supabaseService.createOrder(orderData);
 
-      if (result) {
+      if (result && result.orderId && result.orderNumber) {
         const { orderId, orderNumber } = result;
 
         // Schedule order notifications
@@ -317,19 +315,19 @@ export default function CheckoutScreen() {
           checkoutDispatch({ type: 'RESET_CHECKOUT' });
         }, 8000); // Wait for processing animation
       } else {
-        console.error('Failed to create order');
+        console.error('Failed to create order - result:', result);
         checkoutDispatch({
           type: 'SET_ERROR',
           payload: 'Failed to create order. Please try again.',
         });
+        checkoutDispatch({ type: 'SET_PROCESSING', payload: false });
       }
     } catch (error) {
-      console.error('Error creating order:', error);
+      console.error('Error placing order:', error);
       checkoutDispatch({
         type: 'SET_ERROR',
         payload: 'An error occurred while processing your order.',
       });
-    } finally {
       checkoutDispatch({ type: 'SET_PROCESSING', payload: false });
     }
   };
@@ -349,7 +347,7 @@ export default function CheckoutScreen() {
 
   const canContinue = () => {
     return validateStep(currentStep, {
-      address: checkoutState.address,
+      address: checkoutState.deliveryAddress,
       deliverySlot: checkoutState.deliverySlot,
       paymentMethod: checkoutState.paymentMethod,
       cartItems: cartItems,
@@ -425,16 +423,16 @@ export default function CheckoutScreen() {
           removeClippedSubviews={true}
           renderToHardwareTextureAndroid={true}
         >
-          {currentStep === 'address' && checkoutState.address && (
+          {currentStep === 'address' && checkoutState.deliveryAddress && (
             <AddressStep
-              address={checkoutState.address}
+              address={checkoutState.deliveryAddress}
               onContinue={handleUpdateAddress}
             />
           )}
 
-          {currentStep === 'delivery' && checkoutState.address && (
+          {currentStep === 'delivery' && checkoutState.deliveryAddress && (
             <DeliveryStep
-              address={checkoutState.address}
+              address={checkoutState.deliveryAddress}
               onSelectSlot={handleSelectDeliverySlot}
               subtotal={subtotal}
             />
@@ -447,7 +445,7 @@ export default function CheckoutScreen() {
             />
           )}
 
-          {currentStep === 'review' && checkoutState.address && (
+          {currentStep === 'review' && checkoutState.deliveryAddress && (
             <ReviewStep
               cart={cartItems.map(item => ({
                 product: {
@@ -461,7 +459,7 @@ export default function CheckoutScreen() {
                 },
                 quantity: item.quantity,
               }))}
-              address={checkoutState.address}
+              address={checkoutState.deliveryAddress}
               deliverySlot={checkoutState.deliverySlot}
               paymentMethod={checkoutState.paymentMethod}
               subtotal={subtotal}
@@ -472,12 +470,17 @@ export default function CheckoutScreen() {
           )}
 
           {currentStep === 'processing' && (
-            <ProcessingStep
-              onComplete={() => {
-                // Processing complete - order should be created by now
-                console.log('Processing complete');
-              }}
-            />
+            <View style={styles.processingContainer}>
+              <View style={styles.processingContent}>
+                <Ionicons name="hourglass" size={48} color={COLORS.primary} />
+                <Text style={styles.processingTitle}>
+                  Processing Your Order
+                </Text>
+                <Text style={styles.processingDescription}>
+                  Please wait while we process your order...
+                </Text>
+              </View>
+            </View>
           )}
 
           {/* Extra padding to ensure footer button doesn't cover content */}
@@ -598,13 +601,7 @@ export default function CheckoutScreen() {
                   : () => {
                       if (isAnimating || !canContinue()) return;
 
-                      const validationData = {
-                        address: checkoutState.address,
-                        deliverySlot: checkoutState.deliverySlot,
-                        paymentMethod: checkoutState.paymentMethod,
-                      };
-
-                      goToNextStep(validationData);
+                      goToNextStep();
                     }
               }
               disabled={
@@ -741,7 +738,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: SPACING.md,
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.card,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -792,5 +789,30 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.sm,
     paddingBottom: SPACING.md,
     backgroundColor: COLORS.card,
+  },
+  processingContainer: {
+    flex: 1,
+    padding: SPACING.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 400,
+  },
+  processingContent: {
+    alignItems: 'center',
+    paddingVertical: SPACING.xl,
+  },
+  processingTitle: {
+    ...TYPOGRAPHY.h2,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.sm,
+    textAlign: 'center',
+  },
+  processingDescription: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });

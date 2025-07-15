@@ -317,7 +317,6 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
-    marginHorizontal: SPACING.md, // Add consistent margins
     ...SHADOWS.medium,
   },
   header: {

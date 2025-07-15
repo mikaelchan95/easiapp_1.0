@@ -52,7 +52,6 @@ import CheckoutAddressScreen from './app/components/Checkout/CheckoutAddressScre
 import CheckoutDeliveryScreen from './app/components/Checkout/CheckoutDeliveryScreen';
 import CheckoutPaymentScreen from './app/components/Checkout/CheckoutPaymentScreen';
 import CheckoutReviewScreen from './app/components/Checkout/CheckoutReviewScreen';
-import CheckoutProcessingScreen from './app/components/Checkout/CheckoutProcessingScreen';
 import OrderSuccessScreen from './app/components/Checkout/OrderSuccessScreen';
 import OrderTrackingScreen from './app/components/Checkout/OrderTrackingScreen';
 // import MomentumShowcase from './app/components/UI/MomentumShowcase'; // Component doesn't exist
@@ -602,13 +601,6 @@ function AuthNavigator() {
       <Stack.Screen
         name="CheckoutReview"
         component={CheckoutReviewScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="CheckoutProcessing"
-        component={CheckoutProcessingScreen}
         options={{
           headerShown: false,
         }}

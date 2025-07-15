@@ -66,14 +66,6 @@ const transformDatabaseProductToProduct = (
       : getSupabaseStorageUrl(dbProduct.image_url)
     : null;
 
-  // Debug logging for image URL transformation (dev only)
-  if (__DEV__) {
-    console.log(`Transform product ${dbProduct.name}:`, {
-      originalImageUrl: dbProduct.image_url,
-      finalImageUrl: finalImageUrl,
-      isAlreadyFullUrl: dbProduct.image_url?.startsWith('http'),
-    });
-  }
 
   return {
     id: dbProduct.id,
