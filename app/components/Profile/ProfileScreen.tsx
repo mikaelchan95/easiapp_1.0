@@ -91,7 +91,7 @@ export default function ProfileScreen() {
   const [imageKey, setImageKey] = useState(Date.now()); // Force image refresh
   const { testSupabaseIntegration, loadUserFromSupabase } = useAppContext();
 
-  // Function to manually refresh company data
+  // Function to manually refresh company data and team members
   const refreshCompanyData = async () => {
     if (user?.accountType === 'company' && user?.companyId) {
       if (__DEV__) console.log('🔄 Manually refreshing company data...');
@@ -103,6 +103,9 @@ export default function ProfileScreen() {
         if (company) {
           if (__DEV__) console.log('✅ Company refreshed:', company.name);
           dispatch({ type: 'SET_COMPANY', payload: company });
+          
+          // Also refresh team members
+          await loadTeamMembers();
         } else {
           if (__DEV__)
             console.log('❌ No company found for ID:', user.companyId);

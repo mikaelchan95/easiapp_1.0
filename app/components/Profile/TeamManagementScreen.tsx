@@ -11,6 +11,7 @@ import {
   TextInput,
   RefreshControl,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -133,7 +134,9 @@ export default function TeamManagementScreen() {
   const getRoleIcon = (role: CompanyUserRole) => {
     switch (role) {
       case 'superadmin':
-        return 'shield';
+        return 'security'; // Better icon for superadmin
+      case 'admin':
+        return 'admin-panel-settings'; // Icon for admin
       case 'manager':
         return 'people';
       case 'approver':
@@ -143,6 +146,41 @@ export default function TeamManagementScreen() {
       default:
         return 'person';
     }
+  };
+
+  // Component to render either profile picture or role icon
+  const renderMemberAvatar = (member: CompanyUser) => {
+    const hasProfileImage = member.profile_image && member.profile_image.trim() !== '';
+    
+    if (hasProfileImage) {
+      return (
+        <View style={[styles.memberAvatar, { backgroundColor: COLORS.card }]}>
+          <Image
+            source={{ uri: member.profile_image }}
+            style={styles.profileImage}
+            onError={() => {
+              // Fallback to icon if image fails to load
+              console.log('Profile image failed to load for:', member.name);
+            }}
+          />
+        </View>
+      );
+    }
+    
+    return (
+      <View
+        style={[
+          styles.memberAvatar,
+          { backgroundColor: getRoleColor(member.role) + '20' },
+        ]}
+      >
+        <MaterialIcons
+          name={getRoleIcon(member.role)}
+          size={24}
+          color={getRoleColor(member.role)}
+        />
+      </View>
+    );
   };
 
   const handleInviteUser = async () => {
@@ -302,18 +340,7 @@ export default function TeamManagementScreen() {
         activeScale={0.98}
       >
         <View style={styles.memberHeader}>
-          <View
-            style={[
-              styles.memberAvatar,
-              { backgroundColor: getRoleColor(member.role) + '20' },
-            ]}
-          >
-            <MaterialIcons
-              name={getRoleIcon(member.role)}
-              size={24}
-              color={getRoleColor(member.role)}
-            />
-          </View>
+          {renderMemberAvatar(member)}
 
           <View style={styles.memberInfo}>
             <View style={styles.memberNameRow}>
@@ -866,6 +893,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.sm,
+    overflow: 'hidden',
+  },
+  profileImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   memberInfo: {
     flex: 1,

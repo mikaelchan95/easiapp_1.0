@@ -14,7 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// AsyncStorage removed - using session-based settings only
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { AppContext } from '../../context/AppContext';
 import { HapticFeedback } from '../../utils/haptics';
@@ -135,16 +135,7 @@ export default function SettingsScreen() {
         };
       }
 
-      // Load saved settings from AsyncStorage
-      try {
-        const savedSettings = await AsyncStorage.getItem('userSettings');
-        if (savedSettings) {
-          const parsedSettings = JSON.parse(savedSettings);
-          initialSettings = { ...initialSettings, ...parsedSettings };
-        }
-      } catch (storageError) {
-        console.log('No saved settings found, using defaults');
-      }
+      // Use default settings only (no persistence)
 
       setSettings(initialSettings);
     } catch (error) {
@@ -257,10 +248,7 @@ export default function SettingsScreen() {
     HapticFeedback.medium();
 
     try {
-      // Save to AsyncStorage
-      await AsyncStorage.setItem('userSettings', JSON.stringify(settings));
-
-      // Update context state
+      // Update context state only (no persistence)
       dispatch({
         type: 'SAVE_USER_SETTINGS',
         payload: settings,
