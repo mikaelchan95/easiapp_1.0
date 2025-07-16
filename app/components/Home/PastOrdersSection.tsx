@@ -20,6 +20,10 @@ import { HapticFeedback } from '../../utils/haptics';
 import { supabaseService, Order } from '../../services/supabaseService';
 import { AppContext } from '../../context/AppContext';
 import { supabase } from '../../../utils/supabase';
+import {
+  getProductImageSource,
+  getProductFallbackImage,
+} from '../../utils/imageUtils';
 
 interface PastOrder {
   id: string;
@@ -133,8 +137,39 @@ export default function PastOrdersSection({
       const currentUser =
         state.user || (await supabaseService.getCurrentUser());
       if (currentUser) {
-        console.log('Loading recent orders for user:', currentUser.name);
+        console.log(
+          '🏠 Loading recent orders for user:',
+          currentUser.name,
+          'ID:',
+          currentUser.id
+        );
         const orders = await supabaseService.getRecentOrders(currentUser.id, 3);
+        console.log('🏠 Recent orders loaded:', orders.length, 'orders');
+        if (orders.length > 0) {
+          console.log(
+            '🏠 First order:',
+            orders[0].orderNumber,
+            'Items:',
+            orders[0].items.length
+          );
+          if (orders[0].items.length > 0) {
+            const firstItem = orders[0].items[0];
+            const productName = firstItem?.name || 'Unknown Item';
+            const imageSource = getProductImageSource(
+              firstItem?.image,
+              productName
+            );
+            const imageUrl = imageSource?.uri || getProductFallbackImage().uri;
+            console.log(
+              '🏠 First item:',
+              productName,
+              'Original image:',
+              firstItem?.image,
+              'Resolved image:',
+              imageUrl
+            );
+          }
+        }
         setRecentOrders(orders);
       } else {
         console.log('No user found for loading recent orders');
@@ -211,6 +246,10 @@ export default function PastOrdersSection({
     });
   };
 
+  const formatPrice = (amount: number) => {
+    return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
   const renderOrderCard = (order: PastOrder) => (
     <TouchableOpacity
       key={order.id}
@@ -227,6 +266,10 @@ export default function PastOrdersSection({
           <Image
             source={{ uri: order.firstItemImage }}
             style={styles.orderImage}
+            onError={error => {
+              console.log('Image load error:', error);
+              // You could set a flag here to show placeholder on error
+            }}
           />
         ) : (
           <View style={styles.placeholderImage}>
@@ -267,7 +310,7 @@ export default function PastOrdersSection({
 
         <View style={styles.orderFooter}>
           <Text style={styles.orderDate}>{formatDate(order.date)}</Text>
-          <Text style={styles.orderTotal}>${order.total.toFixed(2)}</Text>
+          <Text style={styles.orderTotal}>{formatPrice(order.total)}</Text>
         </View>
       </View>
 
@@ -331,18 +374,29 @@ export default function PastOrdersSection({
             <Text style={styles.emptyText}>No recent orders</Text>
           </View>
         ) : (
-          recentOrders.map(order =>
-            renderOrderCard({
+          recentOrders.map(order => {
+            const firstItem = order.items[0];
+            const productName =
+              firstItem?.name || firstItem?.product?.name || 'Unknown Item';
+
+            // Use the same image logic as EnhancedProductCard
+            const imageSource = getProductImageSource(
+              firstItem?.image,
+              productName
+            );
+            const imageUrl = imageSource?.uri || getProductFallbackImage().uri;
+
+            return renderOrderCard({
               id: order.id,
               orderNumber: order.orderNumber,
               date: order.date,
               status: order.status,
               total: order.total,
               itemCount: order.items.length,
-              firstItemName: order.items[0]?.name || 'Unknown Item',
-              firstItemImage: order.items[0]?.image || '',
-            })
-          )
+              firstItemName: productName,
+              firstItemImage: imageUrl,
+            });
+          })
         )}
       </ScrollView>
     </View>
