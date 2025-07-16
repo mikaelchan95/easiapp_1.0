@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PaymentMethod } from '../../types/checkout';
 import { TYPOGRAPHY, COLORS, SPACING, SHADOWS } from '../../utils/theme';
 import VoucherSection from './VoucherSection';
+import { AppContext } from '../../context/AppContext';
 
 // Payment method options
 const PAYMENT_METHODS: PaymentMethod[] = [
@@ -22,7 +23,7 @@ const PAYMENT_METHODS: PaymentMethod[] = [
   {
     id: 'credit',
     name: 'Credit Terms',
-    icon: 'card-outline',
+    icon: 'time-outline', // Changed to time icon to differentiate from card
     isDefault: false,
   },
   {
@@ -48,6 +49,9 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   onVoucherApply, 
   appliedVoucherId 
 }) => {
+  const { state } = useContext(AppContext);
+  const { company, user } = state;
+  
   const [selectedMethodId, setSelectedMethodId] = useState<string>(
     PAYMENT_METHODS[0].id
   );
@@ -65,10 +69,11 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   const walletBalance = 200;
   const hasEnoughBalance = walletBalance >= total;
 
-  // Credit status (mock)
-  const creditLimit = 5000;
-  const creditAvailable = 3500;
-  const isCreditApproved = true;
+  // Credit status - use actual company data
+  const isCompanyUser = user?.accountType === 'company';
+  const creditLimit = company?.creditLimit || 0;
+  const creditAvailable = company?.currentCredit || 0;
+  const isCreditApproved = isCompanyUser && company?.status === 'active';
 
   return (
     <View style={styles.container}>
@@ -83,6 +88,11 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       
       <View style={styles.methodsContainer}>
         {PAYMENT_METHODS.map(method => {
+          // Hide credit terms for individual users
+          if (method.id === 'credit' && !isCompanyUser) {
+            return null;
+          }
+
           // Disable wallet option if balance is insufficient
           const isWalletDisabled = method.id === 'wallet' && !hasEnoughBalance;
 
@@ -156,7 +166,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                       ]}
                     >
                       {isCreditApproved
-                        ? `Available: $${creditAvailable.toFixed(0)} of $${creditLimit.toFixed(0)}`
+                        ? `Available: $${creditAvailable.toLocaleString()} of $${creditLimit.toLocaleString()}`
                         : 'Not approved for credit terms'}
                     </Text>
                   )}
@@ -228,8 +238,8 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
               />
             </View>
             <Text style={styles.detailsText}>
-              This purchase will be added to your credit account. Payment due
-              according to your credit terms.
+              This purchase will be added to your company credit account. Payment due
+              according to your credit terms ({company?.paymentTerms || 'NET30'}).
             </Text>
           </View>
         )}
@@ -240,8 +250,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
               <Ionicons name="card-outline" size={40} color="#1a1a1a" />
             </View>
             <Text style={styles.detailsText}>
-              Your card will be charged ${total.toFixed(2)} when your order is
-              confirmed.
+              Immediate payment will be processed from your card. Your card will be charged ${total.toFixed(2)} when your order is confirmed.
             </Text>
             <View style={styles.cardLogos}>
               {/* Replace with actual card logos */}
