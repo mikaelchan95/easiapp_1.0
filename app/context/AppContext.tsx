@@ -1,5 +1,5 @@
 import React, { createContext, useReducer, ReactNode, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// AsyncStorage removed - using session-based authentication only
 import { AppState } from 'react-native';
 // Mock products import removed - all data is now database-driven
 import { productsService, ProductFilters } from '../services/productsService';
@@ -354,8 +354,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       // Implementation will be done in the provider
       return state;
     case 'SAVE_USER_SETTINGS':
-      // Save to AsyncStorage and update state
-      AsyncStorage.setItem('userSettings', JSON.stringify(action.payload));
+      // Session-based settings only (no persistence)
       return {
         ...state,
         userSettings: action.payload,
@@ -365,7 +364,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return state;
     case 'UPDATE_USER_SETTINGS':
       const updatedSettings = { ...state.userSettings, ...action.payload };
-      AsyncStorage.setItem('userSettings', JSON.stringify(updatedSettings));
+      // Session-based settings only (no persistence)
       return {
         ...state,
         userSettings: updatedSettings,
@@ -645,23 +644,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         console.log('Error cleaning up channels:', cleanupError);
       }
 
-      // Clear session from AsyncStorage manually first
-      try {
-        console.log('Clearing session from AsyncStorage...');
-        await AsyncStorage.removeItem('sb-vqxnkxaeriizizfmqvua-auth-token');
-
-        // Also clear any other potential session keys
-        const keys = await AsyncStorage.getAllKeys();
-        const authKeys = keys.filter(
-          key => key.includes('auth-token') || key.includes('supabase')
-        );
-        if (authKeys.length > 0) {
-          await AsyncStorage.multiRemove(authKeys);
-          console.log('Cleared additional auth keys:', authKeys);
-        }
-      } catch (storageError) {
-        console.log('Error clearing AsyncStorage:', storageError);
-      }
+      // Session-based authentication only (no AsyncStorage clearing needed)
 
       // Call Supabase signOut with proper scope
       let success = false;
@@ -1007,17 +990,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Load user settings from AsyncStorage
+  // Use default settings only (no persistence)
   const loadUserSettings = async () => {
-    try {
-      const savedSettings = await AsyncStorage.getItem('userSettings');
-      if (savedSettings) {
-        const parsedSettings = JSON.parse(savedSettings);
-        dispatch({ type: 'UPDATE_USER_SETTINGS', payload: parsedSettings });
-      }
-    } catch (error) {
-      console.error('Error loading user settings:', error);
-    }
+    // Session-based settings only - no AsyncStorage loading
+    // Settings will reset to defaults on app restart
+    console.log('Using default settings (no persistence)');
   };
 
   // Load user and products on mount
@@ -1265,64 +1242,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [state.user?.id]); // Re-run when user changes
 
-  // Load cart from AsyncStorage on mount (user-specific)
-  useEffect(() => {
-    const loadCart = async () => {
-      if (!state.user) return;
+  // Session-based cart only (no persistence)
+  // Cart will be empty on app restart
 
-      try {
-        const cartKey = `@easiapp:cart:${state.user.id}`;
-        const savedCart = await AsyncStorage.getItem(cartKey);
-        if (savedCart) {
-          const parsedCart = JSON.parse(savedCart);
-          // Validate each item in the saved cart
-          const validCart = parsedCart.filter((item: CartItem) => {
-            const product = state.products.find(p => p.id === item.product.id);
-            return product !== undefined; // Just check if product exists
-          });
-
-          if (validCart.length > 0) {
-            // Re-create cart with current product data
-            validCart.forEach((item: CartItem) => {
-              const product = state.products.find(
-                p => p.id === item.product.id
-              );
-              if (product) {
-                dispatch({
-                  type: 'ADD_TO_CART',
-                  payload: { product, quantity: item.quantity },
-                });
-              }
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error loading cart:', error);
-      }
-    };
-
-    if (state.products.length > 0 && state.user) {
-      loadCart();
-    }
-  }, [state.products, state.user?.id]);
-
-  // Save cart to AsyncStorage whenever it changes (user-specific)
-  useEffect(() => {
-    const saveCart = async () => {
-      if (!state.user) return;
-
-      try {
-        const cartKey = `@easiapp:cart:${state.user.id}`;
-        await AsyncStorage.setItem(cartKey, JSON.stringify(state.cart));
-      } catch (error) {
-        console.error('Error saving cart:', error);
-      }
-    };
-
-    if (state.user) {
-      saveCart();
-    }
-  }, [state.cart, state.user?.id]);
+  // Session-based cart only (no saving to AsyncStorage)
 
   // Load user location from database on mount
   useEffect(() => {
@@ -1360,21 +1283,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           );
         } catch (error) {
           console.error('Error loading user location data:', error);
-          // Fallback to AsyncStorage for compatibility
-          try {
-            const savedLocation = await AsyncStorage.getItem(
-              '@easiapp:selectedLocation'
-            );
-            if (savedLocation) {
-              dispatch({
-                type: 'SET_SELECTED_LOCATION',
-                payload: JSON.parse(savedLocation),
-              });
-              console.log('✅ Fallback location loaded from AsyncStorage');
-            }
-          } catch (fallbackError) {
-            console.error('Error loading fallback location:', fallbackError);
-          }
+          // No fallback - use database only
         }
       }
     };
@@ -1408,22 +1317,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             );
           }
 
-          // Always save to AsyncStorage as backup
-          await AsyncStorage.setItem(
-            '@easiapp:selectedLocation',
-            JSON.stringify(state.selectedLocation)
-          );
         } catch (error) {
           console.error('Error saving user location:', error);
-          // Fallback to AsyncStorage only
-          try {
-            await AsyncStorage.setItem(
-              '@easiapp:selectedLocation',
-              JSON.stringify(state.selectedLocation)
-            );
-          } catch (fallbackError) {
-            console.error('Error saving fallback location:', fallbackError);
-          }
+          // No fallback - use database only
         }
       }
     };
