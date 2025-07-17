@@ -25,6 +25,7 @@ import { CartNotificationContext } from '../../context/CartNotificationContext';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { getProductPrice, formatPrice, UserRole } from '../../utils/pricing';
 import { formatFinancialAmount } from '../../utils/formatting';
+import { wishlistService } from '../../services/wishlistService';
 
 const { width } = Dimensions.get('window');
 
@@ -166,6 +167,10 @@ export default function ProductDetailScreen() {
   // Collapsible widget state
   const [isBusinessInfoExpanded, setIsBusinessInfoExpanded] = useState(false);
 
+  // Wishlist state
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
+
   // Feedback state for errors and messages
   const [feedback, setFeedback] = useState({
     visible: false,
@@ -206,6 +211,76 @@ export default function ProductDetailScreen() {
 
   const handleSelectVolume = (volumeOption: VolumeOption) => {
     setSelectedVolume(volumeOption);
+  };
+
+  // Check if product is in wishlist on mount
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      if (state.user && product) {
+        try {
+          const inWishlist = await wishlistService.isProductInWishlist(
+            state.user.id,
+            product.id
+          );
+          setIsInWishlist(inWishlist);
+        } catch (error) {
+          console.error('Error checking wishlist status:', error);
+        }
+      }
+    };
+
+    checkWishlistStatus();
+  }, [state.user, product]);
+
+  // Toggle wishlist function
+  const handleToggleWishlist = async () => {
+    if (!state.user || !product || wishlistLoading) return;
+
+    setWishlistLoading(true);
+    try {
+      const productForWishlist = {
+        id: product.id,
+        name: product.name,
+        price: currentPriceWithGST,
+        imageUrl: product.imageUrl,
+        category: product.category,
+        description: product.description,
+      };
+
+      const result = await wishlistService.toggleWishlist(
+        state.user.id,
+        productForWishlist
+      );
+
+      setIsInWishlist(result.isInWishlist);
+
+      // Show feedback
+      setFeedback({
+        visible: true,
+        type: 'success',
+        message: result.isInWishlist
+          ? 'Added to wishlist!'
+          : 'Removed from wishlist!',
+      });
+
+      // Hide feedback after 2 seconds
+      setTimeout(() => {
+        setFeedback(prev => ({ ...prev, visible: false }));
+      }, 2000);
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+      setFeedback({
+        visible: true,
+        type: 'error',
+        message: 'Failed to update wishlist. Please try again.',
+      });
+
+      setTimeout(() => {
+        setFeedback(prev => ({ ...prev, visible: false }));
+      }, 2000);
+    } finally {
+      setWishlistLoading(false);
+    }
   };
 
   const handleAddToCart = () => {
@@ -263,18 +338,29 @@ export default function ProductDetailScreen() {
 
           <View style={styles.headerRight}>
             <TouchableOpacity
-              style={styles.headerIconButton}
-              onPress={() => {
-                /* Add share functionality */
-              }}
+              style={[
+                styles.headerIconButton,
+                wishlistLoading && styles.wishlistButtonLoading,
+              ]}
+              onPress={handleToggleWishlist}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityLabel={
+                isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'
+              }
+              accessibilityHint={`Double tap to ${isInWishlist ? 'remove from' : 'add to'} wishlist`}
+              accessibilityRole="button"
+              disabled={wishlistLoading}
             >
-              <Ionicons name="share-outline" size={22} color={COLORS.text} />
+              <Ionicons
+                name={isInWishlist ? 'heart' : 'heart-outline'}
+                size={22}
+                color={isInWishlist ? COLORS.error : COLORS.text}
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.cartButton}
-              onPress={() => navigation.navigate('Main', { screen: 'Cart' })}
+              onPress={() => navigation.navigate('Cart')}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               accessibilityLabel="View cart"
               accessibilityHint="Double tap to view your shopping cart"
@@ -679,7 +765,7 @@ export default function ProductDetailScreen() {
               onPress={() => {
                 handleAddToCart();
                 setTimeout(() => {
-                  navigation.navigate('Main', { screen: 'Cart' });
+                  navigation.navigate('Cart');
                 }, 700);
               }}
             >
@@ -777,6 +863,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...SHADOWS.light,
+  },
+  wishlistButtonLoading: {
+    opacity: 0.6,
   },
   cartButton: {
     width: 40,
