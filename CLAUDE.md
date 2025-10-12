@@ -6,15 +6,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Start development server
-npm start
+npm start              # Start Expo development server
+npm run start:clean    # Start with cache cleared
+npm run dev           # Alias for start:clean
 
 # Platform-specific development
-npm run ios     # iOS simulator
-npm run android # Android emulator
-npm run web     # Web browser
+npm run ios           # Run on iOS simulator
+npm run android       # Run on Android emulator
+npm run web          # Run in web browser
+
+# Build commands
+npm run build        # Build for web and run tests
+npm run build:web    # Build web version only
+npm run build:android # Build Android APK
+npm run build:ios    # Build iOS IPA
+
+# Testing
+npm test             # Run all tests
+npm run test:watch   # Run tests in watch mode
+npm run test:coverage # Run tests with coverage report
+npm run test:ci      # Run tests in CI mode (no watch)
+npm run test:integration # Run integration tests only
+npm run test:unit    # Run unit tests only
+
+# Code quality
+npm run lint         # Check for linting errors
+npm run lint:fix     # Fix linting errors automatically
+npm run prettier     # Check code formatting
+npm run prettier:fix # Format code automatically
+npm run type-check   # Run TypeScript type checking
+npm run quality      # Run all quality checks (lint + prettier + type-check)
 
 # Deploy to web
-npm run deploy  # Export and deploy to EAS
+npm run deploy       # Export and deploy to EAS
 
 # Supabase CLI commands (always use CLI for database operations)
 # Reference: https://supabase.com/docs/reference/cli/introduction
@@ -177,18 +201,57 @@ npx supabase secrets set KEY=value    # Set environment secret
 app/
 ├── components/        # Feature-organized UI components
 │   ├── Activities/    # Order history, reviews, support, wishlist
-│   ├── Cart/         # Shopping cart and checkout flow
+│   ├── Auth/         # Authentication screens and flows
+│   ├── Billing/      # Credit payment and billing dashboard
+│   ├── Cart/         # Shopping cart functionality
+│   ├── Chat/         # Customer support chat interface
 │   ├── Checkout/     # Multi-step checkout process
-│   ├── Home/         # Home screen with featured content
+│   ├── Home/         # Dashboard and home screen
+│   ├── Layout/       # Screen layout wrappers and containers
 │   ├── Location/     # Uber-style location picker and management
+│   ├── Navigation/   # Bottom tabs and navigation components
 │   ├── Products/     # Product catalog, search, and details
 │   ├── Profile/      # User/company profiles and team management
 │   ├── Rewards/      # Loyalty system and voucher tracking
+│   ├── Settings/     # App settings and preferences
 │   └── UI/           # Reusable components (buttons, animations, etc.)
 ├── context/          # React Context providers for global state
-├── services/         # API integration (Supabase, Google Maps)
+│   ├── AppContext.tsx           # Global app state, user auth, cart
+│   ├── AuthContext.tsx          # Authentication state
+│   ├── CartNotificationContext.tsx  # Cart feedback notifications
+│   ├── CheckoutContext.tsx      # Checkout flow state
+│   ├── RewardsContext.tsx       # Loyalty points and vouchers
+│   └── TransitionContext.tsx    # Navigation transitions
+├── services/         # API integration and business logic
+│   ├── auditService.ts          # Audit trail logging
+│   ├── biometricService.ts      # Face ID/Touch ID authentication
+│   ├── companyBillingService.ts # Company billing operations
+│   ├── enhancedBillingService.ts # Advanced billing features
+│   ├── googleMapsService.ts     # Google Maps API integration
+│   ├── mcpStripeService.ts      # MCP Stripe integration
+│   ├── mcpSupabaseService.ts    # MCP Supabase integration
+│   ├── notificationService.ts   # Push notifications
+│   ├── pointsService.ts         # Loyalty points calculation
+│   ├── productsService.ts       # Product catalog operations
+│   ├── realTimePaymentService.ts # Real-time payment processing
+│   ├── storageService.ts        # AsyncStorage wrapper
+│   ├── supabaseAuthService.ts   # Authentication service
+│   ├── supabaseService.ts       # Main Supabase client
+│   ├── synchronousBalanceService.ts # Synchronous balance updates
+│   └── wishlistService.ts       # Wishlist management
 ├── types/           # TypeScript type definitions
-└── utils/           # Shared utilities (theme, animations, pricing)
+│   ├── checkout.ts  # Checkout-related types
+│   ├── location.ts  # Location and address types
+│   ├── navigation.ts # Navigation types
+│   ├── notification.ts # Notification types
+│   └── user.ts      # User and company types
+├── utils/           # Shared utilities
+│   ├── theme.ts     # Design system theme constants
+│   ├── animations.ts # Reusable animation configurations
+│   └── pricing.ts   # Pricing calculations and validations
+└── data/            # Mock data for development
+    ├── mockProducts.ts # Product catalog
+    └── mockUsers.ts   # User accounts
 ```
 
 ### Key Design Patterns
@@ -213,6 +276,24 @@ app/
 - Dual pricing: retail vs trade pricing based on user type
 - Stock validation with quantity limits
 - Company users with permissions-based access to trade pricing
+
+#### Service Layer Architecture
+
+Services are organized by domain and provide centralized business logic:
+
+- **Authentication Services**: `supabaseAuthService.ts` handles auth flows, `biometricService.ts` for Face ID/Touch ID
+- **Data Services**: `supabaseService.ts` (main client), `mcpSupabaseService.ts` (MCP integration)
+- **Business Logic**: `pointsService.ts`, `productsService.ts`, `wishlistService.ts`
+- **Payment Services**: `realTimePaymentService.ts`, `synchronousBalanceService.ts`, `companyBillingService.ts`
+- **Infrastructure Services**: `storageService.ts` (AsyncStorage), `notificationService.ts`, `auditService.ts`
+- **External Integrations**: `googleMapsService.ts`, `mcpStripeService.ts`
+
+**Service Pattern:**
+
+- Services export functions, not classes
+- All async operations use Promise-based API
+- Services handle error logging and recovery
+- Services are stateless; state lives in Context providers
 
 ### Business Logic
 
@@ -274,9 +355,12 @@ app/
 
 ### Testing & Quality
 
-- No formal test framework configured - check README for testing approach
-- Manual validation through comprehensive UI/UX testing
-- Location and checkout flow testing completed
+- **Testing Framework**: Jest with React Native preset
+- **Test Location**: `app/**/__tests__/**/*.{ts,tsx}` or `app/**/*.{test,spec}.{ts,tsx}`
+- **Coverage Thresholds**: 70% for branches, functions, lines, and statements
+- **Test Types**: Unit tests, integration tests, and manual UI/UX validation
+- **Module Aliasing**: `@/` maps to `app/` directory in tests
+- **Test Environment**: jsdom with 30-second timeout for async operations
 
 ### Special Considerations
 
@@ -301,6 +385,92 @@ app/
 - Dual pricing system (retail/trade) with GST calculation
 - Role-based permissions with company hierarchy support
 
+## MCP Server Integration
+
+This project uses MCP (Model Context Protocol) servers for enhanced development capabilities:
+
+**Configured Servers:**
+
+- **Supabase MCP** (`@supabase/mcp-server-supabase`): Database operations, migrations, and type generation
+- **Stripe MCP** (`@stripe/mcp`): Payment processing integration
+- **GitHub MCP** (`@edjl/github-mcp`): Repository management and CI/CD
+
+**Configuration File:** `.mcp.json` in project root
+
+**Usage:**
+
+- MCP servers enable AI-assisted database management and payment operations
+- Services in `app/services/mcp*.ts` provide typed interfaces to MCP functionality
+- Real-time database operations benefit from MCP's enhanced query capabilities
+
+## Pre-commit Hooks
+
+The project uses Husky for Git hooks and lint-staged for pre-commit validation:
+
+**Pre-commit Actions:**
+
+- TypeScript/TSX files: ESLint fix + Prettier format
+- JS/JSX/JSON/MD files: Prettier format
+- Automatic code quality enforcement before commits
+
+**Setup:**
+
+```bash
+npm run prepare  # Initialize Husky hooks (runs automatically after npm install)
 ```
 
+## Quick Reference
+
+### Important File Locations
+
+- **Environment Config**: `.env` (not in repo), see `.env.example` for template
+- **App Config**: `app.json` - Expo configuration including bundle IDs and API keys
+- **TypeScript Config**: `tsconfig.json` - TypeScript compiler settings
+- **Jest Config**: `jest.config.js` and `jest.setup.js` - Testing configuration
+- **Supabase Migrations**: `supabase/migrations/` - Database schema changes
+- **Cursor Rules**: `.cursor/rules/` - Code quality and style enforcement
+
+### Common Development Tasks
+
+**Adding a new feature:**
+
+1. Create feature-specific components in `app/components/<Feature>/`
+2. Add service functions in `app/services/<feature>Service.ts`
+3. Add TypeScript types in `app/types/`
+4. Update Context providers if global state is needed
+5. Keep files under 500 lines (refactor rule)
+6. Follow monochrome color scheme (see `.cursor/rules/color-scheme.mdc`)
+
+**Database schema changes:**
+
+1. Create migration: `npx supabase migration new <name>`
+2. Write SQL in generated file in `supabase/migrations/`
+3. Apply migration: `SUPABASE_DB_PASSWORD="5Cptmjut1!5gg5ocw" npx supabase db push`
+4. Generate types: `npx supabase gen types typescript --local`
+
+**Debugging authentication issues:**
+
+- Check RLS policies in Supabase dashboard
+- Verify user exists in `auth.users` table
+- Check `users` table has matching record
+- For company users, verify `user_permissions` table entry
+
+### Environment Variables
+
+**Required for Development:**
+
+```bash
+EXPO_PUBLIC_SUPABASE_URL=https://vqxnkxaeriizizfmqvua.supabase.co
+EXPO_PUBLIC_SUPABASE_KEY=<anon_key>
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=<google_maps_key>
+```
+
+**Optional for Full Features:**
+
+```bash
+EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=<stripe_key>
+STRIPE_SECRET_KEY=<stripe_secret>
+SUPABASE_SERVICE_KEY=<service_role_key>
+SUPABASE_ACCESS_TOKEN=<access_token>
+GITHUB_TOKEN=<github_token>
 ```
