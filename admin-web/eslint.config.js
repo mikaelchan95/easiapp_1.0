@@ -24,6 +24,10 @@ export default defineConfig([
       '@typescript-eslint/no-explicit-any': 'warn',
       'react-hooks/exhaustive-deps': 'warn',
       '@typescript-eslint/no-unused-vars': 'warn',
+      'no-undef': 'off', // TypeScript handles this
+      'no-unused-vars': 'warn',
+      'no-redeclare': 'warn',
+      'no-case-declarations': 'warn',
     },
   },
 ])
