@@ -59,13 +59,6 @@ export default function CheckoutReviewScreen() {
 
       // Skip processing screen and go directly to order creation
 
-      // Calculate totals
-      const orderSummary = calculateOrderTotal(
-        state.cart,
-        getUserRole(state.user),
-        checkoutState.deliverySlot?.id === 'express' ? 'express' : 'standard'
-      );
-
       // Create order
       const orderData = {
         userId: state.user?.id,
@@ -113,7 +106,10 @@ export default function CheckoutReviewScreen() {
 
         // Show purchase achievement to trigger points award in RewardsContext
         // Use the actual points earned from the database
-        const pointsEarned = pointsAwarded?.pointsEarned || Math.floor(orderSummary.finalTotal * 2);
+        const earnRate = state.appSettings.loyalty.earn_rate || 2;
+        const pointsEarned =
+          pointsAwarded?.pointsEarned ||
+          Math.floor(orderSummary.finalTotal * earnRate);
         dispatch({
           type: 'SHOW_PURCHASE_ACHIEVEMENT',
           payload: {
@@ -148,7 +144,8 @@ export default function CheckoutReviewScreen() {
   const orderSummary = calculateOrderTotal(
     state.cart,
     getUserRole(state.user),
-    checkoutState.deliverySlot?.id === 'express' ? 'express' : 'standard'
+    checkoutState.deliverySlot?.id === 'express' ? 'express' : 'standard',
+    state.appSettings.delivery
   );
 
   return (

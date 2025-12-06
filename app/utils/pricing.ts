@@ -117,25 +117,35 @@ export const calculateCartTotals = (
   };
 };
 
+
+export interface DeliveryConfig {
+  default_fee: number;
+  express_fee: number;
+  free_delivery_threshold: number;
+}
+
 /**
  * Calculate delivery fee based on order total and delivery type
  */
 export const calculateDeliveryFee = (
   orderTotal: number,
-  deliveryType: 'standard' | 'express' = 'standard'
+  deliveryType: 'standard' | 'express' = 'standard',
+  config?: DeliveryConfig
 ): number => {
-  // Free delivery over $150
-  if (orderTotal >= 150) {
+  const freeThreshold = config?.free_delivery_threshold ?? 150;
+  
+  // Free delivery over threshold
+  if (orderTotal >= freeThreshold) {
     return 0;
   }
 
   // Standard delivery fee
   if (deliveryType === 'standard') {
-    return 5.0;
+    return config?.default_fee ?? 5.0;
   }
 
   // Express delivery fee
-  return 8.0;
+  return config?.express_fee ?? 8.0;
 };
 
 /**
@@ -144,10 +154,11 @@ export const calculateDeliveryFee = (
 export const calculateOrderTotal = (
   cartItems: CartItem[],
   userRole: UserRole,
-  deliveryType: 'standard' | 'express' = 'standard'
+  deliveryType: 'standard' | 'express' = 'standard',
+  config?: DeliveryConfig
 ) => {
   const cartTotals = calculateCartTotals(cartItems, userRole);
-  const deliveryFee = calculateDeliveryFee(cartTotals.total, deliveryType);
+  const deliveryFee = calculateDeliveryFee(cartTotals.total, deliveryType, config);
 
   return {
     ...cartTotals,
