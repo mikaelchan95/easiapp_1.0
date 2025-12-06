@@ -16,6 +16,17 @@ import {
 } from '../types/user';
 import { supabaseService } from '../services/supabaseService';
 import { auditService } from '../services/auditService';
+import { DeliveryConfig } from '../utils/pricing';
+
+export interface LoyaltyConfig {
+  earn_rate: number;
+  redemption_rate: number;
+}
+
+export interface AppSettings {
+  loyalty: LoyaltyConfig;
+  delivery: DeliveryConfig;
+}
 
 interface UserSettings {
   // Personal Information
@@ -70,6 +81,7 @@ interface AppState {
     orderCount: number;
   };
   userSettings: UserSettings;
+  appSettings: AppSettings;
 }
 
 type AppAction =
@@ -101,7 +113,8 @@ type AppAction =
   | { type: 'CALCULATE_INITIAL_POINTS'; payload: { userId: string } }
   | { type: 'SAVE_USER_SETTINGS'; payload: UserSettings }
   | { type: 'LOAD_USER_SETTINGS' }
-  | { type: 'UPDATE_USER_SETTINGS'; payload: Partial<UserSettings> };
+  | { type: 'UPDATE_USER_SETTINGS'; payload: Partial<UserSettings> }
+  | { type: 'SET_APP_SETTINGS'; payload: AppSettings };
 
 const DEFAULT_USER_SETTINGS: UserSettings = {
   firstName: '',
@@ -157,6 +170,10 @@ const initialState: AppState = {
     orderCount: 0,
   },
   userSettings: DEFAULT_USER_SETTINGS,
+  appSettings: {
+    loyalty: { earn_rate: 2.0, redemption_rate: 0.01 }, // Default fallback
+    delivery: { default_fee: 5.0, express_fee: 8.0, free_delivery_threshold: 150.0 }, // Default fallback
+  },
 };
 
 // Reducer
@@ -269,7 +286,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       };
     case 'COMPLETE_PURCHASE':
       const { orderTotal, orderId } = action.payload;
-      const pointsEarned = Math.floor(orderTotal * 2); // 2 points per dollar
+      const earnRate = state.appSettings.loyalty.earn_rate || 2;
+      const pointsEarned = Math.floor(orderTotal * earnRate);
       const savingsAmount = orderTotal * 0.15; // 15% savings
 
       // NOTE: Points are NOT awarded immediately upon order completion
@@ -369,6 +387,11 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         ...state,
         userSettings: updatedSettings,
       };
+    case 'SET_APP_SETTINGS':
+       return {
+         ...state,
+         appSettings: action.payload,
+       };
     default:
       return state;
   }
@@ -437,6 +460,29 @@ const getUserRole = (user: User | null): UserRole => {
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
+  useEffect(() => {
+    fetchAppSettings();
+  }, []);
+
+  const fetchAppSettings = async () => {
+    try {
+      const { data, error } = await supabase.from('app_settings').select('key, value');
+      if (error) throw error;
+      
+      const loyaltyMap = data?.find((item: any) => item.key === 'loyalty_config');
+      const deliveryMap = data?.find((item: any) => item.key === 'delivery_config');
+      
+      const newSettings: AppSettings = {
+        loyalty: loyaltyMap?.value || initialState.appSettings.loyalty,
+        delivery: deliveryMap?.value || initialState.appSettings.delivery,
+      };
+
+      dispatch({ type: 'SET_APP_SETTINGS', payload: newSettings });
+    } catch (err) {
+      console.error('Error fetching app settings:', err);
+    }
+  };
+
   // Calculate initial points based on order history
   const calculateInitialPoints = async (userId: string): Promise<number> => {
     try {
@@ -448,7 +494,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       // Calculate total points (2 points per dollar)
       let totalPoints = 0;
       orders.forEach(order => {
-        const pointsForOrder = Math.floor(order.total * 2);
+        // Note: For historical points, we might want to use the rate at that time, 
+        // but for now we'll use current rate or hardcoded fallback
+        const earnRate = state.appSettings.loyalty.earn_rate || 2;
+        const pointsForOrder = Math.floor(order.total * earnRate);
         totalPoints += pointsForOrder;
         console.log(
           `  ${order.orderNumber}: $${order.total} → ${pointsForOrder} points`

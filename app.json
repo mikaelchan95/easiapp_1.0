@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.epico.easi",
@@ -34,11 +36,18 @@
           "apiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
         }
       },
-      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./app/assets/favicon.png"
     },
-    "plugins": ["expo-location"]
+    "plugins": [
+      "expo-location",
+      "expo-router",
+      "expo-font"
+    ]
   }
 }
