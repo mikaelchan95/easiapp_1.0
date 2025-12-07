@@ -148,7 +148,7 @@ export default function CompanyInvoices() {
       if (error) {
         throw error;
       }
-      
+
       alert('Invoice email sent successfully!');
     } catch (error) {
       console.error('Error sending invoice:', error);
@@ -383,7 +383,6 @@ export default function CompanyInvoices() {
                         size="sm"
                         className="min-w-[36px] min-h-[36px] p-2"
                         title="Download Invoice"
-                        onClick={() => generateInvoicePDF(invoice)}
                       >
                         <Download size={16} />
                       </Button>
