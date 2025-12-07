@@ -1,23 +1,28 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import {
-  Users,
-  ShoppingBag,
-  DollarSign,
-  Package,
+  MoreHorizontal,
   TrendingUp,
-  ArrowRight,
+  TrendingDown,
+  Search,
+  Filter,
+  LayoutGrid,
+  List,
+  ChevronRight,
+  Trash2,
+  ChevronLeft,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalRevenue: 0,
     totalOrders: 0,
-    totalUsers: 0,
-    lowStockProducts: 0,
+    totalCustomers: 0,
+    totalProducts: 0,
   });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,11 +33,11 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // 1. Total Revenue (Sum of 'total' from all orders)
+      // 1. Total Revenue & Orders
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select(
-          'total, id, created_at, status, order_number, user:users!user_id(name)'
+          'total, id, created_at, status, order_number, user:users!user_id(name, email)'
         );
 
       if (ordersError) throw ordersError;
@@ -41,26 +46,25 @@ export default function Dashboard() {
         ordersData?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
       const totalOrders = ordersData?.length || 0;
 
-      // 2. Total Users
+      // 2. Total Customers
       const { count: userCount, error: userError } = await supabase
         .from('users')
         .select('*', { count: 'exact', head: true });
 
       if (userError) throw userError;
 
-      // 3. Low Stock Products
-      const { count: lowStockCount, error: stockError } = await supabase
+      // 3. Total Products
+      const { count: productCount, error: productError } = await supabase
         .from('products')
-        .select('*', { count: 'exact', head: true })
-        .lt('stock_quantity', 10);
+        .select('*', { count: 'exact', head: true });
 
-      if (stockError) throw stockError;
+      if (productError) throw productError;
 
       setStats({
         totalRevenue,
         totalOrders,
-        totalUsers: userCount || 0,
-        lowStockProducts: lowStockCount || 0,
+        totalCustomers: userCount || 0,
+        totalProducts: productCount || 0,
       });
 
       // 4. Recent Orders
@@ -71,7 +75,7 @@ export default function Dashboard() {
               new Date(b.created_at).getTime() -
               new Date(a.created_at).getTime()
           )
-          .slice(0, 5) || [];
+          .slice(0, 8) || []; // Show 8 items like image
 
       setRecentOrders(sortedOrders);
     } catch (error) {
@@ -82,166 +86,246 @@ export default function Dashboard() {
   };
 
   const getStatusVariant = (status: string) => {
-    switch (status) {
-      case 'delivered':
-        return 'success';
-      case 'cancelled':
-        return 'error';
-      case 'shipped':
-        return 'default'; // Or add 'info' variant if needed
-      default:
-        return 'default';
-    }
+    const s = status.toLowerCase();
+    if (s === 'delivered') return 'info'; // Blue
+    if (s === 'processing' || s === 'shipped') return 'purple'; // Purple
+    if (s === 'completed' || s === 'paid') return 'success'; // Green
+    if (s === 'cancelled') return 'error';
+    return 'default';
   };
 
-  const StatCard = ({ title, value, icon: Icon, color, to }: any) => (
-    <Link to={to} className="block">
-      <Card hover className="p-5 sm:p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0">
-            <p className="text-xs sm:text-sm font-medium text-[var(--text-secondary)]">
-              {title}
-            </p>
-            <h3 className="mt-2 text-2xl sm:text-3xl font-bold text-[var(--text-primary)] tracking-tight truncate">
-              {value}
-            </h3>
-          </div>
-          <div
-            className={`flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl flex-shrink-0 ml-4 ${color.replace('text-', 'bg-').replace('600', '100')} ${color} dark:bg-opacity-20`}
-          >
-            <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
-          </div>
+  const StatCard = ({ title, value, trend, trendUp, to }: any) => (
+    <Card
+      className="relative p-6 group cursor-pointer hover:border-gray-200"
+      onClick={() => navigate(to)}
+    >
+      <div className="flex justify-between items-start mb-4">
+        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+        <button className="text-gray-400 hover:text-gray-600">
+          <MoreHorizontal size={20} />
+        </button>
+      </div>
+      <div className="flex items-end justify-between">
+        <div className="text-3xl font-bold text-gray-900 tracking-tight">
+          {value}
         </div>
-        <div className="mt-4 flex items-center gap-1 text-xs sm:text-sm text-green-600 dark:text-green-400">
-          <TrendingUp size={14} className="sm:w-4 sm:h-4" />
-          <span className="font-medium">Updated just now</span>
+        <div
+          className={`flex items-center gap-1 text-xs font-semibold ${trendUp ? 'text-green-500' : 'text-red-500'} mb-1`}
+        >
+          {trendUp ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+          <span>{trend}</span>
+          <span className="text-gray-400 font-normal ml-1">From last week</span>
         </div>
-      </Card>
-    </Link>
+      </div>
+    </Card>
   );
 
   if (loading) {
     return (
       <div className="flex h-96 items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--text-primary)]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fade-in">
-      <div>
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--text-primary)] tracking-tight">
-          Dashboard Overview
-        </h1>
-        <p className="mt-2 text-[var(--text-secondary)] text-sm sm:text-base lg:text-lg">
-          Here's what's happening with your store today.
-        </p>
-      </div>
-
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-8 animate-fade-in font-sans">
+      {/* Stats Grid */}
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Revenue"
-          value={`$${stats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          icon={DollarSign}
-          color="text-green-600"
+          value={`$${stats.totalRevenue.toLocaleString()}`}
+          trend="3.1%"
+          trendUp={true}
           to="/invoices"
         />
         <StatCard
-          title="Total Orders"
-          value={stats.totalOrders.toLocaleString('en-US')}
-          icon={ShoppingBag}
-          color="text-blue-600"
-          to="/orders"
-        />
-        <StatCard
-          title="Total Users"
-          value={stats.totalUsers.toLocaleString('en-US')}
-          icon={Users}
-          color="text-purple-600"
+          title="Total Customer"
+          value={stats.totalCustomers.toLocaleString()}
+          trend="5.1%"
+          trendUp={true}
           to="/customers"
         />
         <StatCard
-          title="Low Stock Items"
-          value={stats.lowStockProducts.toLocaleString('en-US')}
-          icon={Package}
-          color="text-red-600"
+          title="Total Transaction"
+          value={stats.totalOrders.toLocaleString()}
+          trend="5.1%"
+          trendUp={false}
+          to="/orders"
+        />
+        <StatCard
+          title="Total Product"
+          value={stats.totalProducts.toLocaleString()}
+          trend="5.1%"
+          trendUp={true}
           to="/products"
         />
       </div>
 
-      <Card className="overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-4 sm:px-6 py-4">
-          <h2 className="text-lg sm:text-xl font-bold text-[var(--text-primary)]">
-            Recent Orders
+      {/* Main Table Section */}
+      <div className="space-y-4">
+        {/* Table Header Controls */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <h2 className="text-xl font-bold text-gray-900 self-start sm:self-center">
+            List Return
+            <span className="ml-3 text-sm font-normal text-gray-500">
+              188 Refund
+            </span>
           </h2>
-          <Link
-            to="/orders"
-            className="flex items-center gap-1 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-          >
-            View All <ArrowRight size={16} />
-          </Link>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500">
+              <span>Show</span>
+              <select className="bg-transparent font-semibold text-gray-900 border-none focus:ring-0 p-0 cursor-pointer">
+                <option>6</option>
+                <option>10</option>
+                <option>20</option>
+              </select>
+              <span>Entries</span>
+            </div>
+
+            <div className="relative flex-1 sm:flex-none">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={16}
+              />
+              <input
+                type="text"
+                placeholder="Search by Name Product"
+                className="w-full sm:w-64 pl-10 pr-4 py-2 bg-gray-100 rounded-full text-sm border-none focus:ring-2 focus:ring-gray-200"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 text-gray-600">
+                <LayoutGrid size={18} />
+              </button>
+              <button className="p-2 bg-gray-900 rounded-lg text-white">
+                <List size={18} />
+              </button>
+              <button className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 text-gray-600">
+                <Filter size={18} />
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-[var(--bg-tertiary)] text-xs font-bold uppercase text-[var(--text-primary)] tracking-wider">
-              <tr>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                  Order ID
-                </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                  Customer
-                </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                  Status
-                </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                  Amount
-                </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-right whitespace-nowrap">
-                  Date
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border-primary)]">
-              {recentOrders.map(order => (
-                <tr
-                  key={order.id}
-                  className="group hover:bg-[var(--bg-tertiary)] transition-colors"
-                >
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-[var(--text-primary)]">
-                    <Link
-                      to={`/orders/${order.id}`}
-                      className="group-hover:underline transition-colors"
-                    >
-                      #{order.order_number}
-                    </Link>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
-                    {/* @ts-expect-error */}
-                    {order.user?.name || 'Unknown'}
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4">
-                    <Badge variant={getStatusVariant(order.status)}>
-                      {order.status}
-                    </Badge>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-[var(--text-primary)]">
-                    $
-                    {order.total?.toLocaleString('en-US', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-right text-[var(--text-secondary)]">
-                    {new Date(order.created_at).toLocaleDateString()}
-                  </td>
+
+        {/* Table */}
+        <Card className="overflow-hidden border-0 shadow-none bg-white p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="text-xs font-semibold text-gray-500 uppercase tracking-wider bg-transparent">
+                <tr className="border-b border-gray-100">
+                  <th className="px-6 py-4 font-medium">Order ID</th>
+                  <th className="px-6 py-4 font-medium">Date Return</th>
+                  <th className="px-6 py-4 font-medium">Name Customer</th>
+                  <th className="px-6 py-4 font-medium">Address</th>
+                  <th className="px-6 py-4 font-medium">Reason Return</th>
+                  <th className="px-6 py-4 font-medium">Status</th>
+                  <th className="px-6 py-4 font-medium text-right">
+                    Follow-up
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {recentOrders.map((order, i) => (
+                  <tr
+                    key={order.id}
+                    className="group hover:bg-gray-50/50 transition-colors"
+                  >
+                    <td className="px-6 py-4 font-semibold text-gray-900">
+                      <Link
+                        to={`/orders/${order.id}`}
+                        className="hover:text-blue-600"
+                      >
+                        ODR-{order.order_number}
+                      </Link>
+                    </td>
+                    <td className="px-6 py-4 text-gray-500 font-medium">
+                      {new Date(order.created_at).toLocaleDateString('en-GB', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </td>
+                    <td className="px-6 py-4 font-semibold text-gray-900">
+                      {/* @ts-expect-error */}
+                      {order.user?.name || 'Unknown User'}
+                    </td>
+                    <td className="px-6 py-4 text-gray-500 truncate max-w-[200px]">
+                      {/* Mock Address */}
+                      {
+                        [
+                          '123 Main St, Inazuma',
+                          '456 Oak Ave, Inazuma',
+                          '789 Elm Rd, Inazuma',
+                          '321 Pine Ln, Liyue',
+                        ][i % 4]
+                      }
+                    </td>
+                    <td className="px-6 py-4 text-gray-500">
+                      {/* Mock Reason */}
+                      {
+                        [
+                          'Poor Product Quality',
+                          'Product Not as Expected',
+                          'Damaged in Shipping',
+                        ][i % 3]
+                      }
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge variant={getStatusVariant(order.status)}>
+                        {order.status === 'paid' ? 'Success' : order.status}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600">
+                          <ChevronRight size={18} />
+                        </button>
+                        <button className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600">
+                          <MoreHorizontal size={18} />
+                        </button>
+                        <button className="p-1.5 rounded-full hover:bg-red-50 text-red-300 hover:text-red-500">
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Mock */}
+          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+            <span className="text-sm text-gray-500 font-medium">
+              Showing 1 to 10 of 7000 entries
+            </span>
+            <div className="flex items-center gap-2">
+              <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-400">
+                <ChevronLeft size={16} />
+              </button>
+              <button className="px-3 py-1 rounded-lg bg-green-200 text-green-800 font-semibold text-sm">
+                1
+              </button>
+              <button className="px-3 py-1 rounded-lg hover:bg-gray-100 text-gray-600 font-semibold text-sm">
+                2
+              </button>
+              <button className="px-3 py-1 rounded-lg hover:bg-gray-100 text-gray-600 font-semibold text-sm">
+                3
+              </button>
+              <span className="text-gray-400">...</span>
+              <button className="px-3 py-1 rounded-lg hover:bg-gray-100 text-gray-600 font-semibold text-sm">
+                10
+              </button>
+              <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-400">
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

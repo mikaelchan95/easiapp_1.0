@@ -4,22 +4,17 @@ import {
   LayoutDashboard,
   Package,
   LogOut,
-  Users,
   ShoppingCart,
   FileText,
-  Building2,
-  Gift,
   Menu,
   X,
-  Megaphone,
   Bell,
-  Tags,
   Settings,
-  ChevronLeft,
-  ChevronRight,
-  Sun,
-  Moon,
+  Search,
+  Calendar,
+  ChevronDown,
   Receipt,
+  Tags,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../context/ThemeContext';
@@ -29,33 +24,28 @@ export const Layout = () => {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [desktopCollapsed, setDesktopCollapsed] = useState(false);
+
+  // Mock user for display
+  const user = {
+    name: 'Kamisato Aya',
+    role: 'Manager',
+    avatar: 'https://ui-avatars.com/api/?name=Kamisato+Aya&background=random',
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/login');
   };
 
-  // Close mobile sidebar on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
 
-  // Persist desktop sidebar state
-  useEffect(() => {
-    const saved = localStorage.getItem('sidebarCollapsed');
-    if (saved !== null) {
-      setDesktopCollapsed(saved === 'true');
-    }
-  }, []);
-
-  const toggleDesktopSidebar = () => {
-    const newState = !desktopCollapsed;
-    setDesktopCollapsed(newState);
-    localStorage.setItem('sidebarCollapsed', String(newState));
+  const isActive = (path: string) => {
+    if (path === '/' && location.pathname === '/') return true;
+    if (path !== '/' && location.pathname.startsWith(path)) return true;
+    return false;
   };
-
-  const isActive = (path: string) => location.pathname === path;
 
   const NavItem = ({
     to,
@@ -65,184 +55,190 @@ export const Layout = () => {
     to: string;
     icon: any;
     label: string;
-  }) => (
-    <Link
-      to={to}
-      className={`group relative flex items-center gap-3 rounded-md transition-all duration-200 ${
-        desktopCollapsed ? 'justify-center p-3 lg:p-3' : 'px-3 py-2.5'
-      } ${
-        isActive(to)
-          ? 'bg-brand-white text-brand-dark shadow-sm'
-          : 'text-gray-400 hover:bg-white/5 hover:text-white'
-      }`}
-      title={desktopCollapsed ? label : undefined}
-    >
-      <Icon size={20} className="flex-shrink-0" />
-      <span
-        className={`font-medium text-sm transition-opacity duration-200 ${
-          desktopCollapsed ? 'lg:hidden' : ''
+  }) => {
+    const active = isActive(to);
+    return (
+      <Link
+        to={to}
+        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
+          active
+            ? 'bg-[var(--color-primary-bg)] text-[var(--color-primary)]'
+            : 'text-[var(--text-secondary)] hover:bg-gray-50 hover:text-[var(--text-primary)]'
         }`}
       >
-        {label}
-      </span>
-
-      {/* Tooltip for collapsed state */}
-      {desktopCollapsed && (
-        <div className="hidden lg:block absolute left-full ml-2 px-2 py-1 bg-brand-dark text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 border border-white/10">
-          {label}
-        </div>
-      )}
-    </Link>
-  );
+        <Icon size={20} strokeWidth={active ? 2.5 : 2} />
+        <span>{label}</span>
+      </Link>
+    );
+  };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--bg-secondary)]">
-      {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 flex h-14 items-center justify-between px-4 shadow-md bg-[var(--bg-primary)] border-b border-[var(--border-primary)]">
-        <h1 className="text-lg font-semibold text-[var(--text-primary)]">
-          EasiApp
-        </h1>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={toggleTheme}
-            className="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] rounded-md transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
-            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-          >
-            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-          </button>
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-2 -mr-2 text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] rounded-md transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
-            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-          >
-            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
-        </div>
-      </header>
-
+    <div className="flex h-screen overflow-hidden bg-[var(--bg-app)] font-sans">
       {/* Mobile Overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden backdrop-blur-sm"
+          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden"
           onClick={() => setMobileOpen(false)}
-          aria-hidden="true"
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 shadow-xl transition-all duration-300 ease-in-out bg-[var(--bg-primary)] border-r border-[var(--border-primary)]
-          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:relative lg:translate-x-0
-          ${desktopCollapsed ? 'lg:w-16' : 'lg:w-64'}
-          w-64
-        `}
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-[var(--bg-sidebar)] shadow-sm transition-transform duration-300 lg:static lg:translate-x-0 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
       >
-        {/* Desktop Header with Collapse Button */}
-        <div className="hidden lg:flex h-14 items-center justify-between px-3 border-b border-[var(--border-primary)]">
-          <h1
-            className={`font-semibold text-[var(--text-primary)] transition-opacity duration-200 ${
-              desktopCollapsed ? 'opacity-0 w-0' : 'opacity-100'
-            }`}
-          >
-            EasiApp Admin
-          </h1>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={toggleTheme}
-              className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-md transition-colors"
-              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-            >
-              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-            </button>
-            <button
-              onClick={toggleDesktopSidebar}
-              className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-md transition-colors"
-              aria-label={
-                desktopCollapsed ? 'Expand sidebar' : 'Collapse sidebar'
-              }
-            >
-              {desktopCollapsed ? (
-                <ChevronRight size={18} />
-              ) : (
-                <ChevronLeft size={18} />
-              )}
-            </button>
+        <div className="flex h-20 items-center px-6 border-b border-dashed border-[var(--border-subtle)]">
+          <div className="flex items-center gap-2 text-[var(--text-primary)]">
+            <div className="h-8 w-8 rounded-lg bg-[var(--color-primary)] flex items-center justify-center text-white font-bold text-xl">
+              S
+            </div>
+            <span className="text-xl font-bold tracking-tight">SalesSync</span>
           </div>
-        </div>
-
-        {/* Mobile Header */}
-        <div className="lg:hidden flex h-14 items-center justify-between px-4 border-b border-[var(--border-primary)]">
-          <h1 className="font-semibold text-[var(--text-primary)]">
-            EasiApp Admin
-          </h1>
           <button
+            className="ml-auto lg:hidden text-gray-500"
             onClick={() => setMobileOpen(false)}
-            className="p-2 -mr-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-md transition-colors"
-            aria-label="Close menu"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav
-          className={`flex flex-col gap-1 overflow-y-auto h-[calc(100vh-112px)] mt-2 ${
-            desktopCollapsed ? 'px-2' : 'px-3'
-          }`}
-        >
-          <NavItem to="/" icon={LayoutDashboard} label="Dashboard" />
-          <NavItem to="/products" icon={Package} label="Products" />
-          <NavItem to="/categories" icon={Tags} label="Categories" />
-          <NavItem to="/customers" icon={Users} label="Customers" />
-          <NavItem to="/rewards" icon={Gift} label="Rewards" />
-          <NavItem to="/companies" icon={Building2} label="Companies" />
-          <NavItem to="/orders" icon={ShoppingCart} label="Orders" />
-          <NavItem to="/invoices" icon={FileText} label="Invoices" />
-          <NavItem to="/company-invoices" icon={Receipt} label="Company SOA" />
-          <NavItem to="/content" icon={Megaphone} label="Content & Banners" />
-          <NavItem to="/notifications" icon={Bell} label="Notifications" />
-          <NavItem to="/settings" icon={Settings} label="Settings" />
-        </nav>
+        <div className="flex flex-col h-[calc(100vh-80px)] justify-between p-4">
+          <nav className="space-y-1 overflow-y-auto custom-scrollbar">
+            <div className="px-4 py-2 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
+              Main Menu
+            </div>
+            <NavItem to="/" icon={LayoutDashboard} label="Overview" />
+            <NavItem to="/analytics" icon={FileText} label="Analytics" />
+            <NavItem to="/products" icon={Package} label="Product" />
+            <NavItem to="/orders" icon={ShoppingCart} label="Sales" />
 
-        {/* Logout Button */}
-        <div
-          className={`absolute bottom-0 w-full border-t border-[var(--border-primary)] bg-[var(--bg-primary)] ${
-            desktopCollapsed ? 'p-2' : 'p-3'
-          }`}
-        >
-          <button
-            onClick={handleLogout}
-            className={`group relative flex w-full items-center gap-3 rounded-md text-red-500 dark:text-red-400 transition-all duration-200 hover:bg-red-500/10 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-300 ${
-              desktopCollapsed ? 'justify-center p-3 lg:p-3' : 'px-3 py-2.5'
-            }`}
-            title={desktopCollapsed ? 'Sign Out' : undefined}
-          >
-            <LogOut size={20} className="flex-shrink-0" />
-            <span
-              className={`font-medium text-sm transition-opacity duration-200 ${
-                desktopCollapsed ? 'lg:hidden' : ''
-              }`}
+            <div className="px-4 py-2 mt-6 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
+              Transaction
+            </div>
+            <NavItem to="/invoices" icon={Receipt} label="Invoice" />
+            <NavItem
+              to="/company-invoices"
+              icon={Receipt}
+              label="Company SOA"
+            />
+            <NavItem to="/returns" icon={Tags} label="Returns" />
+
+            <div className="px-4 py-2 mt-6 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
+              General
+            </div>
+            <NavItem to="/notifications" icon={Bell} label="Notifications" />
+            <NavItem to="/settings" icon={Settings} label="Setting" />
+          </nav>
+
+          <div className="pt-4 mt-auto border-t border-[var(--border-subtle)] space-y-2">
+            <div className="flex items-center justify-between px-4 py-2">
+              <span className="text-sm font-medium text-[var(--text-secondary)]">
+                Dark Mode
+              </span>
+              <button
+                onClick={toggleTheme}
+                className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 transition-colors focus:outline-none dark:bg-gray-700"
+              >
+                <span
+                  className={`${
+                    theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
+                  } inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200`}
+                />
+              </button>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors"
             >
-              Sign Out
-            </span>
-
-            {/* Tooltip for collapsed state */}
-            {desktopCollapsed && (
-              <div className="hidden lg:block absolute left-full ml-2 px-2 py-1 bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 border border-[var(--border-primary)] shadow-lg">
-                Sign Out
-              </div>
-            )}
-          </button>
+              <LogOut size={18} />
+              <span>Logout</span>
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 w-full overflow-y-auto bg-[var(--bg-secondary)] pt-14 lg:pt-0">
-        <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+      {/* Main Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Top Header */}
+        <header className="flex h-20 items-center justify-between gap-4 px-8 bg-[var(--bg-app)]">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="lg:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
+            >
+              <Menu size={20} />
+            </button>
+            <h1 className="text-2xl font-bold text-[var(--text-primary)] hidden sm:block">
+              {location.pathname === '/'
+                ? 'Overview'
+                : location.pathname.split('/')[1].charAt(0).toUpperCase() +
+                  location.pathname.split('/')[1].slice(1)}
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-4 flex-1 justify-end max-w-4xl">
+            {/* Search */}
+            <div className="hidden md:flex relative w-full max-w-md">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={18}
+              />
+              <input
+                type="text"
+                placeholder="Search"
+                className="w-full pl-10 pr-12 py-2.5 bg-white rounded-xl border-none shadow-sm text-sm focus:ring-2 focus:ring-[var(--color-primary)] placeholder-gray-400"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                <span className="p-1 bg-gray-100 rounded text-[10px] font-medium text-gray-500">
+                  ⌘
+                </span>
+                <span className="p-1 bg-gray-100 rounded text-[10px] font-medium text-gray-500">
+                  K
+                </span>
+              </div>
+            </div>
+
+            {/* Date Picker (Mock) */}
+            <button className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl shadow-sm text-sm font-medium text-[var(--text-secondary)] hover:bg-gray-50">
+              <Calendar size={18} />
+              <span>Feb</span>
+              <ChevronDown size={14} />
+            </button>
+
+            {/* Filters (Mock) */}
+            <button className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl shadow-sm text-sm font-medium text-[var(--text-secondary)] hover:bg-gray-50">
+              <span>Sales</span>
+              <ChevronDown size={14} />
+            </button>
+
+            {/* Profile */}
+            <div className="flex items-center gap-3 pl-2">
+              <img
+                src={user.avatar}
+                alt={user.name}
+                className="h-10 w-10 rounded-full object-cover border-2 border-white shadow-sm"
+              />
+              <div className="hidden xl:block">
+                <p className="text-sm font-bold text-[var(--text-primary)]">
+                  {user.name}
+                </p>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  {user.role}
+                </p>
+              </div>
+              <button className="p-1 hover:bg-gray-200 rounded-full transition-colors">
+                <ChevronDown size={16} className="text-gray-400" />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Content Scroll Area */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-8 pt-0">
           <Outlet />
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };

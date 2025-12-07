@@ -354,18 +354,24 @@ curl -X POST http://localhost:54321/functions/v1/generate-monthly-invoices
    - ⚠️ Pending: `RESEND_API_KEY` in Supabase Secrets
 
 2. **PDF Generation:**
-   - Integrate PDF generation library (jsPDF, PDFKit, etc.)
-   - Create invoice template
-   - Implement download functionality
-   - Add PDF attachment to emails
+   - ✅ Installed `jspdf` and `jspdf-autotable`
+   - ✅ Implemented `generateInvoicePDF` utility
+   - ✅ Integrated "Download" button in Admin UI
+   - ⚠️ Future enhancement: Fetch detailed order items for PDF (currently summary only)
 
-3. **Automation:**
+3. **Payment Recording:**
+   - ✅ Created `invoice_payments` table with automatic status updates
+   - ✅ Implemented `PaymentModal` component
+   - ✅ Integrated "Record Payment" button in Admin UI
+   - ✅ Supports partial payments and multiple payment methods
+
+4. **Automation:**
    - Choose automation method (pg_cron, GitHub Actions, etc.)
    - Deploy and configure
    - Test automated generation
    - Set up monitoring/alerts
 
-4. **Additional Features:**
+5. **Additional Features:**
    - Payment recording
    - Partial payment tracking
    - Invoice reminder emails

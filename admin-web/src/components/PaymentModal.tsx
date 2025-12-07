@@ -3,7 +3,7 @@ import Modal from './ui/Modal';
 import { Button } from './ui/Button';
 import { supabase } from '../lib/supabase';
 import { Loader2 } from 'lucide-react';
-import { Invoice } from '../types';
+import type { Invoice } from '../types';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -28,16 +28,6 @@ export default function PaymentModal({
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
   const [reference, setReference] = useState('');
   const [notes, setNotes] = useState('');
-
-  useEffect(() => {
-    if (isOpen) {
-      setAmount(invoice.outstanding_amount?.toString() || '');
-      setPaymentDate(new Date().toISOString().split('T')[0]);
-      setPaymentMethod('bank_transfer');
-      setReference('');
-      setNotes('');
-    }
-  }, [invoice, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

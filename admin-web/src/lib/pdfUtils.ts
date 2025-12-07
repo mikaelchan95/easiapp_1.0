@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Invoice } from '../types';
+import type { Invoice } from '../types';
 
 export const generateInvoicePDF = (invoice: Invoice) => {
   const doc = new jsPDF();
