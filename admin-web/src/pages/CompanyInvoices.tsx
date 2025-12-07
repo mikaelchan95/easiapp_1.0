@@ -100,7 +100,7 @@ export default function CompanyInvoices() {
       const totalAmount = orders.reduce((sum, order) => sum + order.total, 0);
 
       // Generate invoice number
-      const invoiceNumber = `INV-${year}-${month.toString().padStart(2, '0')}-${Date.now().toString().slice(-6)}`;
+      const invoiceNumber = `INV-${year}-${month.toString().padStart(2, '0')}-${companyId.slice(0, 6)}`;
 
       // Calculate due date (NET30)
       const dueDate = new Date();
@@ -383,6 +383,7 @@ export default function CompanyInvoices() {
                         size="sm"
                         className="min-w-[36px] min-h-[36px] p-2"
                         title="Download Invoice"
+                        onClick={() => generateInvoicePDF(invoice)}
                       >
                         <Download size={16} />
                       </Button>

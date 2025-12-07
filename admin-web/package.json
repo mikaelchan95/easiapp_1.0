@@ -13,6 +13,8 @@
     "@supabase/supabase-js": "^2.86.2",
     "@tailwindcss/postcss": "^4.1.17",
     "clsx": "^2.1.1",
+    "jspdf": "^3.0.4",
+    "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.556.0",
     "papaparse": "^5.5.3",
     "react": "^19.2.0",
