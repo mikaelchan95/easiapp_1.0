@@ -72,14 +72,16 @@ export default function CompanyDetail() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-accent"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--text-primary)]"></div>
       </div>
     );
   }
 
   if (!company)
     return (
-      <div className="p-8 text-center text-gray-500">Company not found</div>
+      <div className="p-8 text-center text-[var(--text-secondary)]">
+        Company not found
+      </div>
     );
 
   const totalSpent = companyOrders.reduce(
@@ -93,166 +95,142 @@ export default function CompanyDetail() {
         ? 'error'
         : 'warning';
 
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editFormData, setEditFormData] = useState({
-    name: '',
-    company_name: '',
-    status: 'active',
-    uen: '',
-    credit_limit: 0,
-  });
-
-  useEffect(() => {
-    if (!company) return;
-    setEditFormData({
-      name: company.name || '',
-      company_name: company.company_name || '',
-      status: company.status || 'active',
-      uen: company.uen || '',
-      credit_limit: company.credit_limit || 0,
-    });
-  }, [company]);
-
-  const handleSaveCompany = async () => {
-    if (!company) return;
-    try {
-      const { error } = await supabase
-        .from('companies')
-        .update(editFormData)
-        .eq('id', company.id);
-
-      if (error) throw error;
-
-      setCompany({
-        ...company,
-        ...editFormData,
-        status: editFormData.status as Company['status'],
-      });
-      setIsEditModalOpen(false);
-      alert('Company updated successfully');
-    } catch (err) {
-      console.error('Error updating company:', err);
-      alert(
-        'Failed to update company: ' +
-          ((err as Error)?.message || 'Unknown error')
-      );
-    }
-  };
-
-  // ... (render)
-
   return (
-    <div className="mx-auto max-w-6xl space-y-8 animate-fade-in">
+    <div className="mx-auto max-w-6xl space-y-6 sm:space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Link to="/companies">
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 w-10 rounded-full p-0"
+              className="h-10 w-10 rounded-full p-0 min-w-[40px]"
             >
               <ArrowLeft size={20} />
             </Button>
           </Link>
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-light text-brand-dark border border-gray-100">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-primary)] flex-shrink-0">
               <Building2 size={24} />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-brand-dark flex items-center gap-2">
-                {company.name || company.company_name || 'Unnamed Company'}
-                <Badge variant={statusVariant} className="ml-2 text-sm">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] flex items-center gap-2 flex-wrap">
+                <span className="truncate">
+                  {company.name || company.company_name || 'Unnamed Company'}
+                </span>
+                <Badge variant={statusVariant} className="text-sm">
                   {company.status.replace('_', ' ')}
                 </Badge>
               </h1>
-              <p className="text-sm text-gray-500 font-mono">
+              <p className="text-sm text-[var(--text-secondary)] font-mono truncate">
                 UEN: {company.uen}
               </p>
             </div>
           </div>
         </div>
-        <div>
-          <Button variant="outline" onClick={() => setIsEditModalOpen(true)}>
-            Edit Company
-          </Button>
+        <div className="flex-shrink-0">
+          <Link to={`/companies/${company.id}/edit`}>
+            <Button variant="outline" className="w-full sm:w-auto">
+              Edit Company
+            </Button>
+          </Link>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-6 md:grid-cols-4">
-        <Card className="p-6">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="p-5 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-500">Total Spent</h3>
-            <div className="p-2 bg-green-100 text-green-600 rounded-lg">
+            <h3 className="text-sm font-medium text-[var(--text-secondary)]">
+              Total Spent
+            </h3>
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg">
               <DollarSign size={18} />
             </div>
           </div>
-          <div className="text-2xl font-bold text-brand-dark">
+          <div className="text-2xl font-bold text-[var(--text-primary)]">
             $
-            {totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            {totalSpent.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
           </div>
         </Card>
-        <Card className="p-6">
+        <Card className="p-5 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-500">Total Orders</h3>
-            <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+            <h3 className="text-sm font-medium text-[var(--text-secondary)]">
+              Total Orders
+            </h3>
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
               <ShoppingBag size={18} />
             </div>
           </div>
-          <div className="text-2xl font-bold text-brand-dark">
-            {companyOrders.length}
+          <div className="text-2xl font-bold text-[var(--text-primary)]">
+            {companyOrders.length.toLocaleString('en-US')}
           </div>
         </Card>
-        <Card className="p-6">
+        <Card className="p-5 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-500">Employees</h3>
-            <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
+            <h3 className="text-sm font-medium text-[var(--text-secondary)]">
+              Employees
+            </h3>
+            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg">
               <Users size={18} />
             </div>
           </div>
-          <div className="text-2xl font-bold text-brand-dark">
-            {employees.length}
+          <div className="text-2xl font-bold text-[var(--text-primary)]">
+            {employees.length.toLocaleString('en-US')}
           </div>
         </Card>
-        <Card className="p-6">
+        <Card className="p-5 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-500">Credit Used</h3>
-            <div className="p-2 bg-orange-100 text-orange-600 rounded-lg">
+            <h3 className="text-sm font-medium text-[var(--text-secondary)]">
+              Credit Used
+            </h3>
+            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg">
               <TrendingUp size={18} />
             </div>
           </div>
-          <div className="text-2xl font-bold text-brand-dark">
-            ${company.current_credit.toLocaleString()}
+          <div className="text-2xl font-bold text-[var(--text-primary)]">
+            $
+            {company.current_credit.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
           </div>
-          <div className="text-xs text-gray-500 mt-1">
-            of ${company.credit_limit.toLocaleString()} limit
+          <div className="text-xs text-[var(--text-tertiary)] mt-1">
+            of $
+            {company.credit_limit.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}{' '}
+            limit
           </div>
         </Card>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <div className="flex gap-6">
+      <div className="border-b border-[var(--border-primary)] overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex gap-4 sm:gap-6">
           <button
             onClick={() => setActiveTab('employees')}
-            className={`pb-4 text-sm font-medium transition-colors border-b-2 ${
+            className={`pb-3 sm:pb-4 text-sm font-medium transition-colors border-b-2 whitespace-nowrap min-h-[44px] touch-manipulation ${
               activeTab === 'employees'
-                ? 'border-brand-dark text-brand-dark'
-                : 'border-transparent text-gray-500 hover:text-gray-900'
+                ? 'border-[var(--text-primary)] text-[var(--text-primary)]'
+                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            Employees ({employees.length})
+            Employees ({employees.length.toLocaleString('en-US')})
           </button>
           <button
             onClick={() => setActiveTab('orders')}
-            className={`pb-4 text-sm font-medium transition-colors border-b-2 ${
+            className={`pb-3 sm:pb-4 text-sm font-medium transition-colors border-b-2 whitespace-nowrap min-h-[44px] touch-manipulation ${
               activeTab === 'orders'
-                ? 'border-brand-dark text-brand-dark'
-                : 'border-transparent text-gray-500 hover:text-gray-900'
+                ? 'border-[var(--text-primary)] text-[var(--text-primary)]'
+                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            Orders ({companyOrders.length})
+            Orders ({companyOrders.length.toLocaleString('en-US')})
           </button>
         </div>
       </div>
@@ -268,61 +246,67 @@ export default function CompanyDetail() {
         ) : (
           <Card className="overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-gray-500">
-                <thead className="bg-brand-light text-xs uppercase text-brand-dark font-bold tracking-wider">
+              <table className="w-full text-left text-sm min-w-[700px]">
+                <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
                   <tr>
-                    <th className="px-6 py-4 font-semibold">Order #</th>
-                    <th className="px-6 py-4 font-semibold">Placed By</th>
-                    <th className="px-6 py-4 font-semibold">Date</th>
-                    <th className="px-6 py-4 font-semibold">Status</th>
-                    <th className="px-6 py-4 font-semibold text-right">
+                    <th className="px-4 sm:px-6 py-3 sm:py-4">Order #</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4">Placed By</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4">Date</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">
                       Total
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-[var(--border-primary)]">
                   {companyOrders.map(order => (
                     <tr
                       key={order.id}
-                      className="hover:bg-brand-light/50 transition-colors"
+                      className="hover:bg-[var(--bg-tertiary)] transition-colors"
                     >
-                      <td className="px-6 py-4 font-medium text-brand-dark">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-[var(--text-primary)]">
                         <Link
                           to={`/orders/${order.id}`}
-                          className="hover:text-brand-accent transition-colors"
+                          className="hover:underline transition-colors"
                         >
                           #{order.order_number}
                         </Link>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
                         {/* @ts-expect-error */}
                         {order.user?.name || 'Unknown'}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
                         {new Date(order.created_at).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
                         <span
-                          className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold capitalize
-                           ${
-                             order.status === 'delivered'
-                               ? 'bg-green-100 text-green-700'
-                               : order.status === 'cancelled'
-                                 ? 'bg-red-100 text-red-700'
-                                 : 'bg-blue-100 text-blue-700'
-                           }`}
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${
+                            order.status === 'delivered'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : order.status === 'cancelled'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                          }`}
                         >
                           {order.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right font-medium text-brand-dark">
-                        ${order.total?.toFixed(2)}
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-right font-medium text-[var(--text-primary)]">
+                        $
+                        {order.total?.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </td>
                     </tr>
                   ))}
                   {companyOrders.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-6 py-8 text-center">
+                      <td
+                        colSpan={5}
+                        className="px-6 py-8 text-center text-[var(--text-secondary)]"
+                      >
                         No orders found
                       </td>
                     </tr>
@@ -333,105 +317,6 @@ export default function CompanyDetail() {
           </Card>
         )}
       </div>
-
-      {/* Edit Company Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <h2 className="mb-4 text-xl font-bold text-brand-dark">
-              Edit Company
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Company Name
-                </label>
-                <input
-                  type="text"
-                  value={editFormData.name}
-                  onChange={e =>
-                    setEditFormData({ ...editFormData, name: e.target.value })
-                  }
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-dark"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Display Name
-                </label>
-                <input
-                  type="text"
-                  value={editFormData.company_name}
-                  onChange={e =>
-                    setEditFormData({
-                      ...editFormData,
-                      company_name: e.target.value,
-                    })
-                  }
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-dark"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  UEN
-                </label>
-                <input
-                  type="text"
-                  value={editFormData.uen}
-                  onChange={e =>
-                    setEditFormData({ ...editFormData, uen: e.target.value })
-                  }
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-dark"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Status
-                </label>
-                <select
-                  value={editFormData.status}
-                  onChange={e =>
-                    setEditFormData({ ...editFormData, status: e.target.value })
-                  }
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 bg-white focus:border-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-dark"
-                >
-                  <option value="active">Active</option>
-                  <option value="pending_verification">
-                    Pending Verification
-                  </option>
-                  <option value="suspended">Suspended</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Credit Limit
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={editFormData.credit_limit}
-                  onChange={e =>
-                    setEditFormData({
-                      ...editFormData,
-                      credit_limit: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-dark"
-                />
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setIsEditModalOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleSaveCompany}>Save Changes</Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

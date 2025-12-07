@@ -31,6 +31,7 @@ export interface RewardCatalogItem {
   stock_quantity?: number;
   is_active: boolean;
   image_url?: string;
+  logo_url?: string;
   terms_conditions?: string;
   created_at: string;
   updated_at: string;

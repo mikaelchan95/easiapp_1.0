@@ -25,24 +25,25 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
+      'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none touch-manipulation';
 
     const variants = {
       primary:
-        'bg-brand-dark text-brand-white hover:bg-black/90 focus:ring-brand-dark',
+        'bg-[var(--text-primary)] text-[var(--bg-primary)] hover:opacity-90 focus:ring-[var(--text-primary)] shadow-sm',
       secondary:
-        'bg-brand-accent text-brand-dark hover:bg-brand-accent/80 focus:ring-brand-accent',
+        'bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:bg-[var(--border-secondary)] focus:ring-[var(--border-primary)] border border-[var(--border-primary)]',
       outline:
-        'border border-gray-300 bg-transparent text-gray-700 hover:bg-gray-50 focus:ring-gray-300',
+        'border border-[var(--border-primary)] bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] focus:ring-[var(--border-primary)]',
       ghost:
-        'bg-transparent text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:ring-gray-200',
-      danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-600',
+        'bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] focus:ring-[var(--border-primary)]',
+      danger:
+        'bg-red-600 text-white hover:bg-red-700 focus:ring-red-600 dark:bg-red-500 dark:hover:bg-red-600',
     };
 
     const sizes = {
-      sm: 'h-8 px-3 text-xs',
-      md: 'h-10 px-4 py-2 text-sm',
-      lg: 'h-12 px-6 text-base',
+      sm: 'min-h-[36px] px-3 text-xs',
+      md: 'min-h-[44px] px-4 py-2 text-sm',
+      lg: 'min-h-[48px] px-6 text-base',
     };
 
     return (

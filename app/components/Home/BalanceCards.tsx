@@ -49,8 +49,10 @@ const BalanceCards: React.FC<BalanceCardsProps> = ({
     if (!user) return 0;
 
     if (isCompanyUser(user) && company) {
-      // For company users, show company's current credit
-      return company.currentCredit || 0;
+      // For company users, show available credit (Limit - Used)
+      const limit = company.creditLimit || 0;
+      const used = company.currentCredit || 0;
+      return Math.max(0, limit - used);
     } else {
       // For individual users, get wallet balance from database
       return user.walletBalance || 0;

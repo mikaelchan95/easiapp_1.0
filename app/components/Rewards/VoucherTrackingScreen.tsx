@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,18 +9,20 @@ import {
   Modal,
   Alert,
   StatusBar,
+  Image,
 } from 'react-native';
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import {
   useRewards,
   VoucherStatus,
   PointsTransactionType,
 } from '../../context/RewardsContext';
+import { getSupabaseImageUrl } from '../../utils/imageUtils';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import MobileHeader from '../Layout/MobileHeader';
 import AnimatedButton from '../UI/AnimatedButton';
@@ -39,68 +41,6 @@ const VoucherCard: React.FC<VoucherCardProps> = ({
   showUserAttribution = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const getStatusColor = (status: VoucherStatus) => {
-    // Following workspace rules - using monochrome colors
-    switch (status) {
-      case 'active':
-        return COLORS.text; // Black for active
-      case 'used':
-        return COLORS.textSecondary; // Dark gray for used
-      case 'expired':
-        return COLORS.inactive; // Gray for expired
-      case 'cancelled':
-        return COLORS.inactive; // Gray for cancelled
-      default:
-        return COLORS.text;
-    }
-  };
-
-  const getStatusIcon = (status: VoucherStatus) => {
-    switch (status) {
-      case 'active':
-        return 'checkmark-circle-outline';
-      case 'used':
-        return 'checkmark-done-outline';
-      case 'expired':
-        return 'close-circle-outline';
-      case 'cancelled':
-        return 'close-circle-outline';
-      default:
-        return 'help-circle-outline';
-    }
-  };
-
-  const getStatusBackground = (status: VoucherStatus) => {
-    // Subtle background colors following workspace rules
-    switch (status) {
-      case 'active':
-        return COLORS.text; // Black background
-      case 'used':
-        return COLORS.textSecondary; // Dark gray background
-      case 'expired':
-        return COLORS.inactive; // Gray background
-      case 'cancelled':
-        return COLORS.inactive; // Gray background
-      default:
-        return COLORS.text;
-    }
-  };
-
-  const getStatusTextColor = (status: VoucherStatus) => {
-    // Text color for status badges
-    switch (status) {
-      case 'active':
-        return COLORS.card; // White text on black
-      case 'used':
-        return COLORS.card; // White text on dark gray
-      case 'expired':
-        return COLORS.card; // White text on gray
-      case 'cancelled':
-        return COLORS.card; // White text on gray
-      default:
-        return COLORS.card;
-    }
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-SG', {
@@ -108,6 +48,24 @@ const VoucherCard: React.FC<VoucherCardProps> = ({
       month: 'short',
       year: 'numeric',
     });
+  };
+
+  const formatDateRange = (start: string, end: string) => {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    // Format: Oct, 11 - Oct, 27 2024
+    const options: Intl.DateTimeFormatOptions = {
+      month: 'short',
+      day: 'numeric',
+    };
+    const startStr = startDate.toLocaleDateString('en-US', options);
+    const endStr = endDate.toLocaleDateString('en-US', {
+      ...options,
+      year: 'numeric',
+    });
+
+    return `${startStr} - ${endStr}`;
   };
 
   const isExpiringSoon = () => {
@@ -119,87 +77,72 @@ const VoucherCard: React.FC<VoucherCardProps> = ({
     return daysUntilExpiry <= 7 && daysUntilExpiry > 0;
   };
 
+  const getStatusText = (status: VoucherStatus) => {
+    switch (status) {
+      case 'active':
+        return 'Not yet used';
+      case 'used':
+        return 'Used';
+      case 'expired':
+        return 'Expired';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return status;
+    }
+  };
+
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.voucherCard}
       onPress={() => setIsExpanded(!isExpanded)}
       activeOpacity={0.8}
     >
-      {/* Header Section - Always Visible */}
-      <View style={styles.voucherHeader}>
-        <View style={styles.voucherValue}>
-          <Text style={styles.voucherAmount}>S${voucher.voucher_value}</Text>
-          <Text style={styles.voucherLabel}>Voucher</Text>
-        </View>
-
-        <View style={styles.voucherHeaderRight}>
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: getStatusBackground(voucher.voucher_status) },
-            ]}
-          >
-            <Ionicons
-              name={getStatusIcon(voucher.voucher_status)}
-              size={14}
-              color={getStatusTextColor(voucher.voucher_status)}
-            />
-            <Text
-              style={[
-                styles.statusText,
-                { color: getStatusTextColor(voucher.voucher_status) },
-              ]}
-            >
-              {voucher.voucher_status.charAt(0).toUpperCase() + voucher.voucher_status.slice(1)}
-            </Text>
-          </View>
-          
-          <Ionicons
-            name={isExpanded ? 'chevron-up' : 'chevron-down'}
-            size={20}
-            color={COLORS.textSecondary}
-            style={styles.expandIcon}
-          />
+      {/* Top Section */}
+      <View style={styles.cardTop}>
+        <Image
+          source={{
+            uri:
+              getSupabaseImageUrl(
+                voucher.redemption?.reward?.logo_url ||
+                  voucher.redemption?.reward?.image_url ||
+                  ''
+              ) || 'https://via.placeholder.com/150',
+          }}
+          style={styles.cardLogo}
+        />
+        <View style={styles.cardHeaderInfo}>
+          <Text style={styles.companyName} numberOfLines={1}>
+            {voucher.companyName ||
+              voucher.redemption?.reward?.title ||
+              'Reward'}
+          </Text>
+          <Text style={styles.statusText}>
+            {getStatusText(voucher.voucher_status)}
+          </Text>
         </View>
       </View>
 
-      {/* Compact Info - Always Visible */}
-      <View style={styles.voucherCompact}>
-        <Text style={styles.voucherTitle} numberOfLines={1}>
-          {voucher.redemption?.reward?.title || 'Voucher'}
-        </Text>
-        
-        <View style={styles.compactMeta}>
-          <Text style={styles.compactText}>
-            Redeemed: {formatDate(voucher.issued_at)}
-          </Text>
-          {showUserAttribution && voucher.redeemedBy && (
-            <Text style={styles.compactText}>
-              by {voucher.redeemedBy.name}
-            </Text>
-          )}
-        </View>
+      {/* Dashed Divider */}
+      <View style={styles.dashedDividerContainer}>
+        <View style={styles.dashedDivider} />
+      </View>
 
-        {isExpiringSoon() && voucher.voucher_status === 'active' && (
-          <Text style={styles.expiryWarningCompact}>⚠️ Expires soon!</Text>
-        )}
+      {/* Bottom Section */}
+      <View style={styles.cardBottom}>
+        <Text style={styles.rewardTitle} numberOfLines={2}>
+          {voucher.redemption?.reward?.title || 'Voucher Reward'}
+        </Text>
+        <Text style={styles.dateRange}>
+          {formatDateRange(voucher.issued_at, voucher.expires_at)}
+        </Text>
       </View>
 
       {/* Expanded Details - Collapsible */}
       {isExpanded && (
         <View style={styles.voucherDetails}>
+          <View style={styles.divider} />
           <View style={styles.voucherMeta}>
-            <View style={styles.metaRow}>
-              <Ionicons
-                name="time-outline"
-                size={16}
-                color={COLORS.textSecondary}
-              />
-              <Text style={styles.metaText}>
-                Expires: {formatDate(voucher.expires_at)}
-              </Text>
-            </View>
-
             {voucher.redemption?.confirmation_code && (
               <View style={styles.metaRow}>
                 <Ionicons
@@ -220,7 +163,8 @@ const VoucherCard: React.FC<VoucherCardProps> = ({
                 color={COLORS.textSecondary}
               />
               <Text style={styles.metaText}>
-                {voucher.redemption?.points_used?.toLocaleString() || 0} points used
+                {voucher.redemption?.points_used?.toLocaleString() || 0} points
+                used
               </Text>
             </View>
 
@@ -234,11 +178,6 @@ const VoucherCard: React.FC<VoucherCardProps> = ({
                 <Text style={styles.metaText}>
                   Redeemed by: {voucher.redeemedBy.name}
                 </Text>
-                {voucher.redeemedBy.email && (
-                  <Text style={styles.metaSubText}>
-                    {voucher.redeemedBy.email}
-                  </Text>
-                )}
               </View>
             )}
 
@@ -254,55 +193,12 @@ const VoucherCard: React.FC<VoucherCardProps> = ({
                 </Text>
               </View>
             )}
-
-            {voucher.used_in_order_id && (
-              <View style={styles.metaRow}>
-                <Ionicons
-                  name="receipt-outline"
-                  size={16}
-                  color={COLORS.textSecondary}
-                />
-                <Text style={styles.metaText}>
-                  Order: {voucher.used_in_order_id}
-                </Text>
-              </View>
-            )}
-
-            {voucher.usedBy && (
-              <View style={styles.metaRow}>
-                <Ionicons
-                  name="person-circle-outline"
-                  size={16}
-                  color={COLORS.textSecondary}
-                />
-                <Text style={styles.metaText}>
-                  Used by: {voucher.usedBy.name}
-                </Text>
-              </View>
-            )}
-
-            {voucher.companyName && (
-              <View style={styles.metaRow}>
-                <Ionicons
-                  name="business-outline"
-                  size={16}
-                  color={COLORS.textSecondary}
-                />
-                <Text style={styles.metaText}>
-                  Company: {voucher.companyName}
-                </Text>
-              </View>
-            )}
           </View>
 
           {isExpiringSoon() && voucher.voucher_status === 'active' && (
             <View style={styles.expiryWarning}>
               <Ionicons name="warning-outline" size={16} color={COLORS.text} />
-              <Text style={styles.expiryWarningText}>
-                This voucher expires in {Math.ceil(
-                  (new Date(voucher.expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-                )} days!
-              </Text>
+              <Text style={styles.expiryWarningText}>Expires soon!</Text>
             </View>
           )}
         </View>
@@ -493,12 +389,19 @@ const ExpiringPointsCard: React.FC<ExpiringPointsCardProps> = ({ entry }) => {
 
 export default function VoucherTrackingScreen() {
   const navigation = useNavigation();
-  const { state } = useRewards();
+  const { state, loadUserVouchers, loadVoucherHistory } = useRewards();
   const [activeTab, setActiveTab] = useState<TabType>('vouchers');
   const [selectedFilter, setSelectedFilter] = useState<
     'all' | 'earned' | 'redeemed' | 'expired'
   >('all');
   const insets = useSafeAreaInsets();
+
+  useFocusEffect(
+    useCallback(() => {
+      loadUserVouchers();
+      loadVoucherHistory();
+    }, [])
+  );
 
   const tabs = useMemo(
     () => [
@@ -546,9 +449,9 @@ export default function VoucherTrackingScreen() {
 
   const renderVouchersList = () => {
     const vouchers = state.userRewards?.availableVouchers || [];
-    
+
     console.log('📋 Rendering vouchers list:', vouchers.length, 'vouchers');
-    
+
     if (vouchers.length === 0) {
       return (
         <View style={styles.emptyState}>
@@ -715,16 +618,14 @@ export default function VoucherTrackingScreen() {
 
   const renderExpiringPoints = () => {
     const pointsExpiring = state.userRewards?.pointsExpiring || [];
-    const urgentExpiringPoints = pointsExpiring.filter(
-      entry => {
-        const expiryDate = new Date(entry.expiryDate);
-        const today = new Date();
-        const daysUntilExpiry = Math.ceil(
-          (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        return daysUntilExpiry <= 3;
-      }
-    );
+    const urgentExpiringPoints = pointsExpiring.filter(entry => {
+      const expiryDate = new Date(entry.expiryDate);
+      const today = new Date();
+      const daysUntilExpiry = Math.ceil(
+        (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      return daysUntilExpiry <= 3;
+    });
 
     if (pointsExpiring.length === 0) {
       return (
@@ -923,6 +824,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: SPACING.md,
+  },
+  voucherHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  voucherImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
   },
   voucherValue: {
     alignItems: 'flex-start',
@@ -1302,5 +1214,62 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     lineHeight: 24,
     maxWidth: 280,
+  },
+
+  // New Voucher Card Styles
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  cardLogo: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.background,
+    marginRight: SPACING.md,
+  },
+  cardHeaderInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  companyName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  dashedDividerContainer: {
+    height: 1,
+    overflow: 'hidden',
+    marginVertical: SPACING.md,
+    width: '100%',
+  },
+  dashedDivider: {
+    height: 2,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+    borderRadius: 1,
+    width: '100%',
+  },
+  cardBottom: {
+    gap: 4,
+  },
+  rewardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    lineHeight: 24,
+  },
+  dateRange: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: SPACING.md,
   },
 });

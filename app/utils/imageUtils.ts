@@ -12,6 +12,9 @@ export interface ImageSource {
  * Get the full Supabase storage URL for an image
  */
 export const getSupabaseImageUrl = (imagePath: string): string => {
+  if (!imagePath) return '';
+  if (imagePath.startsWith('http')) return imagePath;
+
   // Direct approach - construct the correct URL format
   // Based on the storage listing: /product-images/products/filename.webp
   const cleanPath = imagePath.replace(/^\/+/, ''); // Remove leading slashes
@@ -94,13 +97,24 @@ export const getProductImageSource = (
   imageUrl?: string,
   productName?: string
 ): ImageSource | null => {
-  // Smart mapping based on product name - this is the working solution!
+  // 1. If we have a valid image URL from the database, use it
+  if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim() !== '') {
+    // Check if it's already a full URL
+    if (imageUrl.startsWith('http')) {
+      return { uri: imageUrl };
+    }
+    // Otherwise construct the full Supabase URL
+    return { uri: getSupabaseImageUrl(imageUrl) };
+  }
+
+  // 2. Fallback to smart mapping based on product name if provided
   if (productName) {
     const filename = getImageFilenameByProductName(productName);
     const mappedUrl = `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${filename}`;
     return { uri: mappedUrl };
   }
 
+  // 3. Last resort fallback
   return getProductFallbackImage();
 };
 

@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from '../../utils/theme';
 import { useAppContext } from '../../context/AppContext';
+import { useNotifications } from '../../context/NotificationContext';
 import SmartSearchDropdown from '../UI/SmartSearchDropdown';
 
 // Cart Badge Component
@@ -32,14 +33,31 @@ const CartBadge: React.FC = () => {
   );
 };
 
+// Notification Badge Component
+const NotificationBadge: React.FC = () => {
+  const { unreadCount } = useNotifications();
+
+  if (unreadCount === 0) return null;
+
+  return (
+    <View style={styles.notificationBadge}>
+      <Text style={styles.notificationBadgeText}>
+        {unreadCount > 99 ? '99+' : unreadCount.toString()}
+      </Text>
+    </View>
+  );
+};
+
 interface MobileHeaderProps {
   title?: string;
   showBackButton?: boolean;
   showCartButton?: boolean;
+  showNotificationButton?: boolean;
   showSearch?: boolean;
   showLocationHeader?: boolean;
   onAddressPress?: () => void;
   onCartPress?: () => void;
+  onNotificationPress?: () => void;
   onBackPress?: () => void;
   currentAddress?: {
     name: string;
@@ -50,10 +68,12 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
   title,
   showBackButton = false,
   showCartButton = true,
+  showNotificationButton = true,
   showSearch = true,
   showLocationHeader = false,
   onAddressPress,
   onCartPress,
+  onNotificationPress,
   onBackPress,
   currentAddress = { name: 'Marina Bay' },
 }) => {
@@ -75,6 +95,15 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
     }
   };
 
+  const handleNotificationPress = () => {
+    if (onNotificationPress) {
+      onNotificationPress();
+    } else {
+      // Assuming 'Notifications' is a root stack screen or accessible
+      navigation.navigate('Notifications' as any);
+    }
+  };
+
   if (showBackButton) {
     return (
       <View style={styles.simpleHeader}>
@@ -92,16 +121,33 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
           </Text>
         )}
 
-        {showCartButton && (
-          <TouchableOpacity
-            style={styles.cartButton}
-            onPress={handleCartPress}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="cart-outline" size={24} color={COLORS.text} />
-            <CartBadge />
-          </TouchableOpacity>
-        )}
+        <View style={styles.rightButtons}>
+          {showNotificationButton && (
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={handleNotificationPress}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons
+                name="notifications-outline"
+                size={24}
+                color={COLORS.text}
+              />
+              <NotificationBadge />
+            </TouchableOpacity>
+          )}
+
+          {showCartButton && (
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={handleCartPress}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="cart-outline" size={24} color={COLORS.text} />
+              <CartBadge />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     );
   }
@@ -134,16 +180,46 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
         </View>
       )}
 
-      {/* Smart Search Dropdown */}
-      {showSearch && (
-        <View style={styles.searchContainer}>
-          <SmartSearchDropdown
-            placeholder="Search wines, spirits & more..."
-            showDropdownOnFocus={true}
-            maxSuggestions={5}
-          />
+      {/* Search and Icons Row */}
+      <View style={styles.searchRow}>
+        {showSearch && (
+          <View style={styles.searchContainer}>
+            <SmartSearchDropdown
+              placeholder="Search wines, spirits & more..."
+              showDropdownOnFocus={true}
+              maxSuggestions={5}
+            />
+          </View>
+        )}
+
+        <View style={styles.headerIcons}>
+          {showNotificationButton && (
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={handleNotificationPress}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons
+                name="notifications-outline"
+                size={24}
+                color={COLORS.text}
+              />
+              <NotificationBadge />
+            </TouchableOpacity>
+          )}
+
+          {showCartButton && (
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={handleCartPress}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="cart-outline" size={24} color={COLORS.text} />
+              <CartBadge />
+            </TouchableOpacity>
+          )}
         </View>
-      )}
+      </View>
     </View>
   );
 };
@@ -168,11 +244,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'flex-start',
   },
-  cartButton: {
+  rightButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  iconButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  headerIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: SPACING.md,
+    gap: 4,
   },
   title: {
     ...TYPOGRAPHY.h4,
@@ -226,28 +314,55 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.h5,
     fontWeight: '700',
   },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingBottom: SPACING.sm,
+  },
   searchContainer: {
-    paddingHorizontal: SPACING.md,
+    flex: 1,
+    paddingLeft: SPACING.md,
+    paddingRight: SPACING.sm,
     paddingTop: SPACING.xs,
     paddingBottom: SPACING.sm,
   },
   cartBadge: {
     position: 'absolute',
-    top: -6,
-    right: -6,
+    top: 4,
+    right: 4,
     backgroundColor: COLORS.error,
     borderRadius: 10,
-    minWidth: 20,
-    height: 20,
+    minWidth: 18,
+    height: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: COLORS.card,
   },
   cartBadgeText: {
     ...TYPOGRAPHY.label,
     color: COLORS.card,
     fontWeight: '700',
+    fontSize: 10,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: COLORS.card,
+  },
+  notificationBadgeText: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.card,
+    fontWeight: '700',
+    fontSize: 10,
   },
 });
 

@@ -10,9 +10,13 @@ export type NotificationType =
 export type NotificationPriority =
   | 'low'
   | 'medium'
-  | 'normal'
   | 'high'
   | 'urgent';
+
+export type NotificationStatus = 
+  | 'unread' 
+  | 'read' 
+  | 'dismissed';
 
 export interface NotificationData {
   id: string;
@@ -20,35 +24,43 @@ export interface NotificationData {
   priority: NotificationPriority;
   title: string;
   message: string;
-  data?: Record<string, any>;
-  createdAt: Date;
-  readAt?: Date;
-  actionUrl?: string;
-  userId?: string;
-  companyId?: string;
-  status?: string;
-  expiresAt?: Date;
+  status: NotificationStatus;
   metadata?: Record<string, any>;
-  timestamp?: Date;
+  data?: Record<string, any>; // Deprecated, mapped to metadata
+  createdAt: string; // ISO string
+  readAt?: string | null;
+  actionUrl?: string | null;
+  userId: string;
+  companyId?: string | null;
+  expiresAt?: string | null;
+  
+  // Frontend helpers
+  timestamp?: Date; // Derived from createdAt
 }
 
 export interface NotificationSettings {
-  enabled: boolean;
+  pushEnabled: boolean;
+  emailEnabled: boolean;
+  smsEnabled: boolean;
+  
+  // Categories
   orderUpdates: boolean;
   paymentAlerts: boolean;
   approvalRequests: boolean;
-  creditAlerts: boolean;
-  billingNotifications: boolean;
-  marketingEmails: boolean;
-  pushNotifications: boolean;
-  emailNotifications: boolean;
-  smsNotifications: boolean;
+  creditWarnings: boolean;
+  billingReminders: boolean;
+  marketingNotifications: boolean;
+  
+  // Quiet Hours
+  quietHoursEnabled: boolean;
+  quietHoursStart: string; // HH:mm
+  quietHoursEnd: string; // HH:mm
 }
 
 export interface NotificationFilters {
   types?: NotificationType[];
-  priority?: NotificationPriority;
-  unreadOnly?: boolean;
+  priority?: NotificationPriority[];
+  status?: NotificationStatus[];
   dateRange?: {
     from: Date;
     to: Date;
@@ -62,47 +74,31 @@ export interface NotificationBatch {
   hasMore: boolean;
 }
 
-export interface OrderStatusNotificationData {
+// Specific payload types for type safety in metadata
+export interface OrderStatusPayload {
   orderId: string;
   orderNumber: string;
   status: string;
+  previousStatus?: string;
   estimatedDelivery?: string;
-  trackingNumber?: string;
 }
 
-export interface PaymentNotificationData {
+export interface PaymentPayload {
   orderId: string;
-  orderNumber: string;
   amount: number;
   currency: string;
-  paymentMethod: string;
-  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  status: string;
 }
 
-export interface ApprovalNotificationData {
-  approvalId: string;
+export interface ApprovalPayload {
   orderId: string;
-  orderNumber: string;
-  requestedBy: string;
   amount: number;
-  currency: string;
-  status: 'pending' | 'approved' | 'rejected';
+  requesterName: string;
 }
 
-export interface CreditAlertNotificationData {
+export interface CreditAlertPayload {
   companyId: string;
-  companyName: string;
   currentCredit: number;
-  creditLimit: number;
-  utilizationPercentage: number;
-  alertType: 'warning' | 'critical' | 'exceeded';
-}
-
-export interface BillingNotificationData {
-  invoiceId: string;
-  invoiceNumber: string;
-  amount: number;
-  currency: string;
-  dueDate: string;
-  status: 'pending' | 'overdue' | 'paid';
+  limit: number;
+  utilization: number;
 }

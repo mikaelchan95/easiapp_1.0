@@ -172,7 +172,11 @@ const initialState: AppState = {
   userSettings: DEFAULT_USER_SETTINGS,
   appSettings: {
     loyalty: { earn_rate: 2.0, redemption_rate: 0.01 }, // Default fallback
-    delivery: { default_fee: 5.0, express_fee: 8.0, free_delivery_threshold: 150.0 }, // Default fallback
+    delivery: {
+      default_fee: 5.0,
+      express_fee: 8.0,
+      free_delivery_threshold: 150.0,
+    }, // Default fallback
   },
 };
 
@@ -388,10 +392,10 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         userSettings: updatedSettings,
       };
     case 'SET_APP_SETTINGS':
-       return {
-         ...state,
-         appSettings: action.payload,
-       };
+      return {
+        ...state,
+        appSettings: action.payload,
+      };
     default:
       return state;
   }
@@ -448,8 +452,14 @@ export const AppContext = createContext<{
 const getUserRole = (user: User | null): UserRole => {
   if (!user) return 'retail';
 
-  // Company users get trade pricing
-  if (isCompanyUser(user) && user.permissions?.canViewTradePrice) {
+  // Company users get trade pricing by default
+  // Only deny if permissions explicitly set canViewTradePrice to false
+  if (isCompanyUser(user)) {
+    // If permissions exist and explicitly deny trade price, return retail
+    if (user.permissions && user.permissions.canViewTradePrice === false) {
+      return 'retail';
+    }
+    // Otherwise, all company users get trade pricing
     return 'trade';
   }
 
@@ -466,12 +476,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchAppSettings = async () => {
     try {
-      const { data, error } = await supabase.from('app_settings').select('key, value');
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('key, value');
       if (error) throw error;
-      
-      const loyaltyMap = data?.find((item: any) => item.key === 'loyalty_config');
-      const deliveryMap = data?.find((item: any) => item.key === 'delivery_config');
-      
+
+      const loyaltyMap = data?.find(
+        (item: any) => item.key === 'loyalty_config'
+      );
+      const deliveryMap = data?.find(
+        (item: any) => item.key === 'delivery_config'
+      );
+
       const newSettings: AppSettings = {
         loyalty: loyaltyMap?.value || initialState.appSettings.loyalty,
         delivery: deliveryMap?.value || initialState.appSettings.delivery,
@@ -494,7 +510,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       // Calculate total points (2 points per dollar)
       let totalPoints = 0;
       orders.forEach(order => {
-        // Note: For historical points, we might want to use the rate at that time, 
+        // Note: For historical points, we might want to use the rate at that time,
         // but for now we'll use current rate or hardcoded fallback
         const earnRate = state.appSettings.loyalty.earn_rate || 2;
         const pointsForOrder = Math.floor(order.total * earnRate);
@@ -782,8 +798,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           image: product.imageUrl, // Map imageUrl to image
           imageUrl: product.imageUrl, // Keep imageUrl for components that use it
           rating: product.rating || 4.5, // Default rating if not provided
-          stock: product.stock || 10, // Default stock if not provided
-          inStock: (product.stock || 10) > 0, // Calculate inStock based on stock
+          stock: product.stock,
+          inStock: product.inStock,
+          lowStockThreshold: product.lowStockThreshold,
+          isLowStock: product.isLowStock,
+          sizeOptions: product.sizeOptions,
         };
       });
 
@@ -1365,7 +1384,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
               state.selectedLocation.id
             );
           }
-
         } catch (error) {
           console.error('Error saving user location:', error);
           // No fallback - use database only

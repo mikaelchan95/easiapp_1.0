@@ -1,5 +1,5 @@
 import { supabase } from '../../utils/supabase';
-import { Product } from '../utils/pricing';
+import { Product, SizeOption } from '../utils/pricing';
 
 export interface ProductFilters {
   category?: string;
@@ -36,6 +36,7 @@ export interface DatabaseProduct {
   low_stock_threshold: number;
   created_at: string;
   updated_at: string;
+  size_options?: SizeOption[];
 }
 
 // Helper function to generate Supabase Storage URL
@@ -84,10 +85,13 @@ const transformDatabaseProductToProduct = (
     isLimited: dbProduct.is_limited,
     isFeatured: dbProduct.is_featured,
     sku: dbProduct.sku,
+    stock: dbProduct.stock_quantity,
+    inStock: dbProduct.stock_quantity > 0,
+    lowStockThreshold: dbProduct.low_stock_threshold,
+    isLowStock: dbProduct.stock_quantity <= (dbProduct.low_stock_threshold || 10),
+    sizeOptions: dbProduct.size_options,
   };
 };
-
-// Column existence check function removed as it's not used
 
 export const productsService = {
   // Get products with filters
@@ -149,9 +153,6 @@ export const productsService = {
     try {
       let query = supabase.from('products').select('*').eq('id', productId);
 
-      // Don't add is_active filter since the column doesn't exist in the current database
-      // When the database is properly set up, uncomment: query = query.eq('is_active', true);
-
       const { data: product, error } = await query.maybeSingle();
 
       if (error) {
@@ -206,9 +207,6 @@ export const productsService = {
         .select('category')
         .order('category');
 
-      // Don't add is_active filter since the column doesn't exist in the current database
-      // When the database is properly set up, uncomment: query = query.eq('is_active', true);
-
       const { data: categories, error } = await query;
 
       if (error) {
@@ -237,9 +235,6 @@ export const productsService = {
         .select('stock_quantity')
         .eq('id', productId);
 
-      // Don't add is_active filter since the column doesn't exist in the current database
-      // When the database is properly set up, uncomment: query = query.eq('is_active', true);
-
       const { data: product, error } = await query.maybeSingle();
 
       if (error) {
@@ -261,9 +256,6 @@ export const productsService = {
         .from('products')
         .select('stock_quantity, low_stock_threshold')
         .eq('id', productId);
-
-      // Don't add is_active filter since the column doesn't exist in the current database
-      // When the database is properly set up, uncomment: query = query.eq('is_active', true);
 
       const { data: product, error } = await query.maybeSingle();
 

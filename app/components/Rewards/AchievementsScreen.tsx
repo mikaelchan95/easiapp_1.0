@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StatusBar,
   FlatList,
   Animated,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,7 +22,7 @@ const mockAchievements = [
     id: '1',
     title: 'First Purchase',
     description: 'Made your first purchase on EASI',
-    icon: 'bag-check',
+    icon: 'bag-check-outline',
     category: 'purchase',
     points: 100,
     unlocked: true,
@@ -34,7 +35,7 @@ const mockAchievements = [
     id: '2',
     title: 'Whisky Connoisseur',
     description: 'Purchased 5 different whisky brands',
-    icon: 'wine',
+    icon: 'wine-outline',
     category: 'collection',
     points: 250,
     unlocked: true,
@@ -47,7 +48,7 @@ const mockAchievements = [
     id: '3',
     title: 'Premium Collector',
     description: 'Spent over S$1,000 on premium spirits',
-    icon: 'diamond',
+    icon: 'diamond-outline',
     category: 'spending',
     points: 500,
     unlocked: true,
@@ -60,7 +61,7 @@ const mockAchievements = [
     id: '4',
     title: 'Social Butterfly',
     description: 'Refer 10 friends to EASI',
-    icon: 'people',
+    icon: 'people-outline',
     category: 'referral',
     points: 300,
     unlocked: false,
@@ -73,7 +74,7 @@ const mockAchievements = [
     id: '5',
     title: 'Speed Shopper',
     description: 'Complete 3 orders in a single day',
-    icon: 'flash',
+    icon: 'flash-outline',
     category: 'activity',
     points: 150,
     unlocked: false,
@@ -86,7 +87,7 @@ const mockAchievements = [
     id: '6',
     title: 'Loyalty Champion',
     description: 'Maintain Gold tier for 6 months',
-    icon: 'trophy',
+    icon: 'trophy-outline',
     category: 'loyalty',
     points: 750,
     unlocked: false,
@@ -99,7 +100,7 @@ const mockAchievements = [
     id: '7',
     title: 'Night Owl',
     description: 'Place an order after midnight',
-    icon: 'moon',
+    icon: 'moon-outline',
     category: 'activity',
     points: 50,
     unlocked: true,
@@ -112,7 +113,7 @@ const mockAchievements = [
     id: '8',
     title: 'Celebration Master',
     description: 'Purchase champagne 3 times',
-    icon: 'celebrate',
+    icon: 'glass-outline',
     category: 'collection',
     points: 200,
     unlocked: false,
@@ -123,249 +124,202 @@ const mockAchievements = [
   },
 ];
 
-const mockStats = {
-  totalAchievements: mockAchievements.length,
-  unlockedAchievements: mockAchievements.filter(a => a.unlocked).length,
-  totalPoints: mockAchievements
-    .filter(a => a.unlocked)
-    .reduce((sum, a) => sum + a.points, 0),
-  nextMilestone: 'Reach 10 achievements',
-  completionRate: Math.round(
-    (mockAchievements.filter(a => a.unlocked).length /
-      mockAchievements.length) *
-      100
-  ),
-};
-
 const categories = [
-  { id: 'all', label: 'All', icon: 'apps' },
-  { id: 'purchase', label: 'Purchase', icon: 'bag' },
-  { id: 'collection', label: 'Collection', icon: 'library' },
-  { id: 'spending', label: 'Spending', icon: 'card' },
-  { id: 'referral', label: 'Referral', icon: 'people' },
-  { id: 'activity', label: 'Activity', icon: 'pulse' },
-  { id: 'loyalty', label: 'Loyalty', icon: 'star' },
+  { id: 'all', label: 'All', icon: 'apps-outline' },
+  { id: 'purchase', label: 'Purchase', icon: 'bag-outline' },
+  { id: 'collection', label: 'Collection', icon: 'library-outline' },
+  { id: 'spending', label: 'Spending', icon: 'card-outline' },
+  { id: 'referral', label: 'Referral', icon: 'people-outline' },
+  { id: 'activity', label: 'Activity', icon: 'pulse-outline' },
+  { id: 'loyalty', label: 'Loyalty', icon: 'star-outline' },
 ];
-
-const getRarityColor = (rarity: string) => {
-  switch (rarity) {
-    case 'common':
-      return { bg: '#E8F5E8', border: '#4CAF50', text: '#2E7D32' };
-    case 'uncommon':
-      return { bg: '#E3F2FD', border: '#2196F3', text: '#1976D2' };
-    case 'rare':
-      return { bg: '#FFF3E0', border: '#FF9800', text: '#F57C00' };
-    case 'epic':
-      return { bg: '#F3E5F5', border: '#9C27B0', text: '#7B1FA2' };
-    case 'legendary':
-      return { bg: '#FFF8E1', border: '#FFC107', text: '#F57F17' };
-    default:
-      return {
-        bg: COLORS.background,
-        border: COLORS.border,
-        text: COLORS.textSecondary,
-      };
-  }
-};
 
 export default function AchievementsScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const filteredAchievements =
-    selectedCategory === 'all'
+  // Filter achievements
+  const filteredAchievements = useMemo(() => {
+    return selectedCategory === 'all'
       ? mockAchievements
-      : mockAchievements.filter(
-          achievement => achievement.category === selectedCategory
-        );
+      : mockAchievements.filter(a => a.category === selectedCategory);
+  }, [selectedCategory]);
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    const total = mockAchievements.length;
+    const unlocked = mockAchievements.filter(a => a.unlocked).length;
+    const points = mockAchievements
+      .filter(a => a.unlocked)
+      .reduce((sum, a) => sum + a.points, 0);
+    const progress = Math.round((unlocked / total) * 100);
+    return { total, unlocked, points, progress };
+  }, []);
 
   const renderAchievementItem = ({
     item,
   }: {
     item: (typeof mockAchievements)[0];
   }) => {
-    const rarityColor = getRarityColor(item.rarity);
+    const isUnlocked = item.unlocked;
 
     return (
-      <View
-        style={[styles.achievementCard, { borderColor: rarityColor.border }]}
-      >
-        <View style={styles.achievementHeader}>
+      <View style={[styles.card, !isUnlocked && styles.cardLocked]}>
+        <View style={styles.cardHeader}>
           <View
             style={[
-              styles.achievementIcon,
-              {
-                backgroundColor: item.unlocked
-                  ? rarityColor.bg
-                  : COLORS.background,
-                borderColor: rarityColor.border,
-              },
+              styles.iconContainer,
+              isUnlocked && styles.iconContainerUnlocked,
             ]}
           >
             <Ionicons
               name={item.icon as any}
               size={24}
-              color={item.unlocked ? rarityColor.text : COLORS.textSecondary}
+              color={isUnlocked ? COLORS.text : COLORS.inactive}
             />
           </View>
-          <View style={styles.achievementInfo}>
-            <Text
-              style={[
-                styles.achievementTitle,
-                { color: item.unlocked ? COLORS.text : COLORS.textSecondary },
-              ]}
-            >
-              {item.title}
-            </Text>
-            <Text style={styles.achievementDescription}>
+          <View style={styles.cardContent}>
+            <View style={styles.titleRow}>
+              <Text style={[styles.title, !isUnlocked && styles.textLocked]}>
+                {item.title}
+              </Text>
+              {isUnlocked && (
+                <Ionicons
+                  name="checkmark-circle"
+                  size={16}
+                  color={COLORS.text}
+                />
+              )}
+            </View>
+            <Text style={styles.description} numberOfLines={2}>
               {item.description}
             </Text>
-            <Text style={styles.achievementRequirement}>
-              {item.requirement}
-            </Text>
-          </View>
-          <View style={styles.achievementReward}>
-            <View
-              style={[styles.rarityBadge, { backgroundColor: rarityColor.bg }]}
-            >
-              <Text style={[styles.rarityText, { color: rarityColor.text }]}>
-                {item.rarity.toUpperCase()}
+
+            {/* Progress Bar for locked items */}
+            {!isUnlocked && (
+              <View style={styles.progressContainer}>
+                <View style={styles.progressBarBg}>
+                  <View
+                    style={[
+                      styles.progressBarFill,
+                      { width: `${item.progress}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.progressText}>
+                  {item.progress}% • {item.requirement}
+                </Text>
+              </View>
+            )}
+
+            {/* Unlocked Date for unlocked items */}
+            {isUnlocked && item.unlockedDate && (
+              <Text style={styles.unlockedDate}>
+                Unlocked on {new Date(item.unlockedDate).toLocaleDateString()}
               </Text>
-            </View>
-            <Text style={styles.pointsText}>+{item.points} pts</Text>
+            )}
+          </View>
+
+          <View style={styles.pointsContainer}>
+            <Text
+              style={[styles.pointsValue, !isUnlocked && styles.textLocked]}
+            >
+              +{item.points}
+            </Text>
+            <Text style={styles.pointsLabel}>pts</Text>
           </View>
         </View>
-
-        {!item.unlocked && (
-          <View style={styles.progressSection}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressText}>Progress</Text>
-              <Text style={styles.progressPercent}>{item.progress}%</Text>
-            </View>
-            <View style={styles.progressBarContainer}>
-              <View
-                style={[
-                  styles.progressBar,
-                  {
-                    width: `${item.progress}%`,
-                    backgroundColor: rarityColor.border,
-                  },
-                ]}
-              />
-            </View>
-          </View>
-        )}
-
-        {item.unlocked && item.unlockedDate && (
-          <View style={styles.unlockedSection}>
-            <Ionicons
-              name="checkmark-circle"
-              size={16}
-              color={COLORS.success}
-            />
-            <Text style={styles.unlockedText}>
-              Unlocked on {item.unlockedDate}
-            </Text>
-          </View>
-        )}
       </View>
     );
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
-      {/* Status Bar Background */}
-      <View style={[styles.statusBarBackground, { height: insets.top }]} />
+      {/* Background for Status Bar */}
+      <View
+        style={{ height: insets.top, backgroundColor: COLORS.background }}
+      />
 
-      {/* Mobile Header */}
       <MobileHeader
         title="Achievements"
         showBackButton={true}
-        showCartButton={true}
+        showCartButton={false} // Cleaner look
         showSearch={false}
         showLocationHeader={false}
       />
 
-      {/* Stats Widget */}
-      <View style={styles.statsWidget}>
-        <View style={styles.widgetContainer}>
-          <Text style={styles.widgetTitle}>Your Achievement Progress</Text>
-
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {mockStats.unlockedAchievements}
-              </Text>
-              <Text style={styles.statLabel}>Unlocked</Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Summary Section */}
+        <View style={styles.summaryContainer}>
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryRow}>
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryValue}>{stats.unlocked}</Text>
+                <Text style={styles.summaryLabel}>Unlocked</Text>
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryValue}>{stats.points}</Text>
+                <Text style={styles.summaryLabel}>Points Earned</Text>
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryValue}>{stats.progress}%</Text>
+                <Text style={styles.summaryLabel}>Complete</Text>
+              </View>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{mockStats.totalPoints}</Text>
-              <Text style={styles.statLabel}>Points Earned</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{mockStats.completionRate}%</Text>
-              <Text style={styles.statLabel}>Complete</Text>
-            </View>
-          </View>
-
-          <View style={styles.nextMilestone}>
-            <Text style={styles.milestoneText}>{mockStats.nextMilestone}</Text>
           </View>
         </View>
-      </View>
 
-      {/* Category Filter */}
-      <View style={styles.filterContainer}>
+        {/* Categories */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScroll}
+          contentContainerStyle={styles.categoriesContent}
+          style={styles.categoriesContainer}
         >
-          {categories.map(category => (
+          {categories.map(cat => (
             <TouchableOpacity
-              key={category.id}
+              key={cat.id}
               style={[
-                styles.categoryButton,
-                selectedCategory === category.id && styles.categoryButtonActive,
+                styles.categoryChip,
+                selectedCategory === cat.id && styles.categoryChipActive,
               ]}
-              onPress={() => setSelectedCategory(category.id)}
+              onPress={() => setSelectedCategory(cat.id)}
             >
               <Ionicons
-                name={category.icon as any}
+                name={cat.icon as any}
                 size={16}
-                color={
-                  selectedCategory === category.id
-                    ? COLORS.buttonText
-                    : COLORS.text
-                }
+                color={selectedCategory === cat.id ? COLORS.card : COLORS.text}
               />
               <Text
                 style={[
-                  styles.categoryButtonText,
-                  selectedCategory === category.id &&
-                    styles.categoryButtonTextActive,
+                  styles.categoryText,
+                  selectedCategory === cat.id && styles.categoryTextActive,
                 ]}
               >
-                {category.label}
+                {cat.label}
               </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
-      </View>
 
-      {/* Achievements List */}
-      <FlatList
-        data={filteredAchievements}
-        renderItem={renderAchievementItem}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+        {/* Achievements List */}
+        <View style={styles.listContainer}>
+          {filteredAchievements.map(item => (
+            <View key={item.id}>{renderAchievementItem({ item })}</View>
+          ))}
+        </View>
+
+        {/* Bottom Padding */}
+        <View style={{ height: SPACING.xxl }} />
+      </ScrollView>
     </View>
   );
 }
@@ -375,206 +329,171 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  statusBarBackground: {
-    backgroundColor: COLORS.card,
+  scrollContent: {
+    paddingBottom: SPACING.xl,
   },
-
-  // Stats Widget
-  statsWidget: {
-    marginHorizontal: SPACING.md,
-    marginTop: SPACING.md,
-    marginBottom: SPACING.lg,
+  summaryContainer: {
+    padding: SPACING.md,
   },
-  widgetContainer: {
+  summaryCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: SPACING.lg,
     ...SHADOWS.medium,
   },
-  widgetTitle: {
-    ...TYPOGRAPHY.h4,
-    color: COLORS.text,
-    fontWeight: '600',
-    marginBottom: SPACING.lg,
-  },
-  statsRow: {
+  summaryRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.lg,
   },
-  statItem: {
+  summaryItem: {
     flex: 1,
     alignItems: 'center',
   },
-  statValue: {
+  summaryValue: {
     ...TYPOGRAPHY.h2,
-    color: COLORS.text,
-    fontWeight: '800',
-    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 4,
   },
-  statLabel: {
+  summaryLabel: {
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
   },
-  statDivider: {
+  divider: {
     width: 1,
     height: 40,
     backgroundColor: COLORS.border,
-    marginHorizontal: SPACING.sm,
   },
-  nextMilestone: {
-    backgroundColor: COLORS.background,
-    padding: SPACING.md,
-    borderRadius: 12,
-    alignItems: 'center',
+  categoriesContainer: {
+    marginBottom: SPACING.md,
   },
-  milestoneText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text,
-    fontWeight: '500',
-  },
-
-  // Filter Container
-  filterContainer: {
-    marginBottom: SPACING.lg,
-  },
-  filterScroll: {
+  categoriesContent: {
     paddingHorizontal: SPACING.md,
     gap: SPACING.sm,
   },
-  categoryButton: {
+  categoryChip: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingVertical: 8,
     borderRadius: 20,
     backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.border,
-    gap: SPACING.xs,
+    gap: 6,
   },
-  categoryButtonActive: {
-    backgroundColor: COLORS.buttonBg,
-    borderColor: COLORS.buttonBg,
+  categoryChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
-  categoryButtonText: {
+  categoryText: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.text,
     fontWeight: '500',
+    color: COLORS.text,
   },
-  categoryButtonTextActive: {
-    color: COLORS.buttonText,
+  categoryTextActive: {
+    color: COLORS.card,
   },
-
-  // List Container
   listContainer: {
     paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.xxl,
+    gap: SPACING.md,
   },
-
-  // Achievement Card
-  achievementCard: {
+  card: {
     backgroundColor: COLORS.card,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: SPACING.md,
-    marginBottom: SPACING.md,
-    borderWidth: 2,
     ...SHADOWS.light,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
-  achievementHeader: {
+  cardLocked: {
+    backgroundColor: COLORS.background, // Slightly different bg for locked
+    borderColor: COLORS.border,
+    opacity: 0.9,
+    // Remove shadow for locked items
+    shadowColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: SPACING.md,
+    gap: SPACING.md,
   },
-  achievementIcon: {
+  iconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  iconContainerUnlocked: {
+    backgroundColor: COLORS.card, // White bg
+    borderColor: COLORS.primary, // Black border
     borderWidth: 2,
   },
-  achievementInfo: {
+  cardContent: {
     flex: 1,
   },
-  achievementTitle: {
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  title: {
     ...TYPOGRAPHY.h5,
     fontWeight: '600',
-    marginBottom: SPACING.xs,
   },
-  achievementDescription: {
+  textLocked: {
+    color: COLORS.textSecondary,
+  },
+  description: {
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
+    marginBottom: 8,
+    lineHeight: 20,
   },
-  achievementRequirement: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    fontStyle: 'italic',
+  progressContainer: {
+    marginTop: 4,
   },
-  achievementReward: {
-    alignItems: 'flex-end',
-    gap: SPACING.xs,
+  progressBarBg: {
+    height: 4,
+    backgroundColor: COLORS.border,
+    borderRadius: 2,
+    marginBottom: 6,
   },
-  rarityBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: 8,
-  },
-  rarityText: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  pointsText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text,
-    fontWeight: '600',
-  },
-
-  // Progress Section
-  progressSection: {
-    marginBottom: SPACING.sm,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.xs,
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: COLORS.textSecondary,
+    borderRadius: 2,
   },
   progressText: {
-    ...TYPOGRAPHY.caption,
+    ...TYPOGRAPHY.tiny,
     color: COLORS.textSecondary,
-    fontWeight: '500',
   },
-  progressPercent: {
-    ...TYPOGRAPHY.caption,
+  unlockedDate: {
+    ...TYPOGRAPHY.tiny,
     color: COLORS.text,
-    fontWeight: '600',
-  },
-  progressBarContainer: {
-    height: 6,
-    backgroundColor: COLORS.background,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    borderRadius: 3,
-  },
-
-  // Unlocked Section
-  unlockedSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-  },
-  unlockedText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.success,
+    marginTop: 4,
     fontWeight: '500',
+  },
+  pointsContainer: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    paddingTop: 4,
+  },
+  pointsValue: {
+    ...TYPOGRAPHY.h4,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  pointsLabel: {
+    ...TYPOGRAPHY.tiny,
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
   },
 });

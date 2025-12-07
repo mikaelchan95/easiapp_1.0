@@ -10,11 +10,8 @@ import {
   NotificationBatch,
   NotificationType,
   NotificationPriority,
-  OrderStatusNotificationData,
-  PaymentNotificationData,
-  ApprovalNotificationData,
-  CreditAlertNotificationData,
-  BillingNotificationData,
+  OrderStatusPayload,
+  CreditAlertPayload,
 } from '../types/notification';
 
 // Configure how notifications are handled when the app is in foreground
@@ -27,66 +24,68 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export interface OrderNotification {
-  orderId: string;
-  status: 'confirmed' | 'preparing' | 'out_for_delivery' | 'delivered';
-  title: string;
-  body: string;
-  data?: any;
-}
-
 class NotificationService {
   private isInitialized = false;
   private storageKey = '@easiapp:notifications';
-  private settingsKey = '@easiapp:notification_settings';
   private subscriptions: Map<string, any> = new Map();
 
-  // Default notification settings
   private defaultSettings: NotificationSettings = {
-    pushNotifications: true,
-    emailNotifications: true,
-    smsNotifications: false,
+    pushEnabled: true,
+    emailEnabled: true,
+    smsEnabled: false,
     orderUpdates: true,
     paymentAlerts: true,
     approvalRequests: true,
     creditWarnings: true,
     billingReminders: true,
-    promotionalNotifications: false,
-    quietHours: {
-      enabled: false,
-      startTime: '22:00',
-      endTime: '08:00',
-    },
+    marketingNotifications: false,
+    quietHoursEnabled: false,
+    quietHoursStart: '22:00',
+    quietHoursEnd: '08:00',
   };
 
-  async initialize(): Promise<boolean> {
+  async initialize(userId?: string): Promise<boolean> {
     if (this.isInitialized) return true;
 
     try {
-      // Request permissions
-      const { status: existingStatus } =
-        await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
+      if (Device.isDevice) {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
 
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+
+        if (finalStatus !== 'granted') {
+          console.warn('Failed to get push token for push notification!');
+          return false;
+        }
+
+        // Register push token if user is logged in
+        if (userId) {
+          try {
+            // Try to get the push token - requires projectId in app.json or EAS config
+            const token = (await Notifications.getExpoPushTokenAsync({
+              projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID,
+            })).data;
+            await this.registerPushToken(userId, token);
+          } catch (tokenError) {
+            // Push token registration failed - likely missing projectId or not in a build
+            // This is non-fatal, app can still function without push notifications
+            console.warn('Could not register push token:', tokenError);
+          }
+        }
+      } else {
+        console.log('Must use physical device for Push Notifications');
       }
 
-      if (finalStatus !== 'granted') {
-        console.warn('Failed to get push token for push notification!');
-        return false;
-      }
-
-      // Configure notification channel for Android
       if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('order-updates', {
-          name: 'Order Updates',
-          importance: Notifications.AndroidImportance.HIGH,
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'Default',
+          importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: '#FF231F7C',
-          sound: 'default',
-          enableVibrate: true,
         });
       }
 
@@ -98,139 +97,25 @@ class NotificationService {
     }
   }
 
-  async scheduleOrderNotification(
-    notification: OrderNotification,
-    delaySeconds = 0
-  ): Promise<string | null> {
+  async registerPushToken(userId: string, token: string): Promise<void> {
     try {
-      await this.initialize();
-
-      const identifier = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: notification.title,
-          body: notification.body,
-          data: {
-            orderId: notification.orderId,
-            status: notification.status,
-            type: 'order_update',
-            ...notification.data,
-          },
-          sound: 'default',
-          ...(Platform.OS === 'android' && {
-            channelId: 'order-updates',
-          }),
+      const { error } = await supabase.from('push_tokens').upsert(
+        {
+          user_id: userId,
+          token,
+          device_type: Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web',
+          device_name: Device.modelName || 'Unknown Device',
+          is_active: true,
+          last_used_at: new Date().toISOString(),
         },
-        trigger:
-          delaySeconds > 0
-            ? {
-                type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-                seconds: delaySeconds,
-              }
-            : null, // null means immediate
-      });
-
-      return identifier;
-    } catch (error) {
-      console.error('Error scheduling notification:', error);
-      return null;
-    }
-  }
-
-  async scheduleOrderStatusUpdate(
-    orderId: string,
-    status: OrderNotification['status'],
-    delaySeconds = 0
-  ): Promise<string | null> {
-    const notifications: Record<
-      OrderNotification['status'],
-      Omit<OrderNotification, 'orderId' | 'status'>
-    > = {
-      confirmed: {
-        title: '✅ Order Confirmed',
-        body: 'Your order has been confirmed and is being prepared.',
-      },
-      preparing: {
-        title: '👨‍🍳 Order Being Prepared',
-        body: 'Your order is being carefully prepared for delivery.',
-      },
-      out_for_delivery: {
-        title: '🚚 Order Out for Delivery',
-        body: 'Your order is on its way! Track your delivery in the app.',
-      },
-      delivered: {
-        title: '🎉 Order Delivered',
-        body: 'Your order has been delivered. Enjoy!',
-      },
-    };
-
-    const notificationData = notifications[status];
-    if (!notificationData) {
-      console.error('Unknown order status:', status);
-      return null;
-    }
-
-    return this.scheduleOrderNotification(
-      {
-        orderId,
-        status,
-        ...notificationData,
-      },
-      delaySeconds
-    );
-  }
-
-  async cancelNotification(identifier: string): Promise<void> {
-    try {
-      await Notifications.cancelScheduledNotificationAsync(identifier);
-    } catch (error) {
-      console.error('Error cancelling notification:', error);
-    }
-  }
-
-  async cancelAllNotifications(): Promise<void> {
-    try {
-      await Notifications.cancelAllScheduledNotificationsAsync();
-    } catch (error) {
-      console.error('Error cancelling all notifications:', error);
-    }
-  }
-
-  // Simulate order progress with notifications
-  async simulateOrderProgress(orderId: string): Promise<void> {
-    try {
-      // Schedule notifications for different order stages
-      await this.scheduleOrderStatusUpdate(orderId, 'confirmed', 0); // Immediate
-      await this.scheduleOrderStatusUpdate(orderId, 'preparing', 10); // 10 seconds later
-      await this.scheduleOrderStatusUpdate(orderId, 'out_for_delivery', 20); // 20 seconds later
-      await this.scheduleOrderStatusUpdate(orderId, 'delivered', 30); // 30 seconds later
-
-    } catch (error) {
-      console.error('Error simulating order progress:', error);
-    }
-  }
-
-  // Add notification listeners
-  addNotificationListener(
-    onNotificationReceived: (notification: Notifications.Notification) => void,
-    onNotificationResponse: (
-      response: Notifications.NotificationResponse
-    ) => void
-  ): () => void {
-    const receivedSubscription = Notifications.addNotificationReceivedListener(
-      onNotificationReceived
-    );
-    const responseSubscription =
-      Notifications.addNotificationResponseReceivedListener(
-        onNotificationResponse
+        { onConflict: 'token' }
       );
 
-    return () => {
-      receivedSubscription.remove();
-      responseSubscription.remove();
-    };
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error registering push token:', error);
+    }
   }
-
-  // Enhanced notification management methods
 
   // Get notifications with filters and pagination
   async getNotifications(
@@ -240,51 +125,44 @@ class NotificationService {
     offset: number = 0
   ): Promise<NotificationBatch> {
     try {
-      // Try to get from Supabase first
       let query = supabase
         .from('notifications')
-        .select('*')
+        .select('*', { count: 'exact' })
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
-      // Apply filters
       if (filters?.types?.length) {
         query = query.in('type', filters.types);
       }
-      if (filters?.priorities?.length) {
-        query = query.in('priority', filters.priorities);
+      if (filters?.priority?.length) {
+        query = query.in('priority', filters.priority);
       }
       if (filters?.status?.length) {
         query = query.in('status', filters.status);
       }
-      if (filters?.fromDate) {
-        query = query.gte('created_at', filters.fromDate.toISOString());
-      }
-      if (filters?.toDate) {
-        query = query.lte('created_at', filters.toDate.toISOString());
+      if (filters?.dateRange) {
+        query = query
+          .gte('created_at', filters.dateRange.from.toISOString())
+          .lte('created_at', filters.dateRange.to.toISOString());
       }
 
       const { data, error, count } = await query;
 
-      if (error) {
-        console.error('Error fetching notifications from Supabase:', error);
-        // Fallback to local storage
-        return this.getLocalNotifications(userId, filters, limit, offset);
-      }
+      if (error) throw error;
 
-      const notifications: NotificationData[] =
-        data?.map(this.mapDatabaseToNotification) || [];
+      const notifications: NotificationData[] = data.map(this.mapDatabaseToNotification);
       const unreadCount = await this.getUnreadCount(userId);
 
       return {
         notifications,
-        totalCount: count || 0,
+        total: count || 0,
         unreadCount,
         hasMore: (count || 0) > offset + limit,
       };
     } catch (error) {
-      console.error('Error in getNotifications:', error);
+      console.error('Error fetching notifications:', error);
+      // Fallback to local
       return this.getLocalNotifications(userId, filters, limit, offset);
     }
   }
@@ -297,74 +175,30 @@ class NotificationService {
     offset: number = 0
   ): Promise<NotificationBatch> {
     try {
-      const storageData = await AsyncStorage.getItem(
-        `${this.storageKey}:${userId}`
-      );
-      let allNotifications: NotificationData[] = storageData
-        ? JSON.parse(storageData)
-        : [];
+      const storageData = await AsyncStorage.getItem(`${this.storageKey}:${userId}`);
+      let allNotifications: NotificationData[] = storageData ? JSON.parse(storageData) : [];
 
-      // Apply filters
       if (filters) {
-        allNotifications = allNotifications.filter(notification => {
-          if (
-            filters.types?.length &&
-            !filters.types.includes(notification.type)
-          )
-            return false;
-          if (
-            filters.priorities?.length &&
-            !filters.priorities.includes(notification.priority)
-          )
-            return false;
-          if (
-            filters.status?.length &&
-            !filters.status.includes(notification.status)
-          )
-            return false;
-          if (
-            filters.fromDate &&
-            new Date(notification.timestamp) < filters.fromDate
-          )
-            return false;
-          if (
-            filters.toDate &&
-            new Date(notification.timestamp) > filters.toDate
-          )
-            return false;
+        allNotifications = allNotifications.filter(n => {
+          if (filters.types && !filters.types.includes(n.type)) return false;
+          if (filters.priority && !filters.priority.includes(n.priority)) return false;
+          if (filters.status && !filters.status.includes(n.status)) return false;
           return true;
         });
       }
 
-      // Sort by timestamp (newest first)
-      allNotifications.sort(
-        (a, b) =>
-          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      );
-
       const notifications = allNotifications.slice(offset, offset + limit);
-      const unreadCount = allNotifications.filter(
-        n => n.status === 'unread'
-      ).length;
-
       return {
         notifications,
-        totalCount: allNotifications.length,
-        unreadCount,
+        total: allNotifications.length,
+        unreadCount: allNotifications.filter(n => n.status === 'unread').length,
         hasMore: allNotifications.length > offset + limit,
       };
     } catch (error) {
-      console.error('Error getting local notifications:', error);
-      return {
-        notifications: [],
-        totalCount: 0,
-        unreadCount: 0,
-        hasMore: false,
-      };
+      return { notifications: [], total: 0, unreadCount: 0, hasMore: false };
     }
   }
 
-  // Get unread notification count
   async getUnreadCount(userId: string): Promise<number> {
     try {
       const { count, error } = await supabase
@@ -373,79 +207,23 @@ class NotificationService {
         .eq('user_id', userId)
         .eq('status', 'unread');
 
-      if (error) {
-        console.error('Error getting unread count from Supabase:', error);
-        // Fallback to local storage
-        const storageData = await AsyncStorage.getItem(
-          `${this.storageKey}:${userId}`
-        );
-        const notifications: NotificationData[] = storageData
-          ? JSON.parse(storageData)
-          : [];
-        return notifications.filter(n => n.status === 'unread').length;
-      }
-
+      if (error) throw error;
       return count || 0;
     } catch (error) {
-      console.error('Error in getUnreadCount:', error);
+      console.error('Error getting unread count:', error);
       return 0;
     }
   }
 
-  // Create a new notification
-  async createNotification(
-    notification: Omit<NotificationData, 'id' | 'timestamp'>
-  ): Promise<NotificationData> {
-    const newNotification: NotificationData = {
-      ...notification,
-      id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: new Date(),
-    };
-
-    try {
-      // Save to Supabase
-      const { data, error } = await supabase
-        .from('notifications')
-        .insert([this.mapNotificationToDatabase(newNotification)])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error saving notification to Supabase:', error);
-      }
-
-      // Always save to local storage as backup
-      await this.saveNotificationLocally(newNotification);
-
-      return newNotification;
-    } catch (error) {
-      console.error('Error creating notification:', error);
-      // Still save locally
-      await this.saveNotificationLocally(newNotification);
-      return newNotification;
-    }
-  }
-
-  // Mark notification as read
   async markAsRead(userId: string, notificationId: string): Promise<boolean> {
     try {
-      // Update in Supabase
       const { error } = await supabase
         .from('notifications')
-        .update({ status: 'read' })
+        .update({ status: 'read', read_at: new Date().toISOString() })
         .eq('id', notificationId)
         .eq('user_id', userId);
 
-      if (error) {
-        console.error('Error marking notification as read in Supabase:', error);
-      }
-
-      // Update local storage
-      await this.updateNotificationStatusLocally(
-        userId,
-        notificationId,
-        'read'
-      );
+      if (error) throw error;
       return true;
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -453,159 +231,63 @@ class NotificationService {
     }
   }
 
-  // Mark notification as dismissed
-  async markAsDismissed(
-    userId: string,
-    notificationId: string
-  ): Promise<boolean> {
-    try {
-      // Update in Supabase
-      const { error } = await supabase
-        .from('notifications')
-        .update({ status: 'dismissed' })
-        .eq('id', notificationId)
-        .eq('user_id', userId);
-
-      if (error) {
-        console.error(
-          'Error marking notification as dismissed in Supabase:',
-          error
-        );
-      }
-
-      // Update local storage
-      await this.updateNotificationStatusLocally(
-        userId,
-        notificationId,
-        'dismissed'
-      );
-      return true;
-    } catch (error) {
-      console.error('Error marking notification as dismissed:', error);
-      return false;
-    }
-  }
-
-  // Mark all notifications as read
   async markAllAsRead(userId: string): Promise<boolean> {
     try {
-      // Update in Supabase
       const { error } = await supabase
         .from('notifications')
-        .update({ status: 'read' })
+        .update({ status: 'read', read_at: new Date().toISOString() })
         .eq('user_id', userId)
         .eq('status', 'unread');
 
-      if (error) {
-        console.error(
-          'Error marking all notifications as read in Supabase:',
-          error
-        );
-      }
-
-      // Update local storage
-      const storageData = await AsyncStorage.getItem(
-        `${this.storageKey}:${userId}`
-      );
-      if (storageData) {
-        const notifications: NotificationData[] = JSON.parse(storageData);
-        const updatedNotifications = notifications.map(n =>
-          n.status === 'unread' ? { ...n, status: 'read' as const } : n
-        );
-        await AsyncStorage.setItem(
-          `${this.storageKey}:${userId}`,
-          JSON.stringify(updatedNotifications)
-        );
-      }
-
+      if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      console.error('Error marking all as read:', error);
       return false;
     }
   }
 
-  // Delete notification
-  async deleteNotification(
-    userId: string,
-    notificationId: string
-  ): Promise<boolean> {
-    try {
-      // Delete from Supabase
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('id', notificationId)
-        .eq('user_id', userId);
-
-      if (error) {
-        console.error('Error deleting notification from Supabase:', error);
-      }
-
-      // Delete from local storage
-      const storageData = await AsyncStorage.getItem(
-        `${this.storageKey}:${userId}`
-      );
-      if (storageData) {
-        const notifications: NotificationData[] = JSON.parse(storageData);
-        const filteredNotifications = notifications.filter(
-          n => n.id !== notificationId
-        );
-        await AsyncStorage.setItem(
-          `${this.storageKey}:${userId}`,
-          JSON.stringify(filteredNotifications)
-        );
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Error deleting notification:', error);
-      return false;
-    }
-  }
-
-  // Get notification settings
   async getSettings(userId: string): Promise<NotificationSettings> {
     try {
-      const storageData = await AsyncStorage.getItem(
-        `${this.settingsKey}:${userId}`
-      );
-      if (storageData) {
-        return { ...this.defaultSettings, ...JSON.parse(storageData) };
+      const { data, error } = await supabase
+        .from('user_notification_settings')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 is no rows found
+
+      if (!data) {
+        // Create default settings if not exists
+        await this.updateSettings(userId, this.defaultSettings);
+        return this.defaultSettings;
       }
-      return this.defaultSettings;
+
+      return this.mapDatabaseToSettings(data);
     } catch (error) {
-      console.error('Error getting notification settings:', error);
+      console.error('Error getting settings:', error);
       return this.defaultSettings;
     }
   }
 
-  // Update notification settings
-  async updateSettings(
-    userId: string,
-    settings: Partial<NotificationSettings>
-  ): Promise<boolean> {
+  async updateSettings(userId: string, settings: Partial<NotificationSettings>): Promise<boolean> {
     try {
-      const currentSettings = await this.getSettings(userId);
-      const updatedSettings = { ...currentSettings, ...settings };
-      await AsyncStorage.setItem(
-        `${this.settingsKey}:${userId}`,
-        JSON.stringify(updatedSettings)
-      );
+      const dbSettings = this.mapSettingsToDatabase(settings);
+      const { error } = await supabase
+        .from('user_notification_settings')
+        .upsert({ user_id: userId, ...dbSettings });
+
+      if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error updating notification settings:', error);
+      console.error('Error updating settings:', error);
       return false;
     }
   }
 
-  // Subscribe to real-time notifications
-  subscribeToUserNotifications(
-    userId: string,
-    callback: (notification: NotificationData) => void
-  ): any {
+  subscribeToUserNotifications(userId: string, callback: (notification: NotificationData) => void) {
     const subscription = supabase
-      .channel(`notifications:${userId}`)
+      .channel(`user_notifications:${userId}`)
       .on(
         'postgres_changes',
         {
@@ -615,146 +297,35 @@ class NotificationService {
           filter: `user_id=eq.${userId}`,
         },
         payload => {
-          const notification = this.mapDatabaseToNotification(payload.new);
-          callback(notification);
+          callback(this.mapDatabaseToNotification(payload.new));
         }
       )
       .subscribe();
 
     this.subscriptions.set(`user_notifications_${userId}`, subscription);
-    return subscription;
+    return () => supabase.removeChannel(subscription);
   }
 
-  // Subscribe to order status changes
-  subscribeToOrderStatusUpdates(
-    userId: string,
-    callback: (notification: OrderStatusNotificationData) => void
-  ): any {
-    const subscription = supabase
-      .channel(`order_status:${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-          filter: `user_id=eq.${userId}`,
-        },
-        async payload => {
-          if (payload.old.status !== payload.new.status) {
-            const notification = await this.createOrderStatusNotification(
-              payload.new,
-              payload.old.status
-            );
-            callback(notification as OrderStatusNotificationData);
-          }
-        }
-      )
-      .subscribe();
-
-    this.subscriptions.set(`order_status_${userId}`, subscription);
-    return subscription;
-  }
-
-  // Subscribe to company credit alerts
-  subscribeToCompanyCreditAlerts(
-    companyId: string,
-    callback: (notification: CreditAlertNotificationData) => void
-  ): any {
-    const subscription = supabase
-      .channel(`company_credit:${companyId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'companies',
-          filter: `id=eq.${companyId}`,
-        },
-        async payload => {
-          const { credit_limit, credit_used } = payload.new;
-          const availableCredit = credit_limit - credit_used;
-          const utilizationPercent = (credit_used / credit_limit) * 100;
-
-          // Check for credit alerts
-          if (utilizationPercent >= 90) {
-            const notification = await this.createCreditAlertNotification(
-              payload.new,
-              utilizationPercent >= 100 ? 'limit_exceeded' : 'low_balance'
-            );
-            callback(notification as CreditAlertNotificationData);
-          }
-        }
-      )
-      .subscribe();
-
-    this.subscriptions.set(`company_credit_${companyId}`, subscription);
-    return subscription;
-  }
-
-  // Unsubscribe from notifications
-  unsubscribe(subscriptionKey: string): void {
-    const subscription = this.subscriptions.get(subscriptionKey);
-    if (subscription) {
-      supabase.removeChannel(subscription);
-      this.subscriptions.delete(subscriptionKey);
-    }
-  }
-
-  // Unsubscribe from all notifications
-  unsubscribeAll(): void {
-    this.subscriptions.forEach((subscription, key) => {
-      supabase.removeChannel(subscription);
-    });
+  unsubscribeAll() {
+    this.subscriptions.forEach(sub => supabase.removeChannel(sub));
     this.subscriptions.clear();
   }
 
-  // Helper methods
-  private async saveNotificationLocally(
-    notification: NotificationData
-  ): Promise<void> {
-    try {
-      const storageData = await AsyncStorage.getItem(
-        `${this.storageKey}:${notification.userId}`
-      );
-      const notifications: NotificationData[] = storageData
-        ? JSON.parse(storageData)
-        : [];
-      notifications.unshift(notification); // Add to beginning
+  /**
+   * Add listeners for incoming notifications and notification responses (taps).
+   * Returns an unsubscribe function to clean up both listeners.
+   */
+  addNotificationListener(
+    onNotificationReceived: (notification: Notifications.Notification) => void,
+    onNotificationResponse: (response: Notifications.NotificationResponse) => void
+  ): () => void {
+    const receivedSubscription = Notifications.addNotificationReceivedListener(onNotificationReceived);
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(onNotificationResponse);
 
-      // Keep only last 100 notifications to prevent storage bloat
-      const trimmedNotifications = notifications.slice(0, 100);
-      await AsyncStorage.setItem(
-        `${this.storageKey}:${notification.userId}`,
-        JSON.stringify(trimmedNotifications)
-      );
-    } catch (error) {
-      console.error('Error saving notification locally:', error);
-    }
-  }
-
-  private async updateNotificationStatusLocally(
-    userId: string,
-    notificationId: string,
-    status: 'read' | 'dismissed'
-  ): Promise<void> {
-    try {
-      const storageData = await AsyncStorage.getItem(
-        `${this.storageKey}:${userId}`
-      );
-      if (storageData) {
-        const notifications: NotificationData[] = JSON.parse(storageData);
-        const updatedNotifications = notifications.map(n =>
-          n.id === notificationId ? { ...n, status } : n
-        );
-        await AsyncStorage.setItem(
-          `${this.storageKey}:${userId}`,
-          JSON.stringify(updatedNotifications)
-        );
-      }
-    } catch (error) {
-      console.error('Error updating notification status locally:', error);
-    }
+    return () => {
+      receivedSubscription.remove();
+      responseSubscription.remove();
+    };
   }
 
   private mapDatabaseToNotification(dbRecord: any): NotificationData {
@@ -762,98 +333,60 @@ class NotificationService {
       id: dbRecord.id,
       type: dbRecord.type,
       priority: dbRecord.priority,
-      status: dbRecord.status,
       title: dbRecord.title,
       message: dbRecord.message,
-      timestamp: new Date(dbRecord.created_at),
+      status: dbRecord.status,
+      metadata: dbRecord.metadata,
+      createdAt: dbRecord.created_at,
+      readAt: dbRecord.read_at,
+      actionUrl: dbRecord.action_url,
       userId: dbRecord.user_id,
       companyId: dbRecord.company_id,
-      expiresAt: dbRecord.expires_at
-        ? new Date(dbRecord.expires_at)
-        : undefined,
-      metadata: dbRecord.metadata || {},
+      expiresAt: dbRecord.expires_at,
+      timestamp: new Date(dbRecord.created_at),
     };
   }
 
-  private mapNotificationToDatabase(notification: NotificationData): any {
+  private mapDatabaseToSettings(dbRecord: any): NotificationSettings {
     return {
-      id: notification.id,
-      type: notification.type,
-      priority: notification.priority,
-      status: notification.status,
-      title: notification.title,
-      message: notification.message,
-      user_id: notification.userId,
-      company_id: notification.companyId,
-      expires_at: notification.expiresAt?.toISOString(),
-      metadata: notification.metadata,
-      created_at: notification.timestamp.toISOString(),
+      pushEnabled: dbRecord.push_enabled,
+      emailEnabled: dbRecord.email_enabled,
+      smsEnabled: dbRecord.sms_enabled,
+      orderUpdates: dbRecord.order_updates,
+      paymentAlerts: dbRecord.payment_alerts,
+      approvalRequests: dbRecord.approval_requests,
+      creditWarnings: dbRecord.credit_warnings,
+      billingReminders: dbRecord.billing_reminders,
+      marketingNotifications: dbRecord.marketing_notifications,
+      quietHoursEnabled: dbRecord.quiet_hours_enabled,
+      quietHoursStart: dbRecord.quiet_hours_start,
+      quietHoursEnd: dbRecord.quiet_hours_end,
     };
   }
 
-  private async createOrderStatusNotification(
-    orderData: any,
-    previousStatus: string
-  ): Promise<NotificationData> {
-    const statusMessages = {
-      confirmed: 'Your order has been confirmed and is being prepared',
-      preparing: 'Your order is being prepared',
-      ready: 'Your order is ready for pickup/delivery',
-      out_for_delivery: 'Your order is out for delivery',
-      delivered: 'Your order has been delivered',
-      cancelled: 'Your order has been cancelled',
-      returned: 'Your order has been returned',
+  private mapSettingsToDatabase(settings: Partial<NotificationSettings>): any {
+    const mapping: Record<string, string> = {
+      pushEnabled: 'push_enabled',
+      emailEnabled: 'email_enabled',
+      smsEnabled: 'sms_enabled',
+      orderUpdates: 'order_updates',
+      paymentAlerts: 'payment_alerts',
+      approvalRequests: 'approval_requests',
+      creditWarnings: 'credit_warnings',
+      billingReminders: 'billing_reminders',
+      marketingNotifications: 'marketing_notifications',
+      quietHoursEnabled: 'quiet_hours_enabled',
+      quietHoursStart: 'quiet_hours_start',
+      quietHoursEnd: 'quiet_hours_end',
     };
 
-    return this.createNotification({
-      type: 'order_status',
-      priority: orderData.status === 'delivered' ? 'medium' : 'low',
-      status: 'unread',
-      title: `Order ${orderData.order_number} Update`,
-      message:
-        statusMessages[orderData.status] ||
-        'Your order status has been updated',
-      userId: orderData.user_id,
-      companyId: orderData.company_id,
-      metadata: {
-        orderId: orderData.id,
-        orderNumber: orderData.order_number,
-        previousStatus,
-        newStatus: orderData.status,
-        estimatedDelivery: orderData.estimated_delivery,
-      },
+    const dbSettings: any = {};
+    Object.keys(settings).forEach(key => {
+      if (mapping[key]) {
+        dbSettings[mapping[key]] = (settings as any)[key];
+      }
     });
-  }
-
-  private async createCreditAlertNotification(
-    companyData: any,
-    alertType: 'low_balance' | 'limit_exceeded'
-  ): Promise<NotificationData> {
-    const availableCredit = companyData.credit_limit - companyData.credit_used;
-
-    return this.createNotification({
-      type: 'credit_alert',
-      priority: alertType === 'limit_exceeded' ? 'urgent' : 'high',
-      status: 'unread',
-      title:
-        alertType === 'limit_exceeded'
-          ? 'Credit Limit Exceeded'
-          : 'Low Credit Balance',
-      message:
-        alertType === 'limit_exceeded'
-          ? `Your company has exceeded its credit limit of $${companyData.credit_limit.toLocaleString()}`
-          : `Your company credit balance is low: $${availableCredit.toLocaleString()} remaining`,
-      userId: companyData.primary_contact_id, // Notify primary contact
-      companyId: companyData.id,
-      metadata: {
-        companyId: companyData.id,
-        companyName: companyData.name,
-        creditLimit: companyData.credit_limit,
-        creditUsed: companyData.credit_used,
-        availableCredit,
-        alertType,
-      },
-    });
+    return dbSettings;
   }
 }
 

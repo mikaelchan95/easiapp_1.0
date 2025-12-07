@@ -1,4 +1,4 @@
-import React, { useRef, useState, useContext } from 'react';
+import React, { useRef, useState, useContext, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,10 +12,10 @@ import {
   Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Product } from '../../utils/pricing';
+import { Product, getBasePrice } from '../../utils/pricing';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
-import { AppContext } from '../../context/AppContext';
+import { AppContext, getUserRole } from '../../context/AppContext';
 import { CartNotificationContext } from '../../context/CartNotificationContext';
 import { formatFinancialAmount } from '../../utils/formatting';
 
@@ -37,9 +37,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   variant = 'default',
 }) => {
   const {
-    id,
     name,
-    price,
+    retailPrice,
     originalPrice,
     imageUrl,
     category,
@@ -47,8 +46,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
     inStock,
   } = product;
 
-  // Get app context for cart functionality
-  const { dispatch } = useContext(AppContext);
+  // Get app context for cart functionality and user role
+  const { state, dispatch } = useContext(AppContext);
+
+  // Determine user role and appropriate price
+  const userRole = useMemo(() => getUserRole(state.user), [state.user]);
+  const displayPrice = useMemo(() => {
+    return getBasePrice(product, userRole);
+  }, [product, userRole]);
   // Get cart notification context
   const { showCartNotification } = useContext(CartNotificationContext);
 
@@ -139,13 +144,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
     }, 600);
   };
 
-  const formattedPrice = formatFinancialAmount(price);
+  const formattedPrice = formatFinancialAmount(displayPrice);
   const formattedOriginalPrice = originalPrice
     ? formatFinancialAmount(originalPrice)
     : null;
 
-  // Calculate discount logic
-  const hasDiscount = originalPrice !== undefined && originalPrice > price;
+  // Calculate discount logic (compare against retail price for discount badge)
+  const hasDiscount =
+    originalPrice !== undefined && originalPrice > retailPrice;
 
   // Helper function to generate Supabase Storage URL
   const getSupabaseStorageUrl = (path: string): string => {
@@ -221,16 +227,18 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   // Handle both string URLs (Supabase) and require() statements with better fallback
   const getImageSource = () => {
-    console.log('🖼️ ProductCard Image Debug:', {
-      productId: id,
-      productName: name,
-      imageUrl: imageUrl,
-      imageType: typeof imageUrl,
-    });
+    // If we have a valid image URL from the database, use it
+    if (imageUrl) {
+      if (typeof imageUrl === 'string') {
+        return { uri: imageUrl };
+      }
+      return imageUrl;
+    }
 
-    // Use smart mapping based on product name
+    console.log('🖼️ ProductCard Image Debug: Using fallback mapping for', name);
+
+    // Use smart mapping based on product name as fallback
     const mappedSource = getImageSourceByName(name);
-    console.log('🎯 Using mapped URL for', name, ':', mappedSource.uri);
     return mappedSource;
   };
 
@@ -315,8 +323,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {hasDiscount && (
             <View style={styles.discountBadge}>
               <Text style={styles.discountText}>
-                {Math.round(((originalPrice! - price) / originalPrice!) * 100)}%
-                OFF
+                {Math.round(
+                  ((originalPrice! - retailPrice) / originalPrice!) * 100
+                )}
+                % OFF
               </Text>
             </View>
           )}
@@ -352,6 +362,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
           <View style={[styles.footer, isMinimal && styles.minimalFooter]}>
             <View style={styles.priceContainer}>
+              {userRole === 'trade' && !isMinimal && (
+                <Text style={styles.tradeBadge}>TRADE</Text>
+              )}
               <Text style={[styles.price, isMinimal && styles.minimalPrice]}>
                 {formattedPrice}
               </Text>
@@ -550,6 +563,18 @@ const styles = StyleSheet.create({
     color: COLORS.inactive,
     textDecorationLine: 'line-through',
     marginTop: 2,
+  },
+  tradeBadge: {
+    ...TYPOGRAPHY.caption,
+    fontSize: 9,
+    fontWeight: '700',
+    color: COLORS.success,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 2,
   },
   addButton: {
     width: 44, // Increased for better touch target

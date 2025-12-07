@@ -25,6 +25,32 @@ export type RootStackParamList = {
   CheckoutReview: undefined;
   CheckoutProcessing: undefined;
 
+  // Unified checkout flow (new)
+  UnifiedCheckout: undefined;
+  OrderProcessing: {
+    cartItems: Array<{ product: any; quantity: number }>;
+    orderTotals: {
+      subtotal: number;
+      gst?: number;
+      deliveryFee: number;
+      voucherDiscount?: number;
+      total: number;
+    };
+    deliveryAddress: any;
+    deliverySlot: any;
+    paymentMethod: any;
+    appliedVoucherId?: string | null;
+    orderNotes?: string;
+  };
+  OrderConfirmation: {
+    orderId: string;
+    orderNumber: string;
+    total: number;
+    deliveryDate: string;
+    deliveryTime: string;
+    pointsEarned?: number;
+  };
+
   // Enhanced checkout screens
   CheckoutValidation: {
     cartItems: Array<{ product: any; quantity: number }>;
@@ -43,7 +69,8 @@ export type RootStackParamList = {
   };
 
   // Notification screens
-  NotificationCenter: undefined;
+  Notifications: undefined;
+  NotificationSettings: undefined;
   NotificationDetail: {
     notificationId: string;
   };

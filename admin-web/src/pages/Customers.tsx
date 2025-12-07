@@ -9,9 +9,12 @@ import { Badge } from '../components/ui/Badge';
 // Helper to deduce status color
 const getStatusVariant = (status: string) => {
   switch (status) {
-    case 'active': return 'success';
-    case 'inactive': return 'error';
-    default: return 'default';
+    case 'active':
+      return 'success';
+    case 'inactive':
+      return 'error';
+    default:
+      return 'default';
   }
 };
 
@@ -41,15 +44,19 @@ export default function Customers() {
     }
   };
 
-  const filteredCustomers = customers.filter(customer => 
-    customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCustomers = customers.filter(
+    customer =>
+      customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="animate-spin text-brand-accent" size={32} />
+        <Loader2
+          className="animate-spin text-[var(--text-primary)]"
+          size={32}
+        />
       </div>
     );
   }
@@ -57,59 +64,76 @@ export default function Customers() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-3xl font-bold text-brand-dark tracking-tight">Customers</h1>
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+        <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] tracking-tight">
+          Customers
+        </h1>
+        <div className="relative w-full sm:w-72">
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]"
+            size={20}
+          />
           <input
             type="text"
             placeholder="Search customers..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 focus:border-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-dark transition-all"
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] py-3 pl-10 pr-4 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all"
           />
         </div>
       </div>
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-500">
-            <thead className="bg-brand-light text-xs uppercase text-brand-dark font-bold tracking-wider">
+          <table className="w-full text-left text-sm min-w-[800px]">
+            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
               <tr>
-                <th className="px-6 py-4 font-semibold">User</th>
-                <th className="px-6 py-4 font-semibold">Role</th>
-                <th className="px-6 py-4 font-semibold">Company</th>
-                <th className="px-6 py-4 font-semibold">Points</th>
-                <th className="px-6 py-4 font-semibold">Joined At</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4">User</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4">Role</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4">Company</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4">Points</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4">Joined At</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredCustomers.map((customer) => (
-                <tr key={customer.id} className="group hover:bg-brand-light/50 transition-colors">
-                  <td className="px-6 py-4">
+            <tbody className="divide-y divide-[var(--border-primary)]">
+              {filteredCustomers.map(customer => (
+                <tr
+                  key={customer.id}
+                  className="group hover:bg-[var(--bg-tertiary)] transition-colors"
+                >
+                  <td className="px-4 sm:px-6 py-3 sm:py-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-light text-brand-dark font-bold group-hover:bg-brand-accent/20 transition-colors">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--bg-tertiary)] text-[var(--text-primary)] font-bold group-hover:opacity-80 transition-opacity flex-shrink-0">
                         {customer.name?.charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <Link to={`/customers/${customer.id}`} className="font-medium text-brand-dark hover:text-brand-accent transition-colors block">
+                      <div className="min-w-0">
+                        <Link
+                          to={`/customers/${customer.id}`}
+                          className="font-medium text-[var(--text-primary)] hover:underline transition-colors block truncate"
+                        >
                           {customer.name}
                         </Link>
-                        <div className="text-xs text-gray-400">{customer.email}</div>
+                        <div className="text-xs text-[var(--text-tertiary)] truncate">
+                          {customer.email}
+                        </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-brand-dark/70 capitalize">{customer.role}</td>
-                  <td className="px-6 py-4 font-medium text-gray-900">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)] capitalize">
+                    {customer.role || '-'}
+                  </td>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-[var(--text-primary)]">
                     {/* @ts-expect-error */}
                     {customer.companies?.name || '-'}
                   </td>
-                  <td className="px-6 py-4 font-mono text-gray-900">{customer.points || 0}</td>
-                  <td className="px-6 py-4 text-gray-500">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 font-mono text-[var(--text-primary)]">
+                    {(customer.points || 0).toLocaleString('en-US')}
+                  </td>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
                     {new Date(customer.created_at).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4">
-                     <Badge variant={getStatusVariant('active')}>Active</Badge>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4">
+                    <Badge variant={getStatusVariant('active')}>Active</Badge>
                   </td>
                 </tr>
               ))}
@@ -118,10 +142,12 @@ export default function Customers() {
         </div>
 
         {filteredCustomers.length === 0 && (
-          <div className="p-12 text-center text-gray-500">
-             <div className="flex flex-col items-center justify-center">
-              <UserIcon className="mb-4 h-12 w-12 text-gray-300" />
-              <p className="text-lg font-medium">No customers found</p>
+          <div className="p-12 text-center text-[var(--text-secondary)]">
+            <div className="flex flex-col items-center justify-center">
+              <UserIcon className="mb-4 h-12 w-12 text-[var(--text-tertiary)]" />
+              <p className="text-lg font-medium text-[var(--text-primary)]">
+                No customers found
+              </p>
               <p className="text-sm">Try adjusting your search terms.</p>
             </div>
           </div>

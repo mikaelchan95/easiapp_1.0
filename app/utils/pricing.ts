@@ -3,6 +3,12 @@
  * Handles retail/trade pricing, GST calculation, and formatting
  */
 
+export interface SizeOption {
+  size: string;
+  retail_price: number;
+  trade_price: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -15,9 +21,12 @@ export interface Product {
   rating?: number;
   stock?: number;
   inStock?: boolean;
+  lowStockThreshold?: number;
+  isLowStock?: boolean;
   imageUrl?: any;
   originalPrice?: number;
   price?: number; // For backward compatibility
+  sizeOptions?: SizeOption[];
 }
 
 export interface CartItem {

@@ -632,6 +632,7 @@ export const supabaseService = {
         logo: updates.logo,
         credit_limit: updates.creditLimit,
         current_credit: updates.currentCredit,
+        credit_used: updates.currentCredit, // Sync credit_used with current_credit
         payment_terms: updates.paymentTerms,
         require_approval: updates.approvalSettings?.requireApproval,
         approval_threshold: updates.approvalSettings?.approvalThreshold,
@@ -674,15 +675,16 @@ export const supabaseService = {
         return false;
       }
 
-      // Calculate new credit (deduct purchase amount from available credit)
+      // Calculate new credit (add purchase amount to credit used)
       const currentCredit = currentCompany.current_credit || 0;
-      const newCredit = currentCredit - (stats.totalSpent || 0);
+      const newCredit = currentCredit + (stats.totalSpent || 0);
 
-      // Update company with new credit balance
+      // Update company with new credit balance (sync both columns)
       const { error: updateError } = await supabase
         .from('companies')
         .update({
           current_credit: newCredit,
+          credit_used: newCredit,
           updated_at: new Date().toISOString(),
         })
         .eq('id', companyId);
@@ -1726,6 +1728,7 @@ export const supabaseService = {
         logo: company.logo,
         credit_limit: company.creditLimit,
         current_credit: company.currentCredit,
+        credit_used: company.currentCredit, // Sync credit_used with current_credit
         payment_terms: company.paymentTerms,
         require_approval: company.approvalSettings?.requireApproval,
         approval_threshold: company.approvalSettings?.approvalThreshold,
@@ -1925,15 +1928,16 @@ export const supabaseService = {
     userId: string;
     companyId?: string;
     items: any[];
-    deliveryAddress: string;
+    deliveryAddress: string | object;
     deliverySlot?: any;
     paymentMethod?: any;
     subtotal: number;
     gst: number;
     deliveryFee: number;
     total: number;
-    appliedVoucherId?: string;
+    appliedVoucherId?: string | null;
     voucherDiscount?: number;
+    orderNotes?: string;
   }): Promise<{ 
     orderId: string; 
     orderNumber: string; 
@@ -1998,29 +2002,65 @@ export const supabaseService = {
         );
       }
 
-      // Create order
-      const orderInsert = {
-        user_id: session.user.id, // Use authenticated user's ID instead of passed userId
+      // Prepare delivery address - handle both string and object formats
+      let deliveryAddressData = orderData.deliveryAddress;
+      if (typeof deliveryAddressData === 'object') {
+        deliveryAddressData = JSON.stringify(deliveryAddressData);
+      }
+
+      // Create order - including all detailed fields for admin-web
+      // Parse delivery date safely
+      let deliveryDate = null;
+      if (orderData.deliverySlot?.date) {
+        try {
+          deliveryDate = convertToISODate(orderData.deliverySlot.date);
+        } catch (dateError) {
+          console.warn('⚠️ Could not parse delivery date:', orderData.deliverySlot.date);
+        }
+      }
+
+      // Ensure delivery address is stringified if it's an object (for text column compatibility)
+      let deliveryAddressData = orderData.deliveryAddress;
+      if (typeof deliveryAddressData === 'object') {
+        deliveryAddressData = JSON.stringify(deliveryAddressData);
+      }
+
+      const orderInsert: Record<string, any> = {
+        user_id: session.user.id,
         company_id: orderData.companyId || null,
         order_number: orderNumber,
         status: 'pending',
-        order_type: orderData.companyId ? 'company' : 'standard',
-        subtotal: orderData.subtotal,
-        gst: orderData.gst,
-        delivery_fee: orderData.deliveryFee,
-        total: orderData.total,
-        currency: 'SGD',
+        subtotal: orderData.subtotal || 0,
+        gst: orderData.gst || 0,
+        delivery_fee: orderData.deliveryFee || 0,
+        total: orderData.total || 0,
         payment_method: paymentMethod,
         payment_status: paymentStatus,
-        approval_status: orderData.companyId ? 'pending' : 'not_required',
-        delivery_address: JSON.stringify(orderData.deliveryAddress), // Store as JSONB
-        delivery_date: orderData.deliverySlot?.date
-          ? convertToISODate(orderData.deliverySlot.date)
-          : null,
+        delivery_address: deliveryAddressData,
+        
+        // Detailed fields
+        delivery_date: deliveryDate,
         delivery_time_slot: orderData.deliverySlot?.timeSlot || null,
+        delivery_start_time: orderData.deliverySlot?.startTime || null,
+        delivery_end_time: orderData.deliverySlot?.endTime || null,
+        is_same_day_delivery: orderData.deliverySlot?.sameDayAvailable || false,
+        
+        voucher_id: orderData.appliedVoucherId || null,
+        voucher_discount: orderData.voucherDiscount || 0,
+        discount: orderData.voucherDiscount || 0, // Populate discount column as well
+        order_notes: orderData.orderNotes || null,
+        
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
+
+      // Add optional columns only if they have values (safer approach)
+      if (deliveryDate) {
+        orderInsert.delivery_date = deliveryDate;
+      }
+      if (orderData.deliverySlot?.timeSlot) {
+        orderInsert.delivery_time_slot = orderData.deliverySlot.timeSlot;
+      }
 
       console.log('📝 Order insert data:', JSON.stringify(orderInsert, null, 2));
 
@@ -2032,7 +2072,13 @@ export const supabaseService = {
 
       if (orderError || !order) {
         console.error('❌ Error creating order:', orderError);
-        throw orderError || new Error('Order creation failed - no data returned');
+        console.error('❌ Error details:', {
+          code: orderError?.code,
+          message: orderError?.message,
+          details: orderError?.details,
+          hint: orderError?.hint,
+        });
+        throw new Error(orderError?.message || 'Order creation failed - no data returned');
       }
 
       console.log('✅ Order created:', order.id);
@@ -2098,11 +2144,11 @@ export const supabaseService = {
         return {
           order_id: order.id,
           product_id: productId,
-          product_name: productName,
+          product_name: productName, // Preserved for history
           quantity: item.quantity,
           unit_price: unitPrice,
-          total_price: item.total_price || (item.quantity * unitPrice),
-          product_image_url: imageUrl,
+          total_price: item.total_price || item.quantity * unitPrice,
+          product_image_url: imageUrl, // Preserved for history
           created_at: new Date().toISOString(),
         };
       })
@@ -2162,25 +2208,30 @@ export const supabaseService = {
           .single();
 
         if (company && !creditError) {
-          // current_credit represents available credit (credit_limit - credit_used)
-          const newAvailableCredit = company.current_credit - orderData.total;
+          // current_credit represents credit used (credit_limit - available_credit)
+          // We add the order total to the used credit
+          const newUsedCredit = (company.current_credit || 0) + orderData.total;
 
+          // Update both current_credit and credit_used to ensure consistency across the app
           const { error: updateError } = await supabase
             .from('companies')
-            .update({ current_credit: newAvailableCredit })
+            .update({ 
+              current_credit: newUsedCredit,
+              credit_used: newUsedCredit 
+            })
             .eq('id', orderData.companyId);
 
           if (updateError) {
             console.error('❌ Error updating company credit:', updateError);
           } else {
             console.log(
-              `💰 Company available credit updated: $${company.current_credit} → $${newAvailableCredit}`
+              `💰 Company credit used updated: $${company.current_credit} → $${newUsedCredit}`
             );
 
             // Warn if credit limit is exceeded
-            if (newAvailableCredit < 0) {
+            if (newUsedCredit > (company.credit_limit || 0)) {
               console.log(
-                `⚠️  Company is over credit limit by $${Math.abs(newAvailableCredit)}`
+                `⚠️  Company is over credit limit by $${newUsedCredit - (company.credit_limit || 0)}`
               );
             }
           }

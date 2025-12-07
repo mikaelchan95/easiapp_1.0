@@ -21,6 +21,7 @@ const INITIAL_FORM: Partial<RewardCatalogItem> = {
   stock_quantity: 100,
   is_active: true,
   image_url: '',
+  logo_url: '',
   terms_conditions: '',
 };
 
@@ -70,22 +71,22 @@ export const RewardForm = ({
       onClose();
     } catch (error) {
       console.error('Failed to save reward', error);
-      alert('Failed to save reward');
+      // Parent handles error toast
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
-      <div className="bg-brand-white w-full max-w-2xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-xl font-bold text-brand-dark">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] w-full max-w-2xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[var(--border-primary)]">
+          <h2 className="text-lg sm:text-xl font-bold text-[var(--text-primary)]">
             {reward ? 'Edit Reward' : 'New Reward'}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors min-w-[36px] min-h-[36px] touch-manipulation"
           >
             <X size={24} />
           </button>
@@ -93,11 +94,11 @@ export const RewardForm = ({
 
         <form
           onSubmit={handleSubmit}
-          className="p-6 overflow-y-auto flex-1 space-y-6"
+          className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5 sm:space-y-6"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
             <div className="col-span-full">
-              <label className="block text-sm font-medium text-brand-dark mb-1">
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Title
               </label>
               <input
@@ -106,33 +107,33 @@ export const RewardForm = ({
                 required
                 value={formData.title}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-dark"
+                className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-3 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all min-h-[44px]"
               />
             </div>
 
             <div className="col-span-full">
-              <label className="block text-sm font-medium text-brand-dark mb-1">
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Description
               </label>
               <textarea
                 name="description"
-                rows={2}
+                rows={3}
                 required
                 value={formData.description || ''}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-dark"
+                className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-3 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all resize-none"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-brand-dark mb-1">
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Type
               </label>
               <select
                 name="reward_type"
                 value={formData.reward_type}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 bg-white focus:border-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-dark"
+                className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-3 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all min-h-[44px] touch-manipulation"
               >
                 <option value="voucher">Voucher ($ Value)</option>
                 <option value="bundle">Bundle (Product)</option>
@@ -142,7 +143,7 @@ export const RewardForm = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-brand-dark mb-1">
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Points Cost
               </label>
               <input
@@ -152,13 +153,13 @@ export const RewardForm = ({
                 min="0"
                 value={formData.points_required}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-dark"
+                className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-3 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all min-h-[44px]"
               />
             </div>
 
             {formData.reward_type === 'voucher' && (
               <div>
-                <label className="block text-sm font-medium text-brand-dark mb-1">
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                   Value ($)
                 </label>
                 <input
@@ -168,13 +169,13 @@ export const RewardForm = ({
                   step="0.01"
                   value={formData.reward_value}
                   onChange={handleChange}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-dark"
+                  className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-3 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all min-h-[44px]"
                 />
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-brand-dark mb-1">
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Stock
               </label>
               <input
@@ -184,12 +185,12 @@ export const RewardForm = ({
                 value={formData.stock_quantity ?? ''}
                 onChange={handleChange}
                 placeholder="Leave empty for unlimited"
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-dark"
+                className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-3 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all min-h-[44px]"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-brand-dark mb-1">
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Validity (Days)
               </label>
               <input
@@ -198,25 +199,40 @@ export const RewardForm = ({
                 min="1"
                 value={formData.validity_days ?? 30}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-dark"
+                className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-3 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all min-h-[44px]"
               />
             </div>
 
-            <div className="col-span-full">
-              <label className="block text-sm font-medium text-brand-dark mb-1">
-                Image
-              </label>
-              <ImageUpload
-                value={formData.image_url || null}
-                onChange={url =>
-                  setFormData(prev => ({ ...prev, image_url: url || '' }))
-                }
-              />
+            <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+                  Banner Image
+                </label>
+                <ImageUpload
+                  value={formData.image_url || null}
+                  onChange={url =>
+                    setFormData(prev => ({ ...prev, image_url: url || '' }))
+                  }
+                  helperText="Recommended: 800x450px (16:9)"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+                  Logo / Icon
+                </label>
+                <ImageUpload
+                  value={formData.logo_url || null}
+                  onChange={url =>
+                    setFormData(prev => ({ ...prev, logo_url: url || '' }))
+                  }
+                  helperText="Recommended: 200x200px (1:1 Square)"
+                />
+              </div>
             </div>
           </div>
         </form>
 
-        <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
+        <div className="p-4 sm:p-6 border-t border-[var(--border-primary)] flex justify-end gap-3 bg-[var(--bg-tertiary)]">
           <Button variant="ghost" onClick={onClose} disabled={loading}>
             Cancel
           </Button>
