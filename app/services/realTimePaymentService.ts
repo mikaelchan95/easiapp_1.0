@@ -343,11 +343,13 @@ class RealTimePaymentService {
         }
       }
 
-      // Update company credit
+      // Update company credit - sync both credit_used and current_credit
+      const newCreditUsed = validation.data.current_balance! - totalAllocated;
       const { error: creditError } = await supabase
         .from('companies')
         .update({
-          credit_used: validation.data.current_balance! - totalAllocated,
+          credit_used: newCreditUsed,
+          current_credit: newCreditUsed,
         })
         .eq('id', paymentRequest.company_id);
 

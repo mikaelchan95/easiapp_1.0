@@ -73,6 +73,7 @@ export default function ProductDetailScreen() {
 
   // Use AppContext
   const { dispatch, state } = useContext(AppContext);
+  const userRole = getUserRole(state.user);
   const baseProduct = state.products.find(p => p.id === id);
   const insets = useSafeAreaInsets();
 
@@ -130,25 +131,48 @@ export default function ProductDetailScreen() {
     };
   };
 
+  // Helper to get volume options based on role or fallback logic
+  const getVolumeOptions = (prod: Product): VolumeOption[] => {
+    // If we have explicit size options from DB, use them
+    if (prod.sizeOptions && prod.sizeOptions.length > 0) {
+      return prod.sizeOptions.map(opt => ({
+        size: opt.size,
+        // For trade users, use trade price. For retail, use retail price.
+        // Assuming sizeOptions store base prices. If they store GST-inclusive, we might need to adjust.
+        // Based on Admin Form, we input Retail and Trade prices directly.
+        // The app usually displays GST-exclusive prices for Trade, and GST-inclusive for Retail?
+        // Wait, line 422 says "Trade Price (excl. GST)" or "Retail Price (excl. GST)".
+        // So we should return the raw price here, and let the UI handle formatting/GST if needed.
+        // But the current UI expects 'price' to be the one displayed on the button.
+        // And currently buttons show $60, $84 etc.
+        price: userRole === 'trade' ? opt.trade_price : opt.retail_price,
+      }));
+    }
+
+    // Fallback logic for backward compatibility
+    const basePrice = userRole === 'trade' ? prod.tradePrice : prod.retailPrice;
+    return [
+      {
+        size: '700ml', // Default volume size
+        price: basePrice || 0,
+      },
+      {
+        size: '1L',
+        price: (basePrice || 0) * 1.4,
+      },
+      {
+        size: '1.75L',
+        price: (basePrice || 0) * 2.2,
+      },
+    ];
+  };
+
   // Enhanced product with additional UI properties
   const product: ExtendedProduct | undefined = baseProduct
     ? {
         ...baseProduct,
         sku: baseProduct.sku || `SKU-${baseProduct.id}`,
-        volumeOptions: [
-          {
-            size: '700ml', // Default volume size
-            price: baseProduct.retailPrice || baseProduct.price || 0,
-          },
-          {
-            size: '1L',
-            price: (baseProduct.retailPrice || baseProduct.price || 0) * 1.4,
-          },
-          {
-            size: '1.75L',
-            price: (baseProduct.retailPrice || baseProduct.price || 0) * 2.2,
-          },
-        ],
+        volumeOptions: getVolumeOptions(baseProduct),
         tastingNotes:
           baseProduct.description ||
           'A premium product with exceptional quality and craftsmanship.',
@@ -163,9 +187,6 @@ export default function ProductDetailScreen() {
   const [justAdded, setJustAdded] = useState(false);
   const [addProgress, setAddProgress] = useState(0);
   const [showProgressAnimation, setShowProgressAnimation] = useState(false);
-
-  // Collapsible widget state
-  const [isBusinessInfoExpanded, setIsBusinessInfoExpanded] = useState(false);
 
   // Wishlist state
   const [isInWishlist, setIsInWishlist] = useState(false);
@@ -188,17 +209,57 @@ export default function ProductDetailScreen() {
     ? {
         ...product,
         retailPrice: selectedVolume ? selectedVolume.price : product.price,
-        tradePrice: selectedVolume
-          ? selectedVolume.price * 0.85
-          : product.price * 0.85,
+        tradePrice: selectedVolume ? selectedVolume.price : product.tradePrice, // Simplify: if volume selected, use its price as base
         image: product.imageUrl,
         sku: `SKU-${product.id}`,
       }
     : null;
 
-  const userRole = getUserRole(state.user);
-
   // Get current price and remove GST
+  // Logic: selectedVolume.price is likely the raw price entered in Admin (or calculated).
+  // If Admin entered 60 for Retail, and user is Retail, price is 60.
+  // If user is Trade, price is 51 (entered in Admin).
+  // The display logic below divides by 1.09.
+  // If we input 51 in Admin for Trade, we don't want to divide by 1.09 again if 51 is ALREADY excl GST.
+  // The screenshot shows $51.00 as "Trade Price (excl. GST)".
+  // If the Admin input is "Trade Price", we assume it is Excl GST? Or Incl GST?
+  // Usually Trade Price is Excl GST. Retail is Incl GST.
+  // Let's assume Admin inputs are: Retail (Incl GST), Trade (Excl GST).
+
+  // Actually, existing logic:
+  // const currentPriceWithGST = getProductPrice(currentProductForPricing, userRole);
+  // const currentPrice = currentPriceWithGST / 1.09;
+
+  // getProductPrice adds GST (x1.09) to the base price.
+  // So if we pass basePrice=51, getProductPrice returns 55.59.
+  // Then currentPrice = 55.59 / 1.09 = 51.
+
+  // So we just need to pass the base price (excl GST for trade, incl GST for retail??)
+  // Wait, getProductPrice source:
+  // export const getBasePrice = (product, role) => role === 'trade' ? product.tradePrice : product.retailPrice;
+  // export const getProductPrice = (product, role) => getPriceWithGST(getBasePrice(product, role));
+  // getPriceWithGST = price * 1.09.
+
+  // So:
+  // If Role = Trade:
+  //   Input: tradePrice (from DB/Volume) = 51.
+  //   getBasePrice = 51.
+  //   getProductPrice = 51 * 1.09 = 55.59 (Price with GST).
+  //   currentPrice = 55.59 / 1.09 = 51.00. -> Correct for display.
+
+  // If Role = Retail:
+  //   Input: retailPrice (from DB/Volume) = 60.
+  //   getBasePrice = 60.
+  //   getProductPrice = 60 * 1.09 = 65.40 (Price with GST).
+  //   currentPrice = 65.40 / 1.09 = 60.00. -> Correct for display.
+
+  // So as long as `selectedVolume.price` is the BASE PRICE (Excl GST for Trade, ??? for Retail), it works.
+  // Actually, for Retail, if I input 60, and it becomes 65.40 with GST, then 60 is the Excl GST price.
+  // So BOTH Retail and Trade prices in Admin should be Excl GST?
+  // Or is Retail Price usually Incl GST in Singapore?
+  // "Retail Price (excl. GST)" text suggests we are displaying Excl GST price.
+  // So yes, Admin inputs should be Excl GST.
+
   const currentPriceWithGST = currentProductForPricing
     ? getProductPrice(currentProductForPricing, userRole)
     : 0;
@@ -381,7 +442,13 @@ export default function ProductDetailScreen() {
         {/* Product Image */}
         <View style={styles.imageContainer}>
           <Image
-            source={getImageSourceByName(product.name)}
+            source={
+              product.imageUrl
+                ? typeof product.imageUrl === 'string'
+                  ? { uri: product.imageUrl }
+                  : product.imageUrl
+                : getImageSourceByName(product.name)
+            }
             style={styles.image}
             resizeMode="cover"
             onError={error => {
@@ -454,13 +521,26 @@ export default function ProductDetailScreen() {
             <View style={styles.detailItem}>
               <View style={styles.detailLeft}>
                 <Ionicons
-                  name="checkmark-circle-outline"
+                  name={
+                    product.isLowStock
+                      ? 'alert-circle-outline'
+                      : 'checkmark-circle-outline'
+                  }
                   size={18}
-                  color={COLORS.success}
+                  color={product.isLowStock ? COLORS.error : COLORS.success}
                 />
                 <Text style={styles.detailLabel}>Stock</Text>
               </View>
-              <Text style={styles.detailValue}>In Stock</Text>
+              <Text
+                style={[
+                  styles.detailValue,
+                  product.isLowStock && { color: COLORS.error },
+                ]}
+              >
+                {product.isLowStock
+                  ? `Low Stock (${product.stock} left)`
+                  : 'In Stock'}
+              </Text>
             </View>
             <View style={styles.detailItem}>
               <View style={styles.detailLeft}>
@@ -517,159 +597,85 @@ export default function ProductDetailScreen() {
             </>
           )}
 
-          {/* Business Information */}
+          {/* Trust & Services Section */}
           <View style={styles.sectionDivider} />
-          <TouchableOpacity
-            style={styles.businessHeader}
-            onPress={() => setIsBusinessInfoExpanded(!isBusinessInfoExpanded)}
+          <Text style={styles.sectionTitle}>Service & Guarantee</Text>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.trustCardsContainer}
+            decelerationRate="fast"
+            snapToInterval={width * 0.7 + 12} // Card width + gap
           >
-            <View style={styles.businessHeaderLeft}>
-              <Ionicons
-                name="information-circle-outline"
-                size={22}
-                color={COLORS.text}
-              />
-              <Text style={styles.businessTitle}>
-                Delivery, Return & Security
+            {/* Delivery Card */}
+            <View style={styles.trustCard}>
+              <View
+                style={[
+                  styles.trustIconWrapper,
+                  { backgroundColor: '#E3F2FD' },
+                ]}
+              >
+                <Ionicons name="car-outline" size={24} color="#1565C0" />
+              </View>
+              <Text style={styles.trustCardTitle}>Fast Delivery</Text>
+              <Text style={styles.trustCardDesc}>
+                Singapore-wide delivery within 2-3 business days.
               </Text>
-            </View>
-            <Ionicons
-              name={isBusinessInfoExpanded ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color={COLORS.textSecondary}
-            />
-          </TouchableOpacity>
-
-          {isBusinessInfoExpanded && (
-            <View style={styles.businessContent}>
-              <View style={styles.businessSection}>
-                <View style={styles.businessSectionHeader}>
-                  <Ionicons name="car-outline" size={18} color={COLORS.text} />
-                  <Text style={styles.businessSectionTitle}>
-                    Delivery (Singapore Only)
-                  </Text>
-                </View>
-                <View style={styles.businessItems}>
-                  <View style={styles.businessItem}>
-                    <Ionicons
-                      name="time-outline"
-                      size={14}
-                      color={COLORS.textSecondary}
-                    />
-                    <Text style={styles.businessPoint}>
-                      Standard: 2-3 business days
-                    </Text>
-                  </View>
-                  <View style={styles.businessItem}>
-                    <Ionicons
-                      name="flash-outline"
-                      size={14}
-                      color={COLORS.textSecondary}
-                    />
-                    <Text style={styles.businessPoint}>
-                      Express: Next business day
-                    </Text>
-                  </View>
-                  <View style={styles.businessItem}>
-                    <Ionicons
-                      name="gift-outline"
-                      size={14}
-                      color={COLORS.success}
-                    />
-                    <Text style={styles.businessPoint}>
-                      Free delivery on orders over $500
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.businessSection}>
-                <View style={styles.businessSectionHeader}>
-                  <Ionicons
-                    name="return-up-back-outline"
-                    size={18}
-                    color={COLORS.text}
-                  />
-                  <Text style={styles.businessSectionTitle}>Returns</Text>
-                </View>
-                <View style={styles.businessItems}>
-                  <View style={styles.businessItem}>
-                    <Ionicons
-                      name="calendar-outline"
-                      size={14}
-                      color={COLORS.textSecondary}
-                    />
-                    <Text style={styles.businessPoint}>
-                      30-day return window from delivery
-                    </Text>
-                  </View>
-                  <View style={styles.businessItem}>
-                    <Ionicons
-                      name="cube-outline"
-                      size={14}
-                      color={COLORS.textSecondary}
-                    />
-                    <Text style={styles.businessPoint}>
-                      Original packaging required
-                    </Text>
-                  </View>
-                  <View style={styles.businessItem}>
-                    <Ionicons
-                      name="chatbox-outline"
-                      size={14}
-                      color={COLORS.textSecondary}
-                    />
-                    <Text style={styles.businessPoint}>
-                      Contact support for RMA number
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.businessSection}>
-                <View style={styles.businessSectionHeader}>
-                  <Ionicons
-                    name="shield-checkmark-outline"
-                    size={18}
-                    color={COLORS.text}
-                  />
-                  <Text style={styles.businessSectionTitle}>Security</Text>
-                </View>
-                <View style={styles.businessItems}>
-                  <View style={styles.businessItem}>
-                    <Ionicons
-                      name="lock-closed-outline"
-                      size={14}
-                      color={COLORS.textSecondary}
-                    />
-                    <Text style={styles.businessPoint}>
-                      SSL encrypted transactions
-                    </Text>
-                  </View>
-                  <View style={styles.businessItem}>
-                    <Ionicons
-                      name="card-outline"
-                      size={14}
-                      color={COLORS.textSecondary}
-                    />
-                    <Text style={styles.businessPoint}>
-                      Business credit terms available
-                    </Text>
-                  </View>
-                  <View style={styles.businessItem}>
-                    <Ionicons
-                      name="people-outline"
-                      size={14}
-                      color={COLORS.textSecondary}
-                    />
-                    <Text style={styles.businessPoint}>
-                      Dedicated account support
-                    </Text>
-                  </View>
-                </View>
+              <View style={styles.trustBadge}>
+                <Text style={styles.trustBadgeText}>Free over $500</Text>
               </View>
             </View>
-          )}
+
+            {/* Returns Card */}
+            <View style={styles.trustCard}>
+              <View
+                style={[
+                  styles.trustIconWrapper,
+                  { backgroundColor: '#E8F5E9' },
+                ]}
+              >
+                <Ionicons name="refresh-outline" size={24} color="#2E7D32" />
+              </View>
+              <Text style={styles.trustCardTitle}>Easy Returns</Text>
+              <Text style={styles.trustCardDesc}>
+                30-day return window for unopened items.
+              </Text>
+              <View style={[styles.trustBadge, { backgroundColor: '#E8F5E9' }]}>
+                <Text style={[styles.trustBadgeText, { color: '#2E7D32' }]}>
+                  Hassle-free
+                </Text>
+              </View>
+            </View>
+
+            {/* Security Card */}
+            <View style={styles.trustCard}>
+              <View
+                style={[
+                  styles.trustIconWrapper,
+                  { backgroundColor: '#FFF3E0' },
+                ]}
+              >
+                <Ionicons
+                  name="shield-checkmark-outline"
+                  size={24}
+                  color="#EF6C00"
+                />
+              </View>
+              <Text style={styles.trustCardTitle}>Secure Payment</Text>
+              <Text style={styles.trustCardDesc}>
+                256-bit SSL encryption and secure payment processing.
+              </Text>
+              <View style={[styles.trustBadge, { backgroundColor: '#FFF3E0' }]}>
+                <Text style={[styles.trustBadgeText, { color: '#EF6C00' }]}>
+                  100% Secure
+                </Text>
+              </View>
+            </View>
+
+            {/* Spacer for right padding */}
+            <View style={{ width: SPACING.md }} />
+          </ScrollView>
         </View>
         <View style={{ height: 120 }} />
       </ScrollView>
@@ -1008,52 +1014,52 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
 
-  // Business Information
-  businessHeader: {
-    flexDirection: 'row',
+  // Trust & Services Styles
+  trustCardsContainer: {
+    paddingRight: SPACING.md,
+    gap: SPACING.md,
+    paddingVertical: 4,
+  },
+  trustCard: {
+    width: width * 0.7,
+    backgroundColor: COLORS.background,
+    borderRadius: 16,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.light,
+  },
+  trustIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: SPACING.sm,
+    marginBottom: SPACING.sm,
   },
-  businessHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+  trustCardTitle: {
+    ...TYPOGRAPHY.h4,
+    fontWeight: '700',
+    marginBottom: 4,
+    color: COLORS.text,
   },
-  businessTitle: {
-    ...TYPOGRAPHY.h3,
-    fontWeight: '600',
-    marginLeft: SPACING.sm,
-  },
-  businessContent: {
-    paddingTop: 0,
-  },
-  businessSection: {
-    marginBottom: SPACING.md,
-  },
-  businessSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.xs,
-  },
-  businessSectionTitle: {
-    ...TYPOGRAPHY.h5,
-    fontWeight: '600',
-    marginLeft: SPACING.xs,
-  },
-  businessItems: {
-    gap: SPACING.xs,
-  },
-  businessItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  businessPoint: {
+  trustCardDesc: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
+    marginBottom: SPACING.md,
     lineHeight: 18,
-    marginLeft: SPACING.xs,
-    flex: 1,
+  },
+  trustBadge: {
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+  },
+  trustBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1565C0',
   },
   bottomBar: {
     position: 'absolute',

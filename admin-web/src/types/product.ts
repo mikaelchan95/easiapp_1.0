@@ -1,4 +1,10 @@
 
+export interface SizeOption {
+  size: string;
+  retail_price: number;
+  trade_price: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -8,6 +14,9 @@ export interface Product {
   retail_price: number;
   trade_price: number;
   original_price?: number;
+  promo_price?: number | null;
+  promo_start_date?: string | null;
+  promo_end_date?: string | null;
   image_url: string;
   rating: number;
   volume?: string;
@@ -20,6 +29,7 @@ export interface Product {
   low_stock_threshold: number;
   created_at: string;
   updated_at: string;
+  size_options?: SizeOption[];
 }
 
 export interface ProductFilters {

@@ -1,10 +1,23 @@
 @import 'tailwindcss';
 
 @theme {
+  /* Light Mode - Base Colors */
   --color-brand-dark: #000000;
   --color-brand-light: #fafafa;
   --color-brand-accent: #f4f4f5;
   --color-brand-white: #ffffff;
+
+  /* Grayscale Palette */
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f5;
+  --color-gray-200: #e5e5e5;
+  --color-gray-300: #d4d4d4;
+  --color-gray-400: #a3a3a3;
+  --color-gray-500: #737373;
+  --color-gray-600: #525252;
+  --color-gray-700: #404040;
+  --color-gray-800: #262626;
+  --color-gray-900: #171717;
 }
 
 :root {
@@ -28,6 +41,28 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Light Mode Variables */
+  --bg-primary: hsl(0, 0%, 100%);
+  --bg-secondary: hsl(0, 0%, 98%);
+  --bg-tertiary: hsl(0, 0%, 96%);
+  --text-primary: hsl(0, 0%, 0%);
+  --text-secondary: hsl(0, 0%, 30%);
+  --text-tertiary: hsl(0, 0%, 50%);
+  --border-primary: hsl(0, 0%, 90%);
+  --border-secondary: hsl(0, 0%, 85%);
+}
+
+.dark {
+  /* Dark Mode Variables - Greyscale */
+  --bg-primary: hsl(0, 0%, 9%);
+  --bg-secondary: hsl(0, 0%, 7%);
+  --bg-tertiary: hsl(0, 0%, 12%);
+  --text-primary: hsl(0, 0%, 98%);
+  --text-secondary: hsl(0, 0%, 70%);
+  --text-tertiary: hsl(0, 0%, 50%);
+  --border-primary: hsl(0, 0%, 20%);
+  --border-secondary: hsl(0, 0%, 25%);
 }
 
 html {
@@ -35,7 +70,9 @@ html {
 }
 
 body {
-  @apply bg-brand-light text-brand-dark min-h-screen;
+  @apply min-h-screen transition-colors duration-200;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 /* Custom Scrollbar */
@@ -45,11 +82,17 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  background: var(--bg-tertiary);
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-colors;
+  background: var(--border-secondary);
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }
 
 /* Base Animations */
@@ -66,4 +109,46 @@ body {
 
 .animate-fade-in {
   animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Global Input Styles */
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='number'],
+input[type='search'],
+input[type='tel'],
+input[type='url'],
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'],
+textarea,
+select {
+  min-height: 44px;
+}
+
+/* Mobile Touch Optimization */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase touch targets on touch devices */
+  button,
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Responsive Typography */
+@media (max-width: 640px) {
+  h1 {
+    font-size: 1.5rem;
+  }
+  h2 {
+    font-size: 1.25rem;
+  }
+}
+
+/* Focus visible for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
 }

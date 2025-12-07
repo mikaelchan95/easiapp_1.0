@@ -7,18 +7,15 @@ import {
   ScrollView,
   StatusBar,
   Alert,
-  Switch,
   Linking,
+  Switch,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import { AppContext } from '../../context/AppContext';
-import MobileHeader from '../Layout/MobileHeader';
 import { isCompanyUser } from '../../types/user';
 import { formatStatCurrency, formatPercentage } from '../../utils/formatting';
 import { HapticFeedback } from '../../utils/haptics';
@@ -26,8 +23,10 @@ import { HapticFeedback } from '../../utils/haptics';
 export default function CompanyProfileScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { state, updateCompanyProfile } = useContext(AppContext);
-  const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const { state } = useContext(AppContext);
+  const [expandedSections, setExpandedSections] = useState<string[]>([
+    'approvals',
+  ]);
 
   const { user, company } = state;
 
@@ -49,30 +48,27 @@ export default function CompanyProfileScreen() {
     if (type === 'email') {
       const emailUrl = `mailto:${value}`;
       const canOpen = await Linking.canOpenURL(emailUrl);
-      if (canOpen) {
-        Linking.openURL(emailUrl);
-      }
+      if (canOpen) Linking.openURL(emailUrl);
     } else if (type === 'phone') {
       const phoneUrl = `tel:${value}`;
       const canOpen = await Linking.canOpenURL(phoneUrl);
-      if (canOpen) {
-        Linking.openURL(phoneUrl);
-      }
+      if (canOpen) Linking.openURL(phoneUrl);
     } else if (type === 'address') {
       const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(value)}`;
       const canOpen = await Linking.canOpenURL(mapsUrl);
-      if (canOpen) {
-        Linking.openURL(mapsUrl);
-      }
+      if (canOpen) Linking.openURL(mapsUrl);
     }
   };
 
   if (!user || !isCompanyUser(user) || !company) {
     return (
       <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={COLORS.background}
+        />
         <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
-          <View style={styles.profileHeader}>
+          <View style={styles.headerContent}>
             <TouchableOpacity
               style={styles.backButton}
               onPress={() => navigation.goBack()}
@@ -81,10 +77,11 @@ export default function CompanyProfileScreen() {
               <Ionicons name="chevron-back" size={24} color={COLORS.text} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Company Profile</Text>
-            <View style={styles.headerRight} />
+            <View style={{ width: 40 }} />
           </View>
         </View>
         <View style={styles.loadingContainer}>
+          <Ionicons name="business-outline" size={48} color={COLORS.inactive} />
           <Text style={styles.noDataText}>
             No company information available
           </Text>
@@ -93,19 +90,31 @@ export default function CompanyProfileScreen() {
     );
   }
 
-  // currentCredit is what's AVAILABLE, not used
-  const availableCredit = company.currentCredit || 0;
-  const usedCredit = (company.creditLimit || 0) - availableCredit;
-  const creditUtilization = company.creditLimit
-    ? (usedCredit / company.creditLimit) * 100
-    : 0;
+  // Credit Calculations
+  const creditLimit = company.creditLimit || 0;
+  const usedCredit = company.currentCredit || 0; // currentCredit represents the used amount
+  const availableCredit = Math.max(0, creditLimit - usedCredit);
+
+  const creditUtilization =
+    creditLimit > 0 ? (usedCredit / creditLimit) * 100 : 0;
+
+  // Determine credit health status
+  const getCreditStatus = (utilization: number) => {
+    if (utilization > 90) return { label: 'Critical', color: '#FF3B30' };
+    if (utilization > 75) return { label: 'High Usage', color: '#FF9500' };
+    if (utilization > 50) return { label: 'Moderate', color: '#FFCC00' };
+    return { label: 'Healthy', color: '#34C759' };
+  };
+
+  const creditStatus = getCreditStatus(creditUtilization);
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
+      {/* Header */}
       <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
-        <View style={styles.profileHeader}>
+        <View style={styles.headerContent}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
@@ -114,443 +123,364 @@ export default function CompanyProfileScreen() {
             <Ionicons name="chevron-back" size={24} color={COLORS.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Company Profile</Text>
-          <View style={styles.headerRight} />
-        </View>
-
-        {/* Company Header Card - Now in header like ProfileScreen */}
-        <View style={styles.headerCard}>
-          <View style={styles.companyHeader}>
-            <View style={styles.companyIconContainer}>
-              <Ionicons name="business" size={32} color={COLORS.text} />
-            </View>
-            <View style={styles.companyInfo}>
-              <Text style={styles.companyName}>{company.name}</Text>
-              <Text style={styles.companyLegal}>{company.companyName}</Text>
-              <View style={styles.verificationBadge}>
-                <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
-                <Text style={styles.verificationText}>Verified Company</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.companyMeta}>
-            <View style={styles.metaRow}>
-              <View style={styles.metaItem}>
-                <Text style={styles.metaLabel}>UEN</Text>
-                <Text
-                  style={styles.metaValue}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {company.uen}
-                </Text>
-              </View>
-              <View style={styles.metaItem}>
-                <Text style={styles.metaLabel}>Status</Text>
-                <Text
-                  style={[styles.metaValue, styles.statusActive]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {company.status === 'active' ? 'Active' : 'Inactive'}
-                </Text>
-              </View>
-              <View style={styles.metaItem}>
-                <Text style={styles.metaLabel}>Terms</Text>
-                <Text
-                  style={styles.metaValue}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {company.paymentTerms}
-                </Text>
-              </View>
-            </View>
-          </View>
+          {user.permissions?.canEditCompanyInfo ? (
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() => navigation.navigate('EditCompanyInfo')}
+            >
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 40 }} />
+          )}
         </View>
       </View>
 
       <ScrollView
         style={styles.scrollContainer}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + 40 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Enhanced Credit Overview */}
-        <View style={styles.creditWidget}>
-          <View style={styles.creditHeader}>
-            <View style={styles.creditTitleContainer}>
-              <Ionicons name="card" size={24} color={COLORS.text} />
-              <Text style={styles.widgetTitle}>Credit Overview</Text>
-            </View>
-            <View style={styles.creditStatus}>
-              <View
-                style={[
-                  styles.statusDot,
-                  {
-                    backgroundColor:
-                      creditUtilization > 80
-                        ? '#FF6B6B'
-                        : creditUtilization > 60
-                          ? '#FFA500'
-                          : '#4CAF50',
-                  },
-                ]}
-              />
-              <Text style={styles.statusText}>
-                {creditUtilization > 80
-                  ? 'High Usage'
-                  : creditUtilization > 60
-                    ? 'Moderate'
-                    : 'Healthy'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.creditStatsRow}>
-            <View style={styles.creditStat}>
-              <Text style={styles.creditAmount}>
-                {formatStatCurrency(availableCredit)}
-              </Text>
-              <Text style={styles.creditLabel}>Available</Text>
-            </View>
-            <View style={styles.creditStatDivider} />
-            <View style={styles.creditStat}>
-              <Text style={styles.creditAmount}>
-                {formatStatCurrency(usedCredit)}
-              </Text>
-              <Text style={styles.creditLabel}>Used</Text>
-            </View>
-            <View style={styles.creditStatDivider} />
-            <View style={styles.creditStat}>
-              <Text style={styles.creditAmount}>
-                {formatStatCurrency(company.creditLimit || 0)}
-              </Text>
-              <Text style={styles.creditLabel}>Total Limit</Text>
-            </View>
-          </View>
-
-          {/* Enhanced Progress Bar */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: `${Math.min(creditUtilization, 100)}%`,
-                    backgroundColor:
-                      creditUtilization > 80
-                        ? '#FF6B6B'
-                        : creditUtilization > 60
-                          ? '#FFA500'
-                          : '#4CAF50',
-                  },
-                ]}
-              />
-            </View>
-            <Text style={styles.progressText}>
-              {formatPercentage(creditUtilization)} credit utilization
-            </Text>
-          </View>
-
-          {/* Credit Payment Actions */}
-          {usedCredit > 0 && (
-            <View style={styles.creditActions}>
-              <TouchableOpacity
-                style={styles.paymentButton}
-                onPress={() => {
-                  HapticFeedback.medium();
-                  console.log('Credit payment button pressed');
-                  console.log('Company data:', company);
-                  console.log('User data:', user);
-                  console.log('Navigation:', navigation);
-                  try {
-                    navigation.navigate('CreditPayment');
-                    console.log('Navigation called successfully');
-                  } catch (error) {
-                    console.error('Navigation error:', error);
-                  }
-                }}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="card" size={20} color={COLORS.accent} />
-                <Text style={styles.paymentButtonText}>
-                  Pay Credit Balance ({formatStatCurrency(usedCredit)})
+        {/* Company Identity Section */}
+        <View style={styles.companyIdentity}>
+          <View style={styles.logoContainer}>
+            {company.logo ? (
+              // If you have an Image component, use it here. For now using placeholder icon
+              <View style={styles.logoPlaceholder}>
+                <Text style={styles.logoText}>
+                  {company.name.substring(0, 1)}
                 </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.billingButton}
-                onPress={() => {
-                  HapticFeedback.light();
-                  navigation.navigate('BillingDashboard');
-                }}
-                activeOpacity={0.8}
-              >
+              </View>
+            ) : (
+              <View style={styles.logoPlaceholder}>
                 <Ionicons
-                  name="receipt"
-                  size={16}
+                  name="business"
+                  size={32}
                   color={COLORS.textSecondary}
                 />
-                <Text style={styles.billingButtonText}>View Billing</Text>
-              </TouchableOpacity>
+              </View>
+            )}
+            <View style={styles.verifiedBadge}>
+              <Ionicons name="checkmark-circle" size={16} color={COLORS.card} />
+              <Ionicons
+                name="checkmark-circle"
+                size={14}
+                color="#34C759"
+                style={styles.verifiedIconInner}
+              />
             </View>
-          )}
+          </View>
+
+          <View style={styles.companyInfo}>
+            <Text style={styles.companyName}>{company.name}</Text>
+            <Text style={styles.legalName}>{company.companyName}</Text>
+            <View style={styles.metaTags}>
+              <View style={styles.metaTag}>
+                <Text style={styles.metaTagText}>UEN: {company.uen}</Text>
+              </View>
+              <View
+                style={[
+                  styles.metaTag,
+                  {
+                    backgroundColor:
+                      company.status === 'active' ? '#E8F5E9' : '#FFEBEE',
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.metaTagText,
+                    {
+                      color:
+                        company.status === 'active' ? '#2E7D32' : '#C62828',
+                    },
+                  ]}
+                >
+                  {company.status === 'active' ? 'Active' : 'Inactive'}
+                </Text>
+              </View>
+            </View>
+          </View>
         </View>
 
-        {/* Enhanced Quick Actions - Moved above Contact Information */}
-        {user.permissions?.canEditCompanyInfo && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-            <View style={styles.actionsGrid}>
-              <TouchableOpacity
-                style={styles.actionCard}
-                onPress={() => {
-                  HapticFeedback.medium();
-                  navigation.navigate('EditCompanyInfo');
-                }}
-                activeOpacity={0.8}
+        {/* Credit Overview Card */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionHeader}>Credit Overview</Text>
+          <View style={styles.creditCard}>
+            <View style={styles.creditHeader}>
+              <View>
+                <Text style={styles.creditLabel}>Available Credit</Text>
+                <Text style={styles.creditAmount}>
+                  {formatStatCurrency(availableCredit)}
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: creditStatus.color + '20' },
+                ]}
               >
-                <View style={styles.actionIconContainer}>
-                  <Ionicons
-                    name="create-outline"
-                    size={20}
-                    color={COLORS.text}
-                  />
-                </View>
-                <Text style={styles.actionText}>Edit</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionCard}
-                onPress={() => {
-                  HapticFeedback.medium();
-                  navigation.navigate('TeamManagement');
-                }}
-                activeOpacity={0.8}
-              >
-                <View style={styles.actionIconContainer}>
-                  <Ionicons
-                    name="people-outline"
-                    size={20}
-                    color={COLORS.text}
-                  />
-                </View>
-                <Text style={styles.actionText}>Team</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionCard}
-                onPress={() => {
-                  HapticFeedback.medium();
-                  navigation.navigate('CompanyReports');
-                }}
-                activeOpacity={0.8}
-              >
-                <View style={styles.actionIconContainer}>
-                  <Ionicons
-                    name="bar-chart-outline"
-                    size={20}
-                    color={COLORS.text}
-                  />
-                </View>
-                <Text style={styles.actionText}>Reports</Text>
-              </TouchableOpacity>
-
-              {/* Admin Billing Dashboard - Only for users with billing permissions */}
-              {user?.permissions?.canManageBilling && (
-                <TouchableOpacity
-                  style={[styles.actionCard, styles.adminActionCard]}
-                  onPress={() => {
-                    HapticFeedback.medium();
-                    navigation.navigate('AdminBillingDashboard');
-                  }}
-                  activeOpacity={0.8}
+                <Text
+                  style={[styles.statusText, { color: creditStatus.color }]}
                 >
-                  <View
-                    style={[styles.actionIconContainer, styles.adminActionIcon]}
-                  >
-                    <Ionicons
-                      name="card-outline"
-                      size={20}
-                      color={COLORS.accent}
-                    />
-                  </View>
-                  <Text style={[styles.actionText, styles.adminActionText]}>
-                    Billing
-                  </Text>
+                  {creditStatus.label}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBarBg}>
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    {
+                      width: `${Math.min(creditUtilization, 100)}%`,
+                      backgroundColor: creditStatus.color,
+                    },
+                  ]}
+                />
+              </View>
+              <View style={styles.progressLabels}>
+                <Text style={styles.progressLabel}>
+                  Used: {formatStatCurrency(usedCredit)}
+                </Text>
+                <Text style={styles.progressLabel}>
+                  Limit: {formatStatCurrency(creditLimit)}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.creditDivider} />
+
+            <View style={styles.creditFooter}>
+              <Text style={styles.termsText}>
+                Payment Terms:{' '}
+                <Text style={styles.termsValue}>
+                  {company.paymentTerms || 'N/A'}
+                </Text>
+              </Text>
+
+              {user.permissions?.canManageBilling && (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('PaymentHistory')}
+                  style={styles.historyLink}
+                >
+                  <Text style={styles.historyLinkText}>View History</Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={14}
+                    color={COLORS.primary}
+                  />
                 </TouchableOpacity>
               )}
             </View>
           </View>
-        )}
+        </View>
 
-        {/* Enhanced Contact Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Contact Information</Text>
-          <View style={styles.contactGrid}>
+        {/* Quick Actions Grid */}
+        <View style={styles.actionsGrid}>
+          {user.permissions?.canManageUsers && (
             <TouchableOpacity
-              style={styles.contactItem}
-              onPress={() => handleContactPress('address', company.address)}
+              style={styles.actionCard}
+              onPress={() => navigation.navigate('TeamManagement')}
               activeOpacity={0.7}
             >
-              <View style={styles.contactIconContainer}>
-                <Ionicons name="location" size={20} color={COLORS.text} />
+              <View style={[styles.actionIcon, { backgroundColor: '#E3F2FD' }]}>
+                <Ionicons name="people" size={24} color="#1565C0" />
               </View>
-              <View style={styles.contactText}>
-                <Text style={styles.contactLabel}>Address</Text>
-                <Text style={styles.contactValue}>{company.address}</Text>
+              <Text style={styles.actionLabel}>Team</Text>
+            </TouchableOpacity>
+          )}
+
+          {user.permissions?.canViewReports && (
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => navigation.navigate('CompanyReports')}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#F3E5F5' }]}>
+                <Ionicons name="bar-chart" size={24} color="#7B1FA2" />
+              </View>
+              <Text style={styles.actionLabel}>Reports</Text>
+            </TouchableOpacity>
+          )}
+
+          {user.permissions?.canManageBilling && (
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => navigation.navigate('BillingDashboard')}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#E8F5E9' }]}>
+                <Ionicons name="receipt" size={24} color="#2E7D32" />
+              </View>
+              <Text style={styles.actionLabel}>Invoices</Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={() => handleContactPress('email', 'support@easiapp.com')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: '#FFF3E0' }]}>
+              <Ionicons name="headset" size={24} color="#EF6C00" />
+            </View>
+            <Text style={styles.actionLabel}>Support</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Contact Information */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionHeader}>Contact Information</Text>
+          <View style={styles.infoCard}>
+            <TouchableOpacity
+              style={styles.infoRow}
+              onPress={() => handleContactPress('address', company.address)}
+            >
+              <View style={styles.infoIconBox}>
+                <Ionicons
+                  name="location-outline"
+                  size={20}
+                  color={COLORS.text}
+                />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Address</Text>
+                <Text style={styles.infoValue}>{company.address}</Text>
               </View>
               <Ionicons
                 name="chevron-forward"
-                size={16}
-                color={COLORS.textSecondary}
+                size={20}
+                color={COLORS.inactive}
               />
             </TouchableOpacity>
 
+            <View style={styles.separator} />
+
             {company.phone && (
-              <TouchableOpacity
-                style={styles.contactItem}
-                onPress={() => handleContactPress('phone', company.phone)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.contactIconContainer}>
-                  <Ionicons name="call" size={20} color={COLORS.text} />
-                </View>
-                <View style={styles.contactText}>
-                  <Text style={styles.contactLabel}>Phone</Text>
-                  <Text style={styles.contactValue}>{company.phone}</Text>
-                </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color={COLORS.textSecondary}
-                />
-              </TouchableOpacity>
+              <>
+                <TouchableOpacity
+                  style={styles.infoRow}
+                  onPress={() => handleContactPress('phone', company.phone!)}
+                >
+                  <View style={styles.infoIconBox}>
+                    <Ionicons
+                      name="call-outline"
+                      size={20}
+                      color={COLORS.text}
+                    />
+                  </View>
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Phone</Text>
+                    <Text style={styles.infoValue}>{company.phone}</Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={COLORS.inactive}
+                  />
+                </TouchableOpacity>
+                <View style={styles.separator} />
+              </>
             )}
 
             {company.email && (
               <TouchableOpacity
-                style={styles.contactItem}
-                onPress={() => handleContactPress('email', company.email)}
-                activeOpacity={0.7}
+                style={styles.infoRow}
+                onPress={() => handleContactPress('email', company.email!)}
               >
-                <View style={styles.contactIconContainer}>
-                  <Ionicons name="mail" size={20} color={COLORS.text} />
+                <View style={styles.infoIconBox}>
+                  <Ionicons name="mail-outline" size={20} color={COLORS.text} />
                 </View>
-                <View style={styles.contactText}>
-                  <Text style={styles.contactLabel}>Email</Text>
-                  <Text style={styles.contactValue}>{company.email}</Text>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Email</Text>
+                  <Text style={styles.infoValue}>{company.email}</Text>
                 </View>
                 <Ionicons
                   name="chevron-forward"
-                  size={16}
-                  color={COLORS.textSecondary}
+                  size={20}
+                  color={COLORS.inactive}
                 />
               </TouchableOpacity>
             )}
           </View>
         </View>
 
-        {/* Enhanced Order Approval Settings */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.sectionHeader}
-            onPress={() => toggleSection('approvals')}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.sectionTitle}>Order Approval Settings</Text>
-            <Ionicons
-              name={
-                expandedSections.includes('approvals')
-                  ? 'chevron-up'
-                  : 'chevron-down'
-              }
-              size={20}
-              color={COLORS.textSecondary}
-            />
-          </TouchableOpacity>
-
-          <View style={styles.settingsCard}>
-            <View style={styles.settingRow}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>Require Approval</Text>
-                <Text style={styles.settingDescription}>
-                  Orders need approval before submission
+        {/* Settings & Configuration */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionHeader}>Order Settings</Text>
+          <View style={styles.infoCard}>
+            <TouchableOpacity
+              style={styles.infoRow}
+              onPress={() => toggleSection('approvals')}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[styles.infoIconBox, { backgroundColor: '#FAFAFA' }]}
+              >
+                <Ionicons
+                  name="shield-checkmark-outline"
+                  size={20}
+                  color={COLORS.text}
+                />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Approval Required</Text>
+                <Text style={styles.infoValue}>
+                  {company.approvalSettings.requireApproval
+                    ? 'Enabled'
+                    : 'Disabled'}
                 </Text>
               </View>
               <Switch
                 value={company.approvalSettings.requireApproval}
                 onValueChange={() =>
-                  Alert.alert('Info', 'Contact support to change this setting')
+                  Alert.alert(
+                    'Permission Required',
+                    'Please contact your administrator to change approval settings.'
+                  )
                 }
-                trackColor={{ false: '#E5E5E5', true: '#4CAF50' }}
-                thumbColor="#FFFFFF"
+                trackColor={{ false: COLORS.inactive, true: COLORS.primary }}
+                thumbColor={'#FFFFFF'}
+                style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
               />
-            </View>
+            </TouchableOpacity>
 
             {expandedSections.includes('approvals') &&
               company.approvalSettings.requireApproval && (
-                <View style={styles.approvalDetails}>
-                  <View style={styles.approvalItem}>
-                    <View style={styles.approvalInfo}>
-                      <Text style={styles.approvalLabel}>
-                        Approval Threshold
-                      </Text>
-                      <Text style={styles.approvalDescription}>
-                        Orders above this amount need approval
-                      </Text>
-                    </View>
-                    <Text style={styles.approvalValue}>
+                <View style={styles.expandedContent}>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Threshold Amount</Text>
+                    <Text style={styles.detailValue}>
                       {formatStatCurrency(
                         company.approvalSettings.approvalThreshold || 0
                       )}
                     </Text>
                   </View>
-                  <View style={styles.approvalItem}>
-                    <View style={styles.approvalInfo}>
-                      <Text style={styles.approvalLabel}>
-                        Auto-Approve Below
-                      </Text>
-                      <Text style={styles.approvalDescription}>
-                        Orders below this amount are auto-approved
-                      </Text>
-                    </View>
-                    <Text style={styles.approvalValue}>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Auto-Approve Below</Text>
+                    <Text style={styles.detailValue}>
                       {formatStatCurrency(
                         company.approvalSettings.autoApproveBelow || 0
                       )}
                     </Text>
                   </View>
-                  <View style={styles.approvalItem}>
-                    <View style={styles.approvalInfo}>
-                      <Text style={styles.approvalLabel}>
-                        Multi-Level Approval
-                      </Text>
-                      <Text style={styles.approvalDescription}>
-                        Requires multiple approvers
-                      </Text>
-                    </View>
-                    <Text
-                      style={[
-                        styles.approvalValue,
-                        {
-                          color: company.approvalSettings.multiLevelApproval
-                            ? '#4CAF50'
-                            : COLORS.textSecondary,
-                        },
-                      ]}
-                    >
+                  <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+                    <Text style={styles.detailLabel}>Multi-Level Approval</Text>
+                    <Text style={styles.detailValue}>
                       {company.approvalSettings.multiLevelApproval
-                        ? 'Enabled'
-                        : 'Disabled'}
+                        ? 'Yes'
+                        : 'No'}
                     </Text>
                   </View>
                 </View>
               )}
           </View>
         </View>
-
-        <View style={styles.bottomPadding} />
       </ScrollView>
     </View>
   );
@@ -561,339 +491,232 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  scrollContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.xl,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: SPACING.md,
   },
   noDataText: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
   },
+
+  // Header
   headerContainer: {
-    backgroundColor: COLORS.card,
-    zIndex: 10,
-    ...SHADOWS.light,
-    elevation: 4,
+    backgroundColor: COLORS.background,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    paddingHorizontal: SPACING.md,
     paddingBottom: SPACING.sm,
   },
-  profileHeader: {
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    height: 44,
   },
   backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.background,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  headerTitle: {
+    ...TYPOGRAPHY.h3,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  editButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
+  editButtonText: {
+    ...TYPOGRAPHY.body,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+
+  // Scroll Content
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: SPACING.lg,
+    gap: SPACING.xl,
+  },
+
+  // Company Identity
+  companyIdentity: {
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
+  logoContainer: {
+    position: 'relative',
+    marginBottom: SPACING.md,
+  },
+  logoPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.card,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
     ...SHADOWS.light,
   },
-  headerTitle: {
-    ...TYPOGRAPHY.h2,
-    fontWeight: '600',
-    textAlign: 'center',
-    flex: 1,
+  logoText: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: COLORS.text,
   },
-  headerRight: {
-    width: 44,
-    height: 44,
-  },
-
-  // Header Card
-  headerCard: {
-    backgroundColor: 'transparent',
-    padding: SPACING.lg,
-    paddingTop: SPACING.md,
-    marginBottom: 0,
-  },
-  companyHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  companyIconContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: COLORS.background,
+  verifiedBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    width: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.lg,
-    borderWidth: 2,
-    borderColor: COLORS.border,
+  },
+  verifiedIconInner: {
+    position: 'absolute',
   },
   companyInfo: {
-    flex: 1,
+    alignItems: 'center',
   },
   companyName: {
     ...TYPOGRAPHY.h2,
-    fontWeight: '600',
-    marginBottom: 6,
+    fontWeight: '700',
     color: COLORS.text,
-  },
-  companyLegal: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.sm,
-    fontWeight: '500',
-  },
-  verificationBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  verificationText: {
-    ...TYPOGRAPHY.small,
-    color: '#4CAF50',
-    fontWeight: '600',
-    marginLeft: 6,
-    marginRight: SPACING.sm,
-  },
-  statusActive: {
-    color: '#4CAF50',
-    fontWeight: '600',
-  },
-  companyMeta: {
-    marginTop: SPACING.md,
-    paddingTop: SPACING.md,
-    paddingHorizontal: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  metaItem: {
-    alignItems: 'center',
-    flex: 1,
-    paddingHorizontal: SPACING.xs,
-  },
-  metaLabel: {
-    ...TYPOGRAPHY.small,
-    color: COLORS.textSecondary,
     marginBottom: 4,
     textAlign: 'center',
   },
-  metaValue: {
-    ...TYPOGRAPHY.small,
-    fontWeight: '600',
+  legalName: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.sm,
     textAlign: 'center',
   },
-
-  // Credit Widget
-  creditWidget: {
+  metaTags: {
+    flexDirection: 'row',
+    gap: SPACING.xs,
+  },
+  metaTag: {
     backgroundColor: COLORS.card,
-    borderRadius: 20,
-    padding: SPACING.xl,
-    marginBottom: SPACING.lg,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  metaTagText: {
+    ...TYPOGRAPHY.caption,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+
+  // Section Styling
+  sectionContainer: {
+    gap: SPACING.sm,
+  },
+  sectionHeader: {
+    ...TYPOGRAPHY.h4,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginLeft: 4,
+  },
+
+  // Credit Card
+  creditCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: SPACING.lg,
     ...SHADOWS.medium,
-    elevation: 6,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   creditHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: SPACING.lg,
-  },
-  creditTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
-  widgetTitle: {
-    ...TYPOGRAPHY.h4,
-    fontWeight: '600',
-  },
-  creditStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    marginRight: SPACING.sm,
-  },
-  statusText: {
-    ...TYPOGRAPHY.small,
-    color: COLORS.textSecondary,
-    fontWeight: '600',
-  },
-  creditStatsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: SPACING.lg,
-  },
-  creditStat: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  creditAmount: {
-    ...TYPOGRAPHY.h2,
-    fontWeight: '600',
-    marginBottom: 6,
   },
   creditLabel: {
-    ...TYPOGRAPHY.small,
+    ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
-    fontWeight: '600',
+    marginBottom: 4,
+    fontWeight: '500',
   },
-  creditStatDivider: {
-    width: 1,
-    height: '100%',
-    backgroundColor: COLORS.border,
+  creditAmount: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: COLORS.text,
+    letterSpacing: -0.5,
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   progressContainer: {
-    marginTop: SPACING.sm,
-  },
-  progressBar: {
-    height: 10,
-    backgroundColor: COLORS.background,
-    borderRadius: 5,
-    overflow: 'hidden',
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
-    minWidth: 2,
-  },
-  progressText: {
-    ...TYPOGRAPHY.small,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-
-  // Sections
-  section: {
-    marginBottom: SPACING.lg,
-  },
-  sectionTitle: {
-    ...TYPOGRAPHY.h4,
-    fontWeight: '600',
-    marginBottom: SPACING.sm,
-    paddingHorizontal: 4,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-    paddingHorizontal: 4,
-  },
-
-  // Contact Grid
-  contactGrid: {
-    backgroundColor: COLORS.card,
-    borderRadius: 20,
-    padding: SPACING.xl,
-    ...SHADOWS.light,
-    elevation: 4,
-  },
-  contactItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
-    paddingVertical: SPACING.sm,
-  },
-  contactIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.md,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-  },
-  contactText: {
-    marginLeft: SPACING.sm,
-    flex: 1,
-  },
-  contactLabel: {
-    ...TYPOGRAPHY.small,
-    color: COLORS.textSecondary,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  contactValue: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text,
-    fontWeight: '500',
-  },
-
-  // Settings Card
-  settingsCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 20,
-    padding: SPACING.xl,
-    ...SHADOWS.light,
-    elevation: 4,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    gap: SPACING.xs,
     marginBottom: SPACING.md,
   },
-  settingInfo: {
-    flex: 1,
-    marginRight: SPACING.md,
+  progressBarBg: {
+    height: 8,
+    backgroundColor: COLORS.background,
+    borderRadius: 4,
+    overflow: 'hidden',
   },
-  settingLabel: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '600',
-    marginBottom: 2,
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 4,
   },
-  settingDescription: {
-    ...TYPOGRAPHY.small,
+  progressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  progressLabel: {
+    ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
   },
-  approvalDetails: {
-    paddingTop: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+  creditDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: SPACING.md,
   },
-  approvalItem: {
+  creditFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: SPACING.sm,
   },
-  approvalInfo: {
-    flex: 1,
-    marginRight: SPACING.md,
-  },
-  approvalLabel: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-  },
-  approvalDescription: {
+  termsText: {
     ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
   },
-  approvalValue: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '500',
+  termsValue: {
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  historyLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  historyLinkText: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.primary,
+    fontWeight: '600',
   },
 
   // Actions Grid
@@ -903,96 +726,95 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   actionCard: {
+    flex: 1,
     backgroundColor: COLORS.card,
     borderRadius: 12,
-    padding: SPACING.md,
+    padding: SPACING.sm,
     alignItems: 'center',
-    flex: 1,
+    gap: SPACING.xs,
     ...SHADOWS.light,
-    elevation: 4,
-    minHeight: 70,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  actionIconContainer: {
+  actionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+
+  // Info Cards (Contact & Settings)
+  infoCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    ...SHADOWS.light,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: 'hidden',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    gap: SPACING.md,
+  },
+  infoIconBox: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 8,
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.xs,
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
-  actionText: {
-    ...TYPOGRAPHY.small,
-    fontWeight: '600',
-    textAlign: 'center',
+  infoContent: {
+    flex: 1,
+  },
+  infoLabel: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginBottom: 2,
+  },
+  infoValue: {
+    ...TYPOGRAPHY.body,
+    fontWeight: '500',
     color: COLORS.text,
   },
-  actionDescription: {
-    ...TYPOGRAPHY.small,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    fontWeight: '500',
-    marginTop: 2,
+  separator: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginLeft: SPACING.md + 36 + SPACING.md, // Align with text
   },
 
-  // Admin-specific styles
-  adminActionCard: {
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.card,
-  },
-  adminActionIcon: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  adminActionText: {
-    color: COLORS.primary,
-  },
-  adminActionDescription: {
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-
-  bottomPadding: {
-    height: 100,
-  },
-
-  // Credit Payment Actions
-  creditActions: {
-    marginTop: SPACING.lg,
-    gap: SPACING.sm,
-  },
-  paymentButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    padding: SPACING.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.sm,
-    ...SHADOWS.medium,
-  },
-  paymentButtonText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.accent,
-    fontWeight: '600',
-  },
-  billingButton: {
+  // Expanded Content
+  expandedContent: {
     backgroundColor: COLORS.background,
-    borderRadius: 8,
-    padding: SPACING.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.xs,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    padding: SPACING.md,
+    gap: SPACING.sm,
   },
-  billingButtonText: {
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: SPACING.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border + '40', // Very light border
+  },
+  detailLabel: {
     ...TYPOGRAPHY.small,
     color: COLORS.textSecondary,
-    fontWeight: '500',
+  },
+  detailValue: {
+    ...TYPOGRAPHY.small,
+    fontWeight: '600',
+    color: COLORS.text,
   },
 });

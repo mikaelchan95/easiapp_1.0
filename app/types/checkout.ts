@@ -44,6 +44,7 @@ export interface PaymentMethod {
   id: string;
   type: PaymentMethodType;
   name: string;
+  icon?: string;
   last4?: string;
   brand?: string;
   isDefault?: boolean;
