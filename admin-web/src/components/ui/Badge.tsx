@@ -1,30 +1,36 @@
 import React from 'react';
+import { twMerge } from 'tailwind-merge';
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: 'default' | 'success' | 'warning' | 'error' | 'outline';
+  variant?:
+    | 'default'
+    | 'success'
+    | 'warning'
+    | 'error'
+    | 'outline'
+    | 'info'
+    | 'purple';
 }
 
 export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
   ({ className = '', variant = 'default', children, ...props }, ref) => {
     const baseStyles =
-      'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors';
+      'inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold transition-colors min-w-[80px]';
 
     const variants = {
-      default:
-        'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-primary)]',
-      success:
-        'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-      warning:
-        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-      error: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-      outline:
-        'text-[var(--text-primary)] border border-[var(--border-primary)] bg-transparent',
+      default: 'bg-gray-100 text-gray-700',
+      success: 'bg-[#DCFCE7] text-[#166534]', // Green
+      warning: 'bg-yellow-100 text-yellow-800',
+      error: 'bg-red-100 text-red-800',
+      info: 'bg-[#DBEAFE] text-[#1E40AF]', // Blue (Delivery)
+      purple: 'bg-[#F3E8FF] text-[#6B21A8]', // Purple (In Process)
+      outline: 'text-gray-700 border border-gray-200 bg-transparent',
     };
 
     return (
       <span
         ref={ref}
-        className={`${baseStyles} ${variants[variant]} ${className}`}
+        className={twMerge(baseStyles, variants[variant], className)}
         {...props}
       >
         {children}
