@@ -31,6 +31,7 @@ import CartNotificationProvider, {
 } from './app/context/CartNotificationContext';
 import { RewardsProvider } from './app/context/RewardsContext';
 import { CheckoutProvider } from './app/context/CheckoutContext';
+import { NotificationProvider } from './app/context/NotificationContext';
 
 // Import error handling component
 import ErrorBoundary from './app/components/UI/ErrorBoundary';
@@ -55,6 +56,10 @@ import CheckoutPaymentScreen from './app/components/Checkout/CheckoutPaymentScre
 import CheckoutReviewScreen from './app/components/Checkout/CheckoutReviewScreen';
 import OrderSuccessScreen from './app/components/Checkout/OrderSuccessScreen';
 import OrderTrackingScreen from './app/components/Checkout/OrderTrackingScreen';
+// New unified checkout flow
+import UnifiedCheckoutScreen from './app/components/Checkout/UnifiedCheckoutScreen';
+import OrderProcessingScreen from './app/components/Checkout/OrderProcessingScreen';
+import OrderConfirmationScreen from './app/components/Checkout/OrderConfirmationScreen';
 // import MomentumShowcase from './app/components/UI/MomentumShowcase'; // Component doesn't exist
 
 // Import Auth screens
@@ -71,6 +76,8 @@ import ActivitiesScreen from './app/components/Activities/ActivitiesScreen';
 import LocationPickerScreen from './app/components/Location/LocationPickerScreen';
 import UberStyleLocationScreen from './app/components/Location/UberStyleLocationScreen';
 import SavedLocationsScreen from './app/components/Location/SavedLocationsScreen';
+import NotificationsScreen from './app/screens/NotificationsScreen';
+import NotificationSettingsScreen from './app/screens/NotificationSettingsScreen';
 
 // Import Company screens
 import CompanyProfileScreen from './app/components/Profile/CompanyProfileScreen';
@@ -531,6 +538,33 @@ function AuthNavigator() {
         }}
       />
       <Stack.Screen name="OrderTracking" component={OrderTrackingScreen} />
+      {/* New Unified Checkout Flow */}
+      <Stack.Screen
+        name="UnifiedCheckout"
+        component={UnifiedCheckoutScreen}
+        options={{
+          headerShown: false,
+          gestureEnabled: true,
+        }}
+      />
+      <Stack.Screen
+        name="OrderProcessing"
+        component={OrderProcessingScreen}
+        options={{
+          headerShown: false,
+          gestureEnabled: false, // Prevent swipe back during processing
+          animation: 'fade',
+        }}
+      />
+      <Stack.Screen
+        name="OrderConfirmation"
+        component={OrderConfirmationScreen}
+        options={{
+          headerShown: false,
+          gestureEnabled: false,
+          animation: 'fade',
+        }}
+      />
       {/* <Stack.Screen 
         name="MomentumShowcase" 
         component={MomentumShowcase}
@@ -577,6 +611,11 @@ function AuthNavigator() {
       <Stack.Screen name="CompanyProfile" component={CompanyProfileScreen} />
       <Stack.Screen name="TeamManagement" component={TeamManagementScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen
+        name="NotificationSettings"
+        component={NotificationSettingsScreen}
+      />
       {/* Checkout flow screens */}
       <Stack.Screen
         name="CheckoutAddress"
@@ -1093,13 +1132,15 @@ export default function App() {
         <AuthProvider>
           <AppProvider>
             <RewardsProvider>
-              <CheckoutProvider>
-                <CartNotificationProvider>
-                  <TransitionProvider>
-                    <AppContent />
-                  </TransitionProvider>
-                </CartNotificationProvider>
-              </CheckoutProvider>
+              <NotificationProvider>
+                <CheckoutProvider>
+                  <CartNotificationProvider>
+                    <TransitionProvider>
+                      <AppContent />
+                    </TransitionProvider>
+                  </CartNotificationProvider>
+                </CheckoutProvider>
+              </NotificationProvider>
             </RewardsProvider>
           </AppProvider>
         </AuthProvider>

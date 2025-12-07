@@ -22,13 +22,25 @@ const ORDER_STATUSES = [
     id: 'pending',
     label: 'Order Received',
     icon: 'receipt-outline',
-    description: 'Your order has been confirmed and is being processed.',
+    description: 'Your order has been received and is awaiting confirmation.',
+  },
+  {
+    id: 'confirmed',
+    label: 'Order Confirmed',
+    icon: 'checkmark-circle-outline',
+    description: 'Your order has been confirmed by the store.',
   },
   {
     id: 'preparing',
     label: 'Being Prepared',
     icon: 'cube-outline',
-    description: 'We are preparing your items for delivery.',
+    description: 'We are picking and packing your items.',
+  },
+  {
+    id: 'ready',
+    label: 'Ready',
+    icon: 'gift-outline',
+    description: 'Your order is ready for delivery/pickup.',
   },
   {
     id: 'out_for_delivery',
@@ -39,7 +51,7 @@ const ORDER_STATUSES = [
   {
     id: 'delivered',
     label: 'Delivered',
-    icon: 'checkmark-circle-outline',
+    icon: 'checkmark-circle',
     description: 'Your order has been delivered. Enjoy!',
   },
 ];
@@ -156,66 +168,99 @@ const OrderTrackingScreen: React.FC = () => {
         </View>
 
         {/* Status Timeline */}
-        <View style={styles.timelineContainer}>
-          {ORDER_STATUSES.map((status, index) => {
-            const isActive = index <= currentStatusIndex;
-            const isCurrent = index === currentStatusIndex;
+        {order.status === 'cancelled' ? (
+          <View
+            style={[
+              styles.timelineContainer,
+              { borderColor: COLORS.error, borderWidth: 1 },
+            ]}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginBottom: 12,
+              }}
+            >
+              <Ionicons name="close-circle" size={32} color={COLORS.error} />
+              <Text
+                style={{
+                  ...TYPOGRAPHY.h4,
+                  color: COLORS.error,
+                  marginLeft: 12,
+                  fontWeight: '700',
+                }}
+              >
+                Order Cancelled
+              </Text>
+            </View>
+            <Text style={{ ...TYPOGRAPHY.body, color: COLORS.textSecondary }}>
+              This order has been cancelled. Please contact support if you
+              believe this is a mistake.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.timelineContainer}>
+            {ORDER_STATUSES.map((status, index) => {
+              const isActive = index <= currentStatusIndex;
+              const isCurrent = index === currentStatusIndex;
 
-            return (
-              <View key={status.id} style={styles.timelineItem}>
-                <View style={styles.iconColumn}>
-                  <View
-                    style={[
-                      styles.statusIcon,
-                      isActive && styles.activeStatusIcon,
-                      isCurrent && styles.currentStatusIcon,
-                    ]}
-                  >
-                    <Ionicons
-                      name={status.icon as any}
-                      size={20}
-                      color={isActive ? '#fff' : '#ccc'}
-                    />
-                  </View>
-                  {index < ORDER_STATUSES.length - 1 && (
+              return (
+                <View key={status.id} style={styles.timelineItem}>
+                  <View style={styles.iconColumn}>
                     <View
                       style={[
-                        styles.connector,
-                        index < currentStatusIndex && styles.activeConnector,
+                        styles.statusIcon,
+                        isActive && styles.activeStatusIcon,
+                        isCurrent && styles.currentStatusIcon,
                       ]}
-                    />
-                  )}
-                </View>
-
-                <View style={styles.statusContent}>
-                  <Text
-                    style={[
-                      styles.statusLabel,
-                      isActive && styles.activeStatusLabel,
-                    ]}
-                  >
-                    {status.label}
-                  </Text>
-                  <Text style={styles.statusDescription}>
-                    {status.description}
-                  </Text>
-
-                  {isCurrent && status.id === 'out_for_delivery' && (
-                    <TouchableOpacity
-                      style={styles.contactButton}
-                      onPress={handleContactDriver}
                     >
-                      <Ionicons name="call-outline" size={16} color="#fff" />
-                      <Text style={styles.contactButtonText}>
-                        Contact Driver
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                      <Ionicons
+                        name={status.icon as any}
+                        size={20}
+                        color={isActive ? '#fff' : '#ccc'}
+                      />
+                    </View>
+                    {index < ORDER_STATUSES.length - 1 && (
+                      <View
+                        style={[
+                          styles.connector,
+                          index < currentStatusIndex && styles.activeConnector,
+                        ]}
+                      />
+                    )}
+                  </View>
+
+                  <View style={styles.statusContent}>
+                    <Text
+                      style={[
+                        styles.statusLabel,
+                        isActive && styles.activeStatusLabel,
+                      ]}
+                    >
+                      {status.label}
+                    </Text>
+                    <Text style={styles.statusDescription}>
+                      {status.description}
+                    </Text>
+
+                    {isCurrent && status.id === 'out_for_delivery' && (
+                      <TouchableOpacity
+                        style={styles.contactButton}
+                        onPress={handleContactDriver}
+                      >
+                        <Ionicons name="call-outline" size={16} color="#fff" />
+                        <Text style={styles.contactButtonText}>
+                          Contact Driver
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
-              </View>
-            );
-          })}
-        </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* Delivery Details */}
         <View style={styles.detailsCard}>

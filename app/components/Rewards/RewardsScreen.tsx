@@ -11,120 +11,26 @@ import {
   ActivityIndicator,
   StatusBar,
   Image,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+
+import { getSupabaseImageUrl } from '../../utils/imageUtils';
 import { useRewards, TierLevel } from '../../context/RewardsContext';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
-import MobileHeader from '../Layout/MobileHeader';
 import { useAppContext } from '../../context/AppContext';
-import { isCompanyUser, CompanyUser, IndividualUser } from '../../types/user';
-import {
-  formatStatCurrency,
-  formatStatNumber,
-  formatPoints,
-  formatFinancialAmount,
-  formatLargeNumber,
-} from '../../utils/formatting';
+import { isCompanyUser } from '../../types/user';
+import { formatPoints, formatLargeNumber } from '../../utils/formatting';
 import { auditService, PointsAuditEntry } from '../../services/auditService';
 
-// Mock rewards data
-const mockRewards = [
-  {
-    id: '1',
-    title: '10% Off Your Next Purchase',
-    description: 'Get 10% off your next purchase of $100 or more',
-    points: 500,
-    expiry: '30 days after redemption',
-    imageUrl:
-      'https://images.unsplash.com/photo-1581237058004-34789da7e6b4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-    category: 'discount',
-  },
-  {
-    id: '2',
-    title: 'Free Shipping',
-    description:
-      'Get free shipping on your next order with no minimum purchase',
-    points: 300,
-    expiry: '14 days after redemption',
-    imageUrl:
-      'https://images.unsplash.com/photo-1586936893866-470173892b26?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-    category: 'shipping',
-  },
-  {
-    id: '3',
-    title: 'Exclusive Macallan Tasting',
-    description: 'Exclusive invitation to a Macallan whisky tasting event',
-    points: 1000,
-    expiry: 'Valid for events in the next 3 months',
-    imageUrl:
-      'https://images.unsplash.com/photo-1527281400683-1aefee6bca6e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-    category: 'experience',
-  },
-  {
-    id: '4',
-    title: 'Limited Edition Gift Box',
-    description:
-      'Redeem for a limited edition Macallan gift box with your next purchase',
-    points: 750,
-    expiry: 'While supplies last',
-    imageUrl:
-      'https://images.unsplash.com/photo-1603569283847-aa295f0d016a?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-    category: 'merchandise',
-  },
-];
-
-// Mock user loyalty data
-const mockLoyalty = {
-  tier: 'Gold',
-  points: 2500,
-  nextTier: 'Platinum',
-  pointsToNextTier: 2500,
-  history: [
-    { id: '1', date: '2023-12-10', description: 'Purchase', points: 150 },
-    { id: '2', date: '2023-11-25', description: 'Birthday Bonus', points: 500 },
-    { id: '3', date: '2023-11-05', description: 'Purchase', points: 220 },
-  ],
-};
-
-// Tier Badge Component
-const TierBadge = ({
-  tier,
-  size = 'large',
-}: {
-  tier: TierLevel;
-  size?: 'small' | 'large';
-}) => {
-  const colors = {
-    Bronze: '#CD7F32',
-    Silver: '#C0C0C0',
-    Gold: '#FFD700',
-  };
-
-  const iconSize = size === 'large' ? 28 : 18;
-  const containerSize = size === 'large' ? 56 : 36;
-
-  return (
-    <View
-      style={[
-        styles.tierBadge,
-        {
-          backgroundColor: colors[tier],
-          width: containerSize,
-          height: containerSize,
-        },
-      ]}
-    >
-      <Ionicons name="trophy" size={iconSize} color={COLORS.accent} />
-    </View>
-  );
-};
-
-// Points History Modal
+// Points History Modal Component (Refactored for cleaner code)
 const PointsHistoryModal = ({
   visible,
   onClose,
@@ -137,20 +43,15 @@ const PointsHistoryModal = ({
   const [pointsAudit, setPointsAudit] = useState<PointsAuditEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Load audit trail when modal opens
-  React.useEffect(() => {
+  useEffect(() => {
     const loadPointsAudit = async () => {
       if (visible && appState.user) {
         setLoading(true);
         try {
           let auditData: PointsAuditEntry[] = [];
-
-          // Load user's points audit (individual users)
           if (appState.user.accountType === 'individual') {
             auditData = await auditService.getUserPointsAudit(appState.user.id);
-          }
-          // Load company's points audit (company users can see all company activity)
-          else if (
+          } else if (
             appState.user.accountType === 'company' &&
             appState.user.companyId
           ) {
@@ -158,66 +59,25 @@ const PointsHistoryModal = ({
               appState.user.companyId
             );
           }
-
           setPointsAudit(auditData);
         } catch (error) {
           console.error('Error loading points audit:', error);
-          // Fallback to RewardsContext data
           setPointsAudit([]);
         } finally {
           setLoading(false);
         }
       }
     };
-
     loadPointsAudit();
   }, [visible, appState.user?.id, appState.user?.companyId]);
-
-  const formatTransactionType = (type: string) => {
-    switch (type) {
-      case 'earned_purchase':
-        return 'Purchase';
-      case 'earned_bonus':
-        return 'Bonus';
-      case 'earned_referral':
-        return 'Referral';
-      case 'earned_milestone':
-        return 'Milestone';
-      case 'redeemed_voucher':
-        return 'Voucher';
-      case 'redeemed_reward':
-        return 'Reward';
-      case 'expired':
-        return 'Expired';
-      case 'adjusted':
-        return 'Adjusted';
-      case 'restored':
-        return 'Restored';
-      default:
-        return type;
-    }
-  };
 
   const renderAuditItem = ({ item }: { item: PointsAuditEntry }) => (
     <View style={styles.historyItem}>
       <View style={styles.historyContent}>
         <Text style={styles.historyDescription}>{item.description}</Text>
         <Text style={styles.historyDate}>
-          {new Date(item.created_at).toLocaleDateString()} •{' '}
-          {formatTransactionType(item.transaction_type)}
+          {new Date(item.created_at).toLocaleDateString()}
         </Text>
-        {item.reference_id && (
-          <Text style={styles.historyOrderId}>
-            {item.reference_type === 'order' ? 'Order: ' : 'Ref: '}
-            {item.reference_id}
-          </Text>
-        )}
-        {/* Show user name for company users viewing company-wide audit */}
-        {appState.user?.accountType === 'company' &&
-          item.user &&
-          item.user_id !== appState.user.id && (
-            <Text style={styles.historyUser}>By: {item.user.name}</Text>
-          )}
       </View>
       <View style={styles.historyPointsContainer}>
         <Text
@@ -231,9 +91,6 @@ const PointsHistoryModal = ({
           {item.points_amount > 0 ? '+' : ''}
           {formatPoints(Math.abs(item.points_amount))}
         </Text>
-        <Text style={styles.historyBalance}>
-          Balance: {formatPoints(item.points_balance_after)}
-        </Text>
       </View>
     </View>
   );
@@ -245,14 +102,9 @@ const PointsHistoryModal = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.modalContainer}>
+      <View style={styles.modalContainer}>
         <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>
-            Points History
-            {appState.user?.accountType === 'company' && (
-              <Text style={styles.modalSubtitle}> • Company-wide</Text>
-            )}
-          </Text>
+          <Text style={styles.modalTitle}>Points History</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color={COLORS.text} />
           </TouchableOpacity>
@@ -261,7 +113,6 @@ const PointsHistoryModal = ({
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loadingText}>Loading points history...</Text>
           </View>
         ) : (
           <FlatList
@@ -271,20 +122,84 @@ const PointsHistoryModal = ({
             renderItem={renderAuditItem}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Ionicons
-                  name="receipt-outline"
-                  size={48}
-                  color={COLORS.inactive}
-                />
                 <Text style={styles.emptyText}>No points history yet</Text>
-                <Text style={styles.emptySubtext}>
-                  Start making purchases to earn points and build your history
-                </Text>
               </View>
             }
           />
         )}
-      </SafeAreaView>
+      </View>
+    </Modal>
+  );
+};
+
+// Redemption Confirmation Modal
+const RedemptionModal = ({
+  visible,
+  reward,
+  onConfirm,
+  onCancel,
+  isProcessing,
+}: {
+  visible: boolean;
+  reward: any;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isProcessing: boolean;
+}) => {
+  if (!reward) return null;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onCancel}
+    >
+      <View
+        style={[
+          styles.redemptionModalOverlay,
+          { backgroundColor: 'rgba(0,0,0,0.8)' },
+        ]}
+      >
+        <View style={styles.redemptionCard}>
+          <Image
+            source={{
+              uri:
+                getSupabaseImageUrl(reward.imageUrl || '') ||
+                'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80',
+            }}
+            style={styles.redemptionImage}
+          />
+          <View style={styles.redemptionContent}>
+            <Text style={styles.redemptionTitle}>Redeem Reward</Text>
+            <Text style={styles.redemptionText}>
+              Are you sure you want to redeem {formatPoints(reward.points)} for:
+            </Text>
+            <Text style={styles.redemptionRewardName}>{reward.title}</Text>
+
+            <View style={styles.redemptionActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={onCancel}
+                disabled={isProcessing}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.confirmButton}
+                onPress={onConfirm}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <ActivityIndicator color={COLORS.accent} />
+                ) : (
+                  <Text style={styles.confirmButtonText}>Confirm</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
     </Modal>
   );
 };
@@ -294,837 +209,371 @@ export default function RewardsScreen() {
   const {
     state,
     redeemReward,
-    getTierBenefits,
     getPointsToNextTier,
     getExpiringPoints,
+    loadRewardsCatalog,
+    loadUserVouchers,
   } = useRewards();
   const { state: appState } = useAppContext();
+
+  useFocusEffect(
+    useCallback(() => {
+      loadRewardsCatalog();
+      loadUserVouchers();
+    }, [])
+  );
+
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showHistory, setShowHistory] = useState(false);
-  const [redeeming, setRedeeming] = useState<string | null>(null);
-  const [showExpiringPoints, setShowExpiringPoints] = useState(false);
+  const [redeemModalVisible, setRedeemModalVisible] = useState(false);
+  const [selectedReward, setSelectedReward] = useState<any>(null);
+  const [isRedeeming, setIsRedeeming] = useState(false);
+
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
-  const [claimedReward, setClaimedReward] = useState<string>('');
+  const [claimedRewardTitle, setClaimedRewardTitle] = useState('');
+
   const insets = useSafeAreaInsets();
   const notificationAnim = useRef(new Animated.Value(-100)).current;
 
   const user = appState.user;
 
-  // Show loading state if user is authenticated but rewards haven't loaded yet
+  // Loading State
   if (user && !state.userRewards) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Loading rewards...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // Show auth required state if no user
-  if (!user || !state.userRewards) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.authRequiredContainer}>
-          <Ionicons
-            name="log-in-outline"
-            size={48}
-            color={COLORS.textSecondary}
-          />
-          <Text style={styles.authRequiredText}>
-            Please sign in to view rewards
-          </Text>
-          <TouchableOpacity
-            style={styles.signInButton}
-            onPress={() => navigation.navigate('Profile' as never)}
-          >
-            <Text style={styles.signInButtonText}>Sign In</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const handleFeaturePress = (feature: string) => {
-    console.log(`Pressed: ${feature}`);
-    // Add navigation logic here if needed
-  };
-
-  const renderUserProfile = () => {
-    if (!user) return null;
-
-    const isCompany = isCompanyUser(user);
-
-    return (
-      <View style={styles.profileCard}>
-        {/* Center-aligned Header */}
-        <View style={styles.headerTopRow}>
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>Rewards</Text>
-          </View>
-        </View>
-
-        {/* Enhanced Profile Section */}
-        <View style={styles.profileSection}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              {user.profileImage ? (
-                <Image
-                  source={{ uri: user.profileImage }}
-                  style={styles.avatarImage}
-                />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarInitials}>
-                    {user.name
-                      .split(' ')
-                      .map(n => n[0])
-                      .join('')
-                      .toUpperCase()}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          <View style={styles.userInfoSection}>
-            <View style={styles.userMainInfo}>
-              <View style={styles.nameRow}>
-                <Text
-                  style={styles.userName}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {user.name}
-                </Text>
-                <View style={styles.verifiedBadge}>
-                  <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
-                </View>
-              </View>
-              <View style={styles.userMetaInfo}>
-                <Text style={styles.accountType}>
-                  {isCompany ? 'Business Account' : 'Personal Account'}
-                </Text>
-                <Text style={styles.rewardTier}>
-                  {state.userRewards?.tier || 'Bronze'} Tier
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={styles.settingsButton}
-            onPress={() => handleFeaturePress('Settings')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="settings-outline" size={22} color={COLORS.text} />
-          </TouchableOpacity>
-        </View>
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
+  }
+
+  // Auth Required State
+  if (!user || !state.userRewards) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={styles.authText}>Please sign in to view rewards</Text>
+        <TouchableOpacity
+          style={styles.signInButton}
+          onPress={() => navigation.navigate('Profile' as never)}
+        >
+          <Text style={styles.signInButtonText}>Sign In</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const handleRedeemPress = (reward: any) => {
+    setSelectedReward(reward);
+    setRedeemModalVisible(true);
   };
 
-  // Check for expiring points
-  const expiringPoints = getExpiringPoints(30);
-  const urgentExpiringPoints = getExpiringPoints(7);
+  const handleConfirmRedeem = async () => {
+    if (!selectedReward) return;
+    setIsRedeeming(true);
 
-  // Animation for tier progress and carousel transitions
-  const progressAnim = useRef(new Animated.Value(0)).current;
-  const carouselAnim = useRef(new Animated.Value(0)).current;
-  const progressBarAnim = useRef(new Animated.Value(0)).current;
+    // Simulate network delay for better UX feel or wait for actual promise
+    const success = await redeemReward(selectedReward.id);
 
-  // Animate progress bar continuously
-  React.useEffect(() => {
-    const animateProgressBar = () => {
-      progressBarAnim.setValue(0);
-      Animated.timing(progressBarAnim, {
-        toValue: 1,
-        duration: 2000,
-        useNativeDriver: false,
-      }).start();
-    };
+    setIsRedeeming(false);
+    setRedeemModalVisible(false);
 
-    const progress = calculateProgress();
-    Animated.timing(progressAnim, {
-      toValue: progress,
-      duration: 1000,
-      useNativeDriver: false,
-    }).start();
+    if (success) {
+      setClaimedRewardTitle(selectedReward.title);
+      showNotification();
+    }
+    setSelectedReward(null);
+  };
 
-    animateProgressBar();
-    const interval = setInterval(animateProgressBar, 5000);
-    return () => clearInterval(interval);
-  }, [state.userRewards?.lifetimePoints]);
-
-  // Carousel animation - alternate between progress and expiring points every 5 seconds
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setShowExpiringPoints(prev => {
-        const newValue = !prev;
-
-        // Animate carousel slide
-        Animated.timing(carouselAnim, {
-          toValue: newValue ? 1 : 0,
-          duration: 600,
-          useNativeDriver: true,
-        }).start();
-
-        return newValue;
-      });
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const calculateProgress = useCallback(() => {
-    const pointsToNext = getPointsToNextTier();
-    if (pointsToNext === 0) return 100; // Already Gold
-
-    if (!state.userRewards) return 0;
-
-    const currentTierMin = state.userRewards.tier === 'Bronze' ? 0 : 50000;
-    const nextTierMin = state.userRewards.tier === 'Bronze' ? 50000 : 200000;
-    const range = nextTierMin - currentTierMin;
-    const progress =
-      ((state.userRewards.lifetimePoints - currentTierMin) / range) * 100;
-
-    return Math.min(Math.max(progress, 0), 100);
-  }, [state.userRewards?.lifetimePoints, state.userRewards?.tier]);
-
-  const showNotification = (rewardTitle: string) => {
-    setClaimedReward(rewardTitle);
+  const showNotification = () => {
     setShowSuccessNotification(true);
-
-    // Animate notification in
-    Animated.spring(notificationAnim, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 100,
-      friction: 8,
-    }).start();
-
-    // Auto-hide after 3 seconds
-    setTimeout(() => {
+    Animated.sequence([
+      Animated.spring(notificationAnim, {
+        toValue: insets.top + 10,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 8,
+      }),
+      Animated.delay(3000),
       Animated.timing(notificationAnim, {
         toValue: -100,
         duration: 300,
         useNativeDriver: true,
-      }).start(() => {
-        setShowSuccessNotification(false);
-      });
-    }, 3000);
+      }),
+    ]).start(() => setShowSuccessNotification(false));
   };
 
-  const handleRedeem = async (rewardId: string) => {
-    setRedeeming(rewardId);
-
-    // Find the reward item for notification
-    const reward = state.rewardsCatalog.find(r => r.id === rewardId);
-
-    // Add a small delay to show loading state
-    setTimeout(async () => {
-      const success = await redeemReward(rewardId);
-      setRedeeming(null);
-
-      if (success && reward) {
-        showNotification(reward.title);
-      }
-    }, 1000);
-  };
-
+  // Filter Logic
   const filteredRewards =
     selectedCategory === 'all'
       ? state.rewardsCatalog
       : state.rewardsCatalog.filter(r => r.type === selectedCategory);
 
   const categories = [
-    { id: 'all', label: 'All Rewards' },
-    { id: 'voucher', label: 'Instant Savings' },
-    { id: 'bundle', label: 'Exclusive Bundles' },
-    { id: 'swag', label: 'Limited Edition' },
+    { id: 'all', label: 'All' },
+    { id: 'voucher', label: 'Vouchers' },
+    { id: 'bundle', label: 'Bundles' },
+    { id: 'experience', label: 'Experiences' },
+    { id: 'swag', label: 'Merch' },
   ];
 
-  const renderRewardItem = ({
-    item,
-    index,
-  }: {
-    item: (typeof state.rewardsCatalog)[0];
-    index: number;
-  }) => {
-    const canRedeem = (state.userRewards?.points || 0) >= item.points;
-    const isRedeeming = redeeming === item.id;
+  // Calculate Progress
+  const currentPoints = state.userRewards.points;
+  const lifetimePoints = state.userRewards.lifetimePoints;
+  const currentTier = state.userRewards.tier || 'Bronze';
 
-    const getRewardIcon = () => {
-      switch (item.type) {
-        case 'voucher':
-          return 'pricetag-outline';
-        case 'bundle':
-          return 'cube-outline';
-        default:
-          return 'gift-outline';
-      }
-    };
-
-    const getRewardTypeColor = () => {
-      switch (item.type) {
-        case 'voucher':
-          return COLORS.text;
-        case 'bundle':
-          return COLORS.textSecondary;
-        default:
-          return COLORS.text;
-      }
-    };
-
-    return (
-      <View
-        style={[styles.rewardCard, !canRedeem && styles.rewardCardDisabled]}
-      >
-        <TouchableOpacity
-          activeOpacity={0.95}
-          style={styles.rewardCardTouchable}
-        >
-          {/* Enhanced header with better visual hierarchy */}
-          <View style={styles.rewardHeader}>
-            <View style={styles.rewardTopRow}>
-              <View
-                style={[
-                  styles.rewardIconContainer,
-                  { backgroundColor: COLORS.background },
-                ]}
-              >
-                <Ionicons
-                  name={getRewardIcon()}
-                  size={24}
-                  color={getRewardTypeColor()}
-                />
-              </View>
-              <View style={styles.rewardTypeContainer}>
-                <Text style={styles.rewardType}>{item.type.toUpperCase()}</Text>
-              </View>
-            </View>
-
-            <View style={styles.rewardPointsHeader}>
-              <Text style={styles.rewardPointsValue}>
-                {item.points.toLocaleString()}
-              </Text>
-              <Text style={styles.rewardPointsLabel}>pts</Text>
-            </View>
-          </View>
-
-          {/* Enhanced content section */}
-          <View style={styles.rewardContent}>
-            <Text style={styles.rewardTitle} numberOfLines={2}>
-              {item.title}
-            </Text>
-            <Text style={styles.rewardDescription} numberOfLines={3}>
-              {item.description}
-            </Text>
-          </View>
-
-          {/* Enhanced footer with improved button */}
-          <View style={styles.rewardFooter}>
-            <View style={styles.rewardMetaInfo}>
-              {!canRedeem && (
-                <Text style={styles.rewardAvailability}>
-                  {`${(item.points - (state.userRewards?.points || 0)).toLocaleString()} more points needed`}
-                </Text>
-              )}
-            </View>
-
-            <TouchableOpacity
-              style={[
-                styles.redeemButton,
-                !canRedeem && styles.redeemButtonDisabled,
-                isRedeeming && styles.redeemButtonLoading,
-              ]}
-              onPress={() => handleRedeem(item.id)}
-              disabled={!canRedeem || isRedeeming}
-              activeOpacity={0.9}
-            >
-              {isRedeeming ? (
-                <View style={styles.redeemButtonContent}>
-                  <ActivityIndicator size="small" color={COLORS.accent} />
-                  <Text style={[styles.redeemButtonText, { marginLeft: 8 }]}>
-                    Claiming...
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.redeemButtonContent}>
-                  <Text
-                    style={[
-                      styles.redeemButtonText,
-                      !canRedeem && styles.redeemButtonTextDisabled,
-                    ]}
-                  >
-                    {canRedeem ? 'Claim' : 'Keep Earning'}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Progress indicator for insufficient points */}
-          {!canRedeem && (
-            <View style={styles.rewardProgressContainer}>
-              <View style={styles.rewardProgressBar}>
-                <View
-                  style={[
-                    styles.rewardProgressFill,
-                    {
-                      width: `${Math.min(((state.userRewards?.points || 0) / item.points) * 100, 100)}%`,
-                    },
-                  ]}
-                />
-              </View>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-    );
+  // Tier Thresholds: Bronze 0-49999, Silver 50000-199999, Gold 200000+
+  const getTierProgress = () => {
+    if (currentTier === 'Gold') return 100;
+    const nextTierThreshold = currentTier === 'Bronze' ? 50000 : 200000;
+    const currentTierBase = currentTier === 'Bronze' ? 0 : 50000;
+    const progress =
+      ((lifetimePoints - currentTierBase) /
+        (nextTierThreshold - currentTierBase)) *
+      100;
+    return Math.min(Math.max(progress, 0), 100);
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.card} />
+      <StatusBar barStyle="dark-content" />
 
       {/* Success Notification */}
       {showSuccessNotification && (
         <Animated.View
           style={[
-            styles.successNotification,
-            {
-              top: insets.top + 10,
-              transform: [{ translateY: notificationAnim }],
-            },
+            styles.notification,
+            { transform: [{ translateY: notificationAnim }] },
           ]}
         >
-          <View style={styles.notificationContent}>
-            <View style={styles.notificationIcon}>
-              <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-            </View>
-            <View style={styles.notificationText}>
-              <Text style={styles.notificationTitle}>Reward Claimed!</Text>
-              <Text style={styles.notificationSubtitle} numberOfLines={1}>
-                {claimedReward}
-              </Text>
-            </View>
+          <Ionicons name="checkmark-circle" size={24} color={COLORS.accent} />
+          <View style={styles.notificationTextContainer}>
+            <Text style={styles.notificationTitle}>Success!</Text>
+            <Text style={styles.notificationMessage}>
+              You redeemed: {claimedRewardTitle}
+            </Text>
           </View>
         </Animated.View>
       )}
 
-      {/* Header Container */}
-      <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
-        {/* User Profile Header */}
-        {renderUserProfile()}
-      </View>
-
       <ScrollView
-        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + SPACING.md },
+        ]}
       >
-        {/* Rewards Balance Cards */}
-        <View style={styles.balanceCardsContainer}>
-          {/* Points Card */}
-          <TouchableOpacity
-            style={styles.pointsCard}
-            onPress={() => setShowHistory(true)}
-            activeOpacity={0.95}
-          >
-            <View style={styles.cardContent}>
-              <View style={styles.cardHeader}>
-                <View style={styles.pointsIconContainer}>
-                  <Ionicons
-                    name="gift"
-                    size={16}
-                    color={COLORS.textSecondary}
-                  />
-                </View>
-                <Text style={styles.cardLabel}>Points</Text>
-                <View style={styles.actionIndicator}>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={14}
-                    color={COLORS.inactive}
-                  />
-                </View>
-              </View>
-              <View style={styles.amountContainer}>
-                <Text style={styles.pointsAmount}>
-                  {(state.userRewards?.points || 0).toLocaleString()}
-                </Text>
-              </View>
-              <Text style={styles.cardSubtext}>Available to use</Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* Tier Card */}
-          <TouchableOpacity
-            style={styles.tierCard}
-            onPress={() => navigation.navigate('TierBenefitsScreen')}
-            activeOpacity={0.95}
-          >
-            <View style={styles.cardContent}>
-              <View style={styles.cardHeader}>
-                <View style={styles.tierIconContainer}>
-                  <TierBadge
-                    tier={state.userRewards?.tier || 'Bronze'}
-                    size="small"
-                  />
-                </View>
-                <Text style={styles.cardLabel}>Tier</Text>
-                <View style={styles.actionIndicator}>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={14}
-                    color={COLORS.inactive}
-                  />
-                </View>
-              </View>
-              <View style={styles.amountContainer}>
-                <Text style={styles.tierAmount}>
-                  {state.userRewards?.tier || 'Bronze'}
-                </Text>
-              </View>
-              <Text style={styles.cardSubtext}>Member status</Text>
-            </View>
+        {/* Header Section */}
+        <View style={styles.header}>
+          <Text style={styles.pageTitle}>Loyalty & Rewards</Text>
+          <TouchableOpacity onPress={() => setShowHistory(true)}>
+            <Text style={styles.historyLink}>History</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Company Voucher Management Card */}
-        {user && isCompanyUser(user) && (
-          <TouchableOpacity
-            style={styles.voucherManagementCard}
-            onPress={() => navigation.navigate('VoucherTracking')}
-            activeOpacity={0.95}
-          >
-            <View style={styles.voucherCardHeader}>
-              <View style={styles.voucherCardTitleContainer}>
-                <View style={styles.voucherCardIconContainer}>
-                  <Ionicons name="card" size={24} color={COLORS.text} />
-                </View>
-                <View style={styles.voucherCardTitleSection}>
-                  <Text style={styles.voucherCardTitle}>Company Vouchers</Text>
-                  <Text style={styles.voucherCardSubtitle}>
-                    Manage shared company vouchers
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.voucherCardAction}>
-                <Ionicons
-                  name="chevron-forward"
-                  size={20}
-                  color={COLORS.textSecondary}
-                />
-              </View>
+        {/* Loyalty Card */}
+        <LinearGradient
+          colors={['#1a1a1a', '#333333']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.loyaltyCard}
+        >
+          <View style={styles.cardHeader}>
+            <View>
+              <Text style={styles.cardLabel}>Current Balance</Text>
+              <Text style={styles.cardPoints}>
+                {formatLargeNumber(currentPoints)}{' '}
+                <Text style={styles.cardPointsLabel}>PTS</Text>
+              </Text>
             </View>
-            <View style={styles.voucherCardStats}>
-              <View style={styles.voucherStat}>
-                <Text style={styles.voucherStatNumber}>
-                  {state.userRewards?.availableVouchers?.filter(v => v.voucher_status === 'active').length || 0}
-                </Text>
-                <Text style={styles.voucherStatLabel}>Active</Text>
-              </View>
-              <View style={styles.voucherStat}>
-                <Text style={styles.voucherStatNumber}>
-                  {state.userRewards?.availableVouchers?.filter(v => v.voucher_status === 'used').length || 0}
-                </Text>
-                <Text style={styles.voucherStatLabel}>Used</Text>
-              </View>
-              <View style={styles.voucherStat}>
-                <Text style={styles.voucherStatNumber}>
-                  {state.userRewards?.availableVouchers?.filter(v => v.voucher_status === 'expired').length || 0}
-                </Text>
-                <Text style={styles.voucherStatLabel}>Expired</Text>
-              </View>
+            <View style={styles.tierBadge}>
+              <Ionicons name="trophy" size={14} color="#FFD700" />
+              <Text style={styles.tierText}>{currentTier}</Text>
             </View>
-          </TouchableOpacity>
-        )}
+          </View>
 
-        {/* Combined Progress/Expiring Points Carousel */}
-        {(getPointsToNextTier() > 0 || urgentExpiringPoints.length > 0) && (
-          <View style={styles.progressCard}>
-            <View style={styles.carouselContainer}>
-              <Animated.View
-                style={[
-                  styles.carouselTrack,
-                  {
-                    transform: [
-                      {
-                        translateX: carouselAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ['0%', '-50%'], // Move to show second slide
-                        }),
-                      },
-                    ],
-                  },
-                ]}
-              >
-                {/* Progress to next tier slide */}
-                <View style={styles.carouselSlide}>
-                  <View style={styles.progressHeader}>
-                    <Ionicons
-                      name="trending-up"
-                      size={16}
-                      color={COLORS.primary}
-                    />
-                    <Text style={styles.progressTitle}>
-                      {formatLargeNumber(getPointsToNextTier())} points to{' '}
-                      {(state.userRewards?.tier || 'Bronze') === 'Bronze'
-                        ? 'Silver'
-                        : 'Gold'}
-                    </Text>
-                  </View>
-                  <View style={styles.progressBarContainer}>
-                    <Animated.View
-                      style={[
-                        styles.progressBar,
-                        {
-                          width: progressAnim.interpolate({
-                            inputRange: [0, 100],
-                            outputRange: ['0%', '100%'],
-                          }),
-                        },
-                      ]}
-                    />
-                    <Animated.View
-                      style={[
-                        styles.progressBarGlow,
-                        {
-                          width: progressAnim.interpolate({
-                            inputRange: [0, 100],
-                            outputRange: ['0%', '100%'],
-                          }),
-                          opacity: progressBarAnim.interpolate({
-                            inputRange: [0, 0.5, 1],
-                            outputRange: [0.3, 1, 0.3],
-                          }),
-                        },
-                      ]}
-                    />
-                  </View>
-                </View>
-
-                {/* Expiring points slide */}
-                {urgentExpiringPoints.length > 0 && (
-                  <View style={styles.carouselSlide}>
-                    <View style={styles.expiringHeader}>
-                      <Ionicons name="warning" size={16} color={COLORS.error} />
-                      <Text style={styles.expiringTitle}>
-                        Points Expiring Soon!
-                      </Text>
-                    </View>
-                    <View style={styles.expiringDescription}>
-                      <Text style={styles.expiringText}>
-                        {urgentExpiringPoints
-                          .reduce((sum, entry) => sum + entry.points, 0)
-                          .toLocaleString()}{' '}
-                        points expire within 7 days
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.expiringButton}
-                        onPress={() => navigation.navigate('VoucherTracking')}
-                      >
-                        <Text style={styles.expiringButtonText}>
-                          View Details
-                        </Text>
-                        <Ionicons
-                          name="arrow-forward"
-                          size={14}
-                          color={COLORS.error}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-              </Animated.View>
-            </View>
-
-            {/* Carousel indicators */}
-            <View style={styles.carouselIndicators}>
-              <View
-                style={[
-                  styles.indicator,
-                  !showExpiringPoints && styles.activeIndicator,
-                ]}
-              />
-              {urgentExpiringPoints.length > 0 && (
-                <View
-                  style={[
-                    styles.indicator,
-                    showExpiringPoints && styles.activeIndicator,
-                  ]}
-                />
+          <View style={styles.progressSection}>
+            <View style={styles.progressInfo}>
+              <Text style={styles.progressLabel}>
+                {currentTier === 'Gold'
+                  ? 'Max Tier Reached'
+                  : 'Next Tier Progress'}
+              </Text>
+              {currentTier !== 'Gold' && (
+                <Text style={styles.progressValue}>
+                  {Math.round(getTierProgress())}%
+                </Text>
               )}
             </View>
+            <View style={styles.progressBarBg}>
+              <View
+                style={[
+                  styles.progressBarFill,
+                  { width: `${getTierProgress()}%` },
+                ]}
+              />
+            </View>
+            {currentTier !== 'Gold' && (
+              <Text style={styles.nextTierText}>
+                {formatLargeNumber(getPointsToNextTier())} points to{' '}
+                {currentTier === 'Bronze' ? 'Silver' : 'Gold'}
+              </Text>
+            )}
           </View>
-        )}
+        </LinearGradient>
 
-        {/* Quick Actions */}
-        <View style={styles.quickActionsCard}>
-          <Text style={styles.quickActionsTitle}>Explore More</Text>
-          <View style={styles.quickActionsGrid}>
-            <TouchableOpacity
-              style={styles.quickActionItem}
-              onPress={() => navigation.navigate('ReferralScreen')}
+        {/* Quick Actions (Simplified) */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('VoucherTracking' as never)}
+          >
+            <View
+              style={[
+                styles.actionIcon,
+                { backgroundColor: COLORS.background },
+              ]}
             >
-              <View style={styles.quickActionIcon}>
-                <Ionicons name="people-outline" size={24} color={COLORS.text} />
-              </View>
-              <Text style={styles.quickActionLabel}>Referrals</Text>
-            </TouchableOpacity>
+              <Ionicons name="ticket-outline" size={20} color={COLORS.text} />
+            </View>
+            <Text style={styles.actionText}>My Vouchers</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.quickActionItem}
-              onPress={() => navigation.navigate('AchievementsScreen')}
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('ReferralScreen' as never)}
+          >
+            <View
+              style={[
+                styles.actionIcon,
+                { backgroundColor: COLORS.background },
+              ]}
             >
-              <View style={styles.quickActionIcon}>
-                <Ionicons name="trophy-outline" size={24} color={COLORS.text} />
-              </View>
-              <Text style={styles.quickActionLabel}>Achievements</Text>
-            </TouchableOpacity>
+              <Ionicons name="people-outline" size={20} color={COLORS.text} />
+            </View>
+            <Text style={styles.actionText}>Refer Friends</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.quickActionItem}
-              onPress={() => navigation.navigate('MilestonesScreen')}
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('AchievementsScreen' as never)}
+          >
+            <View
+              style={[
+                styles.actionIcon,
+                { backgroundColor: COLORS.background },
+              ]}
             >
-              <View style={styles.quickActionIcon}>
-                <Ionicons name="flag-outline" size={24} color={COLORS.text} />
-              </View>
-              <Text style={styles.quickActionLabel}>Milestones</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickActionItem}
-              onPress={() => navigation.navigate('VoucherTracking')}
-            >
-              <View style={styles.quickActionIcon}>
-                <Ionicons name="card-outline" size={24} color={COLORS.text} />
-              </View>
-              <Text style={styles.quickActionLabel}>Vouchers</Text>
-            </TouchableOpacity>
-          </View>
+              <Ionicons name="ribbon-outline" size={20} color={COLORS.text} />
+            </View>
+            <Text style={styles.actionText}>Achievements</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Rewards Catalog */}
-        <View style={styles.catalogSection}>
-          <View style={styles.catalogHeader}>
-            <View style={styles.catalogTitleContainer}>
-              <Ionicons
-                name="gift"
-                size={24}
-                color={COLORS.primary}
-                style={styles.catalogIcon}
-              />
-              <Text style={styles.catalogTitle}>Rewards</Text>
-            </View>
+        {/* Categories */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoriesScroll}
+          contentContainerStyle={styles.categoriesContent}
+        >
+          {categories.map(cat => (
             <TouchableOpacity
-              style={styles.catalogViewAllButton}
-              onPress={() => navigation.navigate('RewardsAnalytics')}
+              key={cat.id}
+              style={[
+                styles.categoryChip,
+                selectedCategory === cat.id && styles.categoryChipActive,
+              ]}
+              onPress={() => setSelectedCategory(cat.id)}
             >
-              <Text style={styles.catalogViewAllText}>See All</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={COLORS.primary}
-              />
+              <Text
+                style={[
+                  styles.categoryText,
+                  selectedCategory === cat.id && styles.categoryTextActive,
+                ]}
+              >
+                {cat.label}
+              </Text>
             </TouchableOpacity>
-          </View>
+          ))}
+        </ScrollView>
 
-          {/* Enhanced Category Filter */}
-          <View style={styles.categoryFilterContainer}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.categoryScroll}
-              contentContainerStyle={styles.categoryScrollContent}
-            >
-              {categories.map(category => {
-                const isActive = selectedCategory === category.id;
-
-                return (
-                  <TouchableOpacity
-                    key={category.id}
-                    style={[
-                      styles.categoryButton,
-                      isActive && styles.categoryButtonActive,
-                    ]}
-                    onPress={() => setSelectedCategory(category.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.categoryButtonText,
-                        isActive && styles.categoryButtonTextActive,
-                      ]}
-                    >
-                      {category.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-
-          {/* Rewards List with Loading State */}
-          {state.rewardsCatalog.length === 0 ? (
-            <View style={styles.rewardsLoadingContainer}>
-              <View style={styles.rewardsLoadingCard}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-                <Text style={styles.rewardsLoadingText}>
-                  Discovering Your Rewards
-                </Text>
-                <Text style={styles.rewardsLoadingSubtext}>
-                  We're curating the perfect rewards just for you
-                </Text>
-              </View>
-            </View>
-          ) : filteredRewards.length === 0 ? (
-            <View style={styles.rewardsEmptyContainer}>
-              <View style={styles.rewardsEmptyCard}>
-                <Ionicons
-                  name="search-outline"
-                  size={48}
-                  color={COLORS.textSecondary}
-                />
-                <Text style={styles.rewardsEmptyTitle}>
-                  No rewards in this category
-                </Text>
-                <Text style={styles.rewardsEmptyText}>
-                  Don't worry! We have plenty of other amazing rewards waiting
-                  for you
-                </Text>
-                <TouchableOpacity
-                  style={styles.rewardsEmptyButton}
-                  onPress={() => setSelectedCategory('all')}
-                >
-                  <Text style={styles.rewardsEmptyButtonText}>
-                    Browse All Rewards
-                  </Text>
-                </TouchableOpacity>
-              </View>
+        {/* Rewards List */}
+        <View style={styles.rewardsGrid}>
+          {filteredRewards.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="gift-outline" size={48} color={COLORS.inactive} />
+              <Text style={styles.emptyStateText}>
+                No rewards available in this category.
+              </Text>
             </View>
           ) : (
-            <FlatList
-              data={filteredRewards}
-              renderItem={renderRewardItem}
-              keyExtractor={item => item.id}
-              scrollEnabled={false}
-              contentContainerStyle={styles.rewardsList}
-              showsVerticalScrollIndicator={false}
-            />
+            filteredRewards.map(reward => {
+              const canRedeem = currentPoints >= reward.points;
+              return (
+                <TouchableOpacity
+                  key={reward.id}
+                  style={styles.rewardCard}
+                  onPress={() => handleRedeemPress(reward)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.cardTop}>
+                    <Image
+                      source={{
+                        uri:
+                          getSupabaseImageUrl(
+                            reward.logoUrl || reward.imageUrl || ''
+                          ) || 'https://via.placeholder.com/150',
+                      }}
+                      style={styles.cardLogo}
+                    />
+                    <View style={styles.cardHeaderInfo}>
+                      <Text style={styles.companyName} numberOfLines={1}>
+                        {reward.title}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.statusText,
+                          !canRedeem && styles.statusTextDisabled,
+                        ]}
+                      >
+                        {formatLargeNumber(reward.points)} PTS
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.dashedDividerContainer}>
+                    <View style={styles.dashedDivider} />
+                  </View>
+
+                  <View style={styles.cardBottom}>
+                    <Text style={styles.rewardTitle} numberOfLines={2}>
+                      {reward.description}
+                    </Text>
+                    <Text style={styles.dateRange}>
+                      {canRedeem ? 'Tap to redeem' : 'Not enough points'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })
           )}
         </View>
-
-        {/* Bottom Padding */}
-        <View style={styles.bottomPadding} />
+        <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Points History Modal */}
       <PointsHistoryModal
         visible={showHistory}
         onClose={() => setShowHistory(false)}
+      />
+
+      <RedemptionModal
+        visible={redeemModalVisible}
+        reward={selectedReward}
+        onConfirm={handleConfirmRedeem}
+        onCancel={() => {
+          setRedeemModalVisible(false);
+          setSelectedReward(null);
+        }}
+        isProcessing={isRedeeming}
       />
     </View>
   );
@@ -1135,527 +584,306 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  headerContainer: {
-    backgroundColor: COLORS.card,
-    zIndex: 10,
-    ...SHADOWS.light,
-    paddingBottom: SPACING.xs,
-  },
-  scrollView: {
-    flex: 1,
-  },
-
-  // Balance Cards Container
-  balanceCardsContainer: {
-    flexDirection: 'row',
+  scrollContent: {
     paddingHorizontal: SPACING.md,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  authText: {
+    ...TYPOGRAPHY.body,
+    marginBottom: SPACING.md,
+    color: COLORS.textSecondary,
+  },
+  signInButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.md,
-    gap: SPACING.md,
+    borderRadius: 8,
+  },
+  signInButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.accent,
   },
 
-  // Points Card
-  pointsCard: {
-    flex: 1,
-    backgroundColor: COLORS.card,
-    borderRadius: 20,
-    minHeight: 130,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    ...SHADOWS.medium,
-  },
-
-  // Tier Card
-  tierCard: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    borderRadius: 20,
-    minHeight: 130,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    ...SHADOWS.medium,
-  },
-
-  // Card Content
-  cardContent: {
-    flex: 1,
-    padding: 20,
+  // Header
+  header: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  pageTitle: {
+    ...TYPOGRAPHY.h2,
+    color: COLORS.text,
+  },
+  historyLink: {
+    ...TYPOGRAPHY.buttonSmall,
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+
+  // Loyalty Card
+  loyaltyCard: {
+    borderRadius: 16,
+    padding: SPACING.lg,
+    marginBottom: SPACING.xl,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
   cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  cardLabel: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '500',
-    color: COLORS.textSecondary,
-    flex: 1,
-  },
-  actionIndicator: {
-    opacity: 0.6,
-  },
-  amountContainer: {
-    marginVertical: SPACING.xs,
-  },
-  pointsAmount: {
-    ...TYPOGRAPHY.h1,
-    fontWeight: '700',
-    color: COLORS.text,
-    letterSpacing: -1,
-  },
-  tierAmount: {
-    ...TYPOGRAPHY.h1,
-    fontWeight: '700',
-    color: COLORS.text,
-    letterSpacing: -1,
-    fontSize: 28,
-  },
-  cardSubtext: {
-    ...TYPOGRAPHY.small,
-    color: COLORS.inactive,
-    fontWeight: '400',
-  },
-
-  // Icon Containers
-  pointsIconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  tierIconContainer: {
-    marginRight: 10,
-  },
-
-  // Progress Card
-  progressCard: {
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.sm,
-    backgroundColor: COLORS.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    ...SHADOWS.light,
-  },
-  // Carousel Container
-  carouselContainer: {
-    overflow: 'hidden',
-    minHeight: 80,
-  },
-  carouselTrack: {
-    flexDirection: 'row',
-    width: '200%', // Double width to fit both slides
-  },
-  carouselSlide: {
-    width: '50%', // Each slide takes half the track width
-    padding: SPACING.lg,
-    minHeight: 56,
     justifyContent: 'space-between',
-  },
-
-  // Progress Section
-  progressHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-    gap: SPACING.xs,
-  },
-  progressTitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text,
-    fontWeight: '600',
-  },
-  progressBarContainer: {
-    height: 4,
-    backgroundColor: COLORS.background,
-    borderRadius: 2,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: COLORS.text,
-    borderRadius: 2,
-  },
-  progressBarGlow: {
-    position: 'absolute',
-    height: '100%',
-    backgroundColor: COLORS.primary,
-    borderRadius: 2,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-
-  // Expiring Points Section
-  expiringHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    marginBottom: SPACING.sm,
-  },
-  expiringTitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.error,
-    fontWeight: '600',
-  },
-  expiringDescription: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  expiringText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    flex: 1,
-    marginRight: SPACING.sm,
-  },
-  expiringButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-  },
-  expiringButtonText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.error,
-    fontWeight: '600',
-  },
-
-  // Carousel Indicators
-  carouselIndicators: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    paddingBottom: SPACING.md,
-    gap: SPACING.xs,
-  },
-  indicator: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.inactive,
-  },
-  activeIndicator: {
-    backgroundColor: COLORS.primary,
-    width: 18,
-  },
-
-  // Legacy Tier Badge
-  tierBadge: {
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...SHADOWS.light,
-  },
-
-  // Catalog Section
-  catalogSection: {
-    paddingHorizontal: SPACING.md,
-  },
-  catalogHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
-  },
-  catalogTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  catalogIcon: {
-    marginRight: SPACING.sm,
-  },
-  catalogTitle: {
-    ...TYPOGRAPHY.h2,
-    fontWeight: '700',
-    color: COLORS.primary,
-  },
-  catalogSubtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.sm,
-    marginBottom: SPACING.lg,
-    lineHeight: 22,
-  },
-  catalogViewAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary + '10',
-    minWidth: 80,
-    justifyContent: 'center',
-  },
-  catalogViewAllText: {
-    ...TYPOGRAPHY.button,
-    fontWeight: '600',
-    color: COLORS.primary,
-    marginRight: 4,
-  },
-  categoryFilterContainer: {
+    alignItems: 'flex-start',
     marginBottom: SPACING.xl,
   },
-  categoryScroll: {
-    marginBottom: SPACING.md,
+  cardLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    marginBottom: 4,
+    fontWeight: '500',
   },
-  categoryScrollContent: {
-    paddingHorizontal: SPACING.md,
-    gap: SPACING.md,
+  cardPoints: {
+    color: '#FFF',
+    fontSize: 32,
+    fontWeight: '700',
   },
-  categoryButton: {
+  cardPointsLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.7)',
+  },
+  tierBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    backgroundColor: COLORS.card,
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    minHeight: 48,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    gap: 5,
   },
-  categoryButtonActive: {
-    backgroundColor: COLORS.text,
-    borderColor: COLORS.text,
-    ...SHADOWS.light,
+  tierText: {
+    color: '#FFD700',
+    fontWeight: '700',
+    fontSize: 12,
   },
-  categoryButtonText: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '500',
-    color: COLORS.text,
+  progressSection: {
+    gap: 8,
   },
-  categoryButtonTextActive: {
-    color: COLORS.accent,
+  progressInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  progressLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+  },
+  progressValue: {
+    color: '#FFF',
+    fontSize: 12,
     fontWeight: '600',
+  },
+  progressBarBg: {
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#FFF',
+    borderRadius: 3,
+  },
+  nextTierText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 11,
+    marginTop: 4,
   },
 
-  // Rewards List
-  rewardsList: {
-    paddingBottom: SPACING.xl,
+  // Quick Actions
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.xl,
+    gap: SPACING.sm,
   },
-  rewardsLoadingContainer: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xl,
-  },
-  rewardsLoadingCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: SPACING.xl,
+  actionButton: {
+    flex: 1,
     alignItems: 'center',
-    ...SHADOWS.light,
-  },
-  rewardsLoadingText: {
-    ...TYPOGRAPHY.h5,
-    color: COLORS.text,
-    marginTop: SPACING.md,
-    fontWeight: '600',
-  },
-  rewardsLoadingSubtext: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
-    textAlign: 'center',
-  },
-  rewardsEmptyContainer: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xl,
-  },
-  rewardsEmptyCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: SPACING.xl,
-    alignItems: 'center',
-    ...SHADOWS.light,
-  },
-  rewardsEmptyTitle: {
-    ...TYPOGRAPHY.h5,
-    color: COLORS.text,
-    marginTop: SPACING.md,
-    fontWeight: '600',
-  },
-  rewardsEmptyText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  rewardsEmptyButton: {
-    backgroundColor: COLORS.text,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    padding: SPACING.sm,
     borderRadius: 12,
-    marginTop: SPACING.md,
     ...SHADOWS.light,
   },
-  rewardsEmptyButtonText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.accent,
+  actionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  actionText: {
+    fontSize: 11,
     fontWeight: '600',
+    color: COLORS.text,
+  },
+
+  // Categories
+  categoriesScroll: {
+    marginBottom: SPACING.lg,
+  },
+  categoriesContent: {
+    gap: 10,
+    paddingRight: SPACING.md,
+  },
+  categoryChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  categoryChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  categoryText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
+  categoryTextActive: {
+    color: COLORS.accent,
+  },
+
+  // Rewards Grid
+  rewardsGrid: {
+    gap: SPACING.md,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: SPACING.xl,
+    gap: SPACING.md,
+  },
+  emptyStateText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
   },
   rewardCard: {
     backgroundColor: COLORS.card,
     borderRadius: 16,
-    marginBottom: SPACING.md,
+    padding: SPACING.lg,
+    overflow: 'hidden',
     ...SHADOWS.medium,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  rewardCardDisabled: {
-    opacity: 0.7,
-    backgroundColor: COLORS.background,
-  },
-  rewardCardTouchable: {
-    padding: SPACING.lg,
-  },
-  rewardHeader: {
+  cardTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: SPACING.md,
-  },
-  rewardTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  rewardIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  rewardTypeContainer: {
-    flex: 1,
-  },
-  rewardType: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.textSecondary,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  rewardPointsHeader: {
-    alignItems: 'flex-end',
-  },
-  rewardPointsValue: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.text,
-    fontWeight: '700',
-    lineHeight: 24,
-  },
-  rewardPointsLabel: {
-    ...TYPOGRAPHY.label,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-    marginTop: 4,
-  },
-  rewardContent: {
-    marginBottom: SPACING.md,
-  },
-  rewardTitle: {
-    ...TYPOGRAPHY.h4,
-    marginBottom: SPACING.xs,
-    color: COLORS.text,
-    fontWeight: '600',
-    lineHeight: 22,
-  },
-  rewardDescription: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
-  },
-  rewardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: SPACING.sm,
   },
-  rewardMetaInfo: {
-    flex: 1,
+  cardLogo: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.background,
     marginRight: SPACING.md,
   },
-  rewardAvailability: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-  },
-  redeemButton: {
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    backgroundColor: COLORS.success,
-    borderRadius: 12,
-    minWidth: 120,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...SHADOWS.light,
-    shadowColor: COLORS.success,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  redeemButtonDisabled: {
-    backgroundColor: COLORS.border,
-    shadowColor: 'rgba(0,0,0,0.1)',
-    shadowOpacity: 0.1,
-  },
-  redeemButtonLoading: {
-    backgroundColor: COLORS.success,
-    shadowColor: COLORS.success,
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  redeemButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  cardHeaderInfo: {
+    flex: 1,
     justifyContent: 'center',
   },
-  redeemButtonText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.accent,
+  companyName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  statusText: {
+    fontSize: 14,
+    color: COLORS.text,
     fontWeight: '600',
-    fontSize: 18,
   },
-  redeemButtonTextDisabled: {
-    color: COLORS.textSecondary,
+  statusTextDisabled: {
+    color: COLORS.inactive,
   },
-  rewardProgressContainer: {
-    marginTop: SPACING.sm,
-  },
-  rewardProgressBar: {
-    height: 3,
-    backgroundColor: COLORS.border,
-    borderRadius: 2,
+  dashedDividerContainer: {
+    height: 1,
     overflow: 'hidden',
+    marginVertical: SPACING.md,
+    width: '100%',
   },
-  rewardProgressFill: {
-    height: '100%',
-    backgroundColor: COLORS.text,
-    borderRadius: 2,
+  dashedDivider: {
+    height: 2,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+    borderRadius: 1,
+    width: '100%',
+  },
+  cardBottom: {
+    gap: 4,
+  },
+  rewardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    lineHeight: 24,
+  },
+  dateRange: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  // Unused but kept for reference or removal
+  rewardTag: {
+    display: 'none',
+  },
+  rewardTagText: {
+    display: 'none',
+  },
+  rewardDesc: {
+    display: 'none',
+  },
+  rewardFooter: {
+    display: 'none',
+  },
+  rewardCost: {
+    display: 'none',
+  },
+  redeemBtn: {
+    display: 'none',
+  },
+  redeemBtnDisabled: {
+    display: 'none',
+  },
+  redeemBtnText: {
+    display: 'none',
+  },
+  redeemBtnTextDisabled: {
+    display: 'none',
   },
 
-  // Modal Styles
+  // Modals
   modalContainer: {
     flex: 1,
     backgroundColor: COLORS.background,
+    marginTop: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: SPACING.lg,
-    backgroundColor: COLORS.card,
+    padding: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -1663,7 +891,12 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.h3,
   },
   closeButton: {
-    padding: SPACING.sm,
+    padding: 4,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   historyList: {
     padding: SPACING.md,
@@ -1671,7 +904,6 @@ const styles = StyleSheet.create({
   historyItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     backgroundColor: COLORS.card,
     padding: SPACING.md,
     borderRadius: 8,
@@ -1680,23 +912,24 @@ const styles = StyleSheet.create({
   },
   historyContent: {
     flex: 1,
-    marginRight: SPACING.md,
   },
   historyDescription: {
-    ...TYPOGRAPHY.bodySmall,
-    marginBottom: SPACING.xs,
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.text,
+    marginBottom: 4,
   },
   historyDate: {
-    ...TYPOGRAPHY.caption,
+    fontSize: 12,
+    color: COLORS.textSecondary,
   },
-  historyOrderId: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.primary,
-    marginTop: SPACING.xs,
+  historyPointsContainer: {
+    justifyContent: 'center',
+    alignItems: 'flex-end',
   },
   historyPoints: {
-    ...TYPOGRAPHY.h5,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
   },
   pointsEarned: {
     color: COLORS.success,
@@ -1704,344 +937,118 @@ const styles = StyleSheet.create({
   pointsRedeemed: {
     color: COLORS.error,
   },
-
-  // Quick Actions Card
-  quickActionsCard: {
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.xl,
-    padding: SPACING.lg,
-    backgroundColor: COLORS.card,
-    borderRadius: 12,
-    ...SHADOWS.light,
-  },
-  quickActionsTitle: {
-    ...TYPOGRAPHY.h4,
-    marginBottom: SPACING.md,
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: SPACING.sm,
-  },
-  quickActionItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: SPACING.sm,
-  },
-  quickActionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.xs,
-  },
-  quickActionLabel: {
-    ...TYPOGRAPHY.caption,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-
-  // Bottom Padding
-  bottomPadding: {
-    height: SPACING.xxl,
-  },
-
-  // Voucher Management Card
-  voucherManagementCard: {
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.md,
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: SPACING.lg,
-    ...SHADOWS.medium,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  voucherCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  voucherCardTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  voucherCardIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  voucherCardTitleSection: {
-    flex: 1,
-  },
-  voucherCardTitle: {
-    ...TYPOGRAPHY.h5,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 2,
-  },
-  voucherCardSubtitle: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-  },
-  voucherCardAction: {
-    padding: SPACING.xs,
-  },
-  voucherCardStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: COLORS.background,
-    borderRadius: 12,
-    padding: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  voucherStat: {
-    alignItems: 'center',
-  },
-  voucherStatNumber: {
-    ...TYPOGRAPHY.h4,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 2,
-  },
-  voucherStatLabel: {
-    ...TYPOGRAPHY.tiny,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-
-  // Profile Header Styles
-  profileCard: {
-    backgroundColor: 'transparent',
-    padding: SPACING.lg,
-    paddingBottom: SPACING.sm,
-    position: 'relative',
-  },
-
-  // Enhanced Header Top Row
-  headerTopRow: {
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
-  },
-  headerCenter: {
-    alignItems: 'center',
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.h2,
-    marginBottom: 4,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-
-  // Enhanced Profile Section
-  profileSection: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: SPACING.md,
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginRight: SPACING.md,
-  },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: COLORS.text,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  avatarImage: {
-    width: '100%',
-    height: '100%',
-  },
-  avatarPlaceholder: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarInitials: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.text,
-    fontWeight: 'bold',
-  },
-  userInfoSection: {
-    flex: 1,
-    marginRight: SPACING.sm,
-  },
-  userMainInfo: {
-    flex: 1,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.xs,
-  },
-  userName: {
-    ...TYPOGRAPHY.h3,
-    marginRight: SPACING.xs,
-    fontWeight: '600',
-  },
-  verifiedBadge: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  userMetaInfo: {
-    flexDirection: 'column',
-    gap: 4,
-  },
-  accountType: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-  },
-  rewardTier: {
-    ...TYPOGRAPHY.small,
-    color: COLORS.text,
-    fontWeight: '600',
-  },
-  settingsButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    ...SHADOWS.light,
-  },
-
-  // User Stats Section
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-  },
-  loadingText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.md,
-  },
-  authRequiredContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-  },
-  authRequiredText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.md,
-    marginBottom: SPACING.lg,
-    textAlign: 'center',
-  },
-  modalSubtitle: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-  },
-  historyUser: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
-  },
-  historyPointsContainer: {
-    alignItems: 'flex-end',
-  },
-  historyBalance: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
-  },
   emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
+    marginTop: SPACING.xl,
   },
   emptyText: {
-    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginTop: SPACING.sm,
-  },
-  emptySubtext: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginTop: SPACING.xs,
-  },
-  signInButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
-    borderRadius: 12,
-    ...SHADOWS.light,
-  },
-  signInButtonText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.accent,
-    fontWeight: '600',
   },
 
-  // Success Notification
-  successNotification: {
-    position: 'absolute',
-    left: SPACING.md,
-    right: SPACING.md,
-    zIndex: 1000,
-    backgroundColor: COLORS.success,
-    borderRadius: 16,
-    ...SHADOWS.medium,
-    shadowColor: COLORS.success,
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  notificationContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: SPACING.md,
-  },
-  notificationIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.accent + '20',
+  // Redemption Modal
+  redemptionModalOverlay: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.md,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: SPACING.lg,
   },
-  notificationText: {
+  redemptionCard: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    overflow: 'hidden',
+    ...SHADOWS.large,
+  },
+  redemptionImage: {
+    width: '100%',
+    height: 180,
+    backgroundColor: '#F0F0F0',
+  },
+  redemptionContent: {
+    padding: SPACING.lg,
+    alignItems: 'center',
+  },
+  redemptionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  redemptionText: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  redemptionRewardName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  redemptionActions: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: COLORS.text,
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  confirmButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    color: '#FFF',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+
+  // Notification
+  notification: {
+    position: 'absolute',
+    top: 0,
+    left: 20,
+    right: 20,
+    backgroundColor: '#333',
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+    zIndex: 100,
+  },
+  notificationTextContainer: {
+    marginLeft: 12,
     flex: 1,
   },
   notificationTitle: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.accent,
-    fontWeight: '600',
-    marginBottom: 2,
+    color: '#FFF',
+    fontWeight: '700',
+    fontSize: 14,
   },
-  notificationSubtitle: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.accent,
-    opacity: 0.9,
+  notificationMessage: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
+    marginTop: 2,
   },
 });

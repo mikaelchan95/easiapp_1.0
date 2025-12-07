@@ -424,7 +424,7 @@ export default function CartScreen() {
     });
   };
 
-  // Enhanced checkout handler with better animation
+  // Enhanced checkout handler - navigates to unified checkout
   const handleCheckout = () => {
     if (state.cart.length === 0) {
       HapticFeedback.error();
@@ -438,7 +438,8 @@ export default function CartScreen() {
     }
 
     HapticFeedback.medium();
-    navigation.navigate('CheckoutAddress'); // Changed from 'Checkout' to 'CheckoutAddress'
+    // Navigate to new unified checkout flow
+    navigation.navigate('UnifiedCheckout');
   };
 
   // Pull to refresh handler

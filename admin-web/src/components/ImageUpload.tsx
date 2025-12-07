@@ -1,23 +1,25 @@
-
 import { useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { getImageUrl } from '../lib/imageUtils';
 import { X, Image as ImageIcon } from 'lucide-react';
+import { useToast } from './ui/Toast';
 
 interface ImageUploadProps {
   value: string | null;
   onChange: (value: string | null) => void;
   disabled?: boolean;
+  helperText?: React.ReactNode;
 }
 
-export default function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
+export default function ImageUpload({
+  value,
+  onChange,
+  disabled,
+  helperText,
+}: ImageUploadProps) {
+  const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const getImageUrl = (path: string | null) => {
-    if (!path) return null;
-    if (path.startsWith('http')) return path;
-    return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/${path}`;
-  };
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -29,7 +31,7 @@ export default function ImageUpload({ value, onChange, disabled }: ImageUploadPr
       const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const filePath = `products/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('product-images')
@@ -40,8 +42,10 @@ export default function ImageUpload({ value, onChange, disabled }: ImageUploadPr
       }
 
       onChange(filePath);
+      toast('Image uploaded successfully', 'success');
     } catch (error) {
-      alert((error as Error).message);
+      console.error('Upload error:', error);
+      toast((error as Error).message, 'error');
     } finally {
       setUploading(false);
     }
@@ -51,7 +55,7 @@ export default function ImageUpload({ value, onChange, disabled }: ImageUploadPr
     // Ideally we should delete from storage too, but for safety lets just remove reference
     onChange(null);
     if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      fileInputRef.current.value = '';
     }
   };
 
@@ -60,34 +64,39 @@ export default function ImageUpload({ value, onChange, disabled }: ImageUploadPr
   return (
     <div className="space-y-4">
       {imageUrl ? (
-        <div className="relative h-64 w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+        <div className="relative h-48 sm:h-64 w-full overflow-hidden rounded-lg border border-[var(--border-primary)] bg-[var(--bg-tertiary)]">
           <img
             src={imageUrl}
             alt="Product"
             className="h-full w-full object-contain"
           />
           {!disabled && (
-               <button
-               type="button"
-               onClick={handleRemove}
-               className="absolute top-2 right-2 rounded-full bg-red-100 p-2 text-red-600 transition-colors hover:bg-red-200"
-             >
-               <X size={20} />
-             </button>
+            <button
+              type="button"
+              onClick={handleRemove}
+              className="absolute top-2 right-2 rounded-full bg-red-100 dark:bg-red-900/50 p-2 text-red-600 dark:text-red-400 transition-colors hover:bg-red-200 dark:hover:bg-red-900/70 shadow-lg min-w-[36px] min-h-[36px] touch-manipulation"
+            >
+              <X size={20} />
+            </button>
           )}
         </div>
       ) : (
-        <div 
-            onClick={() => !disabled && fileInputRef.current?.click()}
-            className={`flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-brand-light transition-colors ${!disabled && 'hover:border-brand-dark'}`}
+        <div
+          onClick={() => !disabled && fileInputRef.current?.click()}
+          className={`flex h-48 sm:h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[var(--border-primary)] bg-[var(--bg-tertiary)] transition-all ${
+            !disabled &&
+            'hover:border-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+          } touch-manipulation`}
         >
-             <div className="flex flex-col items-center justify-center pb-6 pt-5">
-                <ImageIcon className="mb-4 h-12 w-12 text-gray-400" />
-                <p className="mb-2 text-sm text-brand-dark">
-                    <span className="font-bold">Click to upload</span>
-                </p>
-                <p className="text-xs text-gray-500">PNG, JPG or WEBP</p>
-             </div>
+          <div className="flex flex-col items-center justify-center pb-6 pt-5 px-4">
+            <ImageIcon className="mb-4 h-10 w-10 sm:h-12 sm:w-12 text-[var(--text-tertiary)]" />
+            <p className="mb-2 text-sm text-[var(--text-primary)] text-center">
+              <span className="font-bold">Click to upload</span>
+            </p>
+            <p className="text-xs text-[var(--text-tertiary)]">
+              {helperText || 'PNG, JPG or WEBP'}
+            </p>
+          </div>
         </div>
       )}
 
@@ -99,8 +108,12 @@ export default function ImageUpload({ value, onChange, disabled }: ImageUploadPr
         className="hidden"
         disabled={disabled || uploading}
       />
-      
-      {uploading && <div className="text-sm font-bold text-brand-dark">Uploading...</div>}
+
+      {uploading && (
+        <div className="text-sm font-semibold text-[var(--text-primary)]">
+          Uploading...
+        </div>
+      )}
     </div>
   );
 }

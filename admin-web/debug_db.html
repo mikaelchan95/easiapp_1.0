@@ -1,0 +1,266 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Debug Database - Check Order</title>
+    <style>
+      body {
+        font-family: monospace;
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+        background: #1a1a1a;
+        color: #e0e0e0;
+      }
+      .section {
+        background: #2a2a2a;
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+      }
+      .success {
+        color: #4ade80;
+      }
+      .error {
+        color: #f87171;
+      }
+      .warning {
+        color: #fbbf24;
+      }
+      button {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background: #2563eb;
+      }
+      pre {
+        background: #1a1a1a;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+      input {
+        padding: 8px;
+        background: #1a1a1a;
+        border: 1px solid #444;
+        color: #e0e0e0;
+        border-radius: 4px;
+        width: 400px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 8px;
+        border-bottom: 1px solid #444;
+      }
+      th {
+        background: #1a1a1a;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 Database Debug Tool - Orders</h1>
+
+    <div class="section">
+      <h2>Check Specific Order</h2>
+      <input
+        type="text"
+        id="orderId"
+        placeholder="Enter Order ID or Order Number"
+        value="38c98708-531b-4470-a971-efa042a3dece"
+      />
+      <button onclick="checkOrder()">Check Order</button>
+      <div id="orderResult"></div>
+    </div>
+
+    <div class="section">
+      <h2>Recent Orders</h2>
+      <button onclick="listOrders()">List Recent Orders</button>
+      <div id="ordersList"></div>
+    </div>
+
+    <div class="section">
+      <h2>Database Connection</h2>
+      <button onclick="testConnection()">Test Connection</button>
+      <div id="connectionResult"></div>
+    </div>
+
+    <script type="module">
+      import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+      // Get Supabase config from localStorage or prompt
+      let supabaseUrl =
+        localStorage.getItem('supabase_url') ||
+        prompt(
+          'Enter Supabase URL:',
+          'https://vqxnkxaeriizizfmqvua.supabase.co'
+        );
+      let supabaseKey =
+        localStorage.getItem('supabase_key') ||
+        prompt('Enter Supabase Anon Key:');
+
+      if (supabaseUrl && supabaseKey) {
+        localStorage.setItem('supabase_url', supabaseUrl);
+        localStorage.setItem('supabase_key', supabaseKey);
+      }
+
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      window.testConnection = async function () {
+        const result = document.getElementById('connectionResult');
+        result.innerHTML = '<p>Testing...</p>';
+
+        try {
+          const { data, error } = await supabase
+            .from('orders')
+            .select('count', { count: 'exact', head: true });
+
+          if (error) {
+            result.innerHTML = `<p class="error">❌ Connection failed: ${error.message}</p>`;
+          } else {
+            result.innerHTML = `<p class="success">✅ Connected successfully!</p>`;
+          }
+        } catch (err) {
+          result.innerHTML = `<p class="error">❌ Error: ${err.message}</p>`;
+        }
+      };
+
+      window.checkOrder = async function () {
+        const orderId = document.getElementById('orderId').value.trim();
+        const result = document.getElementById('orderResult');
+
+        if (!orderId) {
+          result.innerHTML =
+            '<p class="error">Please enter an Order ID or Order Number</p>';
+          return;
+        }
+
+        result.innerHTML = '<p>Searching...</p>';
+
+        try {
+          // Check if it's a UUID or order number
+          const isUUID =
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+              orderId
+            );
+
+          let query = supabase
+            .from('orders')
+            .select('*, user:users(name, email, phone)');
+
+          if (isUUID) {
+            query = query.eq('id', orderId);
+          } else {
+            query = query.eq('order_number', orderId);
+          }
+
+          const { data: order, error } = await query.single();
+
+          if (error) {
+            result.innerHTML = `
+                        <p class="error">❌ Error: ${error.message}</p>
+                        <pre>${JSON.stringify(error, null, 2)}</pre>
+                    `;
+            return;
+          }
+
+          if (!order) {
+            result.innerHTML = '<p class="warning">⚠️ Order not found</p>';
+            return;
+          }
+
+          // Get order items
+          const { data: items } = await supabase
+            .from('order_items')
+            .select('*, product:products(name)')
+            .eq('order_id', order.id);
+
+          result.innerHTML = `
+                    <p class="success">✅ Order Found!</p>
+                    <table>
+                        <tr><th>Field</th><th>Value</th></tr>
+                        <tr><td>ID</td><td>${order.id}</td></tr>
+                        <tr><td>Order Number</td><td>${order.order_number}</td></tr>
+                        <tr><td>Status</td><td>${order.status}</td></tr>
+                        <tr><td>Total</td><td>$${order.total}</td></tr>
+                        <tr><td>User</td><td>${order.user?.name || 'N/A'} (${order.user?.email || 'N/A'})</td></tr>
+                        <tr><td>Company ID</td><td>${order.company_id || 'N/A'}</td></tr>
+                        <tr><td>Created</td><td>${new Date(order.created_at).toLocaleString()}</td></tr>
+                        <tr><td>Items Count</td><td>${items?.length || 0}</td></tr>
+                    </table>
+                    <h3>Order Items:</h3>
+                    <pre>${JSON.stringify(items, null, 2)}</pre>
+                `;
+        } catch (err) {
+          result.innerHTML = `<p class="error">❌ Exception: ${err.message}</p>`;
+        }
+      };
+
+      window.listOrders = async function () {
+        const result = document.getElementById('ordersList');
+        result.innerHTML = '<p>Loading...</p>';
+
+        try {
+          const { data: orders, error } = await supabase
+            .from('orders')
+            .select(
+              'id, order_number, status, total, created_at, user:users(name)'
+            )
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+          if (error) {
+            result.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            return;
+          }
+
+          if (!orders || orders.length === 0) {
+            result.innerHTML =
+              '<p class="warning">No orders found in database</p>';
+            return;
+          }
+
+          let html = `<p class="success">Found ${orders.length} recent orders:</p><table>
+                    <tr>
+                        <th>Order Number</th>
+                        <th>ID (first 8)</th>
+                        <th>Status</th>
+                        <th>Total</th>
+                        <th>Customer</th>
+                        <th>Created</th>
+                    </tr>`;
+
+          orders.forEach(order => {
+            html += `<tr>
+                        <td>${order.order_number}</td>
+                        <td>${order.id.substring(0, 8)}...</td>
+                        <td>${order.status}</td>
+                        <td>$${order.total}</td>
+                        <td>${order.user?.name || 'N/A'}</td>
+                        <td>${new Date(order.created_at).toLocaleDateString()}</td>
+                    </tr>`;
+          });
+
+          html += '</table>';
+          result.innerHTML = html;
+        } catch (err) {
+          result.innerHTML = `<p class="error">❌ Exception: ${err.message}</p>`;
+        }
+      };
+
+      // Auto-test connection on load
+      window.testConnection();
+    </script>
+  </body>
+</html>

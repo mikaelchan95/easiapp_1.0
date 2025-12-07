@@ -1,4 +1,4 @@
-import React, { useRef, useState, useContext, useEffect } from 'react';
+import React, { useRef, useState, useContext, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,10 +12,10 @@ import {
   Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Product } from '../../utils/pricing';
+import { Product, getBasePrice } from '../../utils/pricing';
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from '../../utils/theme';
 import * as Animations from '../../utils/animations';
-import { AppContext } from '../../context/AppContext';
+import { AppContext, getUserRole } from '../../context/AppContext';
 import { CartNotificationContext } from '../../context/CartNotificationContext';
 import ProgressBar from '../UI/ProgressBar';
 import { HapticFeedback, HapticPatterns } from '../../utils/haptics';
@@ -40,11 +40,24 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
   style,
   animationDelay = 0,
 }) => {
-  const { id, name, price, originalPrice, imageUrl, category, rating } =
+  const { id, name, retailPrice, originalPrice, imageUrl, category, rating } =
     product;
 
-  // Get app context for cart functionality
+  // Get app context for cart functionality and user role
   const { state, dispatch } = useContext(AppContext);
+
+  // Determine user role and appropriate price
+  const userRole = useMemo(() => getUserRole(state.user), [state.user]);
+  const displayPrice = useMemo(() => {
+    const price = getBasePrice(product, userRole);
+    // Debug log - remove after confirming it works
+    if (__DEV__ && product.name?.includes('Eldoria')) {
+      console.log(
+        `💰 EnhancedProductCard pricing: ${product.name} | role=${userRole} | retail=${product.retailPrice} | trade=${product.tradePrice} | display=${price}`
+      );
+    }
+    return price;
+  }, [product, userRole]);
 
   // Get cart notification context
   const { showCartNotification } = useContext(CartNotificationContext);
@@ -54,12 +67,10 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const translateYAnim = useRef(new Animated.Value(10)).current;
   const addButtonScaleAnim = useRef(new Animated.Value(1)).current;
-  const addProgressAnim = useRef(new Animated.Value(0)).current;
   const streakAnim = useRef(new Animated.Value(0)).current;
 
   // State variables
   const [isAdding, setIsAdding] = useState(false);
-  const [showAddProgress, setShowAddProgress] = useState(false);
   const [purchaseCount, setPurchaseCount] = useState(0);
   const [streakCount, setStreakCount] = useState(0);
   const [showStreakAnimation, setShowStreakAnimation] = useState(false);
@@ -141,61 +152,47 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
     // Haptic feedback for add to cart
     HapticPatterns.addToCart();
 
-    // Show progress UI
-    setShowAddProgress(true);
+    // Show adding state (visual feedback on button)
     setIsAdding(true);
 
     // Animate add button
     Animations.heartbeatAnimation(addButtonScaleAnim);
 
-    // Animate progress bar
-    addProgressAnim.setValue(0);
-    Animated.timing(addProgressAnim, {
-      toValue: 1,
-      duration: 800,
-      easing: Animations.TIMING.easeOut,
-      useNativeDriver: false,
-    }).start(({ finished }) => {
-      if (finished) {
-        // Add to cart after progress completes
-        dispatch({
-          type: 'ADD_TO_CART',
-          payload: {
-            product: {
-              id: product.id,
-              name: product.name,
-              price: product.price || 0,
-              image: product.imageUrl,
-              category: product.category || '',
-              description: product.description || '',
-              sku: product.id,
-              retailPrice: product.price || product.retailPrice || 0,
-              tradePrice: product.tradePrice || (product.price || 0) * 0.9,
-            },
-            quantity: 1,
-          },
-        });
-
-        // Show cart notification with quantity
-        showCartNotification(name, 1);
-
-        // Reset UI state
-        setTimeout(() => {
-          setIsAdding(false);
-          setShowAddProgress(false);
-        }, 500);
-      }
+    // Add to cart immediately
+    dispatch({
+      type: 'ADD_TO_CART',
+      payload: {
+        product: {
+          id: product.id,
+          name: product.name,
+          image: product.imageUrl,
+          category: product.category || '',
+          description: product.description || '',
+          sku: product.id,
+          retailPrice: product.retailPrice || 0,
+          tradePrice: product.tradePrice || 0,
+        },
+        quantity: 1,
+      },
     });
+
+    // Show cart notification with quantity
+    showCartNotification(name, 1);
+
+    // Reset UI state after a short delay to show the success checkmark
+    setTimeout(() => {
+      setIsAdding(false);
+    }, 1000);
   };
 
-  const formattedPrice = formatFinancialAmount(price || 0);
+  const formattedPrice = formatFinancialAmount(displayPrice);
   const formattedOriginalPrice = originalPrice
     ? formatFinancialAmount(originalPrice)
     : null;
 
-  // Calculate discount logic
+  // Calculate discount logic (compare against retail price)
   const hasDiscount =
-    originalPrice !== undefined && originalPrice > (price || 0);
+    originalPrice !== undefined && originalPrice > retailPrice;
 
   // Progress calculations
   const nextStreakProgress = (purchaseCount % 3) / 3;
@@ -271,6 +268,9 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
 
           <View style={styles.footer}>
             <View style={styles.priceContainer}>
+              {userRole === 'trade' && (
+                <Text style={styles.tradeBadge}>TRADE</Text>
+              )}
               <Text style={styles.price}>{formattedPrice}</Text>
               {hasDiscount && (
                 <Text style={styles.originalPrice}>
@@ -282,7 +282,7 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
             <TouchableOpacity
               style={[styles.addButton, isAdding && styles.addButtonActive]}
               onPress={handleAddButtonPress}
-              disabled={isAdding}
+              activeOpacity={0.8}
             >
               {isAdding ? (
                 <Ionicons name="checkmark" size={18} color={COLORS.accent} />
@@ -296,23 +296,6 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* Add to cart progress overlay */}
-        {showAddProgress && (
-          <View style={styles.progressOverlay}>
-            <ProgressBar
-              progress={addProgressAnim}
-              height={8}
-              width="80%"
-              fillColor={COLORS.success}
-              backgroundColor="rgba(255,255,255,0.3)"
-              animated={false}
-              showLabel={true}
-              labelPosition="bottom"
-              labelStyle={styles.progressLabel}
-            />
-          </View>
-        )}
       </TouchableOpacity>
     </Animated.View>
   );
@@ -432,6 +415,18 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     marginTop: 2,
   },
+  tradeBadge: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: COLORS.success,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 2,
+    alignSelf: 'flex-start',
+  },
   addButton: {
     width: 36,
     height: 36,
@@ -446,23 +441,6 @@ const styles = StyleSheet.create({
   addButtonDisabled: {
     backgroundColor: COLORS.inactive,
     opacity: 0.5,
-  },
-  progressOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  progressLabel: {
-    color: COLORS.accent,
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginTop: 8,
   },
 });
 
