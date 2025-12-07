@@ -119,3 +119,5 @@ export interface Invoice {
   updated_at?: string;
   company?: Company; // Joined
 }
+
+export type { User, Company, Order, OrderItem };
