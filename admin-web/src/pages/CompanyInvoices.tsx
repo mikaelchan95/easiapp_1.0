@@ -7,7 +7,6 @@ import {
   Loader2,
   Download,
   FileText,
-  Plus,
   Send,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
@@ -108,7 +107,7 @@ export default function CompanyInvoices() {
       dueDate.setDate(dueDate.getDate() + 30);
 
       // Create invoice
-      const { data: invoice, error: invoiceError } = await supabase
+      const { error: invoiceError } = await supabase
         .from('company_invoices')
         .insert({
           company_id: companyId,
@@ -142,11 +141,18 @@ export default function CompanyInvoices() {
 
   const sendInvoiceEmail = async (invoiceId: string) => {
     try {
-      // TODO: Implement email sending logic
-      alert('Email sending functionality to be implemented');
+      const { error } = await supabase.functions.invoke('send-invoice-email', {
+        body: { invoice_id: invoiceId },
+      });
+
+      if (error) {
+        throw error;
+      }
+      
+      alert('Invoice email sent successfully!');
     } catch (error) {
       console.error('Error sending invoice:', error);
-      alert('Failed to send invoice');
+      alert('Failed to send invoice email.');
     }
   };
 

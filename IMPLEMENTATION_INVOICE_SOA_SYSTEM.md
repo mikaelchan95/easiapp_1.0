@@ -348,10 +348,10 @@ curl -X POST http://localhost:54321/functions/v1/generate-monthly-invoices
 ## Next Steps
 
 1. **Email Integration:**
-   - Set up Resend or SendGrid account
-   - Add API keys to Supabase secrets
-   - Update Edge Function with email API calls
-   - Test email sending
+   - ✅ Implemented `send-invoice-email` Edge Function using Resend
+   - ✅ Integrated with `generate-monthly-invoices` for automated sending
+   - ✅ Added "Send Email" button in Admin UI
+   - ⚠️ Pending: `RESEND_API_KEY` in Supabase Secrets
 
 2. **PDF Generation:**
    - Integrate PDF generation library (jsPDF, PDFKit, etc.)

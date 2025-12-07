@@ -116,6 +116,17 @@ serve(async (req) => {
           .single();
 
         if (invoiceError) {
+          // If duplicate, maybe log it but continue
+          if (invoiceError.code === '23505') { // Unique violation
+             console.log(`Invoice ${invoiceNumber} already exists. Skipping creation.`);
+             // Ideally we might want to fetch it to send the email anyway
+             results.push({
+               company_id: company.id,
+               status: 'skipped',
+               reason: 'Invoice already exists'
+             });
+             continue;
+          }
           throw invoiceError;
         }
 
@@ -162,52 +173,98 @@ async function sendInvoiceEmail(
   invoice: any,
   orders: Order[]
 ) {
-  // TODO: Integrate with email service (SendGrid, Resend, etc.)
-  // For now, this is a placeholder
   console.log(`Sending invoice email to ${company.email}`);
-  console.log(`Invoice: ${invoice.invoice_number}`);
-  console.log(`Amount: $${invoice.billing_amount}`);
-  console.log(`Orders: ${orders.length}`);
 
-  // Example email content
-  const emailContent = {
-    to: company.email,
-    subject: `Monthly Statement of Account - ${invoice.invoice_number}`,
-    html: `
-      <h2>Monthly Statement of Account</h2>
-      <p>Dear ${company.name},</p>
-      <p>Please find your monthly statement of account below:</p>
-      <table>
-        <tr>
-          <td><strong>Invoice Number:</strong></td>
-          <td>${invoice.invoice_number}</td>
-        </tr>
-        <tr>
-          <td><strong>Invoice Date:</strong></td>
-          <td>${new Date(invoice.invoice_date).toLocaleDateString()}</td>
-        </tr>
-        <tr>
-          <td><strong>Due Date:</strong></td>
-          <td>${new Date(invoice.payment_due_date).toLocaleDateString()}</td>
-        </tr>
-        <tr>
-          <td><strong>Total Orders:</strong></td>
-          <td>${orders.length}</td>
-        </tr>
-        <tr>
-          <td><strong>Total Amount:</strong></td>
-          <td>$${invoice.billing_amount.toFixed(2)}</td>
-        </tr>
-      </table>
-      <p>Please arrange payment by the due date.</p>
-      <p>Thank you for your business!</p>
-    `,
-  };
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px; }
+        .header { background-color: #f8f9fa; padding: 20px; text-align: center; border-bottom: 1px solid #eee; }
+        .content { padding: 30px 20px; }
+        .footer { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        .total { font-weight: bold; font-size: 18px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Monthly Statement</h1>
+        </div>
+        <div class="content">
+          <p>Dear ${company.name},</p>
+          <p>Please find your monthly statement of account below for the period.</p>
+          
+          <table>
+            <tr>
+              <td><strong>Invoice Number:</strong></td>
+              <td>${invoice.invoice_number}</td>
+            </tr>
+            <tr>
+              <td><strong>Invoice Date:</strong></td>
+              <td>${new Date(invoice.invoice_date).toLocaleDateString()}</td>
+            </tr>
+            <tr>
+              <td><strong>Due Date:</strong></td>
+              <td>${new Date(invoice.payment_due_date).toLocaleDateString()}</td>
+            </tr>
+            <tr>
+              <td><strong>Total Orders:</strong></td>
+              <td>${orders.length}</td>
+            </tr>
+            <tr class="total">
+              <td><strong>Total Amount:</strong></td>
+              <td>$${invoice.billing_amount.toFixed(2)}</td>
+            </tr>
+          </table>
 
-  // Integration point for email service
-  // await fetch('https://api.sendgrid.com/v3/mail/send', { ... });
-  // or
-  // await fetch('https://api.resend.com/emails', { ... });
+          <p style="margin-top: 30px;">
+            Please arrange payment by the due date.
+          </p>
+        </div>
+        <div class="footer">
+          <p>&copy; ${new Date().getFullYear()} EasiApp</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
 
-  return emailContent;
+  const resendApiKey = Deno.env.get('RESEND_API_KEY');
+  
+  if (!resendApiKey) {
+    console.log('RESEND_API_KEY not set. Logging email content instead.');
+    return { skipped: true, reason: 'No API key' };
+  }
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${resendApiKey}`,
+      },
+      body: JSON.stringify({
+        from: 'EasiApp Billing <billing@easiapp.com>',
+        to: company.email,
+        subject: `Monthly Statement - ${invoice.invoice_number}`,
+        html: htmlContent,
+      }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || 'Failed to send email');
+    }
+
+    return await res.json();
+  } catch (error) {
+    console.error(`Failed to send email to ${company.email}:`, error);
+    // Don't throw here, just log error so we can proceed with other companies
+    return { error: error.message };
+  }
 }
