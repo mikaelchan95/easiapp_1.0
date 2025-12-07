@@ -29,6 +29,16 @@ export default function PaymentModal({
   const [reference, setReference] = useState('');
   const [notes, setNotes] = useState('');
 
+  useEffect(() => {
+    if (isOpen) {
+      setAmount(invoice.outstanding_amount?.toString() || '');
+      setPaymentDate(new Date().toISOString().split('T')[0]);
+      setPaymentMethod('bank_transfer');
+      setReference('');
+      setNotes('');
+    }
+  }, [invoice, isOpen]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
