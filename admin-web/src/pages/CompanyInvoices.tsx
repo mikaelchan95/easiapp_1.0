@@ -8,10 +8,13 @@ import {
   Download,
   FileText,
   Send,
+  DollarSign,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import PaymentModal from '../components/PaymentModal';
+import { generateInvoicePDF } from '../lib/pdfUtils';
 
 export default function CompanyInvoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -21,6 +24,8 @@ export default function CompanyInvoices() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('all');
   const [generating, setGenerating] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   useEffect(() => {
     fetchInvoices();
@@ -383,6 +388,7 @@ export default function CompanyInvoices() {
                         size="sm"
                         className="min-w-[36px] min-h-[36px] p-2"
                         title="Download Invoice"
+                        onClick={() => generateInvoicePDF(invoice)}
                       >
                         <Download size={16} />
                       </Button>
@@ -394,6 +400,18 @@ export default function CompanyInvoices() {
                         onClick={() => sendInvoiceEmail(invoice.id)}
                       >
                         <Send size={16} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="min-w-[36px] min-h-[36px] p-2"
+                        title="Record Payment"
+                        onClick={() => {
+                          setSelectedInvoice(invoice);
+                          setIsPaymentModalOpen(true);
+                        }}
+                      >
+                        <DollarSign size={16} />
                       </Button>
                     </div>
                   </td>
@@ -417,6 +435,20 @@ export default function CompanyInvoices() {
           </div>
         )}
       </Card>
+
+      {selectedInvoice && (
+        <PaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => {
+            setIsPaymentModalOpen(false);
+            setSelectedInvoice(null);
+          }}
+          invoice={selectedInvoice}
+          onPaymentSuccess={() => {
+            fetchInvoices();
+          }}
+        />
+      )}
     </div>
   );
 }
