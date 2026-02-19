@@ -13,7 +13,8 @@ export const getImageUrl = (path: string | null | undefined): string | null => {
   // If it's already a full URL, return as-is
   if (path.startsWith('http')) return path;
   
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://vqxnkxaeriizizfmqvua.supabase.co';
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  if (!supabaseUrl) return null;
   const baseUrl = `${supabaseUrl}/storage/v1/object/public`;
   
   // If path already includes product-images/, use as-is

@@ -1,9 +1,15 @@
 // Script to update product image URLs with correct products/ subfolder path
 const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config();
 
-const supabaseUrl = 'https://vqxnkxaeriizizfmqvua.supabase.co';
-const supabaseKey =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeG5reGFlcmlpeml6Zm1xdnVhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjAwMzM4MiwiZXhwIjoyMDY3NTc5MzgyfQ.y7sQCIqVduJ7Le3IkEGR-wSoOhppjRjqsC6GvEJAZEw';
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error(
+    'Missing EXPO_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_KEY in environment.'
+  );
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -11,42 +17,42 @@ const productImageUpdates = [
   {
     sku: 'DP2013-750',
     imageUrl:
-      'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/dom-perignon-2013.webp',
+      `${supabaseUrl}/storage/v1/object/public/product-images/products/dom-perignon-2013.webp`,
   },
   {
     sku: 'MAC12-DC-700',
     imageUrl:
-      'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-12-double-cask.webp',
+      `${supabaseUrl}/storage/v1/object/public/product-images/products/macallan-12-double-cask.webp`,
   },
   {
     sku: 'MAC18-SC-700',
     imageUrl:
-      'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-18-sherry-cask.webp',
+      `${supabaseUrl}/storage/v1/object/public/product-images/products/macallan-18-sherry-cask.webp`,
   },
   {
     sku: 'MAC25-SO-700',
     imageUrl:
-      'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-25-sherry-oak.webp',
+      `${supabaseUrl}/storage/v1/object/public/product-images/products/macallan-25-sherry-oak.webp`,
   },
   {
     sku: 'MAC30-SC-700',
     imageUrl:
-      'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/macallan-30-sherry-cask.webp',
+      `${supabaseUrl}/storage/v1/object/public/product-images/products/macallan-30-sherry-cask.webp`,
   },
   {
     sku: 'CM2015-750',
     imageUrl:
-      'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/chateau-margaux-2015.webp',
+      `${supabaseUrl}/storage/v1/object/public/product-images/products/chateau-margaux-2015.webp`,
   },
   {
     sku: 'HEN-PAR-700',
     imageUrl:
-      'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/hennessy-paradis.webp',
+      `${supabaseUrl}/storage/v1/object/public/product-images/products/hennessy-paradis.webp`,
   },
   {
     sku: 'JW-BLUE-700',
     imageUrl:
-      'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/johnnie-walker-blue.webp',
+      `${supabaseUrl}/storage/v1/object/public/product-images/products/johnnie-walker-blue.webp`,
   },
 ];
 

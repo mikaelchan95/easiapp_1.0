@@ -1,10 +1,14 @@
+import 'dotenv/config';
 import fs from 'fs';
 // global fetch is available in modern Node versions
 
-const PROJECT_REF = 'vqxnkxaeriizizfmqvua';
-// The key provided by the user (cleaned up potential copy/paste oddities)
-const API_KEY = 'sb_secret_8M7oE0x2LWAoNjVkwSlJyA_QPPx_zQp';
+const PROJECT_REF = process.env.SUPABASE_PROJECT_REF;
+const API_KEY = process.env.SUPABASE_ACCESS_TOKEN;
 const SQL_FILE = 'supabase_setup.sql';
+
+if (!PROJECT_REF || !API_KEY) {
+    throw new Error('Missing SUPABASE_PROJECT_REF or SUPABASE_ACCESS_TOKEN in environment.');
+}
 
 async function runMigration() {
     try {

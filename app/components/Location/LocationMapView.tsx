@@ -8,12 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import MapView, {
-  Marker,
-  Region,
-  Circle,
-  PROVIDER_GOOGLE,
-} from 'react-native-maps';
+import MapView, { Marker, Region, Circle } from './MapComponents';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 

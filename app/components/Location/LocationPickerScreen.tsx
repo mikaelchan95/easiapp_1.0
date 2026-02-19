@@ -11,12 +11,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, {
-  Marker,
-  Region,
-  Circle,
-  PROVIDER_GOOGLE,
-} from 'react-native-maps';
+import MapView, { Marker, Region, Circle } from './MapComponents';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

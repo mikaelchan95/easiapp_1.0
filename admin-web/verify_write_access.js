@@ -1,13 +1,24 @@
 
+import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://vqxnkxaeriizizfmqvua.supabase.co';
-const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeG5reGFlcmlpeml6Zm1xdnVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIwMDMzODIsImV4cCI6MjA2NzU3OTM4Mn0.vIIvNn31sz1JLW_OMYqqqCF6RHn32jmir4U_AVbHIWU';
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY;
+
+if (!SUPABASE_URL || !ANON_KEY) {
+  throw new Error(
+    'Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_KEY in environment.'
+  );
+}
 
 const supabase = createClient(SUPABASE_URL, ANON_KEY);
 
-const EMAIL = 'mikaelchan95@gmail.com';
-const PASSWORD = '5Cptmjut1!';
+const EMAIL = process.env.ADMIN_USER_EMAIL;
+const PASSWORD = process.env.ADMIN_USER_PASSWORD;
+
+if (!EMAIL || !PASSWORD) {
+  throw new Error('Missing ADMIN_USER_EMAIL or ADMIN_USER_PASSWORD in environment.');
+}
 
 async function verifyWriteAccess() {
   console.log('--- Verifying Write Access for Admin ---');
