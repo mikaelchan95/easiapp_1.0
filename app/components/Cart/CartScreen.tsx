@@ -55,6 +55,10 @@ interface DeletedItemType {
   timeout: NodeJS.Timeout | null;
 }
 
+const SUPABASE_BASE_URL = (
+  process.env.EXPO_PUBLIC_SUPABASE_URL || ''
+).replace(/\/+$/, '');
+
 export default function CartScreen() {
   const navigation = useNavigation();
   const [isAddingProduct, setIsAddingProduct] = useState(false);
@@ -141,18 +145,18 @@ export default function CartScreen() {
   const getSupabaseStorageUrl = (path: string): string => {
     // If it's just a filename (no slashes), add the full path
     if (!path.includes('/')) {
-      return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${path}`;
+      return `${SUPABASE_BASE_URL}/storage/v1/object/public/product-images/products/${path}`;
     }
     // If path already includes product-images/, use as-is
     if (path.includes('product-images/')) {
-      return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/${path}`;
+      return `${SUPABASE_BASE_URL}/storage/v1/object/public/${path}`;
     }
     // If path starts with products/, add the bucket name
     if (path.startsWith('products/')) {
-      return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/${path}`;
+      return `${SUPABASE_BASE_URL}/storage/v1/object/public/product-images/${path}`;
     }
     // Fallback - assume it's a full relative path
-    return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${path}`;
+    return `${SUPABASE_BASE_URL}/storage/v1/object/public/product-images/products/${path}`;
   };
 
   // Improved product image lookup with fallback

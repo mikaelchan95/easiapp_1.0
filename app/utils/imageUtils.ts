@@ -4,6 +4,10 @@
 
 import { supabase } from '../config/supabase';
 
+const SUPABASE_BASE_URL = (
+  process.env.EXPO_PUBLIC_SUPABASE_URL || ''
+).replace(/\/+$/, '');
+
 export interface ImageSource {
   uri: string;
 }
@@ -21,21 +25,21 @@ export const getSupabaseImageUrl = (imagePath: string): string => {
 
   // If it already looks like a full path with product-images, use as-is
   if (cleanPath.includes('product-images/products/')) {
-    return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/${cleanPath}`;
+    return `${SUPABASE_BASE_URL}/storage/v1/object/public/${cleanPath}`;
   }
 
   // If it's just a filename, add the full path
   if (!cleanPath.includes('/')) {
-    return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${cleanPath}`;
+    return `${SUPABASE_BASE_URL}/storage/v1/object/public/product-images/products/${cleanPath}`;
   }
 
   // If it starts with products/, add the bucket name
   if (cleanPath.startsWith('products/')) {
-    return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/${cleanPath}`;
+    return `${SUPABASE_BASE_URL}/storage/v1/object/public/product-images/${cleanPath}`;
   }
 
   // Default - assume it's a filename
-  return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${cleanPath}`;
+  return `${SUPABASE_BASE_URL}/storage/v1/object/public/product-images/products/${cleanPath}`;
 };
 
 /**
@@ -110,7 +114,7 @@ export const getProductImageSource = (
   // 2. Fallback to smart mapping based on product name if provided
   if (productName) {
     const filename = getImageFilenameByProductName(productName);
-    const mappedUrl = `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${filename}`;
+    const mappedUrl = `${SUPABASE_BASE_URL}/storage/v1/object/public/product-images/products/${filename}`;
     return { uri: mappedUrl };
   }
 

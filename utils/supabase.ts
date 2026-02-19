@@ -5,8 +5,6 @@ import { createClient, processLock } from '@supabase/supabase-js';
 // Check if environment variables are set
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_KEY;
-const supabaseServiceKey =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeG5reGFlcmlpeml6Zm1xdnVhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjAwMzM4MiwiZXhwIjoyMDY3NTc5MzgyfQ.y7sQCIqVduJ7Le3IkEGR-wSoOhppjRjqsC6GvEJAZEw';
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('❌ Missing Supabase environment variables!');
@@ -45,18 +43,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// Service role client for admin operations (bypasses RLS)
-export const supabaseAdmin = createClient(supabaseUrl!, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-  global: {
-    headers: {
-      'X-Client-Info': 'supabase-js-admin',
-    },
-  },
-});
+// Client runtime must never create a privileged Supabase client.
+// Keep this export for compatibility, but it intentionally uses anon permissions.
+export const supabaseAdmin = supabase;
 
 // Test Supabase connection on initialization
 supabase.auth

@@ -14,7 +14,11 @@ import { Product } from '../utils/pricing';
 
 // Helper function to generate Supabase Storage URL
 const getSupabaseStorageUrl = (bucket: string, path: string): string => {
-  return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/${bucket}/${path}`;
+  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl) {
+    throw new Error('Missing EXPO_PUBLIC_SUPABASE_URL');
+  }
+  return `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`;
 };
 
 // Helper function to convert date strings to ISO format
@@ -552,7 +556,7 @@ export const supabaseService = {
           dbCompany.total_points = userCompanyPoints.current_balance || 0;
           dbCompany.lifetime_points_earned = userCompanyPoints.lifetime_points_earned || 0;
           dbCompany.tier_level = userCompanyPoints.tier_level || 'Bronze';
-          
+
           console.log('💎 Company points loaded from user_company_points:', {
             companyId,
             userId: authUser.id,
@@ -801,6 +805,38 @@ export const supabaseService = {
 
       console.log('✅ Auth user created:', authData.user.id);
 
+      const syncProfileData = async (profileUpdates: Partial<DatabaseUser>) => {
+        const { error: profileSyncError } = await supabase
+          .from('users')
+          .update({
+            ...profileUpdates,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', authData.user.id);
+
+        if (profileSyncError) {
+          console.error('❌ Error syncing user profile:', profileSyncError);
+          throw profileSyncError;
+        }
+
+        const { data: syncedProfile, error: profileReadError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', authData.user.id)
+          .maybeSingle();
+
+        if (profileReadError) {
+          console.error('❌ Error reading synced profile:', profileReadError);
+          throw profileReadError;
+        }
+
+        if (!syncedProfile) {
+          throw new Error(
+            'User profile row not found. Ensure Supabase auth trigger on_auth_user_created is installed.'
+          );
+        }
+      };
+
       // Handle company account creation
       if (userData.accountType === 'company') {
         console.log('🏢 Creating company account for first user (admin)');
@@ -837,9 +873,8 @@ export const supabaseService = {
 
         console.log('✅ Company created:', companyId);
 
-        // Create user profile with company admin role
+        // Sync user profile with company admin role (auth trigger should create the row)
         const userProfileData: Partial<DatabaseUser> = {
-          id: authData.user.id,
           name: userData.name || '',
           email: email,
           phone: userData.phone || '',
@@ -853,14 +888,7 @@ export const supabaseService = {
           updated_at: new Date().toISOString(),
         };
 
-        const { error: userError } = await supabase
-          .from('users')
-          .insert([userProfileData]);
-
-        if (userError) {
-          console.error('❌ Error creating user profile:', userError);
-          throw userError;
-        }
+        await syncProfileData(userProfileData);
 
         console.log('✅ Company admin user profile created');
 
@@ -900,7 +928,6 @@ export const supabaseService = {
         console.log('👤 Creating individual account');
 
         const userProfileData: Partial<DatabaseUser> = {
-          id: authData.user.id,
           name: userData.name || '',
           email: email,
           phone: userData.phone || '',
@@ -915,17 +942,7 @@ export const supabaseService = {
           updated_at: new Date().toISOString(),
         };
 
-        const { error: userError } = await supabase
-          .from('users')
-          .insert([userProfileData]);
-
-        if (userError) {
-          console.error(
-            '❌ Error creating individual user profile:',
-            userError
-          );
-          throw userError;
-        }
+        await syncProfileData(userProfileData);
 
         console.log('✅ Individual user profile created');
       }
@@ -1641,9 +1658,17 @@ export const supabaseService = {
       console.log('📁 Image data created, size:', uint8Array.length, 'bytes');
 
       // Create service role client for storage upload (bypasses RLS)
+      const serviceRoleUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_KEY || '';
+
+      if (!serviceRoleUrl || !serviceRoleKey) {
+        console.error('❌ Missing EXPO_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_KEY for profile image upload');
+        return null;
+      }
+
       const serviceRoleClient = createClient(
-        'https://vqxnkxaeriizizfmqvua.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeG5reGFlcmlpeml6Zm1xdnVhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjAwMzM4MiwiZXhwIjoyMDY3NTc5MzgyfQ.y7sQCIqVduJ7Le3IkEGR-wSoOhppjRjqsC6GvEJAZEw',
+        serviceRoleUrl,
+        serviceRoleKey,
         {
           auth: { autoRefreshToken: false, persistSession: false },
         }
@@ -1938,10 +1963,10 @@ export const supabaseService = {
     appliedVoucherId?: string | null;
     voucherDiscount?: number;
     orderNotes?: string;
-  }): Promise<{ 
-    orderId: string; 
-    orderNumber: string; 
-    pointsAwarded: { currentPoints: number; lifetimePoints: number; pointsEarned: number } | null 
+  }): Promise<{
+    orderId: string;
+    orderNumber: string;
+    pointsAwarded: { currentPoints: number; lifetimePoints: number; pointsEarned: number } | null
   } | null> {
     try {
       console.log('🛒 Creating order for user:', orderData.userId);
@@ -2002,12 +2027,6 @@ export const supabaseService = {
         );
       }
 
-      // Prepare delivery address - handle both string and object formats
-      let deliveryAddressData = orderData.deliveryAddress;
-      if (typeof deliveryAddressData === 'object') {
-        deliveryAddressData = JSON.stringify(deliveryAddressData);
-      }
-
       // Create order - including all detailed fields for admin-web
       // Parse delivery date safely
       let deliveryDate = null;
@@ -2037,19 +2056,19 @@ export const supabaseService = {
         payment_method: paymentMethod,
         payment_status: paymentStatus,
         delivery_address: deliveryAddressData,
-        
+
         // Detailed fields
         delivery_date: deliveryDate,
         delivery_time_slot: orderData.deliverySlot?.timeSlot || null,
         delivery_start_time: orderData.deliverySlot?.startTime || null,
         delivery_end_time: orderData.deliverySlot?.endTime || null,
         is_same_day_delivery: orderData.deliverySlot?.sameDayAvailable || false,
-        
+
         voucher_id: orderData.appliedVoucherId || null,
         voucher_discount: orderData.voucherDiscount || 0,
         discount: orderData.voucherDiscount || 0, // Populate discount column as well
         order_notes: orderData.orderNotes || null,
-        
+
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -2087,10 +2106,10 @@ export const supabaseService = {
       const orderItems = await Promise.all(
         orderData.items.map(async (item, index) => {
         console.log(`🔍 Processing item ${index + 1}:`, JSON.stringify(item, null, 2));
-        
+
         // Handle both UUID and string IDs - convert mock IDs to real UUIDs
         let productId = item.product_id || item.product?.id;
-        
+
         if (!productId) {
           console.error('❌ Missing product ID for item:', item);
           throw new Error(`Missing product ID for item at index ${index}`);
@@ -2168,7 +2187,7 @@ export const supabaseService = {
       // Process voucher usage if applicable
       if (orderData.appliedVoucherId && orderData.voucherDiscount && orderData.voucherDiscount > 0) {
         console.log('🎫 Processing voucher usage:', orderData.appliedVoucherId);
-        
+
         try {
           // Update voucher status to 'used'
           const { error: voucherError } = await supabase
@@ -2215,9 +2234,9 @@ export const supabaseService = {
           // Update both current_credit and credit_used to ensure consistency across the app
           const { error: updateError } = await supabase
             .from('companies')
-            .update({ 
+            .update({
               current_credit: newUsedCredit,
-              credit_used: newUsedCredit 
+              credit_used: newUsedCredit
             })
             .eq('id', orderData.companyId);
 
@@ -2262,10 +2281,10 @@ export const supabaseService = {
       // No need to manually create it here
 
       console.log('✅ Order created successfully:', orderNumber);
-      return { 
-        orderId: order.id, 
-        orderNumber, 
-        pointsAwarded 
+      return {
+        orderId: order.id,
+        orderNumber,
+        pointsAwarded
       };
     } catch (error) {
       console.error('❌ Error creating order:', error);

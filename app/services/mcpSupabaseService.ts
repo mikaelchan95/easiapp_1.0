@@ -62,13 +62,27 @@ export class MCPSupabaseService {
     try {
       // Note: In a real implementation, Claude Code would use the MCP server
       // For now, we'll return the known configuration
+      const supabaseBaseUrl = (
+        process.env.EXPO_PUBLIC_SUPABASE_URL || ''
+      ).replace(/\/+$/, '');
+
+      if (!supabaseBaseUrl) {
+        throw new Error('Missing EXPO_PUBLIC_SUPABASE_URL');
+      }
+
+      const projectRef =
+        supabaseBaseUrl
+          .replace('https://', '')
+          .replace('.supabase.co', '')
+          .replace(/\/+$/, '');
+
       return {
-        project_ref: 'vqxnkxaeriizizfmqvua',
+        project_ref: projectRef,
         name: 'EasiApp',
-        database_url: 'https://vqxnkxaeriizizfmqvua.supabase.co',
-        api_url: 'https://vqxnkxaeriizizfmqvua.supabase.co/rest/v1',
-        auth_url: 'https://vqxnkxaeriizizfmqvua.supabase.co/auth/v1',
-        storage_url: 'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1',
+        database_url: supabaseBaseUrl,
+        api_url: `${supabaseBaseUrl}/rest/v1`,
+        auth_url: `${supabaseBaseUrl}/auth/v1`,
+        storage_url: `${supabaseBaseUrl}/storage/v1`,
         features: ['database', 'auth', 'storage', 'edge-functions', 'realtime'],
       };
     } catch (error) {

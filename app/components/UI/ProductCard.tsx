@@ -28,6 +28,10 @@ export interface ProductCardProps {
   variant?: 'default' | 'featured' | 'minimal';
 }
 
+const SUPABASE_BASE_URL = (
+  process.env.EXPO_PUBLIC_SUPABASE_URL || ''
+).replace(/\/+$/, '');
+
 const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onPress,
@@ -157,18 +161,18 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const getSupabaseStorageUrl = (path: string): string => {
     // If it's just a filename (no slashes), add the full path
     if (!path.includes('/')) {
-      return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${path}`;
+      return `${SUPABASE_BASE_URL}/storage/v1/object/public/product-images/products/${path}`;
     }
     // If path already includes product-images/, use as-is
     if (path.includes('product-images/')) {
-      return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/${path}`;
+      return `${SUPABASE_BASE_URL}/storage/v1/object/public/${path}`;
     }
     // If path starts with products/, add the bucket name
     if (path.startsWith('products/')) {
-      return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/${path}`;
+      return `${SUPABASE_BASE_URL}/storage/v1/object/public/product-images/${path}`;
     }
     // Fallback - assume it's a full relative path
-    return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${path}`;
+    return `${SUPABASE_BASE_URL}/storage/v1/object/public/product-images/products/${path}`;
   };
 
   // Helper to get image source using smart mapping
@@ -206,7 +210,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     if (imageMapping[normalizedName]) {
       const filename = imageMapping[normalizedName];
       return {
-        uri: `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${filename}`,
+        uri: `${SUPABASE_BASE_URL}/storage/v1/object/public/product-images/products/${filename}`,
       };
     }
 
@@ -214,14 +218,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
     for (const [key, filename] of Object.entries(imageMapping)) {
       if (normalizedName.includes(key) || key.includes(normalizedName)) {
         return {
-          uri: `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${filename}`,
+          uri: `${SUPABASE_BASE_URL}/storage/v1/object/public/product-images/products/${filename}`,
         };
       }
     }
 
     // Default fallback
     return {
-      uri: `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/placeholder-product.webp`,
+      uri: `${SUPABASE_BASE_URL}/storage/v1/object/public/product-images/products/placeholder-product.webp`,
     };
   };
 

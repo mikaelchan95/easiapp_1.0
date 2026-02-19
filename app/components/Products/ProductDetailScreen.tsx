@@ -29,6 +29,10 @@ import { wishlistService } from '../../services/wishlistService';
 
 const { width } = Dimensions.get('window');
 
+const SUPABASE_BASE_URL = (
+  process.env.EXPO_PUBLIC_SUPABASE_URL || ''
+).replace(/\/+$/, '');
+
 // Cart Badge Component
 const CartBadge: React.FC = () => {
   const { state } = useContext(AppContext);
@@ -112,7 +116,7 @@ export default function ProductDetailScreen() {
     if (imageMapping[normalizedName]) {
       const filename = imageMapping[normalizedName];
       return {
-        uri: `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${filename}`,
+        uri: `${SUPABASE_BASE_URL}/storage/v1/object/public/product-images/products/${filename}`,
       };
     }
 
@@ -120,7 +124,7 @@ export default function ProductDetailScreen() {
     for (const [key, filename] of Object.entries(imageMapping)) {
       if (normalizedName.includes(key) || key.includes(normalizedName)) {
         return {
-          uri: `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${filename}`,
+          uri: `${SUPABASE_BASE_URL}/storage/v1/object/public/product-images/products/${filename}`,
         };
       }
     }

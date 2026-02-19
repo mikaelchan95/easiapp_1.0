@@ -1,9 +1,15 @@
 // Quick fix for Château Margaux filename
 const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config();
 
-const supabaseUrl = 'https://vqxnkxaeriizizfmqvua.supabase.co';
-const supabaseKey =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxeG5reGFlcmlpeml6Zm1xdnVhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjAwMzM4MiwiZXhwIjoyMDY3NTc5MzgyfQ.y7sQCIqVduJ7Le3IkEGR-wSoOhppjRjqsC6GvEJAZEw';
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error(
+    'Missing EXPO_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_KEY in environment.'
+  );
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -12,7 +18,7 @@ async function fixChateauMargaux() {
     console.log('🔧 Fixing Château Margaux image URL...');
 
     const correctImageUrl =
-      'https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/chateau-margaux-2015-1.png';
+      `${supabaseUrl}/storage/v1/object/public/product-images/products/chateau-margaux-2015-1.png`;
 
     const { data, error } = await supabase
       .from('products')
