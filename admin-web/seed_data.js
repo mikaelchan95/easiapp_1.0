@@ -47,11 +47,11 @@ async function seedData() {
     ];
 
     // Note: For auth.users we can't easily insert via client lib in a simple seed script without using admin API createUser,
-    // ensuring 'public.users' table also gets populated if using triggers. 
-    // Assuming 'public.users' is a separate table synced or just used as user profile. 
+    // ensuring 'public.users' table also gets populated if using triggers.
+    // Assuming 'public.users' is a separate table synced or just used as user profile.
     // We will upsert to 'public.users' directly assuming RLS bypass.
-    
-    // HOWEVER, `public.users` usually references `auth.users`. 
+
+    // HOWEVER, `public.users` usually references `auth.users`.
     // Inserting directly into public.users might fail foreign key constraints if auth user doesn't exist.
     // For simplicity in this demo, we will create AUTH users first using admin API.
 
@@ -96,7 +96,7 @@ async function seedData() {
                 })
                 .select()
                 .single();
-            
+
              if (profileError) console.error(`Error upserting profile for ${u.email}:`, profileError.message);
              else createdUsers.push(profile);
         }
@@ -132,12 +132,12 @@ async function seedData() {
     if (createdUsers.length > 0 && allProducts && allProducts.length > 0) {
         const ordersData = [];
         const statuses = ['delivered', 'processing', 'shipped', 'cancelled', 'delivered', 'delivered'];
-        
+
         for (let i = 0; i < 15; i++) {
             const user = createdUsers[Math.floor(Math.random() * createdUsers.length)];
             const status = statuses[Math.floor(Math.random() * statuses.length)];
             const total = Math.floor(Math.random() * 200) + 20;
-            
+
             ordersData.push({
                 order_number: `ORD-${2023000 + i}`,
                 user_id: user.id,
@@ -153,7 +153,7 @@ async function seedData() {
             .from('orders')
             .upsert(ordersData, { onConflict: 'order_number' })
             .select();
-        
+
         if (orderError) console.error('Order creation failed:', orderError.message);
         else console.log(`✅ ${orders.length} Orders created.`);
     }

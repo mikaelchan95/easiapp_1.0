@@ -15,15 +15,15 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 async function checkDatabase() {
   console.log('1. Testing Connection with Service Role Key...');
-  
+
   // Test 1: List Users (requires admin/service_role)
   const { data: { users }, error: authError } = await supabase.auth.admin.listUsers();
-  
+
   if (authError) {
     console.error('❌ Connection Failed:', authError.message);
     return;
   }
-  
+
   console.log(`✅ Connection Successful! Found ${users.length} users.`);
 
   // Test 2: Check app_settings table

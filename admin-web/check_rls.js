@@ -22,7 +22,7 @@ async function checkVisibility() {
     const { count: totalOrders, error: adminError } = await adminClient
         .from('orders')
         .select('*', { count: 'exact', head: true });
-    
+
     if (adminError) console.error('Admin Check Failed:', adminError.message);
     else console.log(`✅ Admin (Service Role) sees: ${totalOrders} orders. (These exist in DB)`);
 

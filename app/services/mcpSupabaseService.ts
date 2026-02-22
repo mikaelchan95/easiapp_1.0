@@ -1,6 +1,6 @@
 /**
  * MCP Supabase Service Integration
- * 
+ *
  * This service provides enhanced Supabase integration using MCP (Model Context Protocol)
  * for AI-powered database management and operations.
  */
@@ -44,9 +44,9 @@ export interface ProjectConfiguration {
 
 export class MCPSupabaseService {
   private static instance: MCPSupabaseService;
-  
+
   private constructor() {}
-  
+
   static getInstance(): MCPSupabaseService {
     if (!MCPSupabaseService.instance) {
       MCPSupabaseService.instance = new MCPSupabaseService();
@@ -159,7 +159,7 @@ export class MCPSupabaseService {
       ];
 
       const isReadOnly = readOnlyPatterns.some(pattern => pattern.test(normalizedQuery));
-      
+
       if (!isReadOnly) {
         throw new Error('Only read-only queries are allowed');
       }
@@ -261,7 +261,7 @@ export class MCPSupabaseService {
   }> {
     try {
       const startTime = Date.now();
-      
+
       // Simple health check query
       const { data, error } = await supabase
         .from('users')
@@ -358,7 +358,7 @@ export class MCPSupabaseService {
 
       // Parse the execution plan
       const plan = data?.[0]?.['QUERY PLAN']?.[0] || {};
-      
+
       return {
         estimated_cost: plan['Total Cost'] || 0,
         execution_time: plan['Actual Total Time'] || 0,
@@ -378,35 +378,35 @@ export class MCPSupabaseService {
 
   private generateQuerySuggestions(plan: any): string[] {
     const suggestions: string[] = [];
-    
+
     if (plan['Actual Total Time'] > 1000) {
       suggestions.push('Consider adding indexes to improve performance');
     }
-    
+
     if (plan['Node Type'] === 'Seq Scan') {
       suggestions.push('Sequential scan detected - consider adding an index');
     }
-    
+
     if (plan['Rows Removed by Filter'] > 1000) {
       suggestions.push('Many rows filtered - consider more selective WHERE clauses');
     }
-    
+
     return suggestions;
   }
 
   private extractIndexesUsed(plan: any): string[] {
     const indexes: string[] = [];
-    
+
     if (plan['Index Name']) {
       indexes.push(plan['Index Name']);
     }
-    
+
     if (plan['Plans']) {
       plan['Plans'].forEach((subPlan: any) => {
         indexes.push(...this.extractIndexesUsed(subPlan));
       });
     }
-    
+
     return [...new Set(indexes)];
   }
 }

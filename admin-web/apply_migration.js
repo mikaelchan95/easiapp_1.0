@@ -14,10 +14,10 @@ async function runMigration() {
     try {
         console.log('Reading SQL file...');
         const sql = fs.readFileSync(SQL_FILE, 'utf8');
-        
+
         console.log('Sending SQL to Supabase Management API...');
         // Try the standard Management API endpoint for running queries
-        // Note: This endpoint usually requires a Personal Access Token. 
+        // Note: This endpoint usually requires a Personal Access Token.
         // We are testing if this "sb_secret" key works here.
         const response = await fetch(`https://api.supabase.com/v1/projects/${PROJECT_REF}/query`, {
             method: 'POST',
