@@ -729,12 +729,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         // If signOut fails, force a local sign out
         try {
           console.log('Forcing local sign out...');
-          await supabase.auth.signOut({ scope: 'local' });
-          success = true;
+          const { error } = await supabase.auth.signOut({ scope: 'local' });
+          if (error) {
+            console.error('❌ Local sign out error:', error);
+          } else {
+            success = true;
+          }
         } catch (forceError) {
           console.error('❌ Force sign out failed:', forceError);
-          // Clear local state anyway - auth state listener will handle the rest
-          success = true;
         }
       }
 
@@ -743,7 +745,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           'SignOut successful, auth state listener will handle cleanup'
         );
       } else {
-        console.log('SignOut failed');
+        console.log('SignOut failed, applying local fallback cleanup');
+        dispatch({ type: 'SET_USER', payload: null });
+        dispatch({ type: 'SET_COMPANY', payload: null });
+        dispatch({ type: 'CLEAR_CART' });
         dispatch({ type: 'SET_LOADING', payload: false });
       }
 

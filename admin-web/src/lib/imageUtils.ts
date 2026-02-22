@@ -9,29 +9,29 @@
  */
 export const getImageUrl = (path: string | null | undefined): string | null => {
   if (!path) return null;
-  
+
   // If it's already a full URL, return as-is
   if (path.startsWith('http')) return path;
-  
+
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   if (!supabaseUrl) return null;
   const baseUrl = `${supabaseUrl}/storage/v1/object/public`;
-  
+
   // If path already includes product-images/, use as-is
   if (path.includes('product-images/')) {
     return `${baseUrl}/${path}`;
   }
-  
+
   // If path starts with products/, add the bucket name
   if (path.startsWith('products/')) {
     return `${baseUrl}/product-images/${path}`;
   }
-  
+
   // If it's just a filename (no slashes), assume it's in the products folder
   if (!path.includes('/')) {
     return `${baseUrl}/product-images/products/${path}`;
   }
-  
+
   // Fallback - assume it's a relative path in product-images bucket
   return `${baseUrl}/product-images/${path}`;
 };

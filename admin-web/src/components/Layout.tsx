@@ -24,6 +24,7 @@ export const Layout = () => {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Mock user for display
   const user = {
@@ -33,8 +34,20 @@ export const Layout = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/login');
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout failed:', error);
+      }
+    } catch (error) {
+      console.error('Unexpected logout error:', error);
+    } finally {
+      navigate('/login', { replace: true });
+      setIsLoggingOut(false);
+    }
   };
 
   useEffect(() => {
@@ -148,11 +161,13 @@ export const Layout = () => {
               </button>
             </div>
             <button
+              type="button"
               onClick={handleLogout}
+              disabled={isLoggingOut}
               className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors"
             >
               <LogOut size={18} />
-              <span>Logout</span>
+              <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
             </button>
           </div>
         </div>

@@ -46,7 +46,7 @@ async function assignEasiCompany() {
         })
         .select()
         .single();
-      
+
       if (createError) throw createError;
       easiCompany = newCompany;
       console.log('✅ Created EASI company.');

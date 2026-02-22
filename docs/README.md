@@ -121,7 +121,7 @@ This documentation is organized into distinct sections for different user types 
 
 **Location:** [`project-management/`](project-management/)
 
-- Documentation for project planning and tracking (to be organized)
+- [`MASTER_TODO.md`](project-management/MASTER_TODO.md) - Central backlog for operational fixes and cross-cutting tasks
 
 ## Key Features Documented
 
