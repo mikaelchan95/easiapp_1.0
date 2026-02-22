@@ -98,3 +98,4 @@ __pycache__/
 *$py.class
 
 .env
+admin-web/.env
