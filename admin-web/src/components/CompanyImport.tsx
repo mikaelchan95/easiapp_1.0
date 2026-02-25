@@ -249,13 +249,13 @@ export default function CompanyImport({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-xl bg-brand-white shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <h2 className="text-xl font-bold text-brand-dark">
+        <div className="flex items-center justify-between border-b border-[var(--border-default)] px-6 py-4">
+          <h2 className="text-xl font-bold text-[var(--text-primary)]">
             Import Companies from CSV
           </h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-brand-dark"
+            className="rounded-lg p-2 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
           >
             <X size={20} />
           </button>
@@ -271,7 +271,7 @@ export default function CompanyImport({
             <div className="flex items-center gap-4">
               <button
                 onClick={downloadTemplate}
-                className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                className="flex items-center gap-2 rounded-lg border border-[var(--border-default)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-tertiary)]"
               >
                 <Download size={18} />
                 Download Template
@@ -287,7 +287,7 @@ export default function CompanyImport({
                 />
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-gray-600 transition-colors hover:border-brand-dark hover:bg-brand-light"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[var(--border-default)] bg-[var(--bg-tertiary)] px-4 py-8 text-[var(--text-secondary)] transition-colors hover:border-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
                 >
                   <Upload size={24} />
                   <span className="font-medium">
@@ -298,7 +298,7 @@ export default function CompanyImport({
             </div>
 
             {/* Instructions */}
-            <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800">
+            <div className="rounded-lg bg-[var(--bg-tertiary)] p-4 text-sm text-[var(--text-primary)]">
               <strong>Instructions:</strong>
               <ul className="ml-5 mt-2 list-disc space-y-1">
                 <li>Download the template to see the required format</li>
@@ -338,12 +338,12 @@ export default function CompanyImport({
 
           {/* Import Result */}
           {importResult && (
-            <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
-              <div className="flex items-center gap-2 font-bold text-green-800">
+            <div className="mb-6 rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)] p-4">
+              <div className="flex items-center gap-2 font-bold text-[var(--text-primary)]">
                 <CheckCircle2 size={20} />
                 Import Complete
               </div>
-              <p className="mt-1 text-sm text-green-700">
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
                 Successfully imported {importResult.success} compan
                 {importResult.success === 1 ? 'y' : 'ies'}.
                 {importResult.failed > 0 && ` Failed: ${importResult.failed}`}
@@ -354,18 +354,18 @@ export default function CompanyImport({
           {/* Preview Table */}
           {loading && (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="animate-spin text-brand-dark" size={32} />
+              <Loader2 className="animate-spin text-[var(--text-primary)]" size={32} />
             </div>
           )}
 
           {!loading && importData.length > 0 && (
             <div>
-              <h3 className="mb-3 font-bold text-brand-dark">
+              <h3 className="mb-3 font-bold text-[var(--text-primary)]">
                 Preview ({importData.length} companies)
               </h3>
-              <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <div className="overflow-x-auto rounded-lg border border-[var(--border-default)]">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-gray-100 text-xs font-bold uppercase text-gray-700">
+                  <thead className="bg-[var(--bg-tertiary)] text-xs font-bold uppercase text-[var(--text-primary)]">
                     <tr>
                       <th className="px-4 py-2">Company Name</th>
                       <th className="px-4 py-2">UEN</th>
@@ -375,14 +375,14 @@ export default function CompanyImport({
                       <th className="px-4 py-2">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-[var(--border-default)]">
                     {importData.slice(0, 50).map((row, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50">
+                      <tr key={idx} className="hover:bg-[var(--bg-tertiary)]">
                         <td className="px-4 py-2 font-medium">{row.name}</td>
                         <td className="px-4 py-2 font-mono text-xs">
                           {row.uen}
                         </td>
-                        <td className="px-4 py-2 text-xs text-gray-600">
+                        <td className="px-4 py-2 text-xs text-[var(--text-secondary)]">
                           {row.address}
                         </td>
                         <td className="px-4 py-2">
@@ -393,10 +393,10 @@ export default function CompanyImport({
                           <span
                             className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
                               row.status === 'active'
-                                ? 'bg-green-100 text-green-800'
+                                ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]'
                                 : row.status === 'suspended'
                                   ? 'bg-red-100 text-red-800'
-                                  : 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]'
                             }`}
                           >
                             {row.status?.replace('_', ' ')}
@@ -407,7 +407,7 @@ export default function CompanyImport({
                   </tbody>
                 </table>
                 {importData.length > 50 && (
-                  <div className="border-t border-gray-200 bg-gray-50 px-4 py-2 text-center text-sm text-gray-600">
+                  <div className="border-t border-[var(--border-default)] bg-[var(--bg-tertiary)] px-4 py-2 text-center text-sm text-[var(--text-secondary)]">
                     Showing first 50 of {importData.length} companies
                   </div>
                 )}
@@ -417,17 +417,17 @@ export default function CompanyImport({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-[var(--border-default)] px-6 py-4">
           <button
             onClick={onClose}
-            className="rounded-lg px-4 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-100"
+            className="rounded-lg px-4 py-2 font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-tertiary)]"
           >
             Cancel
           </button>
           <button
             onClick={handleImport}
             disabled={importing || importData.length === 0 || errors.length > 0}
-            className="flex items-center gap-2 rounded-lg bg-brand-dark px-4 py-2 font-bold text-white transition-colors hover:bg-brand-dark/90 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-brand-dark px-4 py-2 font-bold text-[var(--color-primary-text)] transition-colors hover:bg-brand-dark/90 disabled:opacity-50"
           >
             {importing ? (
               <>

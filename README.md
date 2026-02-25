@@ -2,7 +2,7 @@
 
 ## Premium B2B & B2C Spirits E-Commerce Platform
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/mikaelchan95/easiapp_1.0)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/mikaelchan95/easiapp_1.0)
 [![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android%20%7C%20Web-lightgrey.svg)](https://expo.dev/)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/mikaelchan95/easiapp_1.0)
@@ -70,6 +70,7 @@ EASI represents a comprehensive digital transformation initiative for premium sp
 - **Delivery Excellence**: Uber-style location picking with scheduling optimization
 - **Voucher System**: Real-time voucher validation and redemption during checkout
 - **Personalized Rewards**: Company-specific points tracking and tier management
+- **Shop by Brand**: Dedicated brand experiences with rich storytelling and filtering
 
 #### **🎨 Design System**
 
@@ -82,33 +83,35 @@ EASI represents a comprehensive digital transformation initiative for premium sp
 
 ## 🚀 **Recent Updates & Features**
 
-### **Latest Release (Current Stable State)**
+### **Latest Release (v1.1.0 - Feb 2026)**
 
-**Payment System Enhancement**
-- ✅ **Real-time Credit Payment Processing**: Full credit balance restoration with database updates
-- ✅ **Synchronous Balance Tracking**: Instant balance updates across all app screens
-- ✅ **Enhanced User Authentication**: Fixed company user access control and permissions
-- ✅ **Improved Voucher System**: Real-time validation and seamless checkout integration
+**Brand Experience & Discovery**
+- ✅ **Complete Brands System**: New database schema for brand management and product association
+- ✅ **Shop by Brand**: Dedicated section on Home screen and brand-specific product listings
+- ✅ **Admin Brand Management**: Inline brand creation, validation, and management in Admin Web
+- ✅ **Rich Brand Assets**: Support for brand logos, descriptions, and featured sorting
 
-**Database & Backend Improvements**
-- ✅ **Comprehensive Migrations**: Points system, billing tables, and user permissions
-- ✅ **Row-Level Security**: Enhanced RLS policies for data protection
-- ✅ **Audit Trail System**: Complete transaction and balance update logging
-- ✅ **MCP Server Integration**: Extensible service architecture for future enhancements
+**Admin Web Enhancements**
+- ✅ **Comprehensive Admin Suite**: Full management of Products, Orders, Invoices, and Customers
+- ✅ **Loyalty Management**: Tools for Reward Catalog, Vouchers, and Missing Points resolution
+- ✅ **Company Operations**: Credit limit tracking, Statement of Accounts (SOA), and Billing management
+- ✅ **Modern UI/UX**: Minimalist, responsive design with feature-based navigation
 
-**User Experience Enhancements**
-- ✅ **Streamlined Checkout**: Voucher discount application with validation
-- ✅ **Company Profile Management**: Enhanced credit monitoring and payment history
-- ✅ **Responsive UI Updates**: Real-time balance and transaction status updates
-- ✅ **Error Handling**: Improved error messages and user feedback
+**Location & Delivery**
+- ✅ **Modern Location Picker**: Uber-style location selection with improved UX
+- ✅ **Enhanced Address Management**: Better validation and persistence of user addresses
+- ✅ **Map Improvements**: Monochrome styling and smoother interactions
+
+**System Improvements**
+- ✅ **Image Handling**: Reliable image download scripts and URL fixes
+- ✅ **Dark Mode**: Complete dark mode support across the application
+- ✅ **Performance**: Optimized list rendering and image caching
 
 ### **Technical Achievements**
-
-- **45 files modified** with comprehensive feature enhancements
-- **13 new database migrations** implementing points and billing systems
-- **6,500+ lines of code** added for enhanced functionality
-- **Zero security vulnerabilities** with proper secret management
-- **Complete authentication system** with role-based access control
+- **Brand Architecture**: Scalable schema supporting thousands of brands
+- **Admin Scalability**: Modular admin dashboard supporting complex B2B workflows
+- **Code Quality**: Strict type safety with shared types between mobile and admin
+- **Database Integrity**: Comprehensive migrations for brands, rewards, and logs
 
 ---
 
@@ -187,6 +190,11 @@ easiapp_1.0/
 │   ├── context/           # State management providers
 │   ├── types/             # TypeScript type definitions
 │   └── utils/             # Shared utilities and themes
+├── admin-web/              # Web-based Administration Panel
+│   ├── src/
+│   │   ├── components/    # Admin UI components
+│   │   ├── pages/         # Admin page routes
+│   │   └── services/      # Admin-specific services
 ├── supabase/              # Backend configuration
 │   ├── migrations/        # Database schema migrations
 │   └── functions/         # Edge functions
@@ -342,8 +350,8 @@ This project is proprietary software owned by Epico. All rights reserved.
 
 ## 🔄 **Development Status**
 
-**Current Version**: 1.0.0 (Stable)  
-**Last Updated**: July 15, 2025  
+**Current Version**: 1.1.0 (Stable)  
+**Last Updated**: February 25, 2026  
 **Build Status**: ✅ Passing  
 **Database**: ✅ Migrated and Synchronized  
 **Authentication**: ✅ Fully Functional  
@@ -375,7 +383,7 @@ npx supabase init
 npx supabase link --project-ref vqxnkxaeriizizfmqvua
 
 # Run migrations
-SUPABASE_DB_PASSWORD="5Cptmjut1!5gg5ocw" npx supabase db push
+SUPABASE_DB_PASSWORD="your_password" npx supabase db push
 
 # Generate TypeScript types
 npx supabase gen types typescript --local

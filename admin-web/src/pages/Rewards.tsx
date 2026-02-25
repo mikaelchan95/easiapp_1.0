@@ -1,14 +1,34 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Gift, Ticket, AlertTriangle } from 'lucide-react';
+import {
+  Gift,
+  Ticket,
+  AlertTriangle,
+  Plus,
+  Search,
+  Filter,
+  TrendingUp,
+  Users,
+  DollarSign,
+} from 'lucide-react';
 import { RewardList } from '../components/Rewards/RewardList';
 import { RewardForm } from '../components/Rewards/RewardForm';
 import { RewardVouchers } from '../components/Rewards/RewardVouchers';
 import { MissingPointsReports } from '../components/Rewards/MissingPointsReports';
 import type { RewardCatalogItem } from '../types/reward';
 import { useToast } from '../components/ui/Toast';
+import { Card } from '../components/ui/Card';
 
 type Tab = 'catalog' | 'vouchers' | 'reports';
+
+interface Stats {
+  totalRewards: number;
+  activeRewards: number;
+  totalVouchers: number;
+  activeVouchers: number;
+  pendingReports: number;
+  totalPointsRedeemed: number;
+}
 
 export default function Rewards() {
   const { toast } = useToast();
@@ -16,7 +36,16 @@ export default function Rewards() {
   const [rewards, setRewards] = useState<RewardCatalogItem[]>([]);
   const [vouchers, setVouchers] = useState<any[]>([]);
   const [reports, setReports] = useState<any[]>([]);
+  const [stats, setStats] = useState<Stats>({
+    totalRewards: 0,
+    activeRewards: 0,
+    totalVouchers: 0,
+    activeVouchers: 0,
+    pendingReports: 0,
+    totalPointsRedeemed: 0,
+  });
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Modal State
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -27,6 +56,27 @@ export default function Rewards() {
   useEffect(() => {
     fetchData();
   }, [activeTab]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [rewards, vouchers, reports]);
+
+  const fetchStats = () => {
+    setStats({
+      totalRewards: rewards.length,
+      activeRewards: rewards.filter(r => r.is_active).length,
+      totalVouchers: vouchers.length,
+      activeVouchers: vouchers.filter(v => v.voucher_status === 'active')
+        .length,
+      pendingReports: reports.filter(
+        r => r.metadata?.report_status === 'reported'
+      ).length,
+      totalPointsRedeemed: rewards.reduce(
+        (sum, r) => sum + (r.points_required || 0),
+        0
+      ),
+    });
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -45,11 +95,10 @@ export default function Rewards() {
             '*, user:users(id, name, email), redemption:reward_redemptions(reward:reward_catalog(title))'
           )
           .order('created_at', { ascending: false })
-          .limit(50);
+          .limit(100);
         if (error) throw error;
         setVouchers(data || []);
       } else if (activeTab === 'reports') {
-        // Fetch audit logs for missing points
         const { data, error } = await supabase
           .from('audit_log')
           .select('*')
@@ -58,8 +107,6 @@ export default function Rewards() {
 
         if (error) throw error;
 
-        // Transform audit logs to reports
-        // Need to fetch user details associated with these logs
         const enrichedReports = await Promise.all(
           (data || []).map(async log => {
             const { data: user } = await supabase
@@ -89,10 +136,7 @@ export default function Rewards() {
 
   const handleSaveReward = async (data: Partial<RewardCatalogItem>) => {
     let error;
-    // Sanitize data: remove id, created_at, updated_at from payload
     const { id, created_at, updated_at, ...payload } = data;
-
-    console.log('Saving reward payload:', payload);
 
     if (editingReward) {
       const { error: updateError } = await supabase
@@ -119,12 +163,13 @@ export default function Rewards() {
         : 'Reward created successfully',
       'success'
     );
-    fetchData(); // Refresh
+    fetchData();
   };
 
   const handleDeleteReward = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this reward?')) {
       await supabase.from('reward_catalog').delete().eq('id', id);
+      toast('Reward deleted successfully', 'success');
       fetchData();
     }
   };
@@ -134,13 +179,16 @@ export default function Rewards() {
       .from('reward_catalog')
       .update({ is_active: !currentStatus })
       .eq('id', id);
+    toast(
+      `Reward ${!currentStatus ? 'activated' : 'deactivated'} successfully`,
+      'success'
+    );
     fetchData();
   };
 
   const handleResolveReport = async (report: any, approved: boolean) => {
     try {
       if (approved) {
-        // 1. Credit points
         const { data: user } = await supabase
           .from('users')
           .select('points')
@@ -156,7 +204,6 @@ export default function Rewards() {
 
         if (updateError) throw updateError;
 
-        // 2. Log credit audit
         await supabase.from('points_audit_log').insert({
           user_id: report.user_id,
           transaction_type: 'adjustment',
@@ -167,9 +214,6 @@ export default function Rewards() {
         });
       }
 
-      // 3. Update the original audit log metadata to show status
-      // Note: Updating audit log isn't ideal but we are using it as storage here.
-      // Ideally we would move to a real table. For now, we update the metadata.
       const newMetadata = {
         ...report.metadata,
         report_status: approved ? 'resolved' : 'rejected',
@@ -180,102 +224,200 @@ export default function Rewards() {
         .update({ metadata: newMetadata })
         .eq('id', report.id);
 
-      alert(
-        approved ? 'Points credited and report resolved.' : 'Report rejected.'
+      toast(
+        approved ? 'Points credited successfully' : 'Report rejected',
+        'success'
       );
       fetchData();
     } catch (error) {
       console.error('Error resolving report', error);
-      alert('Failed to resolve report');
+      toast('Failed to resolve report', 'error');
     }
   };
 
+  const StatCard = ({
+    icon: Icon,
+    label,
+    value,
+    subtitle,
+  }: {
+    icon: any;
+    label: string;
+    value: string | number;
+    subtitle?: string;
+  }) => (
+    <Card className="p-4">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <p className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider mb-1">
+            {label}
+          </p>
+          <p className="text-2xl font-bold text-[var(--text-primary)] mb-0.5">
+            {value}
+          </p>
+          {subtitle && (
+            <p className="text-xs text-[var(--text-secondary)]">{subtitle}</p>
+          )}
+        </div>
+        <div className="p-2 bg-[var(--bg-tertiary)] rounded-lg">
+          <Icon size={18} className="text-[var(--text-primary)]" />
+        </div>
+      </div>
+    </Card>
+  );
+
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] tracking-tight">
-          Loyalty & Rewards
-        </h1>
-        <p className="text-[var(--text-secondary)] text-sm sm:text-base">
-          Manage reward catalog, vouchers, and user requests.
-        </p>
+      {/* Header Actions */}
+      {activeTab === 'catalog' && (
+        <div className="flex justify-end">
+          <button
+            onClick={() => {
+              setEditingReward(null);
+              setIsFormOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[var(--text-primary)] text-[var(--color-primary-text)] rounded-lg font-medium hover:opacity-90 transition-opacity"
+          >
+            <Plus size={18} />
+            <span>New Reward</span>
+          </button>
+        </div>
+      )}
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <StatCard
+          icon={Gift}
+          label="Total Rewards"
+          value={stats.totalRewards}
+          subtitle="In catalog"
+        />
+        <StatCard
+          icon={TrendingUp}
+          label="Active"
+          value={stats.activeRewards}
+          subtitle="Currently available"
+        />
+        <StatCard
+          icon={Ticket}
+          label="Vouchers"
+          value={stats.totalVouchers}
+          subtitle={`${stats.activeVouchers} active`}
+        />
+        <StatCard
+          icon={Users}
+          label="Reports"
+          value={stats.pendingReports}
+          subtitle="Pending review"
+        />
+        <StatCard
+          icon={DollarSign}
+          label="Points Pool"
+          value={stats.totalPointsRedeemed.toLocaleString()}
+          subtitle="Total value"
+        />
+        <StatCard
+          icon={Gift}
+          label="Redemptions"
+          value={vouchers.filter(v => v.voucher_status === 'used').length}
+          subtitle="Completed"
+        />
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-3 sm:gap-4 border-b border-[var(--border-primary)] overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-        <button
-          onClick={() => setActiveTab('catalog')}
-          className={`pb-3 flex items-center gap-2 text-sm sm:text-base font-medium transition-colors border-b-2 whitespace-nowrap min-h-[44px] touch-manipulation ${
-            activeTab === 'catalog'
-              ? 'border-[var(--text-primary)] text-[var(--text-primary)]'
-              : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-          }`}
-        >
-          <Gift size={18} />
-          <span>Catalog</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('vouchers')}
-          className={`pb-3 flex items-center gap-2 text-sm sm:text-base font-medium transition-colors border-b-2 whitespace-nowrap min-h-[44px] touch-manipulation ${
-            activeTab === 'vouchers'
-              ? 'border-[var(--text-primary)] text-[var(--text-primary)]'
-              : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-          }`}
-        >
-          <Ticket size={18} />
-          <span className="hidden sm:inline">Issued Vouchers</span>
-          <span className="sm:hidden">Vouchers</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('reports')}
-          className={`pb-3 flex items-center gap-2 text-sm sm:text-base font-medium transition-colors border-b-2 whitespace-nowrap min-h-[44px] touch-manipulation ${
-            activeTab === 'reports'
-              ? 'border-[var(--text-primary)] text-[var(--text-primary)]'
-              : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-          }`}
-        >
-          <AlertTriangle size={18} />
-          <span className="hidden sm:inline">Missing Points</span>
-          <span className="sm:hidden">Reports</span>
-          {reports.filter(r => r.metadata?.report_status === 'reported')
-            .length > 0 && (
-            <span className="bg-red-500 dark:bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full">
-              {
-                reports.filter(r => r.metadata?.report_status === 'reported')
-                  .length
-              }
-            </span>
-          )}
+      <div className="border-b border-[var(--border-default)]">
+        <div className="flex gap-6 -mb-px">
+          <button
+            onClick={() => setActiveTab('catalog')}
+            className={`flex items-center gap-2 px-1 pb-3 font-medium text-sm border-b-2 transition-colors ${
+              activeTab === 'catalog'
+                ? 'border-[var(--text-primary)] text-[var(--text-primary)]'
+                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-default)]'
+            }`}
+          >
+            <Gift size={16} />
+            Catalog
+          </button>
+          <button
+            onClick={() => setActiveTab('vouchers')}
+            className={`flex items-center gap-2 px-1 pb-3 font-medium text-sm border-b-2 transition-colors ${
+              activeTab === 'vouchers'
+                ? 'border-[var(--text-primary)] text-[var(--text-primary)]'
+                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-default)]'
+            }`}
+          >
+            <Ticket size={16} />
+            Vouchers
+          </button>
+          <button
+            onClick={() => setActiveTab('reports')}
+            className={`flex items-center gap-2 px-1 pb-3 font-medium text-sm border-b-2 transition-colors relative ${
+              activeTab === 'reports'
+                ? 'border-[var(--text-primary)] text-[var(--text-primary)]'
+                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-default)]'
+            }`}
+          >
+            <AlertTriangle size={16} />
+            Reports
+            {stats.pendingReports > 0 && (
+              <span className="absolute -top-1 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                {stats.pendingReports}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search
+            size={18}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]"
+          />
+          <input
+            type="text"
+            placeholder={`Search ${activeTab}...`}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg text-sm focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-bg)] transition-all"
+          />
+        </div>
+        <button className="flex items-center gap-2 px-4 py-2 border border-[var(--border-default)] rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--text-primary)] transition-colors">
+          <Filter size={16} />
+          <span className="hidden sm:inline">Filter</span>
         </button>
       </div>
 
       {/* Content */}
-      <div className="min-h-[500px]">
+      <div>
         {activeTab === 'catalog' && (
           <RewardList
             rewards={rewards}
             isLoading={loading}
+            searchQuery={searchQuery}
             onEdit={(r: RewardCatalogItem) => {
               setEditingReward(r);
               setIsFormOpen(true);
             }}
             onDelete={handleDeleteReward}
-            onCreate={() => {
-              setEditingReward(null);
-              setIsFormOpen(true);
-            }}
             onToggleStatus={handleToggleStatus}
           />
         )}
 
         {activeTab === 'vouchers' && (
-          <RewardVouchers vouchers={vouchers} isLoading={loading} />
+          <RewardVouchers
+            vouchers={vouchers}
+            isLoading={loading}
+            searchQuery={searchQuery}
+          />
         )}
 
         {activeTab === 'reports' && (
           <MissingPointsReports
             reports={reports}
             isLoading={loading}
+            searchQuery={searchQuery}
             onResolve={handleResolveReport}
           />
         )}

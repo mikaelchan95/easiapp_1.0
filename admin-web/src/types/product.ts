@@ -11,6 +11,7 @@ export interface Product {
   description: string;
   sku: string;
   category: string;
+  brand?: string;
   retail_price: number;
   trade_price: number;
   original_price?: number;

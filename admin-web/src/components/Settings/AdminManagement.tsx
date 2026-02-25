@@ -56,42 +56,42 @@ export const AdminManagement = () => {
     user.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-brand-accent" /></div>;
+  if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-[var(--color-primary-text)]" /></div>;
 
   return (
-    <div className="space-y-6 bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+    <div className="space-y-6 bg-[var(--bg-card)] p-6 rounded-lg border border-[var(--border-default)] shadow-sm">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-           <h3 className="text-lg font-bold text-brand-dark">Admin User Management</h3>
-           <p className="text-sm text-gray-500">Grant or revoke admin access to users.</p>
+           <h3 className="text-lg font-bold text-[var(--text-primary)]">Admin User Management</h3>
+           <p className="text-sm text-[var(--text-secondary)]">Grant or revoke admin access to users.</p>
         </div>
         <div className="relative w-full sm:w-64">
-           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" size={16} />
            <input
              type="text"
              placeholder="Search users..."
              value={searchTerm}
              onChange={(e) => setSearchTerm(e.target.value)}
-             className="w-full text-sm rounded-lg border border-gray-200 py-2 pl-9 pr-4 focus:border-brand-accent focus:ring-1 focus:ring-brand-accent"
+             className="w-full text-sm rounded-lg border border-[var(--border-default)] py-2 pl-9 pr-4 focus:border-[var(--text-primary)] focus:ring-1 focus:ring-[var(--color-primary-bg)]"
            />
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-gray-100">
+      <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)]">
         <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-semibold">
+          <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-secondary)] font-semibold">
             <tr>
               <th className="px-4 py-3">User</th>
               <th className="px-4 py-3">Current Role</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-[var(--border-subtle)]">
             {filteredUsers.map(user => (
-              <tr key={user.id} className="hover:bg-gray-50">
+              <tr key={user.id} className="hover:bg-[var(--bg-tertiary)]">
                 <td className="px-4 py-3">
-                  <div className="font-medium text-gray-900">{user.name}</div>
-                  <div className="text-xs text-gray-500">{user.email}</div>
+                  <div className="font-medium text-[var(--text-primary)]">{user.name}</div>
+                  <div className="text-xs text-[var(--text-secondary)]">{user.email}</div>
                 </td>
                 <td className="px-4 py-3">
                    {user.role === 'admin' ? (
@@ -104,14 +104,14 @@ export const AdminManagement = () => {
                 </td>
                 <td className="px-4 py-3 text-right">
                     {currentUser === user.id ? (
-                        <span className="text-xs text-gray-400 italic">Current User</span>
+                        <span className="text-xs text-[var(--text-tertiary)] italic">Current User</span>
                     ) : (
                         <button
                             onClick={() => toggleAdminRole(user.id, user.role)}
                             className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
                                 user.role === 'admin' 
                                 ? 'text-red-600 bg-red-50 hover:bg-red-100' 
-                                : 'text-brand-dark bg-brand-accent/20 hover:bg-brand-accent/40'
+                                : 'text-[var(--text-primary)] bg-[var(--text-primary)]/20 hover:bg-[var(--text-primary)]/40'
                             }`}
                         >
                             {user.role === 'admin' ? (
@@ -126,7 +126,7 @@ export const AdminManagement = () => {
             ))}
             {filteredUsers.length === 0 && (
                 <tr>
-                    <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={3} className="px-4 py-8 text-center text-[var(--text-secondary)]">
                         No users found matching "{searchTerm}"
                     </td>
                 </tr>

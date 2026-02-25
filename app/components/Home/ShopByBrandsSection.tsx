@@ -135,7 +135,7 @@ const FEATURED_BRANDS: Brand[] = [
 ];
 
 interface ShopByBrandsSectionProps {
-  onBrandPress: (brand: Brand) => void;
+  onBrandPress: (brandName: string) => void;
   onViewAll: () => void;
 }
 
@@ -145,7 +145,7 @@ export default function ShopByBrandsSection({
 }: ShopByBrandsSectionProps) {
   const handleBrandPress = (brand: Brand) => {
     HapticFeedback.selection();
-    onBrandPress(brand);
+    onBrandPress(brand.name);
   };
 
   const handleViewAllPress = () => {

@@ -130,7 +130,7 @@ export const CompanyEmployees = ({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-bold text-brand-dark">Team Members</h3>
+        <h3 className="text-lg font-bold text-[var(--text-primary)]">Team Members</h3>
         <Button
           size="sm"
           onClick={() => setIsAddModalOpen(true)}
@@ -142,8 +142,8 @@ export const CompanyEmployees = ({
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-500">
-            <thead className="bg-brand-light text-xs uppercase text-brand-dark font-bold tracking-wider">
+          <table className="w-full text-left text-sm text-[var(--text-secondary)]">
+            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
               <tr>
                 <th className="px-6 py-4 font-semibold">Name</th>
                 <th className="px-6 py-4 font-semibold">Role</th>
@@ -152,16 +152,16 @@ export const CompanyEmployees = ({
                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[var(--border-subtle)]">
               {employees.map(employee => (
                 <tr
                   key={employee.id}
-                  className="hover:bg-brand-light/50 transition-colors"
+                  className="hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
-                  <td className="px-6 py-4 font-medium text-brand-dark">
+                  <td className="px-6 py-4 font-medium text-[var(--text-primary)]">
                     <Link
                       to={`/customers/${employee.id}`}
-                      className="hover:text-brand-accent transition-colors"
+                      className="hover:text-[var(--color-primary-text)] transition-colors"
                     >
                       {employee.name}
                     </Link>
@@ -171,8 +171,8 @@ export const CompanyEmployees = ({
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
-                      <span className="text-gray-900">{employee.email}</span>
-                      <span className="text-xs text-brand-accent/80 hover:text-brand-accent transition-colors cursor-pointer flex items-center gap-1">
+                      <span className="text-[var(--text-primary)]">{employee.email}</span>
+                      <span className="text-xs text-[var(--color-primary-text)]/80 hover:text-[var(--color-primary-text)] transition-colors cursor-pointer flex items-center gap-1">
                         <Mail size={10} /> Send Email
                       </span>
                     </div>
@@ -184,14 +184,14 @@ export const CompanyEmployees = ({
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => openEditModal(employee)}
-                        className="p-1 text-gray-400 hover:text-brand-dark transition-colors"
+                        className="p-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
                         title="Edit Role"
                       >
                         <Edit2 size={16} />
                       </button>
                       <button
                         onClick={() => handleRemoveEmployee(employee.id)}
-                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        className="p-1 text-[var(--text-tertiary)] hover:text-red-500 transition-colors"
                         title="Remove from Company"
                       >
                         <Trash2 size={16} />
@@ -215,9 +215,9 @@ export const CompanyEmployees = ({
       {/* Add Employee Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-xl bg-[var(--bg-card)] p-6 shadow-xl">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-brand-dark">
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">
                 Add Employee
               </h2>
               <button
@@ -226,7 +226,7 @@ export const CompanyEmployees = ({
                   setSearchEmail('');
                   setSearchResult(null);
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
               >
                 <X size={20} />
               </button>
@@ -234,7 +234,7 @@ export const CompanyEmployees = ({
 
             {!searchResult ? (
               <div className="space-y-4">
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-[var(--text-secondary)]">
                   Search for an existing user by email to add them to this
                   company.
                 </p>
@@ -244,7 +244,7 @@ export const CompanyEmployees = ({
                     placeholder="Enter user email"
                     value={searchEmail}
                     onChange={e => setSearchEmail(e.target.value)}
-                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-dark focus:outline-none"
+                    className="flex-1 rounded-lg border border-[var(--border-default)] px-3 py-2 focus:border-[var(--text-primary)] focus:outline-none"
                     onKeyDown={e => e.key === 'Enter' && handleSearchUser()}
                   />
                   <Button onClick={handleSearchUser} disabled={!searchEmail}>
@@ -257,24 +257,24 @@ export const CompanyEmployees = ({
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="p-3 bg-green-50 rounded-lg border border-green-100">
-                  <p className="text-sm font-medium text-green-800">
+                <div className="p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-default)]">
+                  <p className="text-sm font-medium text-[var(--text-primary)]">
                     User Found:
                   </p>
-                  <p className="font-bold text-brand-dark">
+                  <p className="font-bold text-[var(--text-primary)]">
                     {searchResult.name}
                   </p>
-                  <p className="text-sm text-gray-600">{searchResult.email}</p>
+                  <p className="text-sm text-[var(--text-secondary)]">{searchResult.email}</p>
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
                     Assign Role
                   </label>
                   <select
                     value={newEmployeeRole}
                     onChange={e => setNewEmployeeRole(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 bg-white focus:border-brand-dark focus:outline-none"
+                    className="w-full rounded-lg border border-[var(--border-default)] px-3 py-2 bg-[var(--bg-card)] focus:border-[var(--text-primary)] focus:outline-none"
                   >
                     <option value="Employee">Employee</option>
                     <option value="Manager">Manager</option>
@@ -300,22 +300,22 @@ export const CompanyEmployees = ({
       {/* Edit Employee Modal */}
       {isEditModalOpen && selectedEmployee && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
-            <h2 className="mb-4 text-xl font-bold text-brand-dark">
+          <div className="w-full max-w-sm rounded-xl bg-[var(--bg-card)] p-6 shadow-xl">
+            <h2 className="mb-4 text-xl font-bold text-[var(--text-primary)]">
               Edit Employee
             </h2>
-            <p className="mb-4 text-sm text-gray-500">
+            <p className="mb-4 text-sm text-[var(--text-secondary)]">
               Updating role for <strong>{selectedEmployee.name}</strong>
             </p>
 
             <div className="mb-6">
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
                 Role
               </label>
               <select
                 value={editRole}
                 onChange={e => setEditRole(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 bg-white focus:border-brand-dark focus:outline-none"
+                className="w-full rounded-lg border border-[var(--border-default)] px-3 py-2 bg-[var(--bg-card)] focus:border-[var(--text-primary)] focus:outline-none"
               >
                 <option value="Employee">Employee</option>
                 <option value="Manager">Manager</option>

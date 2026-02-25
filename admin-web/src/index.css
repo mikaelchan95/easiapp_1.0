@@ -1,41 +1,67 @@
 @import 'tailwindcss';
 
 @theme {
-  /* Brand Colors */
-  --color-brand-green: #34d399; /* Emerald 400 */
-  --color-brand-green-light: #ecfdf5; /* Emerald 50 */
-  --color-brand-dark: #111827; /* Gray 900 */
-  --color-brand-gray: #f9fafb; /* Gray 50 */
+  /* Brand Colors - Monochrome */
+  --color-brand-dark: #000000;
+  --color-brand-gray: #f9fafb;
 
-  /* Status Colors */
-  --color-status-success: #34d399;
-  --color-status-success-bg: #ecfdf5;
-  --color-status-processing: #a78bfa;
-  --color-status-processing-bg: #f5f3ff;
-  --color-status-delivery: #60a5fa;
-  --color-status-delivery-bg: #eff6ff;
+  /* Status Colors - Monochrome */
+  --color-status-success: #000000;
+  --color-status-success-bg: #f9fafb;
+  --color-status-processing: #4b5563;
+  --color-status-processing-bg: #f3f4f6;
+  --color-status-delivery: #1f2937;
+  --color-status-delivery-bg: #f9fafb;
 }
 
 :root {
-  --bg-app: #f3f4f6;
-  --text-primary: #111827;
+  /* Backgrounds */
+  --bg-app: hsl(0, 0%, 98%); /* Frame backdrop */
+  --bg-sidebar: hsl(0, 0%, 100%);
+  --bg-card: hsl(0, 0%, 100%);
+  --bg-primary: hsl(0, 0%, 100%);
+  --bg-tertiary: hsl(0, 0%, 97%);
+
+  /* Text */
+  --text-primary: hsl(0, 0%, 0%); /* Black */
+  --text-secondary: hsl(0, 0%, 30%); /* Dark gray - 7:1 contrast */
+  --text-tertiary: hsl(0, 0%, 45%); /* Medium gray - 4.6:1 contrast */
+
+  /* Borders */
+  --border-subtle: hsl(0, 0%, 90%);
+  --border-default: hsl(0, 0%, 85%);
+  --border-primary: hsl(0, 0%, 85%);
+
+  /* Interactive Elements */
+  --color-primary: hsl(0, 0%, 0%); /* Black */
+  --color-primary-hover: hsl(0, 0%, 10%); /* Slightly lighter on hover */
+  --color-primary-bg: hsl(0, 0%, 95%); /* Light gray bg */
+  --color-primary-text: hsl(0, 0%, 100%); /* White text on black */
 }
 
 .dark {
-  /* Dark Mode - Kept for compatibility but prioritized Light Mode for design match */
-  --bg-app: #111827;
-  --bg-sidebar: #1f2937;
-  --bg-card: #1f2937;
+  /* Dark Mode - High Contrast */
+  --bg-app: hsl(0, 0%, 7%); /* Very dark gray */
+  --bg-sidebar: hsl(0, 0%, 10%);
+  --bg-card: hsl(0, 0%, 10%);
+  --bg-primary: hsl(0, 0%, 10%);
+  --bg-tertiary: hsl(0, 0%, 15%);
 
-  --text-primary: #f9fafb;
-  --text-secondary: #d1d5db;
-  --text-tertiary: #9ca3af;
+  /* Text - WCAG AA compliant contrast ratios */
+  --text-primary: hsl(0, 0%, 98%); /* Almost white - 15:1 contrast */
+  --text-secondary: hsl(0, 0%, 75%); /* Light gray - 7.5:1 contrast */
+  --text-tertiary: hsl(0, 0%, 60%); /* Medium gray - 5:1 contrast */
 
-  --border-subtle: #374151;
-  --border-default: #374151;
+  /* Borders */
+  --border-subtle: hsl(0, 0%, 20%);
+  --border-default: hsl(0, 0%, 30%);
+  --border-primary: hsl(0, 0%, 30%);
 
-  --color-primary: #34d399;
-  --color-primary-bg: #064e3b;
+  /* Interactive Elements */
+  --color-primary: hsl(0, 0%, 100%); /* White */
+  --color-primary-hover: hsl(0, 0%, 90%); /* Light gray on hover */
+  --color-primary-bg: hsl(0, 0%, 20%); /* Dark gray bg */
+  --color-primary-text: hsl(0, 0%, 0%); /* Black text on white */
 }
 
 html {
@@ -43,10 +69,13 @@ html {
 }
 
 body {
-  background-color: white;
-  color: black;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
   margin: 0;
   display: block;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Custom Scrollbar */
@@ -74,20 +103,30 @@ body {
   background-color: var(--bg-card);
   border-radius: 1rem; /* xl */
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+  border: 1px solid var(--border-subtle);
 }
 
 .input-base {
-  background-color: var(--bg-app); /* Light gray input bg */
-  border: none;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-default);
   border-radius: 0.5rem;
   padding: 0.5rem 1rem;
   transition: all 0.2s;
+  color: var(--text-primary);
 }
 
 .input-base:focus {
-  background-color: #ffffff;
-  box-shadow: 0 0 0 2px var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-bg);
   outline: none;
+}
+
+.input-base::placeholder {
+  color: var(--text-tertiary);
+}
+
+.dark .input-base {
+  background-color: var(--bg-primary);
 }
 
 /* Mobile Touch Optimization */
@@ -102,4 +141,18 @@ body {
 *:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+/* Utility Animations */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

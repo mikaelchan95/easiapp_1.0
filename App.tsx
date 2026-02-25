@@ -46,6 +46,7 @@ import HomeScreen from './app/components/Home/HomeScreen';
 import ProductsScreen from './app/components/Products/ProductsScreen';
 import ProductDetailScreen from './app/components/Products/ProductDetailScreen';
 import SmartSearchScreen from './app/components/Products/SmartSearchScreen';
+import BrandProductsScreen from './app/components/Products/BrandProductsScreen';
 import CartScreen from './app/components/Cart/CartScreen';
 import ProfileScreen from './app/components/Profile/ProfileScreen';
 import RewardsScreen from './app/components/Rewards/RewardsScreen';
@@ -528,6 +529,7 @@ function AuthNavigator() {
       <Stack.Screen name="Main" component={MainTabs} />
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
       <Stack.Screen name="SmartSearch" component={SmartSearchScreen} />
+      <Stack.Screen name="BrandProducts" component={BrandProductsScreen} />
       <Stack.Screen name="Checkout" component={CheckoutScreen} />
       <Stack.Screen
         name="OrderSuccess"

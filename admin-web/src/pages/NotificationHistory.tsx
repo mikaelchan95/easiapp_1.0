@@ -35,11 +35,11 @@ export default function NotificationHistory() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'read':
-        return <CheckCircle size={16} className="text-green-500" />;
+        return <CheckCircle size={16} className="text-[var(--text-primary)]" />;
       case 'dismissed':
-        return <XCircle size={16} className="text-gray-400" />;
+        return <XCircle size={16} className="text-[var(--text-tertiary)]" />;
       default:
-        return <AlertCircle size={16} className="text-blue-500" />;
+        return <AlertCircle size={16} className="text-[var(--text-primary)]" />;
     }
   };
 

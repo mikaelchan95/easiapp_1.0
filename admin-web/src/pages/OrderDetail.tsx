@@ -271,7 +271,7 @@ export default function OrderDetail() {
                   <span
                     className={
                       order.delivery_fee === 0
-                        ? 'text-green-600 dark:text-green-400 font-medium'
+                        ? 'text-[var(--text-primary)] font-medium'
                         : ''
                     }
                   >
@@ -284,7 +284,7 @@ export default function OrderDetail() {
                   </span>
                 </div>
                 {order.discount > 0 && (
-                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                  <div className="flex justify-between text-sm text-[var(--text-primary)]">
                     <span>Discount</span>
                     <span>
                       -$
@@ -345,7 +345,7 @@ export default function OrderDetail() {
                   Payment Method
                 </h4>
                 <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-                  <div className="h-2 w-2 rounded-full bg-green-500 dark:bg-green-400"></div>
+                  <div className="h-2 w-2 rounded-full bg-[var(--text-primary)] dark:bg-[var(--text-primary)]"></div>
                   {order.payment_method || 'Credit Card'}
                 </div>
               </div>
@@ -406,7 +406,7 @@ export default function OrderDetail() {
                       </p>
                     )}
                     {order.is_same_day_delivery && (
-                      <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                      <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded text-xs font-medium bg-[var(--bg-tertiary)] text-[var(--text-primary)] dark:bg-yellow-900/30 dark:text-yellow-400">
                         Same-Day Delivery
                       </span>
                     )}
@@ -445,7 +445,7 @@ export default function OrderDetail() {
                         {order.voucher_id}
                       </span>
                       {order.voucher_discount > 0 && (
-                        <span className="text-sm text-green-600 dark:text-green-400">
+                        <span className="text-sm text-[var(--text-primary)]">
                           -${order.voucher_discount?.toFixed(2)}
                         </span>
                       )}

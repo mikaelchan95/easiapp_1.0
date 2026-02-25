@@ -85,7 +85,6 @@ export default function CompanyForm() {
     try {
       const payload = {
         ...formData,
-        credit_used: formData.current_credit, // Ensure credit_used is synced with current_credit
         updated_at: new Date().toISOString(),
       };
 

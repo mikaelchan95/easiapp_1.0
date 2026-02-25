@@ -207,7 +207,7 @@ export const GeneralSettings = () => {
         <div
           className={`p-4 rounded-lg border ${
             message.type === 'success'
-              ? 'bg-green-50 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
+              ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border-[var(--border-default)] dark:bg-[var(--bg-tertiary)] dark:text-[var(--text-primary)] dark:border-[var(--border-default)]'
               : 'bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
           }`}
         >

@@ -15,6 +15,7 @@ export interface Product {
   retailPrice: number;
   tradePrice: number;
   category: string;
+  brand?: string;
   description: string;
   sku: string;
   image: any;

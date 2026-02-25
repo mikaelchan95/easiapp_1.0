@@ -92,21 +92,21 @@ export default function NotificationAnalytics() {
           title="Total Notifications Sent"
           value={stats.totalSent}
           icon={BarChart2}
-          color="bg-blue-500 text-blue-500"
+          color="bg-[var(--text-primary)] text-[var(--text-primary)]"
         />
         <StatCard
           title="Open Rate"
           value={stats.openRate}
           suffix="%"
           icon={TrendingUp}
-          color="bg-green-500 text-green-500"
+          color="bg-[var(--text-primary)] text-[var(--text-primary)]"
         />
         <StatCard
           title="Push Enabled Users"
           value={stats.activeSubscribers}
           suffix="%"
           icon={Users}
-          color="bg-purple-500 text-purple-500"
+          color="bg-[var(--text-primary)] text-[var(--text-primary)]"
         />
         <StatCard
           title="Delivery Rate"

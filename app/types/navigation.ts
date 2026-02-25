@@ -86,6 +86,7 @@ export type RootStackParamList = {
   SavedLocations: undefined;
   ProductDetail: { id: string };
   SmartSearch: { category?: string };
+  BrandProducts: { brandName: string };
   Main: { screen: string };
   OrderSuccess: {
     orderId: string;

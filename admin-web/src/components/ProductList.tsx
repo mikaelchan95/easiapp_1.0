@@ -274,7 +274,7 @@ export default function ProductList() {
                         product.stock_quantity <=
                         (product.low_stock_threshold || 10)
                           ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                          : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-[var(--text-primary)] text-[var(--bg-primary)]'
                       }`}
                     >
                       {product.stock_quantity.toLocaleString('en-US')}
@@ -285,8 +285,8 @@ export default function ProductList() {
                       <span
                         className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
                           product.is_active
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-400'
+                            ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]'
+                            : 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] dark:bg-[var(--bg-tertiary)] dark:text-[var(--text-tertiary)]'
                         }`}
                       >
                         {product.is_active ? 'Active' : 'Archived'}
@@ -306,7 +306,7 @@ export default function ProductList() {
                         }
                         className={`rounded-lg p-2 transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation ${
                           product.is_active
-                            ? 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                            ? 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                             : 'text-[var(--text-tertiary)] hover:bg-[var(--bg-tertiary)]'
                         }`}
                         title={

@@ -1,6 +1,6 @@
 import React, { createContext, useReducer, ReactNode, useEffect } from 'react';
 // AsyncStorage removed - using session-based authentication only
-import { AppState } from 'react-native';
+import { AppState as RNAppState } from 'react-native';
 // Mock products import removed - all data is now database-driven
 import { productsService, ProductFilters } from '../services/productsService';
 import { supabase } from '../../utils/supabase';
@@ -201,8 +201,12 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     case 'SET_COMPANY':
       return { ...state, company: action.payload };
     case 'SET_PRODUCTS':
+      console.log(
+        `📦 SET_PRODUCTS reducer: ${action.payload.length} products`,
+        action.payload.map(p => p.name)
+      );
       return { ...state, products: action.payload };
-    case 'ADD_TO_CART':
+    case 'ADD_TO_CART': {
       const existingItem = state.cart.find(
         item => item.product.id === action.payload.product.id
       );
@@ -220,6 +224,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         };
       }
       return { ...state, cart: [...state.cart, action.payload] };
+    }
     case 'REMOVE_FROM_CART':
       return {
         ...state,
@@ -288,7 +293,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         ...state,
         userStats: { ...state.userStats, ...action.payload },
       };
-    case 'COMPLETE_PURCHASE':
+    case 'COMPLETE_PURCHASE': {
       const { orderTotal, orderId } = action.payload;
       const earnRate = state.appSettings.loyalty.earn_rate || 2;
       const pointsEarned = Math.floor(orderTotal * earnRate);
@@ -371,6 +376,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           },
         },
       };
+    }
     case 'CALCULATE_INITIAL_POINTS':
       // This action will calculate initial points based on order history
       // Implementation will be done in the provider
@@ -384,13 +390,14 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     case 'LOAD_USER_SETTINGS':
       // This will be handled in the provider
       return state;
-    case 'UPDATE_USER_SETTINGS':
+    case 'UPDATE_USER_SETTINGS': {
       const updatedSettings = { ...state.userSettings, ...action.payload };
       // Session-based settings only (no persistence)
       return {
         ...state,
         userSettings: updatedSettings,
       };
+    }
     case 'SET_APP_SETTINGS':
       return {
         ...state,
@@ -1235,7 +1242,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           // Subscribe to product changes with debouncing
           if (!productsSubscription && isSubscribed) {
             try {
-              let productReloadTimeout: NodeJS.Timeout;
+              let productReloadTimeout: ReturnType<typeof setTimeout>;
               productsSubscription = productsService.subscribeToProductChanges(
                 payload => {
                   if (!isSubscribed) return;
@@ -1366,7 +1373,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Save selected location to database whenever it changes (debounced to prevent infinite loops)
   useEffect(() => {
-    let saveTimeout: NodeJS.Timeout;
+    let saveTimeout: ReturnType<typeof setTimeout>;
 
     const saveUserLocation = async () => {
       if (state.user && state.selectedLocation) {
@@ -1645,7 +1652,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    const subscription = AppState.addEventListener(
+    const subscription = RNAppState.addEventListener(
       'change',
       handleAppStateChange
     );

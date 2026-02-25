@@ -43,20 +43,20 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
   const { id, name, retailPrice, originalPrice, imageUrl, category, rating } =
     product;
 
+  // Debug: Log product data on render
+  if (__DEV__) {
+    console.log(`🎴 EnhancedProductCard rendering: ${name}`);
+    console.log(`   - has imageUrl: ${!!imageUrl}`);
+    console.log(`   - imageUrl value: ${imageUrl}`);
+  }
+
   // Get app context for cart functionality and user role
   const { state, dispatch } = useContext(AppContext);
 
   // Determine user role and appropriate price
   const userRole = useMemo(() => getUserRole(state.user), [state.user]);
   const displayPrice = useMemo(() => {
-    const price = getBasePrice(product, userRole);
-    // Debug log - remove after confirming it works
-    if (__DEV__ && product.name?.includes('Eldoria')) {
-      console.log(
-        `💰 EnhancedProductCard pricing: ${product.name} | role=${userRole} | retail=${product.retailPrice} | trade=${product.tradePrice} | display=${price}`
-      );
-    }
-    return price;
+    return getBasePrice(product, userRole);
   }, [product, userRole]);
 
   // Get cart notification context
@@ -198,8 +198,13 @@ const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
   const nextStreakProgress = (purchaseCount % 3) / 3;
 
   // Handle both string URLs (Supabase) and require() statements
-  const imageSource =
-    getProductImageSource(imageUrl, name) || getProductFallbackImage();
+  const imageSource = React.useMemo(() => {
+    // Try imageUrl first (Supabase format), then image (legacy format)
+    const productImage = imageUrl || product.image;
+    const source =
+      getProductImageSource(productImage, name) || getProductFallbackImage();
+    return source;
+  }, [imageUrl, product.image, name]);
 
   return (
     <Animated.View

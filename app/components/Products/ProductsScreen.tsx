@@ -31,13 +31,13 @@ import DeliveryLocationHeader from '../Location/DeliveryLocationHeader';
 import { useDeliveryLocation } from '../../hooks/useDeliveryLocation';
 import { useAppContext } from '../../context/AppContext';
 
-const categories = [
-  { id: 'all', name: 'All', icon: 'grid-outline' },
-  { id: 'whisky', name: 'Whisky', icon: 'wine-outline' },
-  { id: 'wine', name: 'Wine', icon: 'wine-outline' },
-  { id: 'spirits', name: 'Spirits', icon: 'flask-outline' },
-  { id: 'liqueurs', name: 'Liqueurs', icon: 'beer-outline' },
-];
+// const categories = [
+//   { id: 'all', name: 'All', icon: 'grid-outline' },
+//   { id: 'whisky', name: 'Whisky', icon: 'wine-outline' },
+//   { id: 'wine', name: 'Wine', icon: 'wine-outline' },
+//   { id: 'spirits', name: 'Spirits', icon: 'flask-outline' },
+//   { id: 'liqueurs', name: 'Liqueurs', icon: 'beer-outline' },
+// ];
 
 export default function ProductsScreen() {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -47,6 +47,55 @@ export default function ProductsScreen() {
   const navigation = useNavigation();
   const { deliveryLocation, setDeliveryLocation } = useDeliveryLocation();
   const { state } = useAppContext();
+
+  // Derive categories from loaded products
+  const dynamicCategories = useMemo(() => {
+    const products = state.products || [];
+    const uniqueCategories = Array.from(
+      new Set(products.map(p => p.category).filter(Boolean))
+    );
+
+    // Sort categories alphabetically
+    uniqueCategories.sort();
+
+    const categoryList = uniqueCategories.map(cat => {
+      // Simple icon mapping based on category name keywords
+      let icon = 'wine-outline'; // Default
+      const lowerCat = cat.toLowerCase();
+      if (
+        lowerCat.includes('spirit') ||
+        lowerCat.includes('vodka') ||
+        lowerCat.includes('gin') ||
+        lowerCat.includes('rum') ||
+        lowerCat.includes('tequila')
+      ) {
+        icon = 'flask-outline';
+      } else if (
+        lowerCat.includes('beer') ||
+        lowerCat.includes('ale') ||
+        lowerCat.includes('lager')
+      ) {
+        icon = 'beer-outline';
+      } else if (lowerCat.includes('whisky') || lowerCat.includes('whiskey')) {
+        icon = 'wine-outline'; // Or custom glass icon if available
+      } else if (
+        lowerCat.includes('champagne') ||
+        lowerCat.includes('sparkling')
+      ) {
+        icon = 'wine-outline';
+      } else if (lowerCat.includes('sake')) {
+        icon = 'wine-outline';
+      }
+
+      return {
+        id: cat.toLowerCase(), // Use lowercase for ID matching
+        name: cat, // Keep original casing for display
+        icon: icon,
+      };
+    });
+
+    return [{ id: 'all', name: 'All', icon: 'grid-outline' }, ...categoryList];
+  }, [state.products]);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -73,8 +122,10 @@ export default function ProductsScreen() {
   const filteredProducts = useMemo(() => {
     const products = state.products || [];
     if (selectedCategory === 'all') return products;
-    return products.filter(p =>
-      p.category.toLowerCase().includes(selectedCategory)
+    return products.filter(
+      p =>
+        p.category.toLowerCase() === selectedCategory.toLowerCase() ||
+        p.category.toLowerCase().includes(selectedCategory.toLowerCase())
     );
   }, [selectedCategory, state.products]);
 
@@ -102,7 +153,7 @@ export default function ProductsScreen() {
     navigation.navigate('DeliveryLocationScreen');
   }, [navigation]);
 
-  const renderCategory = (cat: (typeof categories)[0]) => (
+  const renderCategory = (cat: { id: string; name: string; icon: string }) => (
     <TouchableOpacity
       key={cat.id}
       style={[
@@ -166,7 +217,7 @@ export default function ProductsScreen() {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoryBar}
-          data={categories}
+          data={dynamicCategories}
           renderItem={({ item }) => renderCategory(item)}
           keyExtractor={item => item.id}
         />

@@ -4,12 +4,16 @@ import { supabase } from '../lib/supabase';
 import type { Product, SizeOption } from '../types/product';
 import ImageUpload from './ImageUpload';
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
+import { brandsService } from '../services/brandsService';
+import Combobox from './ui/Combobox';
+import { useToast } from './ui/Toast';
 
 // Default initial state
 const INITIAL_PRODUCT: Partial<Product> = {
   name: '',
   description: '',
   category: 'Scotch',
+  brand: '',
   retail_price: 0,
   trade_price: 0,
   promo_price: null,
@@ -29,12 +33,14 @@ const INITIAL_PRODUCT: Partial<Product> = {
 export default function ProductForm() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const isEditMode = !!id;
 
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
   const [formData, setFormData] = useState<Partial<Product>>(INITIAL_PRODUCT);
   const [categories, setCategories] = useState<string[]>([]);
+  const [brands, setBrands] = useState<string[]>([]);
 
   // State for new variant input
   const [newVariant, setNewVariant] = useState<SizeOption>({
@@ -45,6 +51,7 @@ export default function ProductForm() {
 
   useEffect(() => {
     fetchCategories();
+    fetchBrands();
     if (isEditMode) {
       fetchProduct(id);
     } else {
@@ -81,6 +88,17 @@ export default function ProductForm() {
         ])
       );
       setCategories(unique.sort());
+    }
+  };
+
+  const fetchBrands = async () => {
+    try {
+      const brandNames = await brandsService.getBrandNames();
+      setBrands(brandNames);
+    } catch (error) {
+      console.error('Error fetching brands:', error);
+      // Set empty array as fallback
+      setBrands([]);
     }
   };
 
@@ -292,18 +310,59 @@ export default function ProductForm() {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                    SKU
-                  </label>
-                  <input
-                    type="text"
-                    name="sku"
-                    value={formData.sku || ''}
-                    onChange={handleChange}
-                    placeholder="Auto-generated if empty"
-                    className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-3 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all min-h-[44px]"
+                  <Combobox
+                    label="Brand"
+                    value={formData.brand || ''}
+                    onChange={value =>
+                      setFormData(prev => ({ ...prev, brand: value }))
+                    }
+                    options={brands}
+                    placeholder="Select or type brand name..."
+                    allowCreate={true}
+                    onCreateNew={async brandName => {
+                      try {
+                        const newBrand =
+                          await brandsService.createBrand(brandName);
+                        if (newBrand) {
+                          toast(
+                            `Brand "${brandName}" created successfully`,
+                            'success'
+                          );
+                          // Refresh brands list
+                          await fetchBrands();
+                          return true;
+                        }
+                        return false;
+                      } catch (error) {
+                        console.error('Brand creation error:', error);
+                        const message =
+                          error instanceof Error
+                            ? error.message
+                            : typeof error === 'object' &&
+                                error !== null &&
+                                'message' in error
+                              ? (error as any).message
+                              : 'Failed to create brand';
+                        toast(message, 'error');
+                        return false;
+                      }
+                    }}
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
+                  SKU
+                </label>
+                <input
+                  type="text"
+                  name="sku"
+                  value={formData.sku || ''}
+                  onChange={handleChange}
+                  placeholder="Auto-generated if empty"
+                  className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-3 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all min-h-[44px]"
+                />
               </div>
             </div>
           </div>
@@ -679,7 +738,7 @@ export default function ProductForm() {
               )}
 
               {formData.promo_price && (
-                <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-3 text-sm text-blue-800 dark:text-blue-400">
+                <div className="rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-default)] p-3 text-sm text-[var(--text-primary)]">
                   💰 Promo active: S$
                   {Number(formData.promo_price).toLocaleString('en-US', {
                     minimumFractionDigits: 2,

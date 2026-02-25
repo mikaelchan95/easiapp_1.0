@@ -127,13 +127,13 @@ export default function Companies() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+        return 'bg-[var(--text-primary)] text-[var(--bg-primary)]';
       case 'suspended':
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
       case 'pending_verification':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+        return 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] dark:bg-yellow-900/30 dark:text-yellow-400';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-400';
+        return 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] dark:bg-[var(--bg-tertiary)] dark:text-[var(--text-tertiary)]';
     }
   };
 
@@ -246,7 +246,7 @@ export default function Companies() {
             onClick={() => handleToggleStatus(company.id, company.status)}
             className={`rounded-lg p-2 transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation ${
               company.status === 'active'
-                ? 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20'
+                ? 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
                 : 'text-[var(--text-tertiary)] hover:bg-[var(--bg-tertiary)]'
             }`}
             title={
@@ -453,7 +453,7 @@ export default function Companies() {
                     {masterCompanyId === company.id && (
                       <Check
                         size={20}
-                        className="text-green-600 dark:text-green-400"
+                        className="text-[var(--text-primary)]"
                       />
                     )}
                   </div>

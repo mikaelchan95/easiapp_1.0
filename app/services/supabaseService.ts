@@ -11,8 +11,9 @@ import {
 } from '../types/user';
 import { LocationSuggestion } from '../types/location';
 import { Product } from '../utils/pricing';
+import { getSupabaseImageUrl } from '../utils/imageUtils';
 
-// Helper function to generate Supabase Storage URL
+// Helper function to generate Supabase Storage URL for non-image files
 const getSupabaseStorageUrl = (bucket: string, path: string): string => {
   return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/${bucket}/${path}`;
 };
@@ -1178,11 +1179,7 @@ export const supabaseService = {
         price: p.retail_price,
         originalPrice: p.original_price,
         category: p.category,
-        imageUrl: p.image_url
-          ? p.image_url.startsWith('http')
-            ? p.image_url
-            : getSupabaseStorageUrl('product-images', p.image_url)
-          : null,
+        imageUrl: p.image_url ? getSupabaseImageUrl(p.image_url) : null,
         retailPrice: p.retail_price,
         tradePrice: p.trade_price,
         rating: p.rating,
@@ -1218,7 +1215,7 @@ export const supabaseService = {
         price: product.retail_price,
         originalPrice: product.original_price,
         category: product.category,
-        imageUrl: product.image_url,
+        imageUrl: product.image_url ? getSupabaseImageUrl(product.image_url) : null,
         retailPrice: product.retail_price,
         tradePrice: product.trade_price,
         rating: product.rating,
@@ -2019,12 +2016,6 @@ export const supabaseService = {
         }
       }
 
-      // Ensure delivery address is stringified if it's an object (for text column compatibility)
-      let deliveryAddressData = orderData.deliveryAddress;
-      if (typeof deliveryAddressData === 'object') {
-        deliveryAddressData = JSON.stringify(deliveryAddressData);
-      }
-
       const orderInsert: Record<string, any> = {
         user_id: session.user.id,
         company_id: orderData.companyId || null,
@@ -2133,7 +2124,7 @@ export const supabaseService = {
           if (product && !productError) {
             productName = productName || product.name;
             unitPrice = unitPrice || product.retail_price;
-            imageUrl = imageUrl || product.image_url;
+            imageUrl = imageUrl || (product.image_url ? getSupabaseImageUrl(product.image_url) : null);
             console.log(`✅ Product details fetched: ${product.name} - $${product.retail_price}`);
           } else {
             console.error(`❌ Failed to fetch product details for ID: ${productId}`, productError);

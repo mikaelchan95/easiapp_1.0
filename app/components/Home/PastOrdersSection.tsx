@@ -191,7 +191,7 @@ export default function PastOrdersSection({
     const productName = firstItem?.name || 'Unknown Item';
     const otherItemsCount = Math.max(0, (order.items?.length || 0) - 1);
 
-    // Resolve image
+    // Resolve image - use product name mapping as primary source (more reliable)
     const imageSource = getProductImageSource(firstItem?.image, productName);
     const imageUrl = imageSource?.uri || getProductFallbackImage().uri;
 
@@ -210,12 +210,8 @@ export default function PastOrdersSection({
           <Image
             source={{ uri: imageUrl }}
             style={styles.orderImage}
-            onError={error => {
-              console.log(
-                'Image load error for order item:',
-                productName,
-                error
-              );
+            onError={() => {
+              // Image load failed - fallback is already in place via getProductFallbackImage
             }}
           />
           {otherItemsCount > 0 && (

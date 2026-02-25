@@ -13,7 +13,17 @@ export interface ImageSource {
  */
 export const getSupabaseImageUrl = (imagePath: string): string => {
   if (!imagePath) return '';
-  if (imagePath.startsWith('http')) return imagePath;
+  
+  // Fix legacy URLs that are missing the products/ subdirectory
+  if (imagePath.startsWith('http')) {
+    // Check if it's a Supabase URL missing the products/ folder
+    const legacyPattern = /\/product-images\/([^/]+\.(webp|png|jpg|jpeg))$/;
+    if (legacyPattern.test(imagePath)) {
+      // Fix by inserting 'products/' before the filename
+      return imagePath.replace(legacyPattern, '/product-images/products/$1');
+    }
+    return imagePath;
+  }
 
   // Direct approach - construct the correct URL format
   // Based on the storage listing: /product-images/products/filename.webp
@@ -66,6 +76,10 @@ const PRODUCT_IMAGE_MAPPING: Record<string, string> = {
   'johnnie walker': 'Johnnie-Walker-Blue-Label-750ml-600x600.webp',
   'johnnie walker blue': 'Johnnie-Walker-Blue-Label-750ml-600x600.webp',
   'blue label': 'Johnnie-Walker-Blue-Label-750ml-600x600.webp',
+  
+  // Eldoria
+  'eldoria': 'eldoria-elderflower-liqueur.webp',
+  'eldoria elderflower': 'eldoria-elderflower-liqueur.webp',
 };
 
 /**
@@ -92,26 +106,40 @@ const getImageFilenameByProductName = (productName: string): string => {
 
 /**
  * Convert product image URL to proper React Native image source
+ * Prioritizes database URL, falls back to product name mapping
  */
 export const getProductImageSource = (
-  imageUrl?: string,
+  imageUrl?: string | null,
   productName?: string
 ): ImageSource | null => {
-  // 1. If we have a valid image URL from the database, use it
-  if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim() !== '') {
-    // Check if it's already a full URL
-    if (imageUrl.startsWith('http')) {
-      return { uri: imageUrl };
+  // Handle null/undefined cases explicitly
+  if (imageUrl === null || imageUrl === undefined) {
+    // Fall back to product name mapping if available
+    if (productName) {
+      const filename = getImageFilenameByProductName(productName);
+      if (filename !== 'placeholder-product.webp') {
+        const mappedUrl = `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${filename}`;
+        return { uri: mappedUrl };
+      }
     }
-    // Otherwise construct the full Supabase URL
-    return { uri: getSupabaseImageUrl(imageUrl) };
+    return getProductFallbackImage();
   }
 
-  // 2. Fallback to smart mapping based on product name if provided
+  // 1. Try database URL first (primary source of truth)
+  if (typeof imageUrl === 'string' && imageUrl.trim() !== '') {
+    // Always use getSupabaseImageUrl to normalize/fix URLs (including legacy ones)
+    const processedUrl = getSupabaseImageUrl(imageUrl);
+    return { uri: processedUrl };
+  }
+
+  // 2. Fall back to product name mapping if no valid database URL
   if (productName) {
     const filename = getImageFilenameByProductName(productName);
-    const mappedUrl = `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${filename}`;
-    return { uri: mappedUrl };
+    // Only use the mapping if it's not the default placeholder
+    if (filename !== 'placeholder-product.webp') {
+      const mappedUrl = `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${filename}`;
+      return { uri: mappedUrl };
+    }
   }
 
   // 3. Last resort fallback

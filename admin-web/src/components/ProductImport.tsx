@@ -257,6 +257,64 @@ export default function ProductImport({
     let failedCount = 0;
 
     try {
+      // 1. Identify and create missing categories
+      const uniqueCategories = new Set(
+        importData.map(row => row.category).filter(Boolean)
+      );
+
+      if (uniqueCategories.size > 0) {
+        // Fetch existing categories
+        const { data: existingCategories, error: catError } = await supabase
+          .from('categories')
+          .select('name');
+
+        if (catError) throw catError;
+
+        const existingCategoryNames = new Set(
+          existingCategories?.map(c => c.name) || []
+        );
+        const newCategories = Array.from(uniqueCategories).filter(
+          cat => !existingCategoryNames.has(cat)
+        );
+
+        if (newCategories.length > 0) {
+          // Prepare new categories for insertion
+          // Helper to generate slug (duplicated from Categories.tsx to avoid dependency)
+          const generateSlug = (name: string) => {
+            return name
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/(^-|-$)+/g, '');
+          };
+
+          // Get max sort order to append new categories at the end
+          const { data: maxSortData } = await supabase
+            .from('categories')
+            .select('sort_order')
+            .order('sort_order', { ascending: false })
+            .limit(1);
+
+          let currentSortOrder = (maxSortData?.[0]?.sort_order || 0) + 1;
+
+          const categoriesToInsert = newCategories.map(name => ({
+            name,
+            slug: generateSlug(name),
+            is_active: true,
+            sort_order: currentSortOrder++,
+            description: `Imported category: ${name}`,
+          }));
+
+          const { error: insertError } = await supabase
+            .from('categories')
+            .insert(categoriesToInsert);
+
+          if (insertError) {
+            console.error('Error creating new categories:', insertError);
+            // We continue even if category creation fails, though it might be less than ideal
+          }
+        }
+      }
+
       // Batch insert products
       const productsToInsert = importData.map(row => ({
         name: row.name,
@@ -277,19 +335,20 @@ export default function ProductImport({
         rating: 0,
       }));
 
+      // Deduplicate by SKU (keeping the last occurrence)
+      const uniqueProductsMap = new Map();
+      productsToInsert.forEach(product => {
+        uniqueProductsMap.set(product.sku, product);
+      });
+      const uniqueProductsToInsert = Array.from(uniqueProductsMap.values());
+
       const { data, error } = await supabase
         .from('products')
-        .insert(productsToInsert)
+        .upsert(uniqueProductsToInsert, { onConflict: 'sku' })
         .select();
 
       if (error) {
-        // Handle unique constraint violations or other errors
-        if (error.code === '23505') {
-          alert('Some SKUs already exist. Please check for duplicates.');
-          failedCount = importData.length;
-        } else {
-          throw error;
-        }
+        throw error;
       } else {
         successCount = data?.length || 0;
       }
@@ -312,15 +371,15 @@ export default function ProductImport({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-xl bg-brand-white shadow-xl">
+      <div className="max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-xl bg-[var(--bg-card)] shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <h2 className="text-xl font-bold text-brand-dark">
+        <div className="flex items-center justify-between border-b border-[var(--border-default)] px-6 py-4">
+          <h2 className="text-xl font-bold text-[var(--text-primary)]">
             Import Products from CSV
           </h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-brand-dark"
+            className="rounded-lg p-2 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
           >
             <X size={20} />
           </button>
@@ -336,7 +395,7 @@ export default function ProductImport({
             <div className="flex items-center gap-4">
               <button
                 onClick={downloadTemplate}
-                className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                className="flex items-center gap-2 rounded-lg border border-[var(--border-default)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-tertiary)]"
               >
                 <Download size={18} />
                 Download Template
@@ -352,7 +411,7 @@ export default function ProductImport({
                 />
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-gray-600 transition-colors hover:border-brand-dark hover:bg-brand-light"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[var(--border-default)] bg-[var(--bg-tertiary)] px-4 py-8 text-[var(--text-secondary)] transition-colors hover:border-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
                 >
                   <Upload size={24} />
                   <span className="font-medium">
@@ -363,8 +422,10 @@ export default function ProductImport({
             </div>
 
             {/* Instructions */}
-            <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800">
-              <strong>Instructions:</strong>
+            <div className="rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-default)] p-4 text-sm text-[var(--text-secondary)]">
+              <strong className="block mb-2 font-semibold text-[var(--text-primary)]">
+                Instructions:
+              </strong>
               <ul className="ml-5 mt-2 list-disc space-y-1">
                 <li>Download the template to see the required format</li>
                 <li>Required fields: name, category, sku, retail_price</li>
@@ -407,12 +468,12 @@ export default function ProductImport({
 
           {/* Import Result */}
           {importResult && (
-            <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
-              <div className="flex items-center gap-2 font-bold text-green-800">
+            <div className="mb-6 rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)] p-4">
+              <div className="flex items-center gap-2 font-bold text-[var(--text-primary)]">
                 <CheckCircle2 size={20} />
                 Import Complete
               </div>
-              <p className="mt-1 text-sm text-green-700">
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
                 Successfully imported {importResult.success} product(s).
                 {importResult.failed > 0 && ` Failed: ${importResult.failed}`}
               </p>
@@ -422,18 +483,21 @@ export default function ProductImport({
           {/* Preview Table */}
           {loading && (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="animate-spin text-brand-dark" size={32} />
+              <Loader2
+                className="animate-spin text-[var(--text-primary)]"
+                size={32}
+              />
             </div>
           )}
 
           {!loading && importData.length > 0 && (
             <div>
-              <h3 className="mb-3 font-bold text-brand-dark">
+              <h3 className="mb-3 font-bold text-[var(--text-primary)]">
                 Preview ({importData.length} products)
               </h3>
-              <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <div className="overflow-x-auto rounded-lg border border-[var(--border-default)]">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-gray-100 text-xs font-bold uppercase text-gray-700">
+                  <thead className="bg-[var(--bg-tertiary)] text-xs font-bold uppercase text-[var(--text-primary)]">
                     <tr>
                       <th className="px-4 py-2">Name</th>
                       <th className="px-4 py-2">Category</th>
@@ -444,9 +508,9 @@ export default function ProductImport({
                       <th className="px-4 py-2">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-[var(--border-default)]">
                     {importData.slice(0, 50).map((row, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50">
+                      <tr key={idx} className="hover:bg-[var(--bg-tertiary)]">
                         <td className="px-4 py-2 font-medium">{row.name}</td>
                         <td className="px-4 py-2">{row.category}</td>
                         <td className="px-4 py-2 font-mono text-xs">
@@ -465,8 +529,8 @@ export default function ProductImport({
                           <span
                             className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                               row.is_active
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-gray-100 text-gray-800'
+                                ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]'
+                                : 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]'
                             }`}
                           >
                             {row.is_active ? 'Active' : 'Inactive'}
@@ -477,7 +541,7 @@ export default function ProductImport({
                   </tbody>
                 </table>
                 {importData.length > 50 && (
-                  <div className="border-t border-gray-200 bg-gray-50 px-4 py-2 text-center text-sm text-gray-600">
+                  <div className="border-t border-[var(--border-default)] bg-[var(--bg-tertiary)] px-4 py-2 text-center text-sm text-[var(--text-secondary)]">
                     Showing first 50 of {importData.length} products
                   </div>
                 )}
@@ -487,17 +551,17 @@ export default function ProductImport({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-[var(--border-default)] px-6 py-4">
           <button
             onClick={onClose}
-            className="rounded-lg px-4 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-100"
+            className="rounded-lg px-4 py-2 font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-tertiary)]"
           >
             Cancel
           </button>
           <button
             onClick={handleImport}
             disabled={importing || importData.length === 0 || errors.length > 0}
-            className="flex items-center gap-2 rounded-lg bg-brand-dark px-4 py-2 font-bold text-white transition-colors hover:bg-brand-dark/90 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-brand-dark px-4 py-2 font-bold text-[var(--color-primary-text)] transition-colors hover:bg-brand-dark/90 disabled:opacity-50"
           >
             {importing ? (
               <>

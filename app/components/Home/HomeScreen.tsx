@@ -95,10 +95,18 @@ export default function HomeScreen() {
   // Memoized product sections for better performance
   const productSections = React.useMemo(() => {
     const products = state.products || [];
+    console.log(
+      `📦 HomeScreen products count: ${products.length}`,
+      products.map(p => p.name)
+    );
     const featuredProducts = products
       .filter(p => (p.rating || 0) >= 4.9)
       .slice(0, 6);
     const newArrivals = products.slice(0, 3);
+    console.log(
+      `📦 New Arrivals count: ${newArrivals.length}`,
+      newArrivals.map(p => p.name)
+    );
 
     // Personalize recommendations based on user type
     let recommended = products.slice(2, 5);
@@ -189,9 +197,10 @@ export default function HomeScreen() {
 
   // Handle brand press
   const handleBrandPress = useCallback(
-    (brand: any) => {
-      // Navigate to products filtered by brand
-      navigation.navigate('SmartSearch', { category: brand.category });
+    (brandName: string) => {
+      HapticFeedback.selection();
+      // Navigate to brand products screen
+      navigation.navigate('BrandProducts', { brandName });
     },
     [navigation]
   );

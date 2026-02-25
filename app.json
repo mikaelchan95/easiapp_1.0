@@ -34,12 +34,22 @@
           "apiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
         }
       },
-      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ]
     },
     "web": {
       "favicon": "./app/assets/favicon.png"
     },
-    "plugins": ["expo-location", "expo-router", "expo-font"],
+    "plugins": [
+      "expo-location",
+      "expo-router",
+      "expo-font",
+      "expo-local-authentication"
+    ],
     "extra": {
       "eas": {
         "projectId": "your-eas-project-id"

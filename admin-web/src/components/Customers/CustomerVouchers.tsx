@@ -49,7 +49,7 @@ export const CustomerVouchers = ({ userId }: CustomerVouchersProps) => {
         return (
           <Badge
             variant="success"
-            className="bg-green-100 text-green-800 border-green-200"
+            className="bg-[var(--text-primary)] text-[var(--bg-primary)] border-[var(--border-default)]"
           >
             Active
           </Badge>
@@ -58,7 +58,7 @@ export const CustomerVouchers = ({ userId }: CustomerVouchersProps) => {
         return (
           <Badge
             variant="default"
-            className="bg-blue-100 text-blue-800 border-blue-200"
+            className="bg-[var(--text-primary)] text-[var(--bg-primary)] border-[var(--border-default)]"
           >
             Used
           </Badge>
@@ -67,7 +67,7 @@ export const CustomerVouchers = ({ userId }: CustomerVouchersProps) => {
         return (
           <Badge
             variant="outline"
-            className="bg-gray-100 text-gray-800 border-gray-200"
+            className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] border-[var(--border-default)]"
           >
             Expired
           </Badge>
@@ -79,14 +79,14 @@ export const CustomerVouchers = ({ userId }: CustomerVouchersProps) => {
 
   if (loading)
     return (
-      <div className="p-8 text-center text-gray-500">Loading vouchers...</div>
+      <div className="p-8 text-center text-[var(--text-secondary)]">Loading vouchers...</div>
     );
 
   return (
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-gray-500">
-          <thead className="bg-brand-light text-xs uppercase text-brand-dark font-bold tracking-wider">
+        <table className="w-full text-left text-sm text-[var(--text-secondary)]">
+          <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
             <tr>
               <th className="px-6 py-4 font-semibold">Code</th>
               <th className="px-6 py-4 font-semibold">Value</th>
@@ -95,30 +95,30 @@ export const CustomerVouchers = ({ userId }: CustomerVouchersProps) => {
               <th className="px-6 py-4 font-semibold">Details</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-[var(--border-subtle)]">
             {vouchers.map(voucher => (
               <tr
                 key={voucher.id}
-                className="hover:bg-brand-light/50 transition-colors"
+                className="hover:bg-[var(--bg-tertiary)]/50 transition-colors"
               >
-                <td className="px-6 py-4 font-mono font-medium text-brand-dark flex items-center gap-2">
-                  <Ticket size={16} className="text-brand-accent" />
+                <td className="px-6 py-4 font-mono font-medium text-[var(--text-primary)] flex items-center gap-2">
+                  <Ticket size={16} className="text-[var(--color-primary-text)]" />
                   {voucher.voucher_code}
                 </td>
-                <td className="px-6 py-4 font-bold text-gray-900">
+                <td className="px-6 py-4 font-bold text-[var(--text-primary)]">
                   ${voucher.voucher_value.toFixed(2)}
                 </td>
                 <td className="px-6 py-4">
                   {getStatusBadge(voucher.voucher_status)}
                 </td>
-                <td className="px-6 py-4 text-gray-600">
+                <td className="px-6 py-4 text-[var(--text-secondary)]">
                   <div className="flex items-center gap-2">
                     <Calendar
                       size={14}
                       className={
                         new Date(voucher.expires_at) < new Date()
                           ? 'text-red-400'
-                          : 'text-gray-400'
+                          : 'text-[var(--text-tertiary)]'
                       }
                     />
                     <span
@@ -132,14 +132,14 @@ export const CustomerVouchers = ({ userId }: CustomerVouchersProps) => {
                     </span>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-xs text-gray-400 max-w-[200px] truncate">
+                <td className="px-6 py-4 text-xs text-[var(--text-tertiary)] max-w-[200px] truncate">
                   {voucher.metadata?.reward_title || 'Reward Voucher'}
                 </td>
               </tr>
             ))}
             {vouchers.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={5} className="px-6 py-8 text-center text-[var(--text-secondary)]">
                   No vouchers found
                 </td>
               </tr>

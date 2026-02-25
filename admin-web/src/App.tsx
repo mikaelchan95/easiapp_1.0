@@ -23,6 +23,8 @@ import NotificationTemplates from './pages/NotificationTemplates';
 import NotificationHistory from './pages/NotificationHistory';
 import NotificationAnalytics from './pages/NotificationAnalytics';
 import Categories from './pages/Categories';
+import Brands from './pages/Brands';
+import Maintenance from './pages/Maintenance';
 
 function App() {
   return (
@@ -36,6 +38,7 @@ function App() {
             <Route path="/products/new" element={<ProductForm />} />
             <Route path="/products/:id" element={<ProductForm />} />
             <Route path="/categories" element={<Categories />} />
+            <Route path="/brands" element={<Brands />} />
             <Route path="/customers" element={<Customers />} />
             <Route path="/customers/:id" element={<CustomerDetail />} />
 
@@ -69,6 +72,7 @@ function App() {
               element={<NotificationAnalytics />}
             />
 
+            <Route path="/maintenance" element={<Maintenance />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Route>

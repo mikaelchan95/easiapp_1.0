@@ -62,11 +62,11 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
             className={cn(
               'pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all animate-in slide-in-from-right-full duration-300',
               t.type === 'success' &&
-                'bg-green-50 text-green-900 border border-green-200 dark:bg-green-900/90 dark:text-green-100 dark:border-green-800',
+                'bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border-default)]',
               t.type === 'error' &&
                 'bg-red-50 text-red-900 border border-red-200 dark:bg-red-900/90 dark:text-red-100 dark:border-red-800',
               t.type === 'info' &&
-                'bg-blue-50 text-blue-900 border border-blue-200 dark:bg-blue-900/90 dark:text-blue-100 dark:border-blue-800'
+                'bg-[var(--bg-primary)] text-[var(--text-secondary)] border border-[var(--border-default)]'
             )}
           >
             {t.type === 'success' && (
@@ -89,5 +89,3 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
     </ToastContext.Provider>
   );
 };
-
-

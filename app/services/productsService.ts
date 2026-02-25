@@ -1,8 +1,10 @@
 import { supabase } from '../../utils/supabase';
 import { Product, SizeOption } from '../utils/pricing';
+import { getSupabaseImageUrl } from '../utils/imageUtils';
 
 export interface ProductFilters {
   category?: string;
+  brand?: string;
   featured?: boolean;
   search?: string;
   limit?: number;
@@ -21,6 +23,7 @@ export interface DatabaseProduct {
   description: string;
   sku: string;
   category: string;
+  brand?: string;
   retail_price: number;
   trade_price: number;
   original_price?: number;
@@ -39,34 +42,13 @@ export interface DatabaseProduct {
   size_options?: SizeOption[];
 }
 
-// Helper function to generate Supabase Storage URL
-const getSupabaseStorageUrl = (path: string): string => {
-  // If it's just a filename (no slashes), add the full path
-  if (!path.includes('/')) {
-    return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${path}`;
-  }
-  // If path already includes product-images/, use as-is
-  if (path.includes('product-images/')) {
-    return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/${path}`;
-  }
-  // If path starts with products/, add the bucket name
-  if (path.startsWith('products/')) {
-    return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/${path}`;
-  }
-  // Fallback - assume it's a full relative path
-  return `https://vqxnkxaeriizizfmqvua.supabase.co/storage/v1/object/public/product-images/products/${path}`;
-};
-
 // Transform database product to app Product format
 const transformDatabaseProductToProduct = (
   dbProduct: DatabaseProduct
 ): Product => {
   const finalImageUrl = dbProduct.image_url
-    ? dbProduct.image_url.startsWith('http')
-      ? dbProduct.image_url
-      : getSupabaseStorageUrl(dbProduct.image_url)
+    ? getSupabaseImageUrl(dbProduct.image_url)
     : null;
-
 
   return {
     id: dbProduct.id,
@@ -75,6 +57,8 @@ const transformDatabaseProductToProduct = (
     price: dbProduct.retail_price,
     originalPrice: dbProduct.original_price,
     category: dbProduct.category,
+    brand: dbProduct.brand,
+    image: finalImageUrl, // For backward compatibility
     imageUrl: finalImageUrl,
     retailPrice: dbProduct.retail_price,
     tradePrice: dbProduct.trade_price,
@@ -104,6 +88,10 @@ export const productsService = {
     // Apply filters
     if (filters.category && filters.category !== 'all') {
       query = query.eq('category', filters.category);
+    }
+
+    if (filters.brand) {
+      query = query.eq('brand', filters.brand);
     }
 
     if (filters.featured) {

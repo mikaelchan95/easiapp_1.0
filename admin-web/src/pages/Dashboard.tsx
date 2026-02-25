@@ -9,12 +9,14 @@ import {
   LayoutGrid,
   List,
   ChevronRight,
-  Trash2,
   ChevronLeft,
+  Eye,
+  ArrowUpRight,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { formatCurrency } from '../lib/formatters';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -26,6 +28,10 @@ export default function Dashboard() {
   });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [showFilters, setShowFilters] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     fetchDashboardData();
@@ -75,7 +81,7 @@ export default function Dashboard() {
               new Date(b.created_at).getTime() -
               new Date(a.created_at).getTime()
           )
-          .slice(0, 8) || []; // Show 8 items like image
+          .slice(0, 50) || []; // Fetch more for client-side filtering (limited to 50 for demo)
 
       setRecentOrders(sortedOrders);
     } catch (error) {
@@ -94,27 +100,51 @@ export default function Dashboard() {
     return 'default';
   };
 
+  const filteredOrders = recentOrders
+    .filter(order => {
+      const matchesSearch =
+        order.order_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        // @ts-expect-error
+        order.user?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesStatus =
+        statusFilter === 'all' || order.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    })
+    .slice(0, 10); // Show top 10 after filter
+
   const StatCard = ({ title, value, trend, trendUp, to }: any) => (
     <Card
-      className="relative p-6 group cursor-pointer hover:border-gray-200"
+      className="relative p-6 group cursor-pointer hover:border-[var(--color-primary)] hover:shadow-md transition-all duration-200"
       onClick={() => navigate(to)}
     >
-      <div className="flex justify-between items-start mb-4">
-        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-        <button className="text-gray-400 hover:text-gray-600">
-          <MoreHorizontal size={20} />
+      <div className="flex justify-between items-start mb-6">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+          {title}
+        </h3>
+        <button
+          className="text-[var(--text-tertiary)] hover:text-[var(--color-primary)] transition-colors"
+          onClick={e => {
+            e.stopPropagation();
+            navigate(to);
+          }}
+        >
+          <ArrowUpRight size={20} />
         </button>
       </div>
-      <div className="flex items-end justify-between">
-        <div className="text-3xl font-bold text-gray-900 tracking-tight">
+      <div className="space-y-3">
+        <div className="text-3xl font-bold text-[var(--text-primary)] tracking-tight">
           {value}
         </div>
         <div
-          className={`flex items-center gap-1 text-xs font-semibold ${trendUp ? 'text-green-500' : 'text-red-500'} mb-1`}
+          className={`flex items-center gap-1.5 text-xs font-semibold ${trendUp ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}
         >
           {trendUp ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
           <span>{trend}</span>
-          <span className="text-gray-400 font-normal ml-1">From last week</span>
+          <span className="text-[var(--text-tertiary)] font-normal">
+            from last week
+          </span>
         </div>
       </div>
     </Card>
@@ -123,38 +153,38 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex h-96 items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--text-primary)]"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-fade-in font-sans">
+    <div className="space-y-8 animate-fade-in font-sans pb-8">
       {/* Stats Grid */}
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Revenue"
-          value={`$${stats.totalRevenue.toLocaleString()}`}
+          value={formatCurrency(stats.totalRevenue)}
           trend="3.1%"
           trendUp={true}
           to="/invoices"
         />
         <StatCard
-          title="Total Customer"
+          title="Total Customers"
           value={stats.totalCustomers.toLocaleString()}
           trend="5.1%"
           trendUp={true}
           to="/customers"
         />
         <StatCard
-          title="Total Transaction"
+          title="Total Orders"
           value={stats.totalOrders.toLocaleString()}
           trend="5.1%"
-          trendUp={false}
+          trendUp={true}
           to="/orders"
         />
         <StatCard
-          title="Total Product"
+          title="Total Products"
           value={stats.totalProducts.toLocaleString()}
           trend="5.1%"
           trendUp={true}
@@ -166,165 +196,213 @@ export default function Dashboard() {
       <div className="space-y-4">
         {/* Table Header Controls */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <h2 className="text-xl font-bold text-gray-900 self-start sm:self-center">
-            List Return
-            <span className="ml-3 text-sm font-normal text-gray-500">
-              188 Refund
-            </span>
+          <h2 className="text-xl font-bold text-[var(--text-primary)] self-start sm:self-center">
+            Recent Orders
           </h2>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500">
-              <span>Show</span>
-              <select className="bg-transparent font-semibold text-gray-900 border-none focus:ring-0 p-0 cursor-pointer">
-                <option>6</option>
-                <option>10</option>
-                <option>20</option>
-              </select>
-              <span>Entries</span>
-            </div>
-
-            <div className="relative flex-1 sm:flex-none">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-none w-full sm:w-auto">
               <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]"
                 size={16}
               />
               <input
                 type="text"
-                placeholder="Search by Name Product"
-                className="w-full sm:w-64 pl-10 pr-4 py-2 bg-gray-100 rounded-full text-sm border-none focus:ring-2 focus:ring-gray-200"
+                placeholder="Search orders..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full sm:w-64 pl-10 pr-4 py-2 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none transition-all"
               />
             </div>
 
-            <div className="flex gap-2">
-              <button className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 text-gray-600">
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button
+                className={`p-2 rounded-lg border transition-colors ${viewMode === 'grid' ? 'bg-[var(--text-primary)] text-[var(--color-primary-text)] border-transparent' : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--bg-tertiary)]'}`}
+                onClick={() => setViewMode('grid')}
+                title="Grid View"
+              >
                 <LayoutGrid size={18} />
               </button>
-              <button className="p-2 bg-gray-900 rounded-lg text-white">
+              <button
+                className={`p-2 rounded-lg border transition-colors ${viewMode === 'list' ? 'bg-[var(--text-primary)] text-[var(--color-primary-text)] border-transparent' : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--bg-tertiary)]'}`}
+                onClick={() => setViewMode('list')}
+                title="List View"
+              >
                 <List size={18} />
               </button>
-              <button className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 text-gray-600">
-                <Filter size={18} />
-              </button>
+
+              <div className="relative">
+                <button
+                  className={`p-2 rounded-lg border transition-colors ${showFilters ? 'bg-[var(--color-primary-bg)] text-[var(--color-primary)] border-[var(--color-primary)]' : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--bg-tertiary)]'}`}
+                  onClick={() => setShowFilters(!showFilters)}
+                  title="Filter"
+                >
+                  <Filter size={18} />
+                </button>
+
+                {showFilters && (
+                  <div className="absolute right-0 mt-2 w-48 bg-[var(--bg-card)] rounded-lg shadow-lg border border-[var(--border-subtle)] z-10 py-1">
+                    <div className="px-3 py-2 text-xs font-semibold text-[var(--text-tertiary)] uppercase">
+                      Status
+                    </div>
+                    {[
+                      'all',
+                      'paid',
+                      'pending',
+                      'processing',
+                      'shipped',
+                      'delivered',
+                      'cancelled',
+                    ].map(status => (
+                      <button
+                        key={status}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-[var(--bg-tertiary)] capitalize ${statusFilter === status ? 'text-[var(--color-primary)] font-medium bg-[var(--color-primary-bg)]' : 'text-[var(--text-secondary)]'}`}
+                        onClick={() => {
+                          setStatusFilter(status);
+                          setShowFilters(false);
+                        }}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Table */}
-        <Card className="overflow-hidden border-0 shadow-none bg-white p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-xs font-semibold text-gray-500 uppercase tracking-wider bg-transparent">
-                <tr className="border-b border-gray-100">
-                  <th className="px-6 py-4 font-medium">Order ID</th>
-                  <th className="px-6 py-4 font-medium">Date Return</th>
-                  <th className="px-6 py-4 font-medium">Name Customer</th>
-                  <th className="px-6 py-4 font-medium">Address</th>
-                  <th className="px-6 py-4 font-medium">Reason Return</th>
-                  <th className="px-6 py-4 font-medium">Status</th>
-                  <th className="px-6 py-4 font-medium text-right">
-                    Follow-up
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {recentOrders.map((order, i) => (
-                  <tr
-                    key={order.id}
-                    className="group hover:bg-gray-50/50 transition-colors"
-                  >
-                    <td className="px-6 py-4 font-semibold text-gray-900">
-                      <Link
-                        to={`/orders/${order.id}`}
-                        className="hover:text-blue-600"
-                      >
-                        ODR-{order.order_number}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 text-gray-500 font-medium">
-                      {new Date(order.created_at).toLocaleDateString('en-GB', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-gray-900">
-                      {/* @ts-expect-error */}
-                      {order.user?.name || 'Unknown User'}
-                    </td>
-                    <td className="px-6 py-4 text-gray-500 truncate max-w-[200px]">
-                      {/* Mock Address */}
-                      {
-                        [
-                          '123 Main St, Inazuma',
-                          '456 Oak Ave, Inazuma',
-                          '789 Elm Rd, Inazuma',
-                          '321 Pine Ln, Liyue',
-                        ][i % 4]
-                      }
-                    </td>
-                    <td className="px-6 py-4 text-gray-500">
-                      {/* Mock Reason */}
-                      {
-                        [
-                          'Poor Product Quality',
-                          'Product Not as Expected',
-                          'Damaged in Shipping',
-                        ][i % 3]
-                      }
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge variant={getStatusVariant(order.status)}>
-                        {order.status === 'paid' ? 'Success' : order.status}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600">
-                          <ChevronRight size={18} />
-                        </button>
-                        <button className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600">
-                          <MoreHorizontal size={18} />
-                        </button>
-                        <button className="p-1.5 rounded-full hover:bg-red-50 text-red-300 hover:text-red-500">
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
+        {/* Content Area */}
+        {viewMode === 'list' ? (
+          <Card className="overflow-hidden border-0 shadow-none bg-[var(--bg-card)] p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider bg-transparent">
+                  <tr className="border-b border-[var(--border-subtle)]">
+                    <th className="px-6 py-4 font-medium">Order ID</th>
+                    <th className="px-6 py-4 font-medium">Date</th>
+                    <th className="px-6 py-4 font-medium">Customer</th>
+                    <th className="px-6 py-4 font-medium">Total</th>
+                    <th className="px-6 py-4 font-medium">Status</th>
+                    <th className="px-6 py-4 font-medium text-right">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination Mock */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
-            <span className="text-sm text-gray-500 font-medium">
-              Showing 1 to 10 of 7000 entries
-            </span>
-            <div className="flex items-center gap-2">
-              <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-400">
-                <ChevronLeft size={16} />
-              </button>
-              <button className="px-3 py-1 rounded-lg bg-green-200 text-green-800 font-semibold text-sm">
-                1
-              </button>
-              <button className="px-3 py-1 rounded-lg hover:bg-gray-100 text-gray-600 font-semibold text-sm">
-                2
-              </button>
-              <button className="px-3 py-1 rounded-lg hover:bg-gray-100 text-gray-600 font-semibold text-sm">
-                3
-              </button>
-              <span className="text-gray-400">...</span>
-              <button className="px-3 py-1 rounded-lg hover:bg-gray-100 text-gray-600 font-semibold text-sm">
-                10
-              </button>
-              <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-400">
-                <ChevronRight size={16} />
-              </button>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-subtle)]">
+                  {filteredOrders.map(order => (
+                    <tr
+                      key={order.id}
+                      className="group hover:bg-[var(--bg-tertiary)]/50 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/orders/${order.id}`)}
+                    >
+                      <td className="px-6 py-4 font-semibold text-[var(--text-primary)]">
+                        <span className="group-hover:text-[var(--color-primary)] transition-colors">
+                          #{order.order_number}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-[var(--text-secondary)] font-medium">
+                        {new Date(order.created_at).toLocaleDateString(
+                          'en-GB',
+                          {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          }
+                        )}
+                      </td>
+                      <td className="px-6 py-4 font-semibold text-[var(--text-primary)]">
+                        {/* @ts-expect-error */}
+                        {order.user?.name || 'Unknown User'}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-[var(--text-primary)]">
+                        {formatCurrency(order.total)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <Badge variant={getStatusVariant(order.status)}>
+                          {order.status === 'paid' ? 'Paid' : order.status}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            className="p-1.5 rounded-full hover:bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+                            onClick={e => {
+                              e.stopPropagation();
+                              navigate(`/orders/${order.id}`);
+                            }}
+                            title="View Details"
+                          >
+                            <Eye size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredOrders.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="px-6 py-12 text-center text-[var(--text-secondary)]"
+                      >
+                        No recent orders found matching your search.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredOrders.map(order => (
+              <Card
+                key={order.id}
+                className="p-4 hover:shadow-md transition-all cursor-pointer border hover:border-[var(--color-primary)]"
+                onClick={() => navigate(`/orders/${order.id}`)}
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <Badge variant={getStatusVariant(order.status)}>
+                    {order.status === 'paid' ? 'Paid' : order.status}
+                  </Badge>
+                  <span className="text-xs text-[var(--text-tertiary)]">
+                    {new Date(order.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+
+                <div className="mb-3">
+                  <h4 className="font-bold text-[var(--text-primary)]">
+                    #{order.order_number}
+                  </h4>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    {/* @ts-expect-error */}
+                    {order.user?.name || 'Unknown User'}
+                  </p>
+                </div>
+
+                <div className="flex justify-between items-center border-t border-[var(--border-subtle)] pt-3">
+                  <span className="font-bold text-[var(--text-primary)]">
+                    {formatCurrency(order.total)}
+                  </span>
+                  <button
+                    className="text-[var(--color-primary)] text-sm font-medium hover:underline"
+                    onClick={e => {
+                      e.stopPropagation();
+                      navigate(`/orders/${order.id}`);
+                    }}
+                  >
+                    View Details
+                  </button>
+                </div>
+              </Card>
+            ))}
+            {filteredOrders.length === 0 && (
+              <div className="col-span-full p-12 text-center text-[var(--text-secondary)] bg-[var(--bg-card)] rounded-xl border border-dashed border-[var(--border-subtle)]">
+                No recent orders found matching your search.
+              </div>
+            )}
           </div>
-        </Card>
+        )}
       </div>
     </div>
   );

@@ -106,7 +106,7 @@ export default function Notifications() {
                 <div
                   className={`p-4 rounded-lg flex items-center gap-3 ${
                     feedback.type === 'success'
-                      ? 'bg-green-50 text-green-700 border border-green-200'
+                      ? 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-default)]'
                       : 'bg-red-50 text-red-700 border border-red-200'
                   }`}
                 >
@@ -239,28 +239,28 @@ export default function Notifications() {
               <Bell size={20} />
               Preview
             </h2>
-            <div className="bg-gray-100 dark:bg-zinc-900 rounded-lg p-4 border border-gray-200 dark:border-zinc-800">
+            <div className="bg-gray-100 dark:bg-[var(--bg-card)] rounded-lg p-4 border border-gray-200 dark:border-[var(--border-subtle)]">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-white dark:bg-zinc-800 flex items-center justify-center shadow-sm">
+                <div className="w-10 h-10 rounded-full bg-white dark:bg-[var(--bg-tertiary)] flex items-center justify-center shadow-sm">
                   <img
                     src="/logo.png"
                     alt="App Logo"
                     className="w-6 h-6 object-contain"
                     onError={e => (e.currentTarget.style.display = 'none')}
                   />
-                  <Bell size={16} className="text-gray-500" />
+                  <Bell size={16} className="text-[var(--text-secondary)]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-[var(--color-primary-text)]">
                       EASI App
                     </p>
-                    <span className="text-xs text-gray-500">now</span>
+                    <span className="text-xs text-[var(--text-secondary)]">now</span>
                   </div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white mb-1 truncate">
+                  <p className="text-sm font-medium text-gray-900 dark:text-[var(--color-primary-text)] mb-1 truncate">
                     {title || 'Notification Title'}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                  <p className="text-sm text-gray-500 dark:text-[var(--text-tertiary)] line-clamp-2">
                     {message || 'Your notification message will appear here...'}
                   </p>
                 </div>

@@ -144,7 +144,7 @@ export default function CompanyDetail() {
             <h3 className="text-sm font-medium text-[var(--text-secondary)]">
               Total Spent
             </h3>
-            <div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg">
+            <div className="p-2 bg-[var(--bg-tertiary)] dark:bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg">
               <DollarSign size={18} />
             </div>
           </div>
@@ -161,7 +161,7 @@ export default function CompanyDetail() {
             <h3 className="text-sm font-medium text-[var(--text-secondary)]">
               Total Orders
             </h3>
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
+            <div className="p-2 bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg">
               <ShoppingBag size={18} />
             </div>
           </div>
@@ -174,7 +174,7 @@ export default function CompanyDetail() {
             <h3 className="text-sm font-medium text-[var(--text-secondary)]">
               Employees
             </h3>
-            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg">
+            <div className="p-2 bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg">
               <Users size={18} />
             </div>
           </div>
@@ -283,10 +283,10 @@ export default function CompanyDetail() {
                         <span
                           className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${
                             order.status === 'delivered'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]'
                               : order.status === 'cancelled'
                                 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                                : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                : 'bg-[var(--text-primary)] text-[var(--bg-primary)]'
                           }`}
                         >
                           {order.status}
