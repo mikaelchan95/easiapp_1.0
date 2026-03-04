@@ -10,6 +10,8 @@ namespace EASIBridge
 
         static int Main(string[] args)
         {
+            AutoCountConnector.SetupAssemblyResolver();
+
             bool consoleMode = args.Length > 0 &&
                 (args[0] == "--console" || args[0] == "-c");
 

@@ -61,6 +61,36 @@ namespace EASIBridge
             BridgeLogger.Info("User: " + Environment.UserName);
             BridgeLogger.Info("PID: " + System.Diagnostics.Process.GetCurrentProcess().Id);
 
+            if (BridgeConfig.AutoCountEnabled)
+            {
+                BridgeLogger.Info("AutoCount integration is ENABLED. Testing connection...");
+                try
+                {
+                    if (AutoCountConnector.Connect())
+                    {
+                        int count = AutoCountConnector.GetDebtorCount();
+                        BridgeLogger.Info(string.Format(
+                            "AutoCount connection OK. Debtor count: {0}", count));
+                        HealthWriter.Write("running", string.Format(
+                            "AutoCount connected. {0} debtors.", count));
+                    }
+                    else
+                    {
+                        BridgeLogger.Warn("AutoCount connection failed. Service continues with heartbeat only.");
+                        HealthWriter.Write("degraded", "AutoCount connection failed");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    BridgeLogger.Error("AutoCount startup error: " + ex.Message);
+                    HealthWriter.Write("degraded", "AutoCount error: " + ex.Message);
+                }
+            }
+            else
+            {
+                BridgeLogger.Info("AutoCount integration is DISABLED.");
+            }
+
             int intervalMs = BridgeConfig.HeartbeatIntervalSeconds * 1000;
             _heartbeatTimer = new Timer(OnHeartbeat, null, 0, intervalMs);
 
@@ -77,6 +107,15 @@ namespace EASIBridge
                 _heartbeatTimer.Change(Timeout.Infinite, Timeout.Infinite);
                 _heartbeatTimer.Dispose();
                 _heartbeatTimer = null;
+            }
+
+            try
+            {
+                AutoCountConnector.Disconnect();
+            }
+            catch (Exception ex)
+            {
+                BridgeLogger.Warn("AutoCount disconnect error: " + ex.Message);
             }
 
             HealthWriter.Write("stopped", "Service stopped gracefully");

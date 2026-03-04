@@ -45,6 +45,25 @@ namespace EASIBridge
             get { return GetSetting("AutoCountDbName", ""); }
         }
 
+        public static string AutoCountUserId
+        {
+            get { return GetSetting("AutoCountUserId", ""); }
+        }
+
+        public static string AutoCountPassword
+        {
+            get { return GetSetting("AutoCountPassword", ""); }
+        }
+
+        public static bool AutoCountEnabled
+        {
+            get
+            {
+                string val = GetSetting("AutoCountEnabled", "false");
+                return val.Equals("true", System.StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
         public static string SupabaseUrl
         {
             get { return GetSetting("SupabaseUrl", ""); }
