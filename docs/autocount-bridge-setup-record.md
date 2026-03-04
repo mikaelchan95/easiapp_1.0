@@ -94,11 +94,56 @@ if direct SDK access proves insufficient.
 
 Full rollback order: Phase 2 rollback (remove service), then Phase 1 rollback (remove files).
 
+## AutoCount SDK Connection (Completed 2026-03-04)
+
+**Status:** Read-only connection verified and working.
+
+| Property        | Value                                                     |
+| --------------- | --------------------------------------------------------- |
+| SDK DLL         | `C:\Program Files\AutoCount\Accounting 2.1\AutoCount.dll` |
+| DBServerType    | `SQL2000` (AutoCount enum for all SQL Server versions)    |
+| SQL Instance    | `DESKTOP-20COQHQ\A2006` (SQL Server 2022)                 |
+| Database        | `AED_EPICO` (401 debtors, main company DB)                |
+| AC User         | `EASIBRIDG` (INTEGRATION group)                           |
+| SQL Auth        | Windows Authentication (Integrated Security)              |
+| Connection Time | ~600ms                                                    |
+
+**All databases on this instance:**
+
+| Database         | Debtors | Notes                |
+| ---------------- | ------- | -------------------- |
+| `AED_EPICO`      | 401     | Primary (configured) |
+| `AED_NATIVIS`    | 55      |                      |
+| `AED_THEORGANIC` | 39      |                      |
+| `AED_THEWINERY`  | 11      |                      |
+| `AED_Winery`     | 37      |                      |
+
+**Source files added:**
+
+| File                    | Purpose                                                      |
+| ----------------------- | ------------------------------------------------------------ |
+| `AutoCountConnector.cs` | SDK loader + connection + read-only queries (via reflection) |
+
+**Config keys added:**
+
+| Key                 | Value                            |
+| ------------------- | -------------------------------- |
+| `AutoCountEnabled`  | `true` / `false` - master switch |
+| `AutoCountUserId`   | AutoCount application user       |
+| `AutoCountPassword` | AutoCount application password   |
+
+**Safety constraints still in effect:**
+
+- NO documents created, edited, or posted
+- Read-only queries only (SELECT)
+- Service continues in degraded mode if AC connection fails
+- Graceful disconnect on service shutdown
+
 ## Next Milestone
 
-AutoCount SDK read-only connection test:
+Debtor sync to Supabase:
 
-1. Reference AutoCount DLLs from `C:\Program Files\AutoCount\Accounting 2.1`
-2. Open a read-only session to the `A2006` database
-3. Query a non-financial entity (e.g., debtor list or company info)
-4. Confirm connection without creating/modifying any records
+1. Map AutoCount Debtor fields to app `companies` table
+2. One-way read: pull debtors from AutoCount, push to Supabase
+3. Incremental sync (detect changes since last sync)
+4. Still no posting back to AutoCount
