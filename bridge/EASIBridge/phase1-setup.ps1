@@ -48,6 +48,8 @@ $sourceFiles = @(
     'HealthWriter.cs',
     'BridgeConfig.cs',
     'AutoCountConnector.cs',
+    'SupabaseClient.cs',
+    'DebtorSyncService.cs',
     'AssemblyInfo.cs'
 )
 

@@ -99,3 +99,10 @@ __pycache__/
 
 .env
 admin-web/.env
+
+# Extracted DMF credentials (one-time run on Epico PC; do not commit)
+*extracted-dmf-credentials*
+*-dmf-credentials.txt
+
+# AutoCount schema reference (generated on Epico PC; committed manually if desired)
+ac-schema-reference.txt

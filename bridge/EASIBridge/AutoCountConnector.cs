@@ -107,18 +107,34 @@ namespace EASIBridge
 
             try
             {
-                BridgeLogger.Info(string.Format(
-                    "Connecting to AutoCount: server={0}, db={1}, user={2}",
-                    server, dbName, acUser));
+                bool useSqlAuth = BridgeConfig.AutoCountUseSqlAuth;
+                string sqlUser = BridgeConfig.AutoCountSqlUser;
+                string sqlPass = BridgeConfig.AutoCountSqlPassword;
 
-                // DBSetting(DBServerType serverType, string serverName, string dbName)
+                BridgeLogger.Info(string.Format(
+                    "Connecting to AutoCount: server={0}, db={1}, user={2}, sqlAuth={3}",
+                    server, dbName, acUser, useSqlAuth));
+
                 object sqlServerType = Enum.Parse(_dbServerTypeEnum, "SQL2000");
 
-                _dbSetting = Activator.CreateInstance(
-                    _dbSettingType,
-                    new object[] { sqlServerType, server, dbName });
-
-                BridgeLogger.Info("DBSetting created. Connection string available.");
+                if (useSqlAuth && !string.IsNullOrEmpty(sqlUser) && !string.IsNullOrEmpty(sqlPass))
+                {
+                    // SQL Server authentication (for service account with no Windows login to SQL)
+                    // DBSetting(DBServerType, string serverName, string userId, string password, string dbName)
+                    _dbSetting = Activator.CreateInstance(
+                        _dbSettingType,
+                        new object[] { sqlServerType, server, sqlUser, sqlPass, dbName });
+                    BridgeLogger.Info("DBSetting created (SQL Auth).");
+                }
+                else
+                {
+                    // Windows authentication
+                    // DBSetting(DBServerType serverType, string serverName, string dbName)
+                    _dbSetting = Activator.CreateInstance(
+                        _dbSettingType,
+                        new object[] { sqlServerType, server, dbName });
+                    BridgeLogger.Info("DBSetting created (Windows Auth).");
+                }
 
                 // UserSession(DBSetting dbSetting)
                 _userSession = Activator.CreateInstance(
@@ -201,6 +217,54 @@ namespace EASIBridge
             catch (Exception ex)
             {
                 BridgeLogger.Error("Debtor query error: " + ex.Message);
+                return null;
+            }
+        }
+
+        /// <summary>Query all debtors with fields needed for company sync.</summary>
+        public static DataTable QueryAllDebtors()
+        {
+            if (_dbSetting == null)
+            {
+                BridgeLogger.Error("Cannot query: not connected.");
+                return null;
+            }
+
+            try
+            {
+                string sql = "SELECT * FROM Debtor ORDER BY AccNo";
+
+                var method = _dbSettingType.GetMethod("GetDataTable",
+                    new Type[] { typeof(string), typeof(bool), typeof(object[]) });
+
+                DataTable dt = (DataTable)method.Invoke(
+                    _dbSetting,
+                    new object[] { sql, false, new object[0] });
+
+                BridgeLogger.Info(string.Format(
+                    "Full debtor query returned {0} rows, {1} columns.",
+                    dt.Rows.Count, dt.Columns.Count));
+
+                // Log column names once for field mapping reference
+                var colNames = new System.Text.StringBuilder();
+                for (int i = 0; i < dt.Columns.Count; i++)
+                {
+                    if (i > 0) colNames.Append(", ");
+                    colNames.Append(dt.Columns[i].ColumnName);
+                }
+                BridgeLogger.Info("Debtor columns: " + colNames.ToString());
+
+                return dt;
+            }
+            catch (TargetInvocationException ex)
+            {
+                string inner = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                BridgeLogger.Error("Full debtor query error: " + inner);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                BridgeLogger.Error("Full debtor query error: " + ex.Message);
                 return null;
             }
         }

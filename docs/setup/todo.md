@@ -1,11 +1,12 @@
 # EASI AutoCount Bridge -- Master TODO & Session Continuity
 
-**Last updated:** 2026-03-04
+**Last updated:** 2026-03-04 (session 2)
 **Reference docs:**
 
 - `docs/autocount-bridge-setup-record.md` -- full setup record with all credentials, paths, configs
 - `docs/autocount-integration-rights-snapshot.md` -- AutoCount access rights for INTEGRATION group
 - `docs/autocount-user-to-app-schema-mapping.md` -- field mapping between AutoCount and app schema
+- `docs/autocount-debtor-columns.md` -- all 82 Debtor table columns with sync mapping
 
 ---
 
@@ -87,16 +88,33 @@
 - Graceful disconnect on service shutdown (Logout + Dispose)
 - Build script updated: `phase1-setup.ps1` now includes `System.Data.dll` + `AutoCount.dll` refs
 
+### Service-Mode AutoCount Connection (SQL Auth option) -- DONE
+
+- **Code:** Optional SQL Server authentication for DB connection when service runs as `svc_easibridge` (no Windows login to SQL).
+- Config: `AutoCountUseSqlAuth` (true/false), `AutoCountSqlUser`, `AutoCountSqlPassword` in `BridgeConfig.cs` and `App.config`.
+- When `AutoCountUseSqlAuth=true` and SQL user/password set, connector uses `DBSetting(SQL2000, server, sqlUser, sqlPass, dbName)`; otherwise uses Windows Auth (3-arg constructor).
+- AutoCount app login (EASIBRIDG / easi123\*) unchanged; only the underlying SQL connection method is switchable.
+- `App.config` now configured with `AutoCountUseSqlAuth=true`, `AutoCountSqlUser=sa`, `AutoCountSqlPassword` set.
+- **On server:** Rebuild (`phase1-setup.ps1`), restart EASIBridge service, verify AC connection in service logs.
+
+### One-time: Extract DMF credentials -- DONE
+
+- Script: `bridge/EASIBridge/ExtractDmfCredentials.cs` + `extract-dmf-credentials.ps1`.
+- Ran on Epico PC; extracted SA credentials from AutoCount DMF config via SDK.
+- **SQL Server SA:** user `sa`, password `oCt2005-ShenZhou6_A2006`, server `(local)\A2006`.
+- Same SA password for all 5 company databases (AED_EPICO, AED_NATIVIS, AED_THEORGANIC, AED_THEWINERY, AED_Winery).
+- DMF file stores encrypted passwords; SDK decrypts at runtime.
+- `ExtractDmfCredentials.exe` on Epico PC can be deleted (one-time use).
+
 ---
 
 ## KNOWN ISSUES / TECH DEBT
 
-### Service account SQL access (not yet tested)
+### Service account SQL access -- RESOLVED
 
-- Console test ran as `User` (has SQL access via Windows Auth)
-- Service runs as `svc_easibridge` which may NOT have SQL Server access
-- **To fix:** Either grant `svc_easibridge` a login on the `A2006` SQL instance, or switch DBSetting to SQL Auth constructor: `DBSetting(SQL2000, server, sqlUser, sqlPass, dbName)`
-- The `DatabaseManagement` class can load the DMF file to get SA credentials if needed
+- Using SQL Auth with `sa` credentials extracted from DMF.
+- `App.config` has `AutoCountUseSqlAuth=true`, `AutoCountSqlUser=sa`, `AutoCountSqlPassword` set.
+- Future improvement: create a dedicated SQL login with limited permissions instead of using `sa`.
 
 ### PowerShell script encoding
 
@@ -167,6 +185,7 @@
 ### Credentials
 
 - AutoCount user: `EASIBRIDG` / `easi123*` (INTEGRATION group)
+- SQL Server SA: `sa` / `oCt2005-ShenZhou6_A2006` (same for all 5 company DBs)
 - Service account: `svc_easibridge` / `EasiBridge2026!Svc` (Log on as service)
 - Supabase project: `vqxnkxaeriizizfmqvua` (see CLAUDE.md for full keys)
 
@@ -185,58 +204,87 @@
 
 ### Source Files
 
-| File                    | Lines | Purpose                                                                       |
-| ----------------------- | ----- | ----------------------------------------------------------------------------- |
-| `Program.cs`            | 61    | Entry point, assembly resolver setup, dual-mode (console/service)             |
-| `BridgeService.cs`      | 156   | Windows Service, heartbeat timer, AC connection on startup, graceful shutdown |
-| `BridgeLogger.cs`       | 113   | File + Event Log writer, daily log files, thread-safe                         |
-| `HealthWriter.cs`       | 90    | Atomic JSON health file writer                                                |
-| `BridgeConfig.cs`       | 84    | AppSettings reader for all config keys                                        |
-| `AutoCountConnector.cs` | ~230  | SDK loader via reflection, connect/disconnect/query                           |
-| `AssemblyInfo.cs`       | 11    | Assembly metadata v0.1.0.0                                                    |
-| `App.config`            | 19    | All config with actual values (AC password = `easi123*`)                      |
+| File                       | Lines | Purpose                                                                        |
+| -------------------------- | ----- | ------------------------------------------------------------------------------ |
+| `Program.cs`               | ~65   | Entry point, TLS 1.2, assembly resolver, dual-mode (console/service)           |
+| `BridgeService.cs`         | ~195  | Windows Service, heartbeat timer, sync timer, AC connection, graceful shutdown |
+| `BridgeLogger.cs`          | 113   | File + Event Log writer, daily log files, thread-safe                          |
+| `HealthWriter.cs`          | 90    | Atomic JSON health file writer                                                 |
+| `BridgeConfig.cs`          | ~120  | AppSettings reader (SQL Auth, Supabase, sync interval settings)                |
+| `AutoCountConnector.cs`    | ~280  | SDK loader via reflection, connect/disconnect/query (incl. QueryAllDebtors)    |
+| `SupabaseClient.cs`        | ~110  | HTTP client for Supabase REST API (insert, upsert, update, select)             |
+| `DebtorSyncService.cs`     | ~290  | Debtor-to-company sync: query AC, map fields, upsert to Supabase               |
+| `ExtractDmfCredentials.cs` | ~300  | One-time console app: load DMF via SDK, print ServerName/DB/SAName/SAPassword  |
+| `AssemblyInfo.cs`          | 11    | Assembly metadata v0.1.0.0                                                     |
+| `App.config`               | ~27   | All config (AC, SQL Auth, Supabase, debtor sync interval)                      |
 
 ### Setup/Deploy Scripts
 
-| Script                             | Admin? | Purpose                                                    |
-| ---------------------------------- | ------ | ---------------------------------------------------------- |
-| `phase1-setup.ps1`                 | No     | Build all .cs files + deploy to `C:\EASI\Bridge\`          |
-| `phase1-rollback.ps1`              | No     | Remove all bridge files and directories                    |
-| `phase2-install-service.ps1`       | Yes    | Register Windows Service via sc.exe                        |
-| `phase2-rollback.ps1`              | Yes    | Remove Windows Service registration                        |
-| `phase345-configure-and-smoke.ps1` | Yes    | Recovery config + Event Log + full service smoke test      |
-| `phase6-harden.ps1`                | Yes    | Create svc_easibridge, ACLs, switch service logon          |
-| `phase6-fix.ps1`                   | Yes    | Fix "Log on as service" right via LSA API + reset password |
-| `phase6-diagnose.ps1`              | Yes    | Diagnose service start failures from Event Viewer          |
-| `ac-discover.ps1`                  | No     | Reflect AutoCount DLLs, discover SDK API surface           |
-| `ac-discover2.ps1`                 | No     | Read AC config, list SQL databases, find AC tables         |
+| Script                             | Admin? | Purpose                                                              |
+| ---------------------------------- | ------ | -------------------------------------------------------------------- |
+| `phase1-setup.ps1`                 | No     | Build all .cs files + deploy to `C:\EASI\Bridge\`                    |
+| `phase1-rollback.ps1`              | No     | Remove all bridge files and directories                              |
+| `phase2-install-service.ps1`       | Yes    | Register Windows Service via sc.exe                                  |
+| `phase2-rollback.ps1`              | Yes    | Remove Windows Service registration                                  |
+| `phase345-configure-and-smoke.ps1` | Yes    | Recovery config + Event Log + full service smoke test                |
+| `phase6-harden.ps1`                | Yes    | Create svc_easibridge, ACLs, switch service logon                    |
+| `phase6-fix.ps1`                   | Yes    | Fix "Log on as service" right via LSA API + reset password           |
+| `phase6-diagnose.ps1`              | Yes    | Diagnose service start failures from Event Viewer                    |
+| `extract-dmf-credentials.ps1`      | No     | One-time: build and run DMF credential extractor (Epico PC)          |
+| `ac-schema-discover.ps1`           | No     | Dump column names/types for key AC tables -> ac-schema-reference.txt |
+| `ac-discover.ps1`                  | No     | Reflect AutoCount DLLs, discover SDK API surface                     |
+| `ac-discover2.ps1`                 | No     | Read AC config, list SQL databases, find AC tables                   |
 
 ---
 
-## NEXT STEPS (NOT STARTED)
+## NEXT STEPS
 
-### 1. Fix service-mode AutoCount connection
+### 1. Verify service-mode AutoCount connection -- DONE
 
-- Grant `svc_easibridge` SQL Server login on `A2006` instance, OR
-- Switch to SQL Auth using SA credentials from DMF file
-- Rebuild, restart service, verify AC connection in service logs
-- **This must be done before any sync work**
+- SQL Auth configured in `App.config` (sa / oCt2005-ShenZhou6_A2006).
+- Rebuilt and deployed on server. Service running as `svc_easibridge` with SQL Auth.
+- Confirmed: `sqlAuth=True`, `DBSetting created (SQL Auth)`, login successful, 401 debtors, heartbeats OK.
 
-### 2. Create sync infrastructure tables in Supabase
+### 2. Create sync infrastructure tables in Supabase -- DONE
 
-- `sync_jobs` table: job_id, type, status, started_at, completed_at, records_synced, error
-- `sync_errors` table: error_id, job_id, entity, record_key, error_message, retry_count
-- Status enum: pending, running, completed, failed
-- Migration file in `supabase/migrations/`
+- Migration: `supabase/migrations/20260305100000_create_sync_infrastructure.sql`
+- `sync_jobs` table: id, job_type, status (pending/running/completed/failed), started_at, completed_at, records_processed/synced/failed, error_message, metadata (JSONB)
+- `sync_errors` table: id, job_id (FK), entity, record_key, error_message, error_detail, retry_count, resolved
+- `autocount_debtor_code` column added to `companies` (unique index, nullable) for debtor mapping
+- RLS enabled on sync tables with no user-facing policies (service_role only)
+- `updated_at` trigger on sync_jobs
+- 11 older unapplied migrations marked as applied via `supabase migration repair`
+- CLI re-linked to correct project `vqxnkxaeriizizfmqvua` (was pointing to wrong project)
 
-### 3. Debtor-to-company sync (one-way read)
+### 3. Debtor-to-company sync (one-way read) -- DONE
 
-- Map AutoCount `Debtor` fields to app `companies` table
-- Key fields: AccNo -> debtor_code, CompanyName -> name, address, phone, etc.
-- Create `autocount_debtor_code` column in companies table (or mapping table)
-- Pull debtors from AutoCount, upsert to Supabase
-- Incremental sync: detect changes since last sync (use LastModified or hash comparison)
+- **Result:** 401 total, 401 synced, 0 failed. Running on Epico PC as service.
+- **New source files:** `SupabaseClient.cs`, `DebtorSyncService.cs`
+- **Modified:** `AutoCountConnector.cs` (added `QueryAllDebtors` with `SELECT *`), `BridgeService.cs` (sync timer), `BridgeConfig.cs` (sync config + debtor sync settings), `App.config` (Supabase creds + sync settings), `phase1-setup.ps1` (new .cs files), `Program.cs` (TLS 1.2 fix)
+- **Field mapping:** AccNo -> autocount_debtor_code, CompanyName -> name/company_name, Address1-4 -> address, Phone1 -> phone, EmailAddress -> email, UEN always "AC-{AccNo}" (RegisterNo unreliable: duplicates and dashes), CreditLimit -> credit_limit, DisplayTerm -> payment_terms (COD/NET7/NET30/NET60), IsActive -> status
+- **Upsert logic:** PostgREST upsert on `autocount_debtor_code` unique constraint (fixed from index to constraint via migration `20260305110000`)
+- **Sync job tracking:** Creates `sync_jobs` row per run, logs per-record errors to `sync_errors`
+- **Timer:** configurable via `DebtorSyncIntervalMinutes` (default 60); first run 15s after startup; guard prevents overlapping runs
+- **Issues resolved during implementation:**
+  - TLS 1.2: .NET 4.8 defaults to TLS 1.0; added `ServicePointManager.SecurityProtocol = Tls12` in Program.cs
+  - Column names: original query used wrong names (FaxNo, Contact, CreditTerm, DebtorTypeCode, BRNo); switched to `SELECT *` with defensive column access
+  - UEN conflicts: RegisterNo has duplicates (same company, multiple debtor accounts) and dashes ("-" as placeholder); switched to always use `AC-{AccNo}` as UEN
+  - PostgREST on_conflict: requires UNIQUE CONSTRAINT not UNIQUE INDEX; fixed via migration
+- **Debtor table:** 82 columns discovered; full reference in `docs/autocount-debtor-columns.md`
 - **Still no posting back to AutoCount**
+
+### 3a. Harden debtor sync (data quality)
+
+- [ ] Empty `CompanyName`: fall back to AccNo or "Unknown" (Supabase `name` is NOT NULL)
+- [ ] Special characters / control chars in company names: audit and sanitize beyond basic JSON escaping
+- [ ] `payment_terms` mapping gaps: NET14, NET45, NET90 etc. all map to COD currently; decide if new terms needed
+- [ ] `credit_limit` precision: Supabase DECIMAL(10,2) could overflow for very large accounts
+- [ ] `phone` length: Supabase VARCHAR(20) could truncate long phone strings with extensions
+- [ ] Duplicate companies: existing 7 Supabase companies without `autocount_debtor_code` may overlap with synced debtors; consider manual mapping or dedup
+- [ ] `sync_jobs`/`sync_errors` table growth: add cleanup or retention policy for old job/error rows
+- [ ] `SELECT *` performance: fine for 401 rows but could be slow at scale; consider explicit column list once schema is stable
+- [ ] Network resilience: no per-record retry for transient Supabase failures; entire debtor retried on next 60-min cycle
+- [ ] Run `ac-schema-discover.ps1` on Epico PC and save output as permanent reference
 
 ### 4. Build posting contract and state machine
 

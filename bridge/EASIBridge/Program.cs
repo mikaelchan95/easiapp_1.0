@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using System.ServiceProcess;
 using System.Threading;
 
@@ -10,6 +11,9 @@ namespace EASIBridge
 
         static int Main(string[] args)
         {
+            // .NET 4.8 defaults to TLS 1.0; Supabase requires TLS 1.2+
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
             AutoCountConnector.SetupAssemblyResolver();
 
             bool consoleMode = args.Length > 0 &&

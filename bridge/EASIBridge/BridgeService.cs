@@ -7,9 +7,11 @@ namespace EASIBridge
     public class BridgeService : ServiceBase
     {
         private Timer _heartbeatTimer;
+        private Timer _syncTimer;
         private DateTime _startTimeUtc;
         private Mutex _singleInstanceMutex;
         private bool _mutexOwned;
+        private int _syncRunning;
 
         public BridgeService()
         {
@@ -94,6 +96,23 @@ namespace EASIBridge
             int intervalMs = BridgeConfig.HeartbeatIntervalSeconds * 1000;
             _heartbeatTimer = new Timer(OnHeartbeat, null, 0, intervalMs);
 
+            if (BridgeConfig.DebtorSyncEnabled && BridgeConfig.AutoCountEnabled)
+            {
+                int syncMinutes = BridgeConfig.DebtorSyncIntervalMinutes;
+                int initialDelayMs = 15000;
+                int syncIntervalMs = syncMinutes > 0 ? syncMinutes * 60 * 1000 : Timeout.Infinite;
+
+                BridgeLogger.Info(string.Format(
+                    "Debtor sync ENABLED. Interval: {0} min. First run in {1}s.",
+                    syncMinutes, initialDelayMs / 1000));
+
+                _syncTimer = new Timer(OnSyncTick, null, initialDelayMs, syncIntervalMs);
+            }
+            else
+            {
+                BridgeLogger.Info("Debtor sync is DISABLED.");
+            }
+
             HealthWriter.Write("running", "Service started");
             BridgeLogger.Info("EASI Bridge started successfully.");
         }
@@ -101,6 +120,13 @@ namespace EASIBridge
         private void DoStop()
         {
             BridgeLogger.Info("EASI Bridge stopping...");
+
+            if (_syncTimer != null)
+            {
+                _syncTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                _syncTimer.Dispose();
+                _syncTimer = null;
+            }
 
             if (_heartbeatTimer != null)
             {
@@ -149,6 +175,28 @@ namespace EASIBridge
             catch (Exception ex)
             {
                 BridgeLogger.Error("Heartbeat error: " + ex.Message);
+            }
+        }
+
+        private void OnSyncTick(object state)
+        {
+            if (Interlocked.CompareExchange(ref _syncRunning, 1, 0) != 0)
+            {
+                BridgeLogger.Info("Debtor sync skipped (previous run still active).");
+                return;
+            }
+
+            try
+            {
+                DebtorSyncService.RunSync();
+            }
+            catch (Exception ex)
+            {
+                BridgeLogger.Error("Debtor sync tick error: " + ex.Message);
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _syncRunning, 0);
             }
         }
     }
