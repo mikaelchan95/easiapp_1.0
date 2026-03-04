@@ -66,8 +66,8 @@ npx supabase link --project-ref <project-ref> # Link to remote project
 npx supabase db push --dry-run        # See what migrations would be applied
 npx supabase migration list           # List all migrations
 
-# 3. Apply migrations with password
-SUPABASE_DB_PASSWORD="<REDACTED>" npx supabase db push
+# 3. Apply migrations with password (set SUPABASE_DB_PASSWORD in .env)
+SUPABASE_DB_PASSWORD="$SUPABASE_DB_PASSWORD" npx supabase db push
 
 # 4. Handle conflicts in migrations
 # - Use "IF NOT EXISTS" for CREATE statements
@@ -95,12 +95,13 @@ npx supabase secrets set KEY=value    # Set environment secret
 
 ## Supabase Configuration
 
-**Project Details:**
+**Project details (secrets):** Store in `.env` — never commit. Use `.env.example` as a template.
 
-- Project URL: `https://<project-ref>.supabase.co`
-- Project Ref: `<project-ref>`
-- Database Password: `<REDACTED>`
-- Service Role API Key: `<REDACTED>`
+- **Project URL** → `EXPO_PUBLIC_SUPABASE_URL`
+- **Anon key** → `EXPO_PUBLIC_SUPABASE_KEY`
+- **Service role key** → `SUPABASE_SERVICE_KEY` (for admin ops; keep secret)
+- **Database password** → `SUPABASE_DB_PASSWORD` (for CLI `db push`)
+- **Project ref** → From dashboard URL or `supabase link`; use with `npx supabase link --project-ref <ref>`
 
 **Storage Buckets:**
 
@@ -126,9 +127,8 @@ npx supabase secrets set KEY=value    # Set environment secret
 
 **Migration Troubleshooting:**
 
-- Project is linked to remote: `<project-ref>`
-- Database password: `<REDACTED>`
-- Real user ID: `2a163380-6934-4f19-b2ff-f6a15081cfe2` (not 33333333-3333-3333-3333-333333333333)
+- Project ref and database password: use values from your `.env` (see `.env.example`).
+- Real user ID: match your `auth.users` / `users` table (example UUID format, not a placeholder like 33333333-...)
 - Valid order statuses: 'pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'cancelled', 'returned'
 - When CLI fails due to conflicts, create manual SQL file and run in Supabase Dashboard
 
@@ -445,7 +445,7 @@ npm run prepare  # Initialize Husky hooks (runs automatically after npm install)
 
 1. Create migration: `npx supabase migration new <name>`
 2. Write SQL in generated file in `supabase/migrations/`
-3. Apply migration: `SUPABASE_DB_PASSWORD="<REDACTED>" npx supabase db push`
+3. Apply migration: set `SUPABASE_DB_PASSWORD` in `.env`, then run `npx supabase db push` (CLI uses the env var when set)
 4. Generate types: `npx supabase gen types typescript --local`
 
 **Debugging authentication issues:**
@@ -457,20 +457,4 @@ npm run prepare  # Initialize Husky hooks (runs automatically after npm install)
 
 ### Environment Variables
 
-**Required for Development:**
-
-```bash
-EXPO_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
-EXPO_PUBLIC_SUPABASE_KEY=<anon_key>
-EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=<google_maps_key>
-```
-
-**Optional for Full Features:**
-
-```bash
-EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=<stripe_key>
-STRIPE_SECRET_KEY=<stripe_secret>
-SUPABASE_SERVICE_KEY=<service_role_key>
-SUPABASE_ACCESS_TOKEN=<access_token>
-GITHUB_TOKEN=<github_token>
-```
+Copy `.env.example` to `.env` and fill in your values. Required for the app: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_KEY`. Optional: `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`, `SUPABASE_SERVICE_KEY`, `SUPABASE_DB_PASSWORD` (for CLI), Stripe keys, `SUPABASE_ACCESS_TOKEN`, `GITHUB_TOKEN`. See `.env.example` for the full list.
