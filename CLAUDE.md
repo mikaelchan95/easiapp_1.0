@@ -6,455 +6,415 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Start development server
-npm start              # Start Expo development server
+npm start              # Start Expo development server (with cache cleared)
 npm run start:clean    # Start with cache cleared
-npm run dev           # Alias for start:clean
+npm run dev            # Alias for start:clean
 
 # Platform-specific development
-npm run ios           # Run on iOS simulator
-npm run android       # Run on Android emulator
-npm run web          # Run in web browser
+npm run ios            # Run on iOS simulator
+npm run android        # Run on Android emulator
+npm run web            # Run in web browser
 
 # Build commands
-npm run build        # Build for web and run tests
-npm run build:web    # Build web version only
-npm run build:android # Build Android APK
-npm run build:ios    # Build iOS IPA
+npm run build          # Build for web and run tests
+npm run build:web      # Build web version only
+npm run build:android  # Build Android APK
+npm run build:ios      # Build iOS IPA
 
 # Testing
-npm test             # Run all tests
-npm run test:watch   # Run tests in watch mode
-npm run test:coverage # Run tests with coverage report
-npm run test:ci      # Run tests in CI mode (no watch)
+npm test               # Run all tests
+npm run test:watch     # Run tests in watch mode
+npm run test:coverage  # Run tests with coverage report
+npm run test:ci        # Run tests in CI mode (no watch)
 npm run test:integration # Run integration tests only
-npm run test:unit    # Run unit tests only
+npm run test:unit      # Run unit tests only
 
 # Code quality
-npm run lint         # Check for linting errors
-npm run lint:fix     # Fix linting errors automatically
-npm run prettier     # Check code formatting
-npm run prettier:fix # Format code automatically
-npm run type-check   # Run TypeScript type checking
-npm run quality      # Run all quality checks (lint + prettier + type-check)
+npm run lint           # Check for linting errors
+npm run lint:fix       # Fix linting errors automatically
+npm run prettier       # Check code formatting
+npm run prettier:fix   # Format code automatically
+npm run type-check     # Run TypeScript type checking
+npm run quality        # Run all quality checks (lint + prettier + type-check)
 
 # Deploy to web
-npm run deploy       # Export and deploy to EAS
+npm run deploy         # Export and deploy to EAS
+
+# Admin Web (admin-web/)
+cd admin-web && npm run dev    # Start admin dashboard dev server (Vite)
+cd admin-web && npm run build  # Build admin dashboard for production
 
 # Supabase CLI commands (always use CLI for database operations)
-# Reference: https://supabase.com/docs/reference/cli/introduction
+npx supabase login                                    # Connect CLI to Supabase account
+npx supabase init                                     # Initialize local project
+npx supabase link --project-ref <project-ref>         # Link to remote project
+npx supabase start                                    # Start local development environment
+npx supabase db push                                  # Apply migrations to remote database
+npx supabase db pull                                  # Pull schema changes from remote
+npx supabase db diff                                  # Check schema differences
+npx supabase db reset                                 # Reset local database
+npx supabase db push --dry-run                        # Preview pending migrations
+npx supabase migration list                           # List all migrations
+npx supabase migration new <name>                     # Create new migration file
+npx supabase gen types typescript --local             # Generate TypeScript types
+npx supabase functions deploy                         # Deploy Edge Functions
+npx supabase functions new <name>                     # Create new Edge Function
+npx supabase secrets list                             # List environment secrets
+npx supabase secrets set KEY=value                    # Set environment secret
 
-# Authentication & Setup
-npx supabase login                    # Connect CLI to Supabase account
-npx supabase init                     # Initialize local project
-npx supabase link --project-ref <project-ref> # Link to remote project
-npx supabase start                    # Start local development environment
-
-# Database Operations
-npx supabase db push                  # Apply migrations to remote database
-npx supabase db pull                  # Pull schema changes from remote
-npx supabase db diff                  # Check schema differences
-npx supabase db reset                 # Reset local database
-npx supabase migration new <name>     # Create new migration file
-npx supabase gen types typescript --local # Generate TypeScript types
-
-# Migration Workflow (Step-by-Step Process)
-# 1. Initialize and link project (one-time setup)
-npx supabase init                     # Initialize local project
-npx supabase link --project-ref <project-ref> # Link to remote project
-
-# 2. Check migration status
-npx supabase db push --dry-run        # See what migrations would be applied
-npx supabase migration list           # List all migrations
-
-# 3. Apply migrations with password (set SUPABASE_DB_PASSWORD in .env)
+# Migration workflow
+# Set SUPABASE_DB_PASSWORD in .env, then:
 SUPABASE_DB_PASSWORD="$SUPABASE_DB_PASSWORD" npx supabase db push
-
-# 4. Handle conflicts in migrations
-# - Use "IF NOT EXISTS" for CREATE statements
-# - Use "ON CONFLICT ... DO NOTHING" for INSERT statements
-# - Fix user IDs to match actual database (e.g., 2a163380-6934-4f19-b2ff-f6a15081cfe2)
-# - Check valid constraint values (e.g., order status must be in allowed list)
-
-# 5. For complex migrations with conflicts, use manual SQL approach:
-# - Create consolidated SQL file with conflict handling
-# - Copy to Supabase Dashboard → SQL Editor
-# - Run manually to bypass CLI conflicts
-
-# Storage Management
-npx supabase storage list-buckets     # List storage buckets
-npx supabase storage create-bucket <name> # Create storage bucket
-
-# Functions & Deployment
-npx supabase functions deploy         # Deploy Edge Functions
-npx supabase functions new <name>     # Create new Edge Function
-
-# Secret Management
-npx supabase secrets list             # List environment secrets
-npx supabase secrets set KEY=value    # Set environment secret
+# For conflicts: use "IF NOT EXISTS" / "ON CONFLICT ... DO NOTHING"
+# For complex conflicts: run SQL manually in Supabase Dashboard → SQL Editor
 ```
-
-## Supabase Configuration
-
-**Project details (secrets):** Store in `.env` — never commit. Use `.env.example` as a template.
-
-- **Project URL** → `EXPO_PUBLIC_SUPABASE_URL`
-- **Anon key** → `EXPO_PUBLIC_SUPABASE_KEY`
-- **Service role key** → `SUPABASE_SERVICE_KEY` (for admin ops; keep secret)
-- **Database password** → `SUPABASE_DB_PASSWORD` (for CLI `db push`)
-- **Project ref** → From dashboard URL or `supabase link`; use with `npx supabase link --project-ref <ref>`
-
-**Storage Buckets:**
-
-- `profile-images` - For user profile pictures (automatically created via migrations)
-- `product-images` - For product catalog images (contains existing product images)
-
-**Orders System:**
-
-- `orders` - Main orders table with user/company relationships and approval workflow
-- `order_items` - Order line items with product details and pricing
-- `order_approvals` - Multi-level approval tracking for company orders
-- `order_status_history` - Complete audit trail of order status changes
-- Automated order number generation: `ORD-YYYY-XXXXXX` format
-- Row-level security policies for user/company access control
-- Sample data seeded for Mikael (3 individual orders)
-
-**Important:**
-
-- Always use Supabase CLI for database operations when possible
-- For complex migrations with conflicts, use manual SQL approach via Supabase Dashboard
-- All storage buckets and policies are created via migrations
-- All seeding is handled via Node.js scripts (never manual)
-
-**Migration Troubleshooting:**
-
-- Project ref and database password: use values from your `.env` (see `.env.example`).
-- Real user ID: match your `auth.users` / `users` table (example UUID format, not a placeholder like 33333333-...)
-- Valid order statuses: 'pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'cancelled', 'returned'
-- When CLI fails due to conflicts, create manual SQL file and run in Supabase Dashboard
-
-**Common Issues Fixed:**
-
-- **Company RLS Policy**: Fixed faulty Row Level Security policy on companies table
-- **Audit System**: Applied manual migration for points logging and audit trails
-- **Points Persistence**: Rewards points now save to database and persist across app reloads
-- **Payment System**: Fixed payment types for company orders to use credit terms (NET30, NET60, etc.)
-- **Tier System**: Fixed tier upgrades to use lifetime points earned, not current balance or spending
-
-**Payment System:**
-
-- Company orders use credit terms (COD, NET7, NET30, NET60) as payment method
-- Individual orders use traditional payment methods (credit_card, debit_card, paypal, etc.)
-- Company orders are automatically marked as 'paid' since they use company credit
-- Database constraints ensure proper payment method validation
-- Migration `20250711180000_fix_payment_methods.sql` implements payment validation
-
-**Credit System:**
-
-- Company credit logic: `current_credit = credit_limit - credit_used`
-- `current_credit` represents available credit (can be negative if over limit)
-- Order creation automatically deducts from available credit
-- Credit balance shown in app represents available credit, not used credit
-
-**Tier System:**
-
-- Tiers based on **lifetime points earned** (total accumulated), not current balance
-- Tier thresholds: Bronze (0-49,999), Silver (50,000-199,999), Gold (200,000+)
-- Redemptions do NOT affect tier status (tier persists based on total earned)
-- Progress widget shows points needed to next tier, not dollars
-- Company at Gold tier with 291,119 lifetime points earned
-
-## Code Quality Rules
-
-### Cursor Rules (.cursor/rules/)
-
-- **Refactor Rule**: Files must be refactored if they approach or exceed 500 lines
-- **Color Scheme Rule**: Strict monochrome design system enforcement
-  - Canvas/Cards: `hsl(0, 0%, 100%)` (pure white)
-  - Frame/Backdrop: `hsl(0, 0%, 98%)` (very light gray)
-  - Text: `hsl(0, 0%, 0%)` (black) and `hsl(0, 0%, 30%)` (dark gray)
-  - Interactive: `hsl(0, 0%, 0%)` (black) backgrounds with white text
-  - Shadows: Light `0 1px 3px rgba(0,0,0,0.04)`, Medium `0 4px 6px rgba(0,0,0,0.08)`
-
-### Project Organization
-
-- Root folder cleaned of development scripts and temporary files
-- Documentation consolidated under `docs/` directory
-- Clean separation between source code and build artifacts
-
-## Supabase Management
-
-- Always use CLI to update Supabase, and remember all the credentials
 
 ## Architecture Overview
 
 ### Tech Stack
 
-- **React Native + Expo 53** - Mobile app framework with development platform
-- **TypeScript** - Type-safe JavaScript throughout the codebase
-- **Supabase** - Backend-as-a-Service (PostgreSQL, Auth, Real-time subscriptions)
-- **Google Maps API** - Location services and mapping
-- **React Navigation 7** - Stack and tab navigation
+- **React Native 0.81 + Expo 54** — Mobile app framework
+- **React 19.1** — UI library
+- **TypeScript 5.9** — Type-safe JavaScript
+- **Supabase** — Backend-as-a-Service (PostgreSQL, Auth, Real-time, Storage)
+- **React Navigation 7** — Stack and tab navigation (not Expo Router)
+- **Google Maps API** — Location services (Singapore-focused)
+- **Stripe** — Payment processing (via MCP and Edge Functions)
+- **Admin Web (Vite + React 19 + Tailwind 4)** — Admin dashboard
+- **EASIBridge (.NET 4.8 Windows Service)** — AutoCount accounting integration
 
-### App Structure
+### Project Structure
 
 ```
-app/
-├── components/        # Feature-organized UI components
-│   ├── Activities/    # Order history, reviews, support, wishlist
-│   ├── Auth/         # Authentication screens and flows
-│   ├── Billing/      # Credit payment and billing dashboard
-│   ├── Cart/         # Shopping cart functionality
-│   ├── Chat/         # Customer support chat interface
-│   ├── Checkout/     # Multi-step checkout process
-│   ├── Home/         # Dashboard and home screen
-│   ├── Layout/       # Screen layout wrappers and containers
-│   ├── Location/     # Uber-style location picker and management
-│   ├── Navigation/   # Bottom tabs and navigation components
-│   ├── Products/     # Product catalog, search, and details
-│   ├── Profile/      # User/company profiles and team management
-│   ├── Rewards/      # Loyalty system and voucher tracking
-│   ├── Settings/     # App settings and preferences
-│   └── UI/           # Reusable components (buttons, animations, etc.)
-├── context/          # React Context providers for global state
-│   ├── AppContext.tsx           # Global app state, user auth, cart
-│   ├── AuthContext.tsx          # Authentication state
-│   ├── CartNotificationContext.tsx  # Cart feedback notifications
-│   ├── CheckoutContext.tsx      # Checkout flow state
-│   ├── RewardsContext.tsx       # Loyalty points and vouchers
-│   └── TransitionContext.tsx    # Navigation transitions
-├── services/         # API integration and business logic
-│   ├── auditService.ts          # Audit trail logging
-│   ├── biometricService.ts      # Face ID/Touch ID authentication
-│   ├── companyBillingService.ts # Company billing operations
-│   ├── enhancedBillingService.ts # Advanced billing features
-│   ├── googleMapsService.ts     # Google Maps API integration
-│   ├── mcpStripeService.ts      # MCP Stripe integration
-│   ├── mcpSupabaseService.ts    # MCP Supabase integration
-│   ├── notificationService.ts   # Push notifications
-│   ├── pointsService.ts         # Loyalty points calculation
-│   ├── productsService.ts       # Product catalog operations
-│   ├── realTimePaymentService.ts # Real-time payment processing
-│   ├── storageService.ts        # AsyncStorage wrapper
-│   ├── supabaseAuthService.ts   # Authentication service
-│   ├── supabaseService.ts       # Main Supabase client
-│   ├── synchronousBalanceService.ts # Synchronous balance updates
-│   └── wishlistService.ts       # Wishlist management
-├── types/           # TypeScript type definitions
-│   ├── checkout.ts  # Checkout-related types
-│   ├── location.ts  # Location and address types
-│   ├── navigation.ts # Navigation types
-│   ├── notification.ts # Notification types
-│   └── user.ts      # User and company types
-├── utils/           # Shared utilities
-│   ├── theme.ts     # Design system theme constants
-│   ├── animations.ts # Reusable animation configurations
-│   └── pricing.ts   # Pricing calculations and validations
-└── data/            # Mock data for development
-    ├── mockProducts.ts # Product catalog
-    └── mockUsers.ts   # User accounts
+easiapp_1.0/
+├── App.tsx                     # Root entry, provider hierarchy, navigation
+├── package.json                # Dependencies and scripts
+├── app.json                    # Expo configuration
+├── tsconfig.json               # TypeScript config (extends expo/tsconfig.base)
+├── jest.config.js              # Jest test configuration
+├── jest.setup.js               # Jest setup file
+├── .eslintrc.js                # ESLint config
+├── .prettierrc                 # Prettier config
+├── .env.example                # Environment variable template
+├── .mcp.json                   # MCP server configuration
+├── admin-web/                  # Admin dashboard (Vite/React/Tailwind)
+├── bridge/                     # EASIBridge (C#/.NET AutoCount sync)
+├── android/                    # Android native project
+├── ios/                        # iOS native project
+├── docs/                       # Documentation
+├── supabase/                   # Supabase migrations (51 files)
+├── .cursor/rules/              # Cursor IDE rules (3 files)
+└── app/                        # Main mobile app source
+    ├── components/             # Feature-organized UI components (16 subdirs)
+    │   ├── Activities/         # Order history, reviews, support, wishlist
+    │   ├── Auth/               # Sign in, sign up, forgot password
+    │   ├── Billing/            # Credit payments, invoices, billing dashboard
+    │   ├── Cart/               # Cart items, empty state, suggested addons
+    │   ├── Chat/               # Customer support chat
+    │   ├── Checkout/           # Multi-step checkout, order tracking
+    │   │   └── sections/       # Checkout section components
+    │   ├── Home/               # Dashboard, banners, balance cards, past orders
+    │   ├── Layout/             # Mobile header
+    │   ├── Location/           # Location picker (Uber-style), maps, saved addresses
+    │   ├── Navigation/         # Permission guards
+    │   ├── Notifications/      # Notification items and filters
+    │   ├── Products/           # Product catalog, search, detail, smart search
+    │   ├── Profile/            # User/company profiles, team management, settings
+    │   ├── Rewards/            # Loyalty system, vouchers, referrals, analytics
+    │   ├── Settings/           # Biometric settings
+    │   └── UI/                 # Reusable: buttons, animations, toasts, cards, etc.
+    ├── config/                 # Configuration
+    │   ├── supabase.ts         # Supabase client init with AsyncStorage auth
+    │   └── googleMaps.ts       # Google Maps config (Singapore region, monochrome)
+    ├── context/                # React Context providers (7 files)
+    │   ├── AppContext.tsx       # Global state: user, company, products, cart, locations, settings
+    │   ├── AuthContext.tsx      # Auth state: session, profile, company, permissions
+    │   ├── CartNotificationContext.tsx  # Cart add-to-cart toast notifications
+    │   ├── CheckoutContext.tsx  # Checkout flow state with AsyncStorage persistence
+    │   ├── NotificationContext.tsx     # In-app notifications, real-time updates
+    │   ├── RewardsContext.tsx   # Loyalty points, tiers, vouchers, redemption
+    │   └── TransitionContext.tsx       # Shared animation transitions
+    ├── database/               # SQL reference files
+    │   ├── schema.sql          # Base schema (companies, users, permissions)
+    │   └── seed.sql            # Seed data (companies, users, permissions)
+    ├── hooks/                  # Custom React hooks
+    │   ├── useCheckoutNavigation.ts  # Multi-step checkout flow navigation
+    │   ├── useCompanyPoints.ts       # Company points summary, tier, history
+    │   ├── useDeliveryLocation.ts    # Delivery location with saved addresses
+    │   └── usePurchaseAchievement.ts # Purchase achievement UI and rewards calc
+    ├── screens/                # Standalone screens
+    │   ├── CompanyInvoicesScreen.tsx      # Company invoice list with filters
+    │   ├── NotificationSettingsScreen.tsx # Notification preferences
+    │   └── NotificationsScreen.tsx        # Notification list with filters
+    ├── services/               # API integration and business logic (16 files)
+    │   ├── auditService.ts              # Audit trail and event logging
+    │   ├── biometricService.ts          # Face ID/Touch ID authentication
+    │   ├── companyBillingService.ts      # Company billing, invoices, payments
+    │   ├── enhancedBillingService.ts     # Advanced billing features and analytics
+    │   ├── googleMapsService.ts         # Google Maps API, geocoding, places
+    │   ├── mcpStripeService.ts          # Stripe via MCP/Edge Functions
+    │   ├── mcpSupabaseService.ts        # MCP-based Supabase operations
+    │   ├── notificationService.ts       # Push and in-app notifications
+    │   ├── pointsService.ts             # Points, rewards catalog, vouchers
+    │   ├── productsService.ts           # Product catalog CRUD and search
+    │   ├── realTimePaymentService.ts    # Real-time payment subscriptions
+    │   ├── storageService.ts            # Supabase Storage (image upload/download)
+    │   ├── supabaseAuthService.ts       # Auth flows (sign up/in/out, password reset)
+    │   ├── supabaseService.ts           # Main Supabase client (users, orders, etc.)
+    │   ├── synchronousBalanceService.ts # Atomic balance updates via RPC
+    │   └── wishlistService.ts           # Wishlist CRUD
+    ├── types/                  # TypeScript type definitions
+    │   ├── checkout.ts         # DeliveryAddress, DeliverySlot, PaymentMethod, OrderSummary
+    │   ├── location.ts         # LocationCoordinate, SavedAddress, component props
+    │   ├── navigation.ts       # MainTabParamList, RootStackParamList (all screen params)
+    │   ├── notification.ts     # NotificationType, NotificationData, NotificationSettings
+    │   └── user.ts             # User, Company, UserPermissions, CompanyUserRole, helpers
+    ├── utils/                  # Shared utilities (9 files)
+    │   ├── animations.ts       # Animation configs (fade, slide, spring, pulse, shake)
+    │   ├── authMutex.ts        # Serialize auth operations (async-mutex)
+    │   ├── checkoutValidation.ts  # Address, email, card, phone validation
+    │   ├── formatting.ts       # Number, currency, percentage formatting helpers
+    │   ├── haptics.ts          # iOS haptic feedback patterns
+    │   ├── imageUtils.ts       # Supabase Storage URLs, product image mapping
+    │   ├── pricing.ts          # Retail/trade pricing, GST, cart totals, delivery fees
+    │   ├── testSupabaseIntegration.ts  # Supabase integration test helpers
+    │   └── theme.ts            # Design system: COLORS, SHADOWS, SPACING, TYPOGRAPHY
+    └── assets/                 # Static assets (icons, splash, brand logos)
 ```
+
+### Navigation Architecture
+
+Navigation is configured in `App.tsx` using React Navigation (not Expo Router file-based routing, despite `expo-router` being in dependencies).
+
+**Provider hierarchy (outermost to innermost):**
+
+```
+ErrorBoundary → GestureHandlerRootView → AuthProvider → AppProvider →
+RewardsProvider → NotificationProvider → CheckoutProvider →
+CartNotificationProvider → TransitionProvider → AppContent
+```
+
+**Main tabs:** Home, Products, Cart, Rewards, Profile
+
+**Stack screens include:** ProductDetail, SmartSearch, Checkout, UnifiedCheckout, OrderSuccess, OrderTracking, OrderProcessing, OrderConfirmation, OrderHistory, Wishlist, Reviews, Support, Rewards, VoucherTracking, RewardsFAQ, ReferralScreen, InviteFriends, AchievementsScreen, MilestonesScreen, RewardsAnalytics, LocationPickerScreen, UberStyleLocationScreen, DeliveryLocationScreen, SavedLocations, CompanyProfile, TeamManagement, Settings, Notifications, NotificationSettings, CheckoutAddress/Delivery/Payment/Review, BillingDashboard, CreditPayment, BillingSettings, InvoiceGeneration, InvoiceViewer
 
 ### Key Design Patterns
 
-#### Context-Based State Management
+**Context-based state management** — 7 context providers handle global state, auth, cart notifications, checkout flow, notifications, rewards/loyalty, and animation transitions. State persists to AsyncStorage for cart, location, and checkout data.
 
-- `AppContext.tsx` - Global app state, user auth, cart management
-- `RewardsContext.tsx` - Loyalty points and voucher tracking
-- `CartNotificationContext.tsx` - Cart feedback notifications
-- State persistence with AsyncStorage for cart and location
+**Service layer** — 16 stateless service modules organized by domain. Services export functions (not classes), use Promises, and handle error logging. State lives in Context providers, not services.
 
-#### Theme System (`app/utils/theme.ts`)
+**Theme system** (`app/utils/theme.ts`) — Monochrome design with `hsl(0, 0%, 100%)` for cards, `hsl(0, 0%, 98%)` for backgrounds, black text and buttons. Consistent typography scale, shadow system, and spacing constants.
 
-- Monochrome design: pure whites on light gray backgrounds
-- Strict color palette: `hsl(0, 0%, 100%)` for cards, `hsl(0, 0%, 98%)` for backgrounds
-- Black text and interactive elements following workspace design rules
-- Consistent typography scale with semantic naming (h1-h6, body, caption, etc.)
-- Shadow system with light/medium/large variants
+**Dual pricing** (`app/utils/pricing.ts`) — Retail vs trade pricing based on user type, with GST calculation, stock validation, and delivery fee computation.
 
-#### Pricing & User Roles (`app/utils/pricing.ts`)
+## Admin Web Dashboard (`admin-web/`)
 
-- Dual pricing: retail vs trade pricing based on user type
-- Stock validation with quantity limits
-- Company users with permissions-based access to trade pricing
+Standalone admin panel for managing the EASI platform.
 
-#### Service Layer Architecture
+**Tech stack:** React 19.2, Vite 7, TypeScript, Tailwind CSS 4, React Router 7, Supabase, Lucide React, jsPDF, PapaParse
 
-Services are organized by domain and provide centralized business logic:
+**Features:**
 
-- **Authentication Services**: `supabaseAuthService.ts` handles auth flows, `biometricService.ts` for Face ID/Touch ID
-- **Data Services**: `supabaseService.ts` (main client), `mcpSupabaseService.ts` (MCP integration)
-- **Business Logic**: `pointsService.ts`, `productsService.ts`, `wishlistService.ts`
-- **Payment Services**: `realTimePaymentService.ts`, `synchronousBalanceService.ts`, `companyBillingService.ts`
-- **Infrastructure Services**: `storageService.ts` (AsyncStorage), `notificationService.ts`, `auditService.ts`
-- **External Integrations**: `googleMapsService.ts`, `mcpStripeService.ts`
+- **Dashboard** — Overview statistics
+- **Products** — CRUD, CSV import, image upload
+- **Categories** — Category management
+- **Customers** — Individual customer management, points history, vouchers
+- **Companies** — B2B company management, employees
+- **Orders** — Order management and details
+- **Invoices** — Individual and company invoices
+- **Rewards** — Reward catalog, vouchers, missing points reports
+- **Notifications** — Templates, sending, history, analytics
+- **Settings** — General, admin management, notification preferences
+- **Content** — Content management
 
-**Service Pattern:**
+**Running:** `cd admin-web && npm run dev`
 
-- Services export functions, not classes
-- All async operations use Promise-based API
-- Services handle error logging and recovery
-- Services are stateless; state lives in Context providers
+## EASIBridge (`bridge/`)
+
+Windows Service that syncs data between AutoCount Accounting and Supabase.
+
+**Tech stack:** C# / .NET Framework 4.8, AutoCount Accounting 2.1 SDK (via reflection)
+
+**Purpose:** One-way sync of debtors from AutoCount → Supabase `companies` table. Writes to `sync_jobs` and `sync_errors` tables for tracking. Runs as a Windows Service with configurable sync interval (default 60 min).
+
+**Config:** `App.config` contains AutoCount DB connection, Supabase URL/service key, sync interval.
+
+**Related migrations:** `20260305100000_create_sync_infrastructure.sql`, `20260305110000_fix_debtor_code_constraint.sql`
+
+## Supabase Configuration
+
+**Project details (secrets):** Store in `.env` — never commit. Use `.env.example` as a template.
+
+- `EXPO_PUBLIC_SUPABASE_URL` — Project URL (required)
+- `EXPO_PUBLIC_SUPABASE_KEY` — Anon key (required)
+- `SUPABASE_SERVICE_KEY` — Service role key (admin operations)
+- `SUPABASE_DB_PASSWORD` — For CLI `db push`
+- `SUPABASE_ACCESS_TOKEN` — For Supabase CLI/tooling
+- `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` — Google Maps
+- `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` — Stripe client key
+- `STRIPE_SECRET_KEY` — Stripe secret key
+- `EXPO_PUBLIC_EAS_PROJECT_ID` — EAS Build / push notifications
+- `GITHUB_TOKEN` — GitHub MCP / tooling
+
+### Database Schema (51 migrations)
+
+**Core tables:**
+
+- `companies` — Business profiles with UEN, credit_limit, credit_used, payment_terms, autocount_debtor_code
+- `users` — User accounts with account_type ('individual' | 'company'), company_id, role
+- `user_permissions` — Granular role-based permissions (can_create_orders, can_approve_orders, etc.)
+- `products` — Product catalog with promo pricing, size options, variants, categories
+- `categories` — Product categories
+
+**Orders system:**
+
+- `orders` — Main orders with user/company relationships, approval workflow, order number (ORD-YYYY-XXXXXX)
+- `order_items` — Line items with product details and pricing
+- `order_approvals` — Multi-level approval tracking
+- `order_status_history` — Audit trail of status changes
+
+**Billing system:**
+
+- `invoices` — Invoice records
+- `invoice_payments` — Payment records with trigger to update invoice status
+- `balance_updates` — Balance change tracking
+- RPC functions: `update_company_balance_atomic`, `get_company_balance_summary`, `get_company_balance_locked`
+
+**Points and rewards:**
+
+- Points system with lifetime_points_earned tracking
+- Redemption system with reward catalog
+- Company voucher sharing
+- Audit logging for points transactions
+
+**Notifications:**
+
+- `notifications` — In-app notification system
+
+**Locations:**
+
+- `user_locations` — Saved delivery addresses with RLS
+
+**Sync infrastructure (AutoCount Bridge):**
+
+- `sync_jobs` — Sync job tracking
+- `sync_errors` — Sync error logging
+
+**Storage buckets:**
+
+- `profile-images` — User profile pictures
+- `product-images` — Product catalog images
+
+**Valid order statuses:** 'pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'cancelled', 'returned'
 
 ### Business Logic
 
-#### B2B Capabilities
+**Payment system:**
+
+- Company orders use credit terms (COD, NET7, NET30, NET60) as payment method
+- Individual orders use traditional methods (credit_card, debit_card, paypal, etc.)
+- Company orders auto-marked as 'paid' using company credit
+- Credit logic: available credit = credit_limit - credit_used
+
+**Tier system:**
+
+- Tiers based on lifetime points earned (total accumulated), not current balance
+- Thresholds: Bronze (0–49,999), Silver (50,000–199,999), Gold (200,000+)
+- Redemptions do NOT affect tier status
+- Points earned: 2 points per $1 spent
+
+**B2B capabilities:**
 
 - Company profiles with UEN, credit limits, payment terms
-- Team management with role-based permissions (Admin, Manager, Member, Viewer)
-- Multi-level approval workflows for orders
-- Trade pricing access for verified company users
+- Team management with roles: Admin, Manager, Member, Viewer
+- Multi-level order approval workflows
+- Trade pricing for verified company users
 
-#### Location Management
+**Location management:**
 
-- Uber-style location picker with recent locations and favorites
-- Google Maps integration with monochrome styling
-- Location persistence and management across app sections
+- Uber-style location picker with Google Maps
+- Singapore-focused with delivery zones
+- Monochrome map styling
+- Saved locations with AsyncStorage persistence
 
-#### E-commerce Features
+## Code Quality Rules
 
-- Product catalog with advanced search and filtering
-- Smart cart with quantity validation and stock checking
-- Multi-step checkout with delivery scheduling
-- Order tracking and history
+### Cursor Rules (`.cursor/rules/`)
 
-### Supabase Integration (`app/services/supabaseService.ts`)
+- **refactor.mdc** — Refactor files approaching or exceeding 500 lines
+- **color-scheme.mdc** — Strict monochrome design system (white cards on light gray frame, black text/buttons)
+- **troubleshoot-rule.mdc** — Fix root causes not symptoms; keep summaries detailed
 
-#### Database Schema
+### Linting & Formatting
 
-- `users` table with account_type ('individual' | 'company')
-- `companies` table with business information and approval settings
-- `user_permissions` table for granular access control
-- Row-level security (RLS) policies for data isolation
+- **ESLint:** `@typescript-eslint/parser`, env: node + es6 + react-native, rules: no-unused-vars (warn)
+- **Prettier:** Single quotes, semicolons, trailing commas (es5), 80 char width, 2-space tabs
+- **Husky + lint-staged:** Pre-commit runs ESLint fix + Prettier on TS/TSX; Prettier on JS/JSX/JSON/MD
 
-#### Key Service Methods
+### Testing
 
-- User authentication and profile management
-- Company data and team member management
-- Real-time subscriptions for user/company changes
-- Demo authentication method for development
-
-### Development Guidelines
-
-#### File Organization
-
-- Components grouped by feature area, not by type
-- Avoid files over 500 lines (refactor rule in `.cursor/rules/refactor.mdc`)
-- Use TypeScript interfaces from `app/types/` for consistency
-
-#### Styling Standards
-
-- Follow workspace color scheme rules in `.cursor/rules/color-scheme.mdc`
-- Use theme constants from `app/utils/theme.ts` instead of hardcoded values
-- Maintain monochrome aesthetic with generous spacing
-
-#### State Management
-
-- Use Context providers for global state
-- Validate business rules in reducers (stock limits, permissions)
-- Persist critical data (cart, location) with AsyncStorage
-
-### Testing & Quality
-
-- **Testing Framework**: Jest with React Native preset
-- **Test Location**: `app/**/__tests__/**/*.{ts,tsx}` or `app/**/*.{test,spec}.{ts,tsx}`
-- **Coverage Thresholds**: 70% for branches, functions, lines, and statements
-- **Test Types**: Unit tests, integration tests, and manual UI/UX validation
-- **Module Aliasing**: `@/` maps to `app/` directory in tests
-- **Test Environment**: jsdom with 30-second timeout for async operations
-
-### Special Considerations
-
-- Google Maps API key configured for both iOS and Android in `app.json`
-- Location permissions required for delivery functionality
-- Supabase RLS policies enforce data security for B2B features
-- Offline-first design with graceful fallbacks to mock data
-
-### Mock Data & Development
-
-- `app/data/mockProducts.ts` - Product catalog with dual pricing
-- `app/data/mockUsers.ts` - User accounts (individual & company) with roles
-- Demo authentication available in `supabaseService.ts` for development
-- Mock data includes B2B features like company profiles, team management, and permissions
-
-### Key Architecture Decisions
-
-- Feature-based component organization over type-based structure
-- Context providers for global state instead of Redux/Zustand
-- AsyncStorage for cart and location persistence
-- Monochrome design system with strict HSL color values
-- Dual pricing system (retail/trade) with GST calculation
-- Role-based permissions with company hierarchy support
+- **Framework:** Jest 29 with React Native preset
+- **Environment:** jsdom, 30s timeout
+- **Test location:** `app/**/__tests__/**/*.{ts,tsx}` or `app/**/*.{test,spec}.{ts,tsx}`
+- **Coverage thresholds:** 70% for branches, functions, lines, and statements
+- **Module alias:** `@/` maps to `app/` directory
+- **Setup:** `npm run prepare` initializes Husky hooks (runs automatically after `npm install`)
 
 ## MCP Server Integration
 
-This project uses MCP (Model Context Protocol) servers for enhanced development capabilities:
+**Configuration:** `.mcp.json` in project root
 
-**Configured Servers:**
+| Server   | Package                         | Purpose                                          |
+| -------- | ------------------------------- | ------------------------------------------------ |
+| Supabase | `@supabase/mcp-server-supabase` | Database operations, migrations, type generation |
+| Stripe   | `@stripe/mcp`                   | Payment processing integration                   |
+| GitHub   | `@edjl/github-mcp`              | Repository management                            |
 
-- **Supabase MCP** (`@supabase/mcp-server-supabase`): Database operations, migrations, and type generation
-- **Stripe MCP** (`@stripe/mcp`): Payment processing integration
-- **GitHub MCP** (`@edjl/github-mcp`): Repository management and CI/CD
-
-**Configuration File:** `.mcp.json` in project root
-
-**Usage:**
-
-- MCP servers enable AI-assisted database management and payment operations
-- Services in `app/services/mcp*.ts` provide typed interfaces to MCP functionality
-- Real-time database operations benefit from MCP's enhanced query capabilities
-
-## Pre-commit Hooks
-
-The project uses Husky for Git hooks and lint-staged for pre-commit validation:
-
-**Pre-commit Actions:**
-
-- TypeScript/TSX files: ESLint fix + Prettier format
-- JS/JSX/JSON/MD files: Prettier format
-- Automatic code quality enforcement before commits
-
-**Setup:**
-
-```bash
-npm run prepare  # Initialize Husky hooks (runs automatically after npm install)
-```
+Services in `app/services/mcpStripeService.ts` and `app/services/mcpSupabaseService.ts` provide typed interfaces to MCP functionality.
 
 ## Quick Reference
-
-### Important File Locations
-
-- **Environment Config**: `.env` (not in repo), see `.env.example` for template
-- **App Config**: `app.json` - Expo configuration including bundle IDs and API keys
-- **TypeScript Config**: `tsconfig.json` - TypeScript compiler settings
-- **Jest Config**: `jest.config.js` and `jest.setup.js` - Testing configuration
-- **Supabase Migrations**: `supabase/migrations/` - Database schema changes
-- **Cursor Rules**: `.cursor/rules/` - Code quality and style enforcement
 
 ### Common Development Tasks
 
 **Adding a new feature:**
 
-1. Create feature-specific components in `app/components/<Feature>/`
+1. Create feature components in `app/components/<Feature>/`
 2. Add service functions in `app/services/<feature>Service.ts`
 3. Add TypeScript types in `app/types/`
-4. Update Context providers if global state is needed
-5. Keep files under 500 lines (refactor rule)
-6. Follow monochrome color scheme (see `.cursor/rules/color-scheme.mdc`)
+4. Add custom hooks in `app/hooks/` if needed
+5. Update Context providers if global state is needed
+6. Add navigation screen params to `app/types/navigation.ts`
+7. Register screens in `App.tsx`
+8. Keep files under 500 lines (refactor rule)
+9. Follow monochrome color scheme
 
 **Database schema changes:**
 
 1. Create migration: `npx supabase migration new <name>`
 2. Write SQL in generated file in `supabase/migrations/`
-3. Apply migration: set `SUPABASE_DB_PASSWORD` in `.env`, then run `npx supabase db push` (CLI uses the env var when set)
+3. Apply: set `SUPABASE_DB_PASSWORD` in `.env`, then `npx supabase db push`
 4. Generate types: `npx supabase gen types typescript --local`
+5. For conflicts: use `IF NOT EXISTS` / `ON CONFLICT ... DO NOTHING`
+6. For complex conflicts: run SQL manually in Supabase Dashboard → SQL Editor
 
 **Debugging authentication issues:**
 
 - Check RLS policies in Supabase dashboard
 - Verify user exists in `auth.users` table
 - Check `users` table has matching record
-- For company users, verify `user_permissions` table entry
+- For company users, verify `user_permissions` entry
+- Auth operations are serialized via `authMutex` (async-mutex)
 
-### Environment Variables
+### Key Architecture Decisions
 
-Copy `.env.example` to `.env` and fill in your values. Required for the app: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_KEY`. Optional: `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`, `SUPABASE_SERVICE_KEY`, `SUPABASE_DB_PASSWORD` (for CLI), Stripe keys, `SUPABASE_ACCESS_TOKEN`, `GITHUB_TOKEN`. See `.env.example` for the full list.
+- Feature-based component organization over type-based structure
+- Context providers for global state instead of Redux/Zustand
+- React Navigation (imperative) over Expo Router (file-based)
+- AsyncStorage for cart, location, and checkout persistence
+- Monochrome design system with strict HSL color values
+- Dual pricing system (retail/trade) with GST calculation
+- Role-based permissions with company hierarchy support
+- Supabase RPC functions for atomic balance operations
+- One-way AutoCount → Supabase sync via EASIBridge Windows Service
+- Separate admin-web dashboard (Vite + React) sharing the same Supabase backend
