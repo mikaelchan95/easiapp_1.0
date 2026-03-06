@@ -18,7 +18,23 @@
 
 :root {
   --bg-app: #f3f4f6;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --bg-card: #ffffff;
+  --bg-sidebar: #ffffff;
+
   --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #9ca3af;
+
+  --border-primary: #e5e7eb;
+  --border-secondary: #d1d5db;
+  --border-subtle: #e5e7eb;
+  --border-default: #e5e7eb;
+
+  --color-primary: #111827;
+  --color-primary-bg: #f3f4f6;
 }
 
 .dark {

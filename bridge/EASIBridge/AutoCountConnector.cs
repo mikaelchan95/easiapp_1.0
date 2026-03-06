@@ -271,6 +271,90 @@ namespace EASIBridge
 
         public static int GetDebtorCount()
         {
+            return GetTableCount("Debtor");
+        }
+
+        /// <summary>Query all rows from any AutoCount table.</summary>
+        public static DataTable QueryTable(string tableName, string orderBy = null)
+        {
+            if (_dbSetting == null)
+            {
+                BridgeLogger.Error("Cannot query: not connected.");
+                return null;
+            }
+
+            try
+            {
+                string sql = "SELECT * FROM [" + tableName + "]";
+                if (!string.IsNullOrEmpty(orderBy))
+                    sql += " ORDER BY [" + orderBy + "]";
+
+                var method = _dbSettingType.GetMethod("GetDataTable",
+                    new Type[] { typeof(string), typeof(bool), typeof(object[]) });
+
+                DataTable dt = (DataTable)method.Invoke(
+                    _dbSetting,
+                    new object[] { sql, false, new object[0] });
+
+                BridgeLogger.Info(string.Format(
+                    "{0} query returned {1} rows, {2} columns.",
+                    tableName, dt.Rows.Count, dt.Columns.Count));
+
+                return dt;
+            }
+            catch (TargetInvocationException ex)
+            {
+                string inner = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                BridgeLogger.Error(string.Format("{0} query error: {1}", tableName, inner));
+                return null;
+            }
+            catch (Exception ex)
+            {
+                BridgeLogger.Error(string.Format("{0} query error: {1}", tableName, ex.Message));
+                return null;
+            }
+        }
+
+        /// <summary>Query detail rows for a master document (e.g. invoice lines by DocNo).</summary>
+        public static DataTable QueryDetailByDocNo(string detailTable, string docNo)
+        {
+            if (_dbSetting == null)
+            {
+                BridgeLogger.Error("Cannot query: not connected.");
+                return null;
+            }
+
+            try
+            {
+                string sql = string.Format(
+                    "SELECT * FROM [{0}] WHERE DocNo = '{1}'",
+                    detailTable, docNo.Replace("'", "''"));
+
+                var method = _dbSettingType.GetMethod("GetDataTable",
+                    new Type[] { typeof(string), typeof(bool), typeof(object[]) });
+
+                DataTable dt = (DataTable)method.Invoke(
+                    _dbSetting,
+                    new object[] { sql, false, new object[0] });
+
+                return dt;
+            }
+            catch (TargetInvocationException ex)
+            {
+                string inner = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                BridgeLogger.Error(string.Format("{0} detail query error: {1}", detailTable, inner));
+                return null;
+            }
+            catch (Exception ex)
+            {
+                BridgeLogger.Error(string.Format("{0} detail query error: {1}", detailTable, ex.Message));
+                return null;
+            }
+        }
+
+        /// <summary>Get row count for any table.</summary>
+        public static int GetTableCount(string tableName)
+        {
             if (_dbSetting == null) return -1;
 
             try
@@ -278,17 +362,31 @@ namespace EASIBridge
                 var method = _dbSettingType.GetMethod("ExecuteScalar",
                     new Type[] { typeof(string), typeof(object[]) });
 
+                string sql = "SELECT COUNT(*) FROM [" + tableName + "]";
                 object result = method.Invoke(
                     _dbSetting,
-                    new object[] { "SELECT COUNT(*) FROM Debtor", new object[0] });
+                    new object[] { sql, new object[0] });
 
                 return Convert.ToInt32(result);
             }
             catch (Exception ex)
             {
-                BridgeLogger.Error("Debtor count error: " + ex.Message);
+                BridgeLogger.Error(string.Format("{0} count error: {1}", tableName, ex.Message));
                 return -1;
             }
+        }
+
+        /// <summary>Log column names for a table (for field mapping reference).</summary>
+        public static void LogTableColumns(DataTable dt, string tableName)
+        {
+            if (dt == null) return;
+            var colNames = new System.Text.StringBuilder();
+            for (int i = 0; i < dt.Columns.Count; i++)
+            {
+                if (i > 0) colNames.Append(", ");
+                colNames.Append(dt.Columns[i].ColumnName);
+            }
+            BridgeLogger.Info(string.Format("{0} columns: {1}", tableName, colNames));
         }
 
         public static void Disconnect()

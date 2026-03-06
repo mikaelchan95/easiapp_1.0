@@ -181,7 +181,7 @@ export default function CustomerDetail() {
             <h3 className="text-sm font-medium text-[var(--text-secondary)]">
               Total Spent
             </h3>
-            <div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg">
+            <div className="p-2 bg-emerald-50 text-emerald-600 ring-1 ring-emerald-600/20 rounded-lg">
               <DollarSign size={18} />
             </div>
           </div>
@@ -198,7 +198,7 @@ export default function CustomerDetail() {
             <h3 className="text-sm font-medium text-[var(--text-secondary)]">
               Total Orders
             </h3>
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
+            <div className="p-2 bg-blue-50 text-blue-600 ring-1 ring-blue-600/20 rounded-lg">
               <ShoppingBag size={18} />
             </div>
           </div>
@@ -211,7 +211,7 @@ export default function CustomerDetail() {
             <h3 className="text-sm font-medium text-[var(--text-secondary)]">
               Loyalty Points
             </h3>
-            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-lg">
+            <div className="p-2 bg-amber-50 text-amber-600 ring-1 ring-amber-600/20 rounded-lg">
               <Star size={18} />
             </div>
           </div>
@@ -361,10 +361,10 @@ export default function CustomerDetail() {
                           <span
                             className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${
                               order.status === 'delivered'
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20'
                                 : order.status === 'cancelled'
-                                  ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                                  : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                  ? 'bg-red-50 text-red-700 ring-1 ring-red-600/20'
+                                  : 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/20'
                             }`}
                           >
                             {order.status}

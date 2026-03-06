@@ -99,6 +99,8 @@ __pycache__/
 
 .env
 admin-web/.env
+easi-sales/.env
+easi-driver/.env
 
 # Extracted DMF credentials (one-time run on Epico PC; do not commit)
 *extracted-dmf-credentials*

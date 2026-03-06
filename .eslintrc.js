@@ -26,5 +26,8 @@ module.exports = {
     '.expo/',
     'coverage/',
     '*.config.js',
+    'admin-web/',
+    'easi-driver/',
+    'easi-sales/',
   ],
 };

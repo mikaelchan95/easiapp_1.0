@@ -5,19 +5,44 @@ import {
   Package,
   LogOut,
   ShoppingCart,
-  FileText,
   Menu,
   X,
   Bell,
   Settings,
   Search,
-  Calendar,
   ChevronDown,
   Receipt,
-  Tags,
+  Users,
+  Building2,
+  FolderTree,
+  Gift,
+  FileImage,
+  Truck,
+  UserCheck,
+  ClipboardList,
+  UserPlus,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../context/ThemeContext';
+
+const ROUTE_TITLES: Record<string, string> = {
+  '/': 'Overview',
+  '/products': 'Products',
+  '/categories': 'Categories',
+  '/customers': 'Customers',
+  '/companies': 'Companies',
+  '/orders': 'Orders',
+  '/invoices': 'Invoices',
+  '/company-invoices': 'Company Invoices',
+  '/drivers': 'Drivers',
+  '/salesmen': 'Salesmen',
+  '/deliveries': 'Deliveries',
+  '/onboarding': 'Onboarding Requests',
+  '/rewards': 'Rewards',
+  '/content': 'Content',
+  '/notifications': 'Notifications',
+  '/settings': 'Settings',
+};
 
 export const Layout = () => {
   const navigate = useNavigate();
@@ -25,13 +50,18 @@ export const Layout = () => {
   const { theme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [user, setUser] = useState({ name: '', email: '', role: '' });
 
-  // Mock user for display
-  const user = {
-    name: 'Kamisato Aya',
-    role: 'Manager',
-    avatar: 'https://ui-avatars.com/api/?name=Kamisato+Aya&background=random',
-  };
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const meta = session.user.user_metadata;
+        const email = session.user.email ?? '';
+        const name = meta?.full_name || meta?.name || email.split('@')[0];
+        setUser({ name, email, role: meta?.role || 'Admin' });
+      }
+    });
+  }, []);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -104,9 +134,9 @@ export const Layout = () => {
         <div className="flex h-20 items-center px-6 border-b border-dashed border-[var(--border-subtle)]">
           <div className="flex items-center gap-2 text-[var(--text-primary)]">
             <div className="h-8 w-8 rounded-lg bg-[var(--color-primary)] flex items-center justify-center text-white font-bold text-xl">
-              S
+              E
             </div>
-            <span className="text-xl font-bold tracking-tight">SalesSync</span>
+            <span className="text-xl font-bold tracking-tight">EASI Admin</span>
           </div>
           <button
             className="ml-auto lg:hidden text-gray-500"
@@ -122,26 +152,49 @@ export const Layout = () => {
               Main Menu
             </div>
             <NavItem to="/" icon={LayoutDashboard} label="Overview" />
-            <NavItem to="/analytics" icon={FileText} label="Analytics" />
-            <NavItem to="/products" icon={Package} label="Product" />
-            <NavItem to="/orders" icon={ShoppingCart} label="Sales" />
+            <NavItem to="/products" icon={Package} label="Products" />
+            <NavItem to="/categories" icon={FolderTree} label="Categories" />
+            <NavItem to="/orders" icon={ShoppingCart} label="Orders" />
 
             <div className="px-4 py-2 mt-6 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
-              Transaction
+              Customers
             </div>
-            <NavItem to="/invoices" icon={Receipt} label="Invoice" />
+            <NavItem to="/customers" icon={Users} label="Customers" />
+            <NavItem to="/companies" icon={Building2} label="Companies" />
+
+            <div className="px-4 py-2 mt-6 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
+              Staff
+            </div>
+            <NavItem to="/drivers" icon={Truck} label="Drivers" />
+            <NavItem to="/salesmen" icon={UserCheck} label="Salesmen" />
+
+            <div className="px-4 py-2 mt-6 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
+              Operations
+            </div>
+            <NavItem to="/deliveries" icon={ClipboardList} label="Deliveries" />
+            <NavItem to="/onboarding" icon={UserPlus} label="Onboarding" />
+
+            <div className="px-4 py-2 mt-6 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
+              Finance
+            </div>
+            <NavItem to="/invoices" icon={Receipt} label="Invoices" />
             <NavItem
               to="/company-invoices"
               icon={Receipt}
               label="Company SOA"
             />
-            <NavItem to="/returns" icon={Tags} label="Returns" />
 
             <div className="px-4 py-2 mt-6 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
-              General
+              Engagement
             </div>
+            <NavItem to="/rewards" icon={Gift} label="Rewards" />
+            <NavItem to="/content" icon={FileImage} label="Content" />
             <NavItem to="/notifications" icon={Bell} label="Notifications" />
-            <NavItem to="/settings" icon={Settings} label="Setting" />
+
+            <div className="px-4 py-2 mt-6 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
+              System
+            </div>
+            <NavItem to="/settings" icon={Settings} label="Settings" />
           </nav>
 
           <div className="pt-4 mt-auto border-t border-[var(--border-subtle)] space-y-2">
@@ -185,9 +238,9 @@ export const Layout = () => {
               <Menu size={20} />
             </button>
             <h1 className="text-2xl font-bold text-[var(--text-primary)] hidden sm:block">
-              {location.pathname === '/'
-                ? 'Overview'
-                : location.pathname.split('/')[1].charAt(0).toUpperCase() +
+              {ROUTE_TITLES[location.pathname] ??
+                ROUTE_TITLES['/' + location.pathname.split('/')[1]] ??
+                location.pathname.split('/')[1].charAt(0).toUpperCase() +
                   location.pathname.split('/')[1].slice(1)}
             </h1>
           </div>
@@ -214,32 +267,17 @@ export const Layout = () => {
               </div>
             </div>
 
-            {/* Date Picker (Mock) */}
-            <button className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl shadow-sm text-sm font-medium text-[var(--text-secondary)] hover:bg-gray-50">
-              <Calendar size={18} />
-              <span>Feb</span>
-              <ChevronDown size={14} />
-            </button>
-
-            {/* Filters (Mock) */}
-            <button className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl shadow-sm text-sm font-medium text-[var(--text-secondary)] hover:bg-gray-50">
-              <span>Sales</span>
-              <ChevronDown size={14} />
-            </button>
-
             {/* Profile */}
             <div className="flex items-center gap-3 pl-2">
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="h-10 w-10 rounded-full object-cover border-2 border-white shadow-sm"
-              />
+              <div className="h-10 w-10 rounded-full bg-[var(--color-primary)] flex items-center justify-center text-white font-bold text-sm border-2 border-white shadow-sm">
+                {user.name ? user.name.charAt(0).toUpperCase() : 'A'}
+              </div>
               <div className="hidden xl:block">
                 <p className="text-sm font-bold text-[var(--text-primary)]">
-                  {user.name}
+                  {user.name || 'Admin'}
                 </p>
                 <p className="text-xs text-[var(--text-secondary)]">
-                  {user.role}
+                  {user.role || 'Admin'}
                 </p>
               </div>
               <button className="p-1 hover:bg-gray-200 rounded-full transition-colors">

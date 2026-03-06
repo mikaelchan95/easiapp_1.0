@@ -393,10 +393,10 @@ export default function CompanyImport({
                           <span
                             className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
                               row.status === 'active'
-                                ? 'bg-green-100 text-green-800'
+                                ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20'
                                 : row.status === 'suspended'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-yellow-100 text-yellow-800'
+                                  ? 'bg-red-50 text-red-700 ring-1 ring-red-600/20'
+                                  : 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/20'
                             }`}
                           >
                             {row.status?.replace('_', ' ')}

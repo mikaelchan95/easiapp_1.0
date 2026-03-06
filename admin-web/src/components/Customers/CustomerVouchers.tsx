@@ -49,7 +49,7 @@ export const CustomerVouchers = ({ userId }: CustomerVouchersProps) => {
         return (
           <Badge
             variant="success"
-            className="bg-green-100 text-green-800 border-green-200"
+            className="bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20"
           >
             Active
           </Badge>
@@ -58,7 +58,7 @@ export const CustomerVouchers = ({ userId }: CustomerVouchersProps) => {
         return (
           <Badge
             variant="default"
-            className="bg-blue-100 text-blue-800 border-blue-200"
+            className="bg-blue-50 text-blue-700 ring-1 ring-blue-600/20"
           >
             Used
           </Badge>
@@ -67,7 +67,7 @@ export const CustomerVouchers = ({ userId }: CustomerVouchersProps) => {
         return (
           <Badge
             variant="outline"
-            className="bg-gray-100 text-gray-800 border-gray-200"
+            className="bg-gray-50 text-gray-700 ring-1 ring-gray-600/20"
           >
             Expired
           </Badge>

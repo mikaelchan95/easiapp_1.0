@@ -110,7 +110,13 @@ export interface Invoice {
   paid_amount?: number;
   remaining_amount?: number;
   outstanding_amount?: number;
-  status: 'outstanding' | 'partial_paid' | 'paid' | 'overdue' | 'cancelled' | 'pending';
+  status:
+    | 'outstanding'
+    | 'partial_paid'
+    | 'paid'
+    | 'overdue'
+    | 'cancelled'
+    | 'pending';
   due_date?: string;
   payment_due_date?: string;
   invoice_date?: string;
@@ -118,6 +124,96 @@ export interface Invoice {
   created_at: string;
   updated_at?: string;
   company?: Company; // Joined
+}
+
+// Staff & Driver/Salesman types
+
+export type StaffRole =
+  | 'driver'
+  | 'salesman'
+  | 'warehouse'
+  | 'admin'
+  | 'manager';
+
+export type DeliveryStatus =
+  | 'assigned'
+  | 'dispatched'
+  | 'en_route'
+  | 'arrived'
+  | 'delivered'
+  | 'failed';
+
+export type DeliveryZone = 'North' | 'South' | 'East' | 'West' | 'Central';
+
+export interface StaffProfile {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  staff_role: StaffRole;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface DeliveryAssignment {
+  id: string;
+  order_id: string;
+  driver_id: string;
+  status: DeliveryStatus;
+  assigned_at: string;
+  dispatched_at: string | null;
+  arrived_at: string | null;
+  delivered_at: string | null;
+  failed_at: string | null;
+  failure_reason: string | null;
+  notes: string | null;
+  created_at: string;
+  order?: Order;
+  driver?: StaffProfile;
+}
+
+export interface DeliveryProof {
+  id: string;
+  delivery_assignment_id: string;
+  recipient_name: string;
+  photo_url: string | null;
+  signature_url: string | null;
+  notes: string | null;
+  captured_at: string | null;
+  created_at: string;
+}
+
+export interface DigitalHandshake {
+  id: string;
+  order_id: string;
+  driver_confirmed: boolean;
+  driver_confirmed_at: string | null;
+  customer_confirmed: boolean;
+  customer_confirmed_at: string | null;
+  completed: boolean;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export type OnboardingStatus = 'pending' | 'approved' | 'rejected';
+
+export interface CustomerOnboardingRequest {
+  id: string;
+  salesman_id: string;
+  company_name: string;
+  uen: string | null;
+  address: string | null;
+  contact_name: string;
+  contact_email: string | null;
+  contact_phone: string | null;
+  proposed_credit_limit: number | null;
+  proposed_payment_terms: string | null;
+  proposed_pricing_tier: number | null;
+  notes: string | null;
+  status: OnboardingStatus;
+  created_at: string;
+  salesman?: StaffProfile;
 }
 
 export type { User, Company, Order, OrderItem };

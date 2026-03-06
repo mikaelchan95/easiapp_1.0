@@ -18,13 +18,13 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
       'inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold transition-colors min-w-[80px]';
 
     const variants = {
-      default: 'bg-gray-100 text-gray-700',
-      success: 'bg-[#DCFCE7] text-[#166534]', // Green
-      warning: 'bg-yellow-100 text-yellow-800',
-      error: 'bg-red-100 text-red-800',
-      info: 'bg-[#DBEAFE] text-[#1E40AF]', // Blue (Delivery)
-      purple: 'bg-[#F3E8FF] text-[#6B21A8]', // Purple (In Process)
-      outline: 'text-gray-700 border border-gray-200 bg-transparent',
+      default: 'bg-gray-50 text-gray-700 ring-1 ring-gray-600/20',
+      success: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20',
+      warning: 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/20',
+      error: 'bg-red-50 text-red-700 ring-1 ring-red-600/20',
+      info: 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/20',
+      purple: 'bg-purple-50 text-purple-700 ring-1 ring-purple-600/20',
+      outline: 'text-gray-700 border border-gray-300 bg-transparent',
     };
 
     return (

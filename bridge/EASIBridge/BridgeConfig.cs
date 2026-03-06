@@ -96,28 +96,84 @@ namespace EASIBridge
 
         public static bool DebtorSyncEnabled
         {
-            get
-            {
-                string val = GetSetting("DebtorSyncEnabled", "false");
-                return val.Equals("true", System.StringComparison.OrdinalIgnoreCase);
-            }
+            get { return GetBoolSetting("DebtorSyncEnabled", false); }
         }
 
         public static int DebtorSyncIntervalMinutes
         {
-            get
-            {
-                string val = GetSetting("DebtorSyncIntervalMinutes", "60");
-                int result;
-                if (int.TryParse(val, out result) && result >= 0) return result;
-                return 60;
-            }
+            get { return GetIntSetting("DebtorSyncIntervalMinutes", 60); }
+        }
+
+        /// <summary>Master switch: when true, all enabled entity syncs run on the full sync timer.</summary>
+        public static bool FullSyncEnabled
+        {
+            get { return GetBoolSetting("FullSyncEnabled", false); }
+        }
+
+        /// <summary>Interval in minutes for the full sync cycle (items, creditors, invoices, etc.).</summary>
+        public static int FullSyncIntervalMinutes
+        {
+            get { return GetIntSetting("FullSyncIntervalMinutes", 120); }
+        }
+
+        public static bool ItemSyncEnabled
+        {
+            get { return GetBoolSetting("ItemSyncEnabled", true); }
+        }
+
+        public static bool ItemGroupSyncEnabled
+        {
+            get { return GetBoolSetting("ItemGroupSyncEnabled", true); }
+        }
+
+        public static bool CreditorSyncEnabled
+        {
+            get { return GetBoolSetting("CreditorSyncEnabled", true); }
+        }
+
+        public static bool InvoiceSyncEnabled
+        {
+            get { return GetBoolSetting("InvoiceSyncEnabled", true); }
+        }
+
+        public static bool ReceiptSyncEnabled
+        {
+            get { return GetBoolSetting("ReceiptSyncEnabled", true); }
+        }
+
+        public static bool SalesOrderSyncEnabled
+        {
+            get { return GetBoolSetting("SalesOrderSyncEnabled", true); }
+        }
+
+        public static bool DeliveryOrderSyncEnabled
+        {
+            get { return GetBoolSetting("DeliveryOrderSyncEnabled", true); }
+        }
+
+        public static bool ReferenceDataSyncEnabled
+        {
+            get { return GetBoolSetting("ReferenceDataSyncEnabled", true); }
         }
 
         private static string GetSetting(string key, string defaultValue)
         {
             string val = ConfigurationManager.AppSettings[key];
             return string.IsNullOrEmpty(val) ? defaultValue : val;
+        }
+
+        private static bool GetBoolSetting(string key, bool defaultValue)
+        {
+            string val = GetSetting(key, defaultValue ? "true" : "false");
+            return val.Equals("true", System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int GetIntSetting(string key, int defaultValue)
+        {
+            string val = GetSetting(key, defaultValue.ToString());
+            int result;
+            if (int.TryParse(val, out result) && result >= 0) return result;
+            return defaultValue;
         }
     }
 }

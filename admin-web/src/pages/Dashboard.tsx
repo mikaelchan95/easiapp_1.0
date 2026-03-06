@@ -306,7 +306,7 @@ export default function Dashboard() {
               <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-400">
                 <ChevronLeft size={16} />
               </button>
-              <button className="px-3 py-1 rounded-lg bg-green-200 text-green-800 font-semibold text-sm">
+              <button className="px-3 py-1 rounded-lg bg-gray-900 text-white font-semibold text-sm">
                 1
               </button>
               <button className="px-3 py-1 rounded-lg hover:bg-gray-100 text-gray-600 font-semibold text-sm">

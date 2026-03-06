@@ -50,6 +50,13 @@ namespace EASIBridge
             return DoRequest("PATCH", url, jsonBody, false);
         }
 
+        /// <summary>DELETE rows matching query params. Returns response body.</summary>
+        public string Delete(string table, string queryParams)
+        {
+            string url = _baseUrl + "/rest/v1/" + table + "?" + queryParams;
+            return DoRequest("DELETE", url, null, false);
+        }
+
         /// <summary>GET rows from a table with query params. Returns JSON array.</summary>
         public string Select(string table, string queryParams)
         {

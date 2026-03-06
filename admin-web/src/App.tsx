@@ -23,6 +23,13 @@ import NotificationTemplates from './pages/NotificationTemplates';
 import NotificationHistory from './pages/NotificationHistory';
 import NotificationAnalytics from './pages/NotificationAnalytics';
 import Categories from './pages/Categories';
+import Drivers from './pages/Drivers';
+import DriverDetail from './pages/DriverDetail';
+import Salesmen from './pages/Salesmen';
+import SalesmanDetail from './pages/SalesmanDetail';
+import Deliveries from './pages/Deliveries';
+import DeliveryDetail from './pages/DeliveryDetail';
+import Onboarding from './pages/Onboarding';
 
 function App() {
   return (
@@ -53,6 +60,17 @@ function App() {
             <Route path="/company-invoices" element={<CompanyInvoices />} />
             <Route path="/rewards" element={<Rewards />} />
             <Route path="/content" element={<Content />} />
+
+            {/* Staff Routes */}
+            <Route path="/drivers" element={<Drivers />} />
+            <Route path="/drivers/:id" element={<DriverDetail />} />
+            <Route path="/salesmen" element={<Salesmen />} />
+            <Route path="/salesmen/:id" element={<SalesmanDetail />} />
+
+            {/* Operations Routes */}
+            <Route path="/deliveries" element={<Deliveries />} />
+            <Route path="/deliveries/:id" element={<DeliveryDetail />} />
+            <Route path="/onboarding" element={<Onboarding />} />
 
             {/* Notification Routes */}
             <Route path="/notifications" element={<Notifications />} />

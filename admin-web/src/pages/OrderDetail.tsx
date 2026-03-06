@@ -406,7 +406,7 @@ export default function OrderDetail() {
                       </p>
                     )}
                     {order.is_same_day_delivery && (
-                      <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                      <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-amber-600/20">
                         Same-Day Delivery
                       </span>
                     )}

@@ -45,8 +45,8 @@ export default function Content() {
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                     banner.active
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                      : 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-400'
+                      ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20'
+                      : 'bg-gray-50 text-gray-700 ring-1 ring-gray-600/20'
                   }`}
                 >
                   {banner.active ? 'Active' : 'Inactive'}

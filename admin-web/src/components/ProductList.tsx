@@ -273,8 +273,8 @@ export default function ProductList() {
                       className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         product.stock_quantity <=
                         (product.low_stock_threshold || 10)
-                          ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                          : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                          ? 'bg-red-50 text-red-700 ring-1 ring-red-600/20'
+                          : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20'
                       }`}
                     >
                       {product.stock_quantity.toLocaleString('en-US')}
@@ -285,14 +285,14 @@ export default function ProductList() {
                       <span
                         className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
                           product.is_active
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-400'
+                            ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/20'
+                            : 'bg-gray-50 text-gray-700 ring-1 ring-gray-600/20'
                         }`}
                       >
                         {product.is_active ? 'Active' : 'Archived'}
                       </span>
                       {isPromoActive(product) && (
-                        <span className="inline-flex rounded-full bg-red-100 dark:bg-red-900/30 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:text-red-400">
+                        <span className="inline-flex rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 ring-1 ring-red-600/20">
                           Promo
                         </span>
                       )}

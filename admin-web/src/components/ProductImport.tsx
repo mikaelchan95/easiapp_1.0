@@ -465,8 +465,8 @@ export default function ProductImport({
                           <span
                             className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                               row.is_active
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-gray-100 text-gray-800'
+                                ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/20'
+                                : 'bg-gray-50 text-gray-700 ring-1 ring-gray-600/20'
                             }`}
                           >
                             {row.is_active ? 'Active' : 'Inactive'}
