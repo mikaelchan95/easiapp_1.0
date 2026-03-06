@@ -49,7 +49,16 @@ $sourceFiles = @(
     'BridgeConfig.cs',
     'AutoCountConnector.cs',
     'SupabaseClient.cs',
+    'SyncHelper.cs',
     'DebtorSyncService.cs',
+    'ItemSyncService.cs',
+    'ItemGroupSyncService.cs',
+    'CreditorSyncService.cs',
+    'InvoiceSyncService.cs',
+    'ReceiptSyncService.cs',
+    'SalesOrderSyncService.cs',
+    'DeliveryOrderSyncService.cs',
+    'ReferenceDataSyncService.cs',
     'AssemblyInfo.cs'
 )
 
