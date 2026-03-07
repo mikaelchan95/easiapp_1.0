@@ -89,7 +89,7 @@ function tabClass(variant: 'underline' | 'pill', isActive: boolean) {
   }
   return `${base} pb-3 border-b-2 -mb-px ${
     isActive
-      ? 'border-[var(--text-primary)] text-[var(--text-primary)]'
+      ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
       : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
   }`;
 }

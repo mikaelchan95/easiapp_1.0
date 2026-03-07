@@ -1,245 +1,422 @@
-import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Tag, Search, AlertCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  Plus,
+  Search,
+  Tag,
+  Edit,
+  Trash2,
+  GripVertical,
+  ChevronLeft,
+  ChevronRight,
+  Image as ImageIcon,
+} from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { getImageUrl } from '../lib/imageUtils';
+import { categoryService } from '../services/categoryService';
+import { useToast } from '../components/ui/Toast';
+import CategorySlideOver from '../components/Categories/CategorySlideOver';
 import type { Category } from '../types/category';
-import Modal from '../components/ui/Modal';
 
-// Helper to generate slug
-const generateSlug = (name: string) => {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '');
-};
+type FilterTab = 'all' | 'active' | 'inactive';
+const PAGE_SIZE = 10;
 
-const INITIAL_FORM_DATA = {
-  name: '',
-  slug: '',
-  description: '',
-  sort_order: 0,
-  is_active: true,
-};
+function getPageNumbers(current: number, total: number): (number | '...')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | '...')[] = [1];
+  if (current > 3) pages.push('...');
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (current < total - 2) pages.push('...');
+  pages.push(total);
+  return pages;
+}
 
+// ─── Sortable Row ────────────────────────────────────────────────
+interface SortableRowProps {
+  category: Category;
+  onEdit: (c: Category) => void;
+  onDelete: (c: Category) => void;
+  onToggleActive: (c: Category) => void;
+  togglingId: string | null;
+}
+
+function SortableRow({
+  category,
+  onEdit,
+  onDelete,
+  onToggleActive,
+  togglingId,
+}: SortableRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: category.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    position: isDragging ? ('relative' as const) : undefined,
+  };
+
+  const imgUrl = getImageUrl(category.image_url);
+  const isToggling = togglingId === category.id;
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className={`group transition-colors ${isDragging ? 'bg-[var(--bg-tertiary)] shadow-lg ring-1 ring-[var(--border-primary)]' : 'hover:bg-[var(--bg-tertiary)]/50'}`}
+    >
+      {/* Drag Handle */}
+      <td className="px-4 py-4 w-10">
+        <button
+          {...attributes}
+          {...listeners}
+          className="text-[var(--text-tertiary)] cursor-grab group-hover:text-[var(--text-secondary)] transition-colors touch-manipulation active:cursor-grabbing"
+        >
+          <GripVertical size={18} />
+        </button>
+      </td>
+
+      {/* Thumbnail */}
+      <td className="px-4 py-4 w-16">
+        <div className="size-10 rounded-lg overflow-hidden border border-[var(--border-primary)] bg-[var(--bg-tertiary)] flex items-center justify-center flex-shrink-0">
+          {imgUrl ? (
+            <img
+              src={imgUrl}
+              alt={category.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <ImageIcon size={16} className="text-[var(--text-tertiary)]" />
+          )}
+        </div>
+      </td>
+
+      {/* Name & Slug */}
+      <td className="px-6 py-4">
+        <div className="flex flex-col">
+          <span className="font-semibold text-sm text-[var(--text-primary)]">
+            {category.name}
+          </span>
+          <span className="text-xs text-[var(--text-tertiary)] font-mono">
+            /{category.slug}
+          </span>
+        </div>
+      </td>
+
+      {/* Products Count */}
+      <td className="px-6 py-4">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--bg-tertiary)] text-xs font-medium text-[var(--text-secondary)]">
+          {category.count || 0} items
+        </span>
+      </td>
+
+      {/* Status Toggle */}
+      <td className="px-6 py-4 text-center">
+        <div className="inline-flex items-center">
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={category.is_active}
+              disabled={isToggling}
+              onChange={() => onToggleActive(category)}
+            />
+            <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-primary)]" />
+          </label>
+          <span
+            className={`ml-3 text-xs font-bold ${category.is_active ? 'text-[var(--color-primary)]' : 'text-[var(--text-tertiary)]'}`}
+          >
+            {category.is_active ? 'Active' : 'Inactive'}
+          </span>
+        </div>
+      </td>
+
+      {/* Actions */}
+      <td className="px-6 py-4 text-right">
+        <div className="flex items-center justify-end gap-1">
+          <button
+            onClick={() => onEdit(category)}
+            className="p-2 text-[var(--text-tertiary)] hover:text-[var(--color-primary)] transition-colors rounded-lg hover:bg-[var(--bg-tertiary)]"
+            title="Edit"
+          >
+            <Edit size={18} />
+          </button>
+          <button
+            onClick={() => onDelete(category)}
+            className="p-2 text-[var(--text-tertiary)] hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
+            title="Delete"
+          >
+            <Trash2 size={18} />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+// ─── Main Page ───────────────────────────────────────────────────
 export default function Categories() {
+  const { toast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<FilterTab>('all');
+  const [page, setPage] = useState(1);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Slide-over state
+  const [slideOverOpen, setSlideOverOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [formData, setFormData] = useState(INITIAL_FORM_DATA);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
-  const fetchCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       setLoading(true);
-
-      // 1. Fetch categories
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('categories')
-        .select('*')
-        .order('sort_order', { ascending: true });
-
-      if (categoriesError) throw categoriesError;
-
-      // 2. Fetch product counts
-      // We can use a separate query or assume we just want counts
-      const { data: productsData, error: productsError } = await supabase
-        .from('products')
-        .select('category');
-
-      if (productsError) throw productsError;
-
-      // Calculate counts
-      const counts: Record<string, number> = {};
-      productsData?.forEach(p => {
-        if (p.category) {
-          counts[p.category] = (counts[p.category] || 0) + 1;
-        }
-      });
-
-      // Merge counts
-      const categoriesWithCounts =
-        categoriesData?.map(cat => ({
-          ...cat,
-          count: counts[cat.name] || 0,
-        })) || [];
-
-      setCategories(categoriesWithCounts);
+      const data = await categoryService.fetchCategories();
+      setCategories(data);
     } catch (err) {
-      console.error('Error fetching categories:', err);
-      setError('Failed to load categories');
+      console.error('Failed to load categories:', err);
+      toast('Failed to load categories', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const handleOpenModal = (category?: Category) => {
-    setError(null);
-    if (category) {
-      setEditingCategory(category);
-      setFormData({
-        name: category.name,
-        slug: category.slug,
-        description: category.description || '',
-        sort_order: category.sort_order,
-        is_active: category.is_active,
-      });
-    } else {
-      setEditingCategory(null);
-      // Determine next sort order
-      const maxSortOrder = Math.max(...categories.map(c => c.sort_order), -1);
-      setFormData({
-        ...INITIAL_FORM_DATA,
-        sort_order: maxSortOrder + 1,
-      });
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
+
+  // ─── Filtering ─────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    let result = categories;
+
+    if (activeTab === 'active') result = result.filter(c => c.is_active);
+    if (activeTab === 'inactive') result = result.filter(c => !c.is_active);
+
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      result = result.filter(
+        c =>
+          c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q)
+      );
     }
-    setIsModalOpen(true);
-  };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingCategory(null);
-    setFormData(INITIAL_FORM_DATA);
-    setError(null);
-  };
+    return result;
+  }, [categories, activeTab, searchTerm]);
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value, type } = e.target;
-
-    if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({ ...prev, [name]: checked }));
-    } else if (name === 'name' && !editingCategory) {
-      // Auto-generate slug from name if creating new
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-        slug: generateSlug(value),
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setError(null);
-
-    try {
-      if (editingCategory) {
-        // Update
-        const { error } = await supabase
-          .from('categories')
-          .update({
-            ...formData,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', editingCategory.id);
-
-        if (error) throw error;
-      } else {
-        // Create
-        const { error } = await supabase.from('categories').insert([formData]);
-
-        if (error) throw error;
-      }
-
-      await fetchCategories();
-      handleCloseModal();
-    } catch (err: any) {
-      console.error('Error saving category:', err);
-      setError(err.message || 'Failed to save category');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
-
-    try {
-      const { error } = await supabase.from('categories').delete().eq('id', id);
-
-      if (error) throw error;
-      await fetchCategories();
-    } catch (err: any) {
-      console.error('Error deleting category:', err);
-      alert('Failed to delete category: ' + err.message);
-    }
-  };
-
-  const filteredCategories = categories.filter(
-    cat =>
-      cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cat.slug.toLowerCase().includes(searchTerm.toLowerCase())
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paged = filtered.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
   );
 
+  const tabCounts = useMemo(
+    () => ({
+      all: categories.length,
+      active: categories.filter(c => c.is_active).length,
+      inactive: categories.filter(c => !c.is_active).length,
+    }),
+    [categories]
+  );
+
+  // ─── Actions ───────────────────────────────────────────────────
+  const handleOpenSlideOver = (category?: Category) => {
+    setEditingCategory(category || null);
+    setSlideOverOpen(true);
+  };
+
+  const handleToggleActive = useCallback(
+    async (category: Category) => {
+      setTogglingId(category.id);
+      try {
+        await categoryService.toggleCategoryActive(
+          category.id,
+          !category.is_active
+        );
+        setCategories(prev =>
+          prev.map(c =>
+            c.id === category.id ? { ...c, is_active: !c.is_active } : c
+          )
+        );
+        toast(
+          `${category.name} is now ${!category.is_active ? 'active' : 'inactive'}`,
+          'success'
+        );
+      } catch {
+        toast('Failed to update status', 'error');
+      } finally {
+        setTogglingId(null);
+      }
+    },
+    [toast]
+  );
+
+  const handleDelete = useCallback(
+    async (category: Category) => {
+      if (!window.confirm(`Delete "${category.name}"? This cannot be undone.`))
+        return;
+
+      try {
+        await categoryService.deleteCategory(category.id);
+        setCategories(prev => prev.filter(c => c.id !== category.id));
+        toast(`"${category.name}" deleted`, 'success');
+      } catch {
+        toast('Failed to delete category', 'error');
+      }
+    },
+    [toast]
+  );
+
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = categories.findIndex(c => c.id === active.id);
+      const newIndex = categories.findIndex(c => c.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const reordered = arrayMove(categories, oldIndex, newIndex);
+      setCategories(reordered);
+
+      try {
+        await categoryService.reorderCategories(reordered.map(c => c.id));
+        toast(`Reordered ${categories.length} categories`, 'success');
+      } catch {
+        setCategories(categories);
+        toast('Reorder failed', 'error');
+      }
+    },
+    [categories, toast]
+  );
+
+  const nextSortOrder = useMemo(
+    () => Math.max(...categories.map(c => c.sort_order), -1) + 1,
+    [categories]
+  );
+
+  // ─── Render ────────────────────────────────────────────────────
   return (
-    <div className="animate-fade-in">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-6 animate-fade-in pb-8">
+      {/* Page Header */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">
+          <h1 className="text-2xl font-extrabold text-[var(--color-primary)]">
             Categories
           </h1>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">
-            Organize your product categories
+          <p className="text-gray-500 text-sm mt-1">
+            Manage and organize your product categories
           </p>
         </div>
         <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center justify-center gap-2 rounded-lg bg-[var(--text-primary)] text-[var(--bg-primary)] px-4 py-2 font-semibold transition-all hover:opacity-90 shadow-sm min-h-[44px] touch-manipulation"
+          onClick={() => handleOpenSlideOver()}
+          className="flex items-center gap-2 rounded-lg h-10 px-5 bg-[var(--color-primary)] text-white text-sm font-bold hover:opacity-90 transition-all shadow-sm"
         >
-          <Plus size={20} />
-          Add Category
+          <Plus size={16} />
+          <span>Add Category</span>
         </button>
       </div>
 
-      <div className="mb-6 relative">
+      {/* Search Bar */}
+      <div className="relative">
         <Search
+          size={16}
           className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]"
-          size={20}
         />
         <input
           type="text"
           placeholder="Search categories..."
           value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] pl-10 pr-4 py-2 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all min-h-[44px]"
+          onChange={e => {
+            setSearchTerm(e.target.value);
+            setPage(1);
+          }}
+          className="w-full pl-10 pr-4 py-2.5 bg-white border border-[var(--border-primary)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] placeholder:text-[var(--text-tertiary)] transition-all"
         />
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-sm">
+      {/* Content Card */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        {/* Tabs */}
+        <div className="flex border-b border-[var(--border-primary)] px-6">
+          {(
+            [
+              { key: 'all', label: 'All Categories' },
+              { key: 'active', label: 'Active' },
+              { key: 'inactive', label: 'Inactive' },
+            ] as const
+          ).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => {
+                setActiveTab(tab.key);
+                setPage(1);
+              }}
+              className={`px-4 py-3.5 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab.key
+                  ? 'border-[var(--color-primary)] text-[var(--color-primary)] font-bold'
+                  : 'border-transparent text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              {tab.label}
+              <span className="ml-1.5 text-xs">({tabCounts[tab.key]})</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Table */}
         {loading ? (
-          <div className="flex justify-center p-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--text-primary)]"></div>
+          <div className="flex justify-center p-16">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)]" />
           </div>
-        ) : filteredCategories.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center text-[var(--text-secondary)]">
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-16 text-center">
             <div className="mb-4 rounded-full bg-[var(--bg-tertiary)] p-4">
-              <Tag size={32} />
+              <Tag size={32} className="text-[var(--text-tertiary)]" />
             </div>
-            <h3 className="text-lg font-medium text-[var(--text-primary)]">
+            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
               No categories found
             </h3>
-            <p className="mt-1">
+            <p className="mt-1 text-sm text-[var(--text-tertiary)]">
               {searchTerm
-                ? 'Adjust your search'
-                : 'Get started by creating a new category'}
+                ? 'Try adjusting your search'
+                : 'Get started by creating your first category'}
             </p>
             {!searchTerm && (
               <button
-                onClick={() => handleOpenModal()}
-                className="mt-4 text-sm font-semibold text-[var(--text-primary)] hover:underline"
+                onClick={() => handleOpenSlideOver()}
+                className="mt-4 text-sm font-bold text-[var(--color-primary)] hover:underline"
               >
                 Create Category
               </button>
@@ -247,215 +424,123 @@ export default function Categories() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm min-w-[600px]">
-              <thead className="bg-[var(--bg-tertiary)] text-xs font-medium uppercase text-[var(--text-secondary)] tracking-wider">
-                <tr>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-                    Name
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-                    Slug
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-                    Products
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-                    Sort Order
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-                    Status
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-primary)]">
-                {filteredCategories.map(category => (
-                  <tr
-                    key={category.id}
-                    className="hover:bg-[var(--bg-tertiary)] transition-colors"
-                  >
-                    <td className="px-4 sm:px-6 py-3 sm:py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--bg-tertiary)] text-[var(--text-secondary)] flex-shrink-0">
-                          <Tag size={20} />
-                        </div>
-                        <div>
-                          <span className="font-medium text-[var(--text-primary)] block">
-                            {category.name}
-                          </span>
-                          {category.description && (
-                            <span className="text-xs text-[var(--text-secondary)] truncate max-w-[200px] block">
-                              {category.description}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)] font-mono text-xs">
-                      {category.slug}
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--bg-tertiary)] text-xs font-medium">
-                        {category.count || 0} items
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
-                      {category.sort_order}
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          category.is_active
-                            ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20'
-                            : 'bg-gray-50 text-gray-700 ring-1 ring-gray-600/20'
-                        }`}
-                      >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            category.is_active ? 'bg-green-500' : 'bg-gray-500'
-                          }`}
-                        />
-                        {category.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-right">
-                      <div className="flex justify-end gap-1 sm:gap-2">
-                        <button
-                          onClick={() => handleOpenModal(category)}
-                          className="rounded-lg p-2 text-[var(--text-tertiary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
-                          title="Edit"
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleDelete(category.id, category.name)
-                          }
-                          className="rounded-lg p-2 text-[var(--text-tertiary)] hover:bg-red-50 hover:text-red-600 transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
-                          title="Delete"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="w-10 px-4 py-3 text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider" />
+                    <th className="w-16 px-4 py-3 text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider">
+                      Image
+                    </th>
+                    <th className="px-6 py-3 text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider">
+                      Category & Slug
+                    </th>
+                    <th className="px-6 py-3 text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider">
+                      Products
+                    </th>
+                    <th className="w-40 px-6 py-3 text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider text-center">
+                      Status
+                    </th>
+                    <th className="w-28 px-6 py-3 text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider text-right">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <SortableContext
+                  items={paged.map(c => c.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <tbody className="divide-y divide-gray-100">
+                    {paged.map(category => (
+                      <SortableRow
+                        key={category.id}
+                        category={category}
+                        onEdit={handleOpenSlideOver}
+                        onDelete={handleDelete}
+                        onToggleActive={handleToggleActive}
+                        togglingId={togglingId}
+                      />
+                    ))}
+                  </tbody>
+                </SortableContext>
+              </table>
+            </DndContext>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {filtered.length > PAGE_SIZE && (
+          <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200">
+            <p className="text-xs text-gray-500">
+              Showing{' '}
+              <span className="font-bold text-gray-700">
+                {(currentPage - 1) * PAGE_SIZE + 1}
+              </span>{' '}
+              to{' '}
+              <span className="font-bold text-gray-700">
+                {Math.min(currentPage * PAGE_SIZE, filtered.length)}
+              </span>{' '}
+              of{' '}
+              <span className="font-bold text-gray-700">{filtered.length}</span>{' '}
+              categories
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="size-8 flex items-center justify-center rounded border border-gray-300 text-gray-500 hover:bg-white transition-all disabled:opacity-40"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              {getPageNumbers(currentPage, totalPages).map((item, i) =>
+                item === '...' ? (
+                  <span
+                    key={`ellipsis-${i}`}
+                    className="size-8 flex items-center justify-center text-xs text-gray-400"
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => setPage(item as number)}
+                    className={`size-8 flex items-center justify-center rounded text-xs font-bold transition-colors ${
+                      item === currentPage
+                        ? 'bg-[var(--color-primary)] text-white'
+                        : 'border border-gray-300 text-gray-500 hover:bg-white'
+                    }`}
+                  >
+                    {item}
+                  </button>
+                )
+              )}
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="size-8 flex items-center justify-center rounded border border-gray-300 text-gray-500 hover:bg-white transition-all disabled:opacity-40"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
           </div>
         )}
       </div>
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        title={editingCategory ? 'Edit Category' : 'Add Category'}
-      >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="p-3 text-sm text-red-600 bg-red-50 rounded-lg flex items-center gap-2">
-              <AlertCircle size={16} />
-              {error}
-            </div>
-          )}
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-              Name
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              required
-              className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-2 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-              Slug
-            </label>
-            <input
-              type="text"
-              name="slug"
-              value={formData.slug}
-              onChange={handleInputChange}
-              required
-              className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-2 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all font-mono text-sm"
-            />
-            <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-              URL-friendly version of the name. Must be unique.
-            </p>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-              Description (Optional)
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              rows={3}
-              className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-2 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all resize-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                Sort Order
-              </label>
-              <input
-                type="number"
-                name="sort_order"
-                value={formData.sort_order}
-                onChange={handleInputChange}
-                className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-2 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all"
-              />
-            </div>
-            <div className="flex items-center pt-8">
-              <label className="flex items-center cursor-pointer gap-2">
-                <input
-                  type="checkbox"
-                  name="is_active"
-                  checked={formData.is_active}
-                  onChange={handleInputChange}
-                  className="h-5 w-5 rounded border-[var(--border-primary)] text-[var(--text-primary)] focus:ring-[var(--text-primary)]"
-                />
-                <span className="text-[var(--text-primary)] font-medium">
-                  Active
-                </span>
-              </label>
-            </div>
-          </div>
-
-          <div className="pt-4 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={handleCloseModal}
-              className="px-4 py-2 rounded-lg text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-2 rounded-lg bg-[var(--text-primary)] text-[var(--bg-primary)] hover:opacity-90 transition-opacity font-medium disabled:opacity-50"
-            >
-              {saving
-                ? 'Saving...'
-                : editingCategory
-                  ? 'Save Changes'
-                  : 'Create Category'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+      {/* Slide-over */}
+      <CategorySlideOver
+        isOpen={slideOverOpen}
+        onClose={() => {
+          setSlideOverOpen(false);
+          setEditingCategory(null);
+        }}
+        category={editingCategory}
+        onSaved={loadCategories}
+        nextSortOrder={nextSortOrder}
+      />
     </div>
   );
 }

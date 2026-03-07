@@ -30,6 +30,8 @@ import SalesmanDetail from './pages/SalesmanDetail';
 import Deliveries from './pages/Deliveries';
 import DeliveryDetail from './pages/DeliveryDetail';
 import Onboarding from './pages/Onboarding';
+import CreditAR from './pages/CreditAR';
+import Inventory from './pages/Inventory';
 
 function App() {
   return (
@@ -42,6 +44,7 @@ function App() {
             <Route path="/products" element={<Products />} />
             <Route path="/products/new" element={<ProductForm />} />
             <Route path="/products/:id" element={<ProductForm />} />
+            <Route path="/inventory" element={<Inventory />} />
             <Route path="/categories" element={<Categories />} />
             <Route path="/customers" element={<Customers />} />
             <Route path="/customers/:id" element={<CustomerDetail />} />
@@ -58,6 +61,7 @@ function App() {
 
             <Route path="/invoices" element={<Invoices />} />
             <Route path="/company-invoices" element={<CompanyInvoices />} />
+            <Route path="/credit-ar" element={<CreditAR />} />
             <Route path="/rewards" element={<Rewards />} />
             <Route path="/content" element={<Content />} />
 

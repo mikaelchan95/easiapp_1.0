@@ -14,6 +14,7 @@ import {
   Users,
   Building2,
   FolderTree,
+  Warehouse,
   Gift,
   FileImage,
   Truck,
@@ -22,6 +23,7 @@ import {
   UserPlus,
   ChevronLeft,
   ChevronRight,
+  CreditCard,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -209,6 +211,13 @@ export const Layout = () => {
               collapsed={isCollapsed}
             />
             <NavItem
+              to="/inventory"
+              icon={Warehouse}
+              label="Inventory"
+              active={isActive('/inventory')}
+              collapsed={isCollapsed}
+            />
+            <NavItem
               to="/categories"
               icon={FolderTree}
               label="Categories"
@@ -284,6 +293,13 @@ export const Layout = () => {
               icon={Receipt}
               label="Company SOA"
               active={isActive('/company-invoices')}
+              collapsed={isCollapsed}
+            />
+            <NavItem
+              to="/credit-ar"
+              icon={CreditCard}
+              label="Credit & AR"
+              active={isActive('/credit-ar')}
               collapsed={isCollapsed}
             />
 

@@ -23,6 +23,8 @@
   --bg-tertiary: #f3f4f6;
   --bg-card: #ffffff;
   --bg-sidebar: #ffffff;
+  --bg-base: #ffffff;
+  --bg-frame: #f9fafb;
 
   --text-primary: #111827;
   --text-secondary: #4b5563;
@@ -32,9 +34,10 @@
   --border-secondary: #d1d5db;
   --border-subtle: #e5e7eb;
   --border-default: #e5e7eb;
+  --border: #e5e7eb;
 
-  --color-primary: #111827;
-  --color-primary-bg: #f3f4f6;
+  --color-primary: #36454f;
+  --color-primary-bg: #eef1f2;
 }
 
 /* Dark Mode removed */
@@ -104,4 +107,18 @@ body {
 *:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+/* Slide-over panel animation */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
 }

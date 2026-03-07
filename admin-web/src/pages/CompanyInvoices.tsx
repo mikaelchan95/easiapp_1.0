@@ -107,11 +107,22 @@ export default function CompanyInvoices() {
       // Generate invoice number
       const invoiceNumber = `INV-${year}-${month.toString().padStart(2, '0')}-${companyId.slice(0, 6)}`;
 
-      // Calculate due date (NET30)
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 30);
+      const { data: companyData } = await supabase
+        .from('companies')
+        .select('payment_terms')
+        .eq('id', companyId)
+        .single();
 
-      // Create invoice
+      const terms = companyData?.payment_terms || 'NET30';
+      const termsDaysMap: Record<string, number> = {
+        COD: 0,
+        NET7: 7,
+        NET30: 30,
+        NET60: 60,
+      };
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + (termsDaysMap[terms] ?? 30));
+
       const { error: invoiceError } = await supabase
         .from('company_invoices')
         .insert({
@@ -122,7 +133,7 @@ export default function CompanyInvoices() {
           billing_amount: totalAmount,
           outstanding_amount: totalAmount,
           status: 'pending',
-          payment_terms: 'NET30',
+          payment_terms: terms,
         })
         .select()
         .single();

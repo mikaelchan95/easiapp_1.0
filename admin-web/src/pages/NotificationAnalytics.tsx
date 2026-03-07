@@ -58,7 +58,7 @@ export default function NotificationAnalytics() {
         totalSent: sent,
         openRate: sent > 0 ? Math.round((read / sent) * 100) : 0,
         activeSubscribers: Math.round((pushEnabled / users) * 100),
-        deliveryRate: 98,
+        deliveryRate: sent > 0 ? 100 : 0,
       });
     } catch (error) {
       console.error('Error loading analytics:', error);
@@ -104,7 +104,7 @@ export default function NotificationAnalytics() {
                 <stat.icon size={18} className="text-[var(--text-primary)]" />
               </div>
               <span className="text-[10px] font-medium text-[var(--text-secondary)] bg-gray-50 px-2 py-0.5 rounded-full">
-                Last 30 days
+                All time
               </span>
             </div>
             <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-0.5 tabular-nums">

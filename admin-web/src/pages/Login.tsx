@@ -58,7 +58,7 @@ export default function Login() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="w-full rounded-lg border border-gray-300 bg-white text-gray-900 py-3 pl-10 pr-4 focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 transition-all"
+                className="w-full rounded-lg border border-gray-300 bg-white text-gray-900 py-3 pl-10 pr-4 focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 transition-all"
                 placeholder="admin@example.com"
               />
             </div>
@@ -75,7 +75,7 @@ export default function Login() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                className="w-full rounded-lg border border-gray-300 bg-white text-gray-900 py-3 pl-10 pr-4 focus:border-black focus:outline-none focus:ring-2 focus:ring-black/20 transition-all"
+                className="w-full rounded-lg border border-gray-300 bg-white text-gray-900 py-3 pl-10 pr-4 focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 transition-all"
                 placeholder="••••••••"
               />
             </div>
@@ -84,7 +84,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full min-h-[48px] rounded-lg bg-black text-white py-3 font-semibold transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            className="w-full min-h-[48px] rounded-lg bg-[var(--color-primary)] text-white py-3 font-semibold transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
