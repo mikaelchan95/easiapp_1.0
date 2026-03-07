@@ -185,14 +185,14 @@ export default function Categories() {
   );
 
   return (
-    <div className="max-w-4xl animate-fade-in">
+    <div className="animate-fade-in">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">
             Categories
           </h1>
-          <p className="mt-1 text-[var(--text-secondary)]">
-            Manage product categories and organization
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
+            Organize your product categories
           </p>
         </div>
         <button
@@ -233,7 +233,7 @@ export default function Categories() {
             </h3>
             <p className="mt-1">
               {searchTerm
-                ? 'Try adjusting your search terms'
+                ? 'Adjust your search'
                 : 'Get started by creating a new category'}
             </p>
             {!searchTerm && (
@@ -248,14 +248,24 @@ export default function Categories() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm min-w-[600px]">
-              <thead className="bg-[var(--bg-tertiary)] text-xs font-bold uppercase text-[var(--text-primary)] tracking-wider">
+              <thead className="bg-[var(--bg-tertiary)] text-xs font-medium uppercase text-[var(--text-secondary)] tracking-wider">
                 <tr>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Name</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Slug</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Products</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Sort Order</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Name
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Slug
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Products
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Sort Order
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Status
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
                     Actions
                   </th>
                 </tr>
@@ -323,7 +333,7 @@ export default function Categories() {
                           onClick={() =>
                             handleDelete(category.id, category.name)
                           }
-                          className="rounded-lg p-2 text-[var(--text-tertiary)] hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
+                          className="rounded-lg p-2 text-[var(--text-tertiary)] hover:bg-red-50 hover:text-red-600 transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
                           title="Delete"
                         >
                           <Trash2 size={18} />
@@ -345,7 +355,7 @@ export default function Categories() {
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg flex items-center gap-2">
+            <div className="p-3 text-sm text-red-600 bg-red-50 rounded-lg flex items-center gap-2">
               <AlertCircle size={16} />
               {error}
             </div>

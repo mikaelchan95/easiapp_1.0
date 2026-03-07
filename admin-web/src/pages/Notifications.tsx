@@ -6,16 +6,23 @@ import {
   Bell,
   AlertCircle,
   CheckCircle,
-  FileText,
-  BarChart2,
-  Clock,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { PageHeader } from '../components/ui/PageHeader';
+import { TabNavigation } from '../components/ui/TabNavigation';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
 import { notificationService } from '../services/notificationService';
 import type {
   NotificationType,
   NotificationPriority,
 } from '../types/notification';
+
+const NOTIFICATION_TABS = [
+  { label: 'Send', value: '/notifications' },
+  { label: 'Templates', value: '/notifications/templates' },
+  { label: 'History', value: '/notifications/history' },
+  { label: 'Analytics', value: '/notifications/analytics' },
+];
 
 export default function Notifications() {
   const [title, setTitle] = useState('');
@@ -44,252 +51,213 @@ export default function Notifications() {
         title,
         message,
       });
-
-      setFeedback({
-        type: 'success',
-        message: 'Notification sent successfully!',
-      });
+      setFeedback({ type: 'success', message: 'Notification sent' });
       setTitle('');
       setMessage('');
     } catch (error) {
       console.error('Error sending notification:', error);
       setFeedback({
         type: 'error',
-        message: 'Failed to send notification. Please try again.',
+        message: 'Could not send notification. Try again.',
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const audienceOptions = [
+    { id: 'all', label: 'All Users', icon: Users },
+    { id: 'customers', label: 'Customers', icon: Users },
+    { id: 'companies', label: 'Companies', icon: Building2 },
+  ] as const;
+
+  const inputClass =
+    'w-full rounded-lg border border-gray-200 bg-white text-[var(--text-primary)] px-3 py-2.5 text-sm focus:border-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--text-primary)]/20 transition-all';
+
   return (
-    <div className="max-w-4xl mx-auto animate-fade-in">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">
-            Push Notifications
-          </h1>
-          <p className="mt-2 text-[var(--text-secondary)] text-sm sm:text-base">
-            Send alerts and updates to your users.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            to="/notifications/templates"
-            className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors text-sm font-medium"
-          >
-            <FileText size={18} />
-            Templates
-          </Link>
-          <Link
-            to="/notifications/history"
-            className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors text-sm font-medium"
-          >
-            <Clock size={18} />
-            History
-          </Link>
-          <Link
-            to="/notifications/analytics"
-            className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors text-sm font-medium"
-          >
-            <BarChart2 size={18} />
-            Analytics
-          </Link>
-        </div>
-      </div>
+    <div className="animate-fade-in space-y-6">
+      <PageHeader
+        title="Notifications"
+        description="Send alerts and updates to users"
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-sm p-4 sm:p-6">
-            <form onSubmit={handleSend} className="space-y-6">
-              {feedback && (
-                <div
-                  className={`p-4 rounded-lg flex items-center gap-3 ${
-                    feedback.type === 'success'
-                      ? 'bg-green-50 text-green-700 border border-green-200'
-                      : 'bg-red-50 text-red-700 border border-red-200'
-                  }`}
-                >
-                  {feedback.type === 'success' ? (
-                    <CheckCircle size={20} />
-                  ) : (
-                    <AlertCircle size={20} />
-                  )}
-                  <span className="text-sm font-medium">
-                    {feedback.message}
-                  </span>
-                </div>
-              )}
+      <TabNavigation mode="link" tabs={NOTIFICATION_TABS} />
 
-              <div>
-                <label className="mb-3 block text-sm font-medium text-[var(--text-primary)]">
-                  Target Audience
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                  {[
-                    { id: 'all', label: 'All Users', icon: Users },
-                    { id: 'customers', label: 'Customers', icon: Users },
-                    { id: 'companies', label: 'Companies', icon: Building2 },
-                  ].map(option => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => setAudience(option.id as any)}
-                      className={`flex flex-col items-center gap-2 rounded-lg border p-4 text-center transition-all min-h-[80px] touch-manipulation ${
-                        audience === option.id
-                          ? 'border-[var(--text-primary)] bg-[var(--text-primary)]/5 text-[var(--text-primary)] shadow-sm'
-                          : 'border-[var(--border-primary)] hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
-                      }`}
-                    >
-                      <option.icon size={24} />
-                      <span className="text-sm font-medium">
-                        {option.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Form */}
+        <Card className="lg:col-span-3">
+          <form onSubmit={handleSend} className="space-y-5">
+            {feedback && (
+              <div
+                className={`p-3 rounded-lg flex items-center gap-2 text-sm ${
+                  feedback.type === 'success'
+                    ? 'bg-gray-50 text-[var(--text-primary)] border border-gray-200'
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                }`}
+              >
+                {feedback.type === 'success' ? (
+                  <CheckCircle size={16} />
+                ) : (
+                  <AlertCircle size={16} />
+                )}
+                {feedback.message}
               </div>
+            )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                    Type
-                  </label>
-                  <select
-                    value={type}
-                    onChange={e => setType(e.target.value as NotificationType)}
-                    className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-3 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all"
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
+                Audience
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {audienceOptions.map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setAudience(option.id as any)}
+                    className={`flex items-center justify-center gap-2 rounded-lg border py-2.5 text-sm font-medium transition-all ${
+                      audience === option.id
+                        ? 'border-[var(--text-primary)] bg-[var(--text-primary)] text-white'
+                        : 'border-gray-200 text-[var(--text-secondary)] hover:border-gray-300 hover:text-[var(--text-primary)]'
+                    }`}
                   >
-                    <option value="marketing">Marketing</option>
-                    <option value="system">System</option>
-                    <option value="order_status">Order Status</option>
-                    <option value="billing">Billing</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                    Priority
-                  </label>
-                  <select
-                    value={priority}
-                    onChange={e =>
-                      setPriority(e.target.value as NotificationPriority)
-                    }
-                    className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-3 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </div>
+                    <option.icon size={16} />
+                    {option.label}
+                  </button>
+                ))}
               </div>
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                  Title
+                <label className="mb-1.5 block text-sm font-medium text-[var(--text-primary)]">
+                  Type
                 </label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={e => setTitle(e.target.value)}
-                  className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-3 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all min-h-[44px]"
-                  placeholder="e.g. Flash Sale! 50% Off"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                  Message
-                </label>
-                <textarea
-                  rows={4}
-                  value={message}
-                  onChange={e => setMessage(e.target.value)}
-                  className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 py-3 focus:border-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)]/20 transition-all resize-none"
-                  placeholder="Enter your notification message..."
-                  required
-                />
-              </div>
-
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--text-primary)] text-[var(--bg-primary)] px-4 py-3 font-semibold transition-all hover:opacity-90 shadow-sm min-h-[48px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+                <select
+                  value={type}
+                  onChange={e => setType(e.target.value as NotificationType)}
+                  className={inputClass}
                 >
-                  {isSubmitting ? (
-                    <span className="w-5 h-5 border-2 border-[var(--bg-primary)] border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <Send size={20} />
-                      Send Notification
-                    </>
-                  )}
-                </button>
+                  <option value="marketing">Marketing</option>
+                  <option value="system">System</option>
+                  <option value="order_status">Order Status</option>
+                  <option value="billing">Billing</option>
+                </select>
               </div>
-            </form>
-          </div>
-        </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-[var(--text-primary)]">
+                  Priority
+                </label>
+                <select
+                  value={priority}
+                  onChange={e =>
+                    setPriority(e.target.value as NotificationPriority)
+                  }
+                  className={inputClass}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+            </div>
 
-        <div className="space-y-6">
-          <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-sm p-4 sm:p-6">
-            <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-              <Bell size={20} />
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-[var(--text-primary)]">
+                Title
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                className={inputClass}
+                placeholder="e.g. Flash Sale! 50% Off"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-[var(--text-primary)]">
+                Message
+              </label>
+              <textarea
+                rows={4}
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+                className={`${inputClass} resize-none`}
+                placeholder="Enter your notification message..."
+                required
+              />
+            </div>
+
+            <Button
+              type="submit"
+              isLoading={isSubmitting}
+              leftIcon={<Send size={16} />}
+              className="w-full"
+            >
+              Send Notification
+            </Button>
+          </form>
+        </Card>
+
+        {/* Sidebar */}
+        <div className="lg:col-span-2 space-y-4">
+          <Card>
+            <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+              <Bell size={16} />
               Preview
             </h2>
-            <div className="bg-gray-100 dark:bg-zinc-900 rounded-lg p-4 border border-gray-200 dark:border-zinc-800">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-white dark:bg-zinc-800 flex items-center justify-center shadow-sm">
-                  <img
-                    src="/logo.png"
-                    alt="App Logo"
-                    className="w-6 h-6 object-contain"
-                    onError={e => (e.currentTarget.style.display = 'none')}
-                  />
-                  <Bell size={16} className="text-gray-500" />
+            <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-gray-100 shrink-0">
+                  <Bell size={14} className="text-gray-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <p className="text-xs font-semibold text-[var(--text-primary)]">
                       EASI App
                     </p>
-                    <span className="text-xs text-gray-500">now</span>
+                    <span className="text-[10px] text-[var(--text-secondary)]">
+                      now
+                    </span>
                   </div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white mb-1 truncate">
-                    {title || 'Notification Title'}
+                  <p className="text-xs font-medium text-[var(--text-primary)] truncate">
+                    {title || 'Notification title'}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-                    {message || 'Your notification message will appear here...'}
+                  <p className="text-xs text-[var(--text-secondary)] line-clamp-2 mt-0.5">
+                    {message || 'Your message appears here...'}
                   </p>
                 </div>
               </div>
             </div>
-            <p className="text-xs text-[var(--text-secondary)] mt-4 text-center">
-              This is a preview of how the notification might look on a device.
-            </p>
-          </div>
+          </Card>
 
-          <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-sm p-4 sm:p-6">
-            <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4">
-              Quick Tips
+          <Card>
+            <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
+              Tips
             </h2>
-            <ul className="space-y-3 text-sm text-[var(--text-secondary)]">
+            <ul className="space-y-2 text-xs text-[var(--text-secondary)]">
               <li className="flex gap-2">
-                <span className="text-[var(--text-primary)]">•</span>
-                Keep titles short and punchy (under 40 chars).
+                <span className="text-[var(--text-primary)] shrink-0">
+                  &bull;
+                </span>
+                Keep titles under 40 characters
               </li>
               <li className="flex gap-2">
-                <span className="text-[var(--text-primary)]">•</span>
-                Use emojis to increase engagement 🚀.
+                <span className="text-[var(--text-primary)] shrink-0">
+                  &bull;
+                </span>
+                Use emojis to boost engagement
               </li>
               <li className="flex gap-2">
-                <span className="text-[var(--text-primary)]">•</span>
-                Avoid using all caps.
+                <span className="text-[var(--text-primary)] shrink-0">
+                  &bull;
+                </span>
+                Avoid using all caps
               </li>
             </ul>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

@@ -179,22 +179,22 @@ export default function Onboarding() {
       label: 'Pending',
       count: counts.pending,
       icon: Clock,
-      color: 'text-yellow-600 dark:text-yellow-400',
-      bg: 'bg-yellow-50 dark:bg-yellow-900/20',
+      color: 'text-yellow-600',
+      bg: 'bg-yellow-50',
     },
     {
       label: 'Approved',
       count: counts.approved,
       icon: CheckCircle2,
-      color: 'text-emerald-600 dark:text-emerald-400',
-      bg: 'bg-emerald-50 dark:bg-emerald-900/20',
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-50',
     },
     {
       label: 'Rejected',
       count: counts.rejected,
       icon: XCircle,
-      color: 'text-red-600 dark:text-red-400',
-      bg: 'bg-red-50 dark:bg-red-900/20',
+      color: 'text-red-600',
+      bg: 'bg-red-50',
     },
   ];
 
@@ -260,20 +260,36 @@ export default function Onboarding() {
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[1100px]">
-            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
+            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-secondary)] font-medium tracking-wider">
               <tr>
                 <th className="w-10 px-3 py-3 sm:py-4" />
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Company Name</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">UEN</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Contact</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Company Name
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  UEN
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Contact
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
                   Credit Limit
                 </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Payment Terms</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Salesman</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Date</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Actions</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Payment Terms
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Salesman
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Status
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Date
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-primary)]">
@@ -305,7 +321,7 @@ export default function Onboarding() {
               <p className="text-lg font-medium text-[var(--text-primary)]">
                 No onboarding requests found
               </p>
-              <p className="text-sm">Try adjusting your search or filter.</p>
+              <p className="text-sm">Adjust your search or filters</p>
             </div>
           </div>
         )}
@@ -355,19 +371,19 @@ function RequestRow({
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--bg-tertiary)] text-[var(--text-primary)] flex-shrink-0">
               <UserPlus size={20} />
             </div>
-            <span className="font-medium text-[var(--text-primary)]">
+            <span className="text-sm font-medium text-[var(--text-primary)]">
               {request.company_name}
             </span>
           </div>
         </td>
         <td className="px-4 sm:px-6 py-3 sm:py-4">
-          <span className="font-mono text-xs text-[var(--text-secondary)]">
+          <span className="text-xs font-mono text-[var(--text-secondary)]">
             {request.uen || '—'}
           </span>
         </td>
         <td className="px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex flex-col gap-0.5">
-            <span className="font-medium text-[var(--text-primary)] text-sm">
+            <span className="text-sm font-medium text-[var(--text-primary)]">
               {request.contact_name}
             </span>
             {request.contact_email && (
@@ -382,17 +398,17 @@ function RequestRow({
             )}
           </div>
         </td>
-        <td className="px-4 sm:px-6 py-3 sm:py-4 text-right font-mono text-[var(--text-primary)]">
+        <td className="px-4 sm:px-6 py-3 sm:py-4 text-right text-sm font-mono text-[var(--text-primary)]">
           {formatCurrency(request.proposed_credit_limit)}
         </td>
-        <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
+        <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-secondary)]">
           {request.proposed_payment_terms || '—'}
         </td>
-        <td className="px-4 sm:px-6 py-3 sm:py-4">
+        <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm">
           {salesman ? (
             <Link
               to={`/salesmen/${salesman.id}`}
-              className="text-[var(--text-primary)] hover:underline transition-colors text-sm font-medium"
+              className="text-[var(--text-primary)] hover:underline transition-colors font-medium"
             >
               {salesman.full_name}
             </Link>
@@ -400,15 +416,15 @@ function RequestRow({
             <span className="text-[var(--text-tertiary)]">—</span>
           )}
         </td>
-        <td className="px-4 sm:px-6 py-3 sm:py-4">
+        <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm">
           <Badge variant={STATUS_BADGE_MAP[request.status]}>
             {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
           </Badge>
         </td>
-        <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)] text-sm whitespace-nowrap">
+        <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-secondary)] whitespace-nowrap">
           {formatDate(request.created_at)}
         </td>
-        <td className="px-4 sm:px-6 py-3 sm:py-4">
+        <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm">
           {request.status === 'pending' ? (
             <div className="flex items-center gap-2">
               <Button

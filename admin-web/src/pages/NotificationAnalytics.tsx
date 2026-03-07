@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { BarChart2, TrendingUp, Users, CheckCircle } from 'lucide-react';
+import { PageHeader } from '../components/ui/PageHeader';
+import { TabNavigation } from '../components/ui/TabNavigation';
+import { Card } from '../components/ui/Card';
+
+const NOTIFICATION_TABS = [
+  { label: 'Send', value: '/notifications' },
+  { label: 'Templates', value: '/notifications/templates' },
+  { label: 'History', value: '/notifications/history' },
+  { label: 'Analytics', value: '/notifications/analytics' },
+];
 
 export default function NotificationAnalytics() {
   const [stats, setStats] = useState({
@@ -19,7 +29,6 @@ export default function NotificationAnalytics() {
     try {
       setIsLoading(true);
 
-      // Parallelize queries for better performance
       const [
         { count: totalSent },
         { count: totalRead },
@@ -42,14 +51,14 @@ export default function NotificationAnalytics() {
 
       const sent = totalSent || 0;
       const read = totalRead || 0;
-      const users = totalUsers || 1; // avoid division by zero
+      const users = totalUsers || 1;
       const pushEnabled = pushEnabledUsers || 0;
 
       setStats({
         totalSent: sent,
         openRate: sent > 0 ? Math.round((read / sent) * 100) : 0,
-        activeSubscribers: Math.round((pushEnabled / users) * 100), // Approximate
-        deliveryRate: 98, // Mocked for now, would need delivery tracking
+        activeSubscribers: Math.round((pushEnabled / users) * 100),
+        deliveryRate: 98,
       });
     } catch (error) {
       console.error('Error loading analytics:', error);
@@ -58,77 +67,65 @@ export default function NotificationAnalytics() {
     }
   };
 
-  const StatCard = ({ title, value, icon: Icon, color, suffix = '' }: any) => (
-    <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <div className={`p-3 rounded-lg ${color} bg-opacity-10`}>
-          <Icon className={color.replace('bg-', 'text-')} size={24} />
-        </div>
-        <span className="text-xs font-medium text-[var(--text-secondary)] bg-[var(--bg-tertiary)] px-2 py-1 rounded-full">
-          Last 30 days
-        </span>
-      </div>
-      <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-1">
-        {isLoading ? '...' : value}
-        {suffix}
-      </h3>
-      <p className="text-sm text-[var(--text-secondary)]">{title}</p>
-    </div>
-  );
+  const statCards = [
+    {
+      title: 'Notifications Sent',
+      value: stats.totalSent.toLocaleString(),
+      icon: BarChart2,
+    },
+    {
+      title: 'Open Rate',
+      value: `${stats.openRate}%`,
+      icon: TrendingUp,
+    },
+    {
+      title: 'Push Enabled',
+      value: `${stats.activeSubscribers}%`,
+      icon: Users,
+    },
+    {
+      title: 'Delivery Rate',
+      value: `${stats.deliveryRate}%`,
+      icon: CheckCircle,
+    },
+  ];
 
   return (
-    <div className="animate-fade-in">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-          Analytics
-        </h1>
-        <p className="mt-2 text-[var(--text-secondary)]">
-          Insights into your notification performance.
-        </p>
+    <div className="animate-fade-in space-y-6">
+      <PageHeader title="Notifications" description="Performance insights" />
+
+      <TabNavigation mode="link" tabs={NOTIFICATION_TABS} />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map(stat => (
+          <Card key={stat.title}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 rounded-lg bg-gray-50">
+                <stat.icon size={18} className="text-[var(--text-primary)]" />
+              </div>
+              <span className="text-[10px] font-medium text-[var(--text-secondary)] bg-gray-50 px-2 py-0.5 rounded-full">
+                Last 30 days
+              </span>
+            </div>
+            <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-0.5 tabular-nums">
+              {isLoading ? '—' : stat.value}
+            </h3>
+            <p className="text-xs text-[var(--text-secondary)]">{stat.title}</p>
+          </Card>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          title="Total Notifications Sent"
-          value={stats.totalSent}
-          icon={BarChart2}
-          color="bg-blue-500 text-blue-500"
-        />
-        <StatCard
-          title="Open Rate"
-          value={stats.openRate}
-          suffix="%"
-          icon={TrendingUp}
-          color="bg-green-500 text-green-500"
-        />
-        <StatCard
-          title="Push Enabled Users"
-          value={stats.activeSubscribers}
-          suffix="%"
-          icon={Users}
-          color="bg-purple-500 text-purple-500"
-        />
-        <StatCard
-          title="Delivery Rate"
-          value={stats.deliveryRate}
-          suffix="%"
-          icon={CheckCircle}
-          color="bg-orange-500 text-orange-500"
-        />
-      </div>
-
-      {/* Placeholder for charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] p-6 shadow-sm min-h-[300px] flex items-center justify-center">
-          <p className="text-[var(--text-secondary)]">
-            Activity Chart Placeholder
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="min-h-[280px] flex items-center justify-center">
+          <p className="text-sm text-[var(--text-secondary)]">
+            Activity chart coming soon
           </p>
-        </div>
-        <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] p-6 shadow-sm min-h-[300px] flex items-center justify-center">
-          <p className="text-[var(--text-secondary)]">
-            Engagement Chart Placeholder
+        </Card>
+        <Card className="min-h-[280px] flex items-center justify-center">
+          <p className="text-sm text-[var(--text-secondary)]">
+            Engagement chart coming soon
           </p>
-        </div>
+        </Card>
       </div>
     </div>
   );

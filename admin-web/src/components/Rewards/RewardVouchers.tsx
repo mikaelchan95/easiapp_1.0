@@ -46,14 +46,26 @@ export const RewardVouchers = ({ vouchers, isLoading }: Props) => {
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-brand-white shadow-sm">
         <table className="w-full text-left text-sm">
-          <thead className="bg-brand-light text-xs uppercase text-brand-dark font-bold">
+          <thead className="bg-brand-light font-medium text-[var(--text-secondary)]">
             <tr>
-              <th className="px-6 py-4">Code</th>
-              <th className="px-6 py-4">Value</th>
-              <th className="px-6 py-4">User</th>
-              <th className="px-6 py-4">Reward Source</th>
-              <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4">Expiry</th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Code
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Value
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                User
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Reward Source
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Status
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Expiry
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">

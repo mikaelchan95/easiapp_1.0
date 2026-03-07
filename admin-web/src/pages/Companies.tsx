@@ -55,7 +55,7 @@ export default function Companies() {
   const handleDeleteCompany = async (companyId: string) => {
     if (
       !confirm(
-        'Are you sure you want to delete this company? This will also delete all associated orders and data. This action cannot be undone.'
+        'Delete this company? All associated orders and data will be permanently removed.'
       )
     )
       return;
@@ -150,7 +150,7 @@ export default function Companies() {
           <div className="min-w-0">
             <Link
               to={`/companies/${company.id}`}
-              className="font-medium text-[var(--text-primary)] hover:underline transition-colors block truncate"
+              className="text-sm font-medium text-[var(--text-primary)] hover:underline transition-colors block truncate"
             >
               {company.name || company.company_name || 'Unnamed Company'}
             </Link>
@@ -192,7 +192,7 @@ export default function Companies() {
             : '0';
         return (
           <div className="flex flex-col text-right">
-            <span className="font-medium text-[var(--text-primary)]">
+            <span className="text-sm font-medium text-[var(--text-primary)]">
               $
               {currentCredit.toLocaleString('en-US', {
                 minimumFractionDigits: 2,
@@ -219,7 +219,7 @@ export default function Companies() {
         const available = creditLimit - currentCredit;
         return (
           <div className="text-right">
-            <div className="font-medium text-[var(--text-primary)]">
+            <div className="text-sm font-medium text-[var(--text-primary)]">
               $
               {available.toLocaleString('en-US', {
                 minimumFractionDigits: 2,
@@ -246,7 +246,7 @@ export default function Companies() {
             onClick={() => handleToggleStatus(company.id, company.status)}
             className={`rounded-lg p-2 transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation ${
               company.status === 'active'
-                ? 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20'
+                ? 'text-green-600 hover:bg-green-50'
                 : 'text-[var(--text-tertiary)] hover:bg-[var(--bg-tertiary)]'
             }`}
             title={
@@ -269,7 +269,7 @@ export default function Companies() {
           </Link>
           <button
             onClick={() => handleDeleteCompany(company.id)}
-            className="rounded-lg p-2 text-[var(--text-tertiary)] transition-colors hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
+            className="rounded-lg p-2 text-[var(--text-tertiary)] transition-colors hover:bg-red-50 hover:text-red-600 min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
           >
             <Trash2 size={18} />
           </button>
@@ -415,13 +415,12 @@ export default function Companies() {
               </button>
             </div>
 
-            <div className="mb-6 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-4 text-sm text-yellow-800 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800">
+            <div className="mb-6 rounded-lg bg-yellow-50 p-4 text-sm text-yellow-800 border border-yellow-200">
               <div className="flex items-start gap-2">
                 <AlertTriangle size={16} className="mt-0.5 shrink-0" />
                 <p>
-                  Merging companies is irreversible. All users and orders from
-                  the selected companies will be moved to the{' '}
-                  <strong>Master Company</strong>. The other companies will be
+                  This is irreversible. All users and orders move to the{' '}
+                  <strong>Master Company</strong>. Other companies are
                   permanently deleted.
                 </p>
               </div>
@@ -451,10 +450,7 @@ export default function Companies() {
                       </span>
                     </div>
                     {masterCompanyId === company.id && (
-                      <Check
-                        size={20}
-                        className="text-green-600 dark:text-green-400"
-                      />
+                      <Check size={20} className="text-green-600" />
                     )}
                   </div>
                 ))}

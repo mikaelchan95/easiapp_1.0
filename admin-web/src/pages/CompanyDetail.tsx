@@ -247,13 +247,21 @@ export default function CompanyDetail() {
           <Card className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm min-w-[700px]">
-                <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
+                <thead className="bg-[var(--bg-tertiary)] font-medium text-[var(--text-secondary)]">
                   <tr>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4">Order #</th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4">Placed By</th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4">Date</th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                      Order #
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                      Placed By
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                      Date
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                      Status
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
                       Total
                     </th>
                   </tr>

@@ -271,7 +271,7 @@ export default function OrderDetail() {
                   <span
                     className={
                       order.delivery_fee === 0
-                        ? 'text-green-600 dark:text-green-400 font-medium'
+                        ? 'text-green-600 font-medium'
                         : ''
                     }
                   >
@@ -284,7 +284,7 @@ export default function OrderDetail() {
                   </span>
                 </div>
                 {order.discount > 0 && (
-                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                  <div className="flex justify-between text-sm text-green-600">
                     <span>Discount</span>
                     <span>
                       -$
@@ -345,7 +345,7 @@ export default function OrderDetail() {
                   Payment Method
                 </h4>
                 <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-                  <div className="h-2 w-2 rounded-full bg-green-500 dark:bg-green-400"></div>
+                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
                   {order.payment_method || 'Credit Card'}
                 </div>
               </div>
@@ -445,7 +445,7 @@ export default function OrderDetail() {
                         {order.voucher_id}
                       </span>
                       {order.voucher_discount > 0 && (
-                        <span className="text-sm text-green-600 dark:text-green-400">
+                        <span className="text-sm text-green-600">
                           -${order.voucher_discount?.toFixed(2)}
                         </span>
                       )}

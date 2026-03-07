@@ -230,7 +230,7 @@ export default function ProductForm() {
           <ArrowLeft size={20} />
         </button>
         <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">
-          {isEditMode ? 'Edit Product' : 'New Product'}
+          {isEditMode ? 'Edit Product' : 'Add Product'}
         </h1>
       </div>
 
@@ -485,7 +485,7 @@ export default function ProductForm() {
                             type="button"
                             onClick={() => handleRemoveVariant(idx)}
                             disabled={formData.size_options?.length === 1}
-                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="p-1.5 text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             title={
                               formData.size_options?.length === 1
                                 ? 'Cannot remove last variant'
@@ -679,7 +679,7 @@ export default function ProductForm() {
               )}
 
               {formData.promo_price && (
-                <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-3 text-sm text-blue-800 dark:text-blue-400">
+                <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm text-blue-800">
                   💰 Promo active: S$
                   {Number(formData.promo_price).toLocaleString('en-US', {
                     minimumFractionDigits: 2,

@@ -123,18 +123,32 @@ export default function Invoices() {
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[900px]">
-            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
+            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-secondary)] font-medium tracking-wider">
               <tr>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Invoice #</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Company</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Invoice Date</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Due Date</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">Amount</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Invoice #
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Company
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Invoice Date
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Due Date
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Status
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
+                  Amount
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
                   Outstanding
                 </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Actions</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-primary)]">
@@ -143,7 +157,7 @@ export default function Invoices() {
                   key={invoice.id}
                   className="group hover:bg-[var(--bg-tertiary)] transition-colors"
                 >
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-[var(--text-primary)]">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium text-[var(--text-primary)]">
                     <div className="flex items-center gap-2">
                       <FileText
                         size={16}
@@ -155,7 +169,7 @@ export default function Invoices() {
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-secondary)]">
                     {/* @ts-expect-error */}
                     <div className="flex flex-col">
                       {/* @ts-expect-error */}
@@ -168,24 +182,24 @@ export default function Invoices() {
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-secondary)]">
                     {invoice.invoice_date
                       ? new Date(invoice.invoice_date).toLocaleDateString()
                       : new Date(invoice.created_at).toLocaleDateString()}
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-secondary)]">
                     {invoice.payment_due_date || invoice.due_date
                       ? new Date(
                           invoice.payment_due_date || invoice.due_date
                         ).toLocaleDateString()
                       : 'N/A'}
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm">
                     <Badge variant={getStatusVariant(invoice.status)}>
                       {invoice.status.replace('_', ' ')}
                     </Badge>
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-right font-medium text-[var(--text-primary)]">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-right font-medium text-[var(--text-primary)]">
                     $
                     {(
                       invoice.billing_amount ||
@@ -196,7 +210,7 @@ export default function Invoices() {
                       maximumFractionDigits: 2,
                     })}
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-right text-[var(--text-secondary)]">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-right text-[var(--text-secondary)]">
                     $
                     {(
                       invoice.outstanding_amount ||
@@ -209,7 +223,7 @@ export default function Invoices() {
                       maximumFractionDigits: 2,
                     })}
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm">
                     <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"

@@ -21,8 +21,8 @@ export default function Settings() {
         <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] tracking-tight">
           Settings
         </h1>
-        <p className="text-[var(--text-secondary)] text-sm sm:text-base">
-          Manage application configuration and preferences.
+        <p className="text-[var(--text-secondary)] text-sm">
+          App configuration and preferences
         </p>
       </div>
 

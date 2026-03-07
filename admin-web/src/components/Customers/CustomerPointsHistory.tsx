@@ -54,13 +54,23 @@ export const CustomerPointsHistory = ({
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm text-gray-500">
-          <thead className="bg-brand-light text-xs uppercase text-brand-dark font-bold tracking-wider">
+          <thead className="bg-brand-light font-medium text-[var(--text-secondary)]">
             <tr>
-              <th className="px-6 py-4 font-semibold">Date</th>
-              <th className="px-6 py-4 font-semibold">Type</th>
-              <th className="px-6 py-4 font-semibold">Description</th>
-              <th className="px-6 py-4 font-semibold text-right">Points</th>
-              <th className="px-6 py-4 font-semibold text-right">Balance</th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Date
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Type
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Description
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
+                Points
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
+                Balance
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">

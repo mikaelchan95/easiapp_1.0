@@ -347,15 +347,23 @@ export default function SalesmanDetail() {
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm min-w-[700px]">
-              <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
+              <thead className="bg-[var(--bg-tertiary)] font-medium text-[var(--text-secondary)]">
                 <tr>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Order #</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Company</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Order #
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Company
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Status
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
                     Total
                   </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Date</th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Date
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-primary)]">
@@ -414,15 +422,23 @@ export default function SalesmanDetail() {
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm min-w-[700px]">
-              <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
+              <thead className="bg-[var(--bg-tertiary)] font-medium text-[var(--text-secondary)]">
                 <tr>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Company Name</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">UEN</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Payment Terms</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Company Name
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    UEN
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Payment Terms
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
                     Credit Limit
                   </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Status
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-primary)]">
@@ -482,17 +498,29 @@ export default function SalesmanDetail() {
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm min-w-[800px]">
-              <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
+              <thead className="bg-[var(--bg-tertiary)] font-medium text-[var(--text-secondary)]">
                 <tr>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Company Name</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Contact</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">UEN</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Company Name
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Contact
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    UEN
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
                     Proposed Credit
                   </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Proposed Terms</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Date</th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Proposed Terms
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Status
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Date
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-primary)]">

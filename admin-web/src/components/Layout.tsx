@@ -10,7 +10,6 @@ import {
   Bell,
   Settings,
   Search,
-  ChevronDown,
   Receipt,
   Users,
   Building2,
@@ -21,34 +20,60 @@ import {
   UserCheck,
   ClipboardList,
   UserPlus,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useTheme } from '../context/ThemeContext';
 
-const ROUTE_TITLES: Record<string, string> = {
-  '/': 'Overview',
-  '/products': 'Products',
-  '/categories': 'Categories',
-  '/customers': 'Customers',
-  '/companies': 'Companies',
-  '/orders': 'Orders',
-  '/invoices': 'Invoices',
-  '/company-invoices': 'Company Invoices',
-  '/drivers': 'Drivers',
-  '/salesmen': 'Salesmen',
-  '/deliveries': 'Deliveries',
-  '/onboarding': 'Onboarding Requests',
-  '/rewards': 'Rewards',
-  '/content': 'Content',
-  '/notifications': 'Notifications',
-  '/settings': 'Settings',
-};
+function NavItem({
+  to,
+  icon: Icon,
+  label,
+  active,
+  collapsed,
+}: {
+  to: string;
+  icon: any;
+  label: string;
+  active: boolean;
+  collapsed: boolean;
+}) {
+  return (
+    <Link
+      to={to}
+      className={`flex items-center gap-3 rounded-xl transition-all duration-200 text-sm font-medium ${
+        active
+          ? 'bg-[var(--color-primary-bg)] text-[var(--color-primary)]'
+          : 'text-[var(--text-secondary)] hover:bg-gray-50 hover:text-[var(--text-primary)]'
+      } ${collapsed ? 'justify-center px-2 py-3' : 'px-4 py-3'}`}
+      title={collapsed ? label : undefined}
+    >
+      <Icon size={20} strokeWidth={active ? 2.5 : 2} className="shrink-0" />
+      {!collapsed && <span>{label}</span>}
+    </Link>
+  );
+}
+
+function SectionHeader({
+  label,
+  collapsed,
+}: {
+  label: string;
+  collapsed: boolean;
+}) {
+  if (collapsed) return <div className="h-2" />;
+  return (
+    <div className="px-4 py-2 mt-6 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
+      {label}
+    </div>
+  );
+}
 
 export const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [user, setUser] = useState({ name: '', email: '', role: '' });
 
@@ -90,31 +115,6 @@ export const Layout = () => {
     return false;
   };
 
-  const NavItem = ({
-    to,
-    icon: Icon,
-    label,
-  }: {
-    to: string;
-    icon: any;
-    label: string;
-  }) => {
-    const active = isActive(to);
-    return (
-      <Link
-        to={to}
-        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
-          active
-            ? 'bg-[var(--color-primary-bg)] text-[var(--color-primary)]'
-            : 'text-[var(--text-secondary)] hover:bg-gray-50 hover:text-[var(--text-primary)]'
-        }`}
-      >
-        <Icon size={20} strokeWidth={active ? 2.5 : 2} />
-        <span>{label}</span>
-      </Link>
-    );
-  };
-
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--bg-app)] font-sans">
       {/* Mobile Overlay */}
@@ -127,100 +127,239 @@ export const Layout = () => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-[var(--bg-sidebar)] shadow-sm transition-transform duration-300 lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 bg-[var(--bg-sidebar)] shadow-sm transition-[width] duration-300 ease-in-out lg:static lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        } ${isCollapsed ? 'w-20' : 'w-64'}`}
       >
-        <div className="flex h-20 items-center px-6 border-b border-dashed border-[var(--border-subtle)]">
-          <div className="flex items-center gap-2 text-[var(--text-primary)]">
-            <div className="h-8 w-8 rounded-lg bg-[var(--color-primary)] flex items-center justify-center text-white font-bold text-xl">
+        <div
+          className={`flex h-12 items-center border-b border-dashed border-[var(--border-subtle)] justify-between ${isCollapsed ? 'px-3' : 'px-5'}`}
+        >
+          <div
+            className={`flex items-center gap-2 text-[var(--text-primary)] ${isCollapsed ? 'justify-center w-full' : ''}`}
+          >
+            <div
+              className={`rounded-lg bg-[var(--color-primary)] flex items-center justify-center text-white font-bold text-lg shrink-0 transition-all duration-300 ${isCollapsed ? 'h-9 w-9' : 'h-8 w-8'}`}
+            >
               E
             </div>
-            <span className="text-xl font-bold tracking-tight">EASI Admin</span>
+            {!isCollapsed && (
+              <span className="text-lg font-bold tracking-tight">
+                EASI Admin
+              </span>
+            )}
           </div>
-          <button
-            className="ml-auto lg:hidden text-gray-500"
-            onClick={() => setMobileOpen(false)}
-          >
-            <X size={20} />
-          </button>
+          {!isCollapsed && (
+            <button
+              className="ml-auto lg:hidden text-gray-500"
+              onClick={() => setMobileOpen(false)}
+            >
+              <X size={20} />
+            </button>
+          )}
         </div>
 
-        <div className="flex flex-col h-[calc(100vh-80px)] justify-between p-4">
+        {/* Sidebar search */}
+        <div
+          className={`border-b border-dashed border-[var(--border-subtle)] ${isCollapsed ? 'px-2 py-2 flex justify-center' : 'px-4 py-2'}`}
+        >
+          {isCollapsed ? (
+            <button
+              className="p-2 text-[var(--text-tertiary)] hover:bg-gray-50 rounded-lg transition-colors"
+              title="Search"
+            >
+              <Search size={18} />
+            </button>
+          ) : (
+            <div className="relative">
+              <Search
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                size={14}
+              />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="w-full pl-8 pr-8 py-1.5 bg-gray-50 rounded-lg border border-[var(--border-subtle)] text-sm focus:ring-1 focus:ring-[var(--color-primary)] focus:border-transparent placeholder-gray-400 transition-all"
+              />
+              <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                <span className="px-1 py-0.5 bg-gray-100 rounded text-[10px] font-medium text-gray-400">
+                  ⌘K
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div
+          className={`flex flex-col h-[calc(100vh-92px)] justify-between ${isCollapsed ? 'p-2' : 'p-2 sm:p-4'}`}
+        >
           <nav className="space-y-1 overflow-y-auto custom-scrollbar">
-            <div className="px-4 py-2 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
-              Main Menu
-            </div>
-            <NavItem to="/" icon={LayoutDashboard} label="Overview" />
-            <NavItem to="/products" icon={Package} label="Products" />
-            <NavItem to="/categories" icon={FolderTree} label="Categories" />
-            <NavItem to="/orders" icon={ShoppingCart} label="Orders" />
+            <SectionHeader label="Main Menu" collapsed={isCollapsed} />
+            <NavItem
+              to="/"
+              icon={LayoutDashboard}
+              label="Overview"
+              active={isActive('/')}
+              collapsed={isCollapsed}
+            />
+            <NavItem
+              to="/products"
+              icon={Package}
+              label="Products"
+              active={isActive('/products')}
+              collapsed={isCollapsed}
+            />
+            <NavItem
+              to="/categories"
+              icon={FolderTree}
+              label="Categories"
+              active={isActive('/categories')}
+              collapsed={isCollapsed}
+            />
+            <NavItem
+              to="/orders"
+              icon={ShoppingCart}
+              label="Orders"
+              active={isActive('/orders')}
+              collapsed={isCollapsed}
+            />
 
-            <div className="px-4 py-2 mt-6 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
-              Customers
-            </div>
-            <NavItem to="/customers" icon={Users} label="Customers" />
-            <NavItem to="/companies" icon={Building2} label="Companies" />
+            <SectionHeader label="Customers" collapsed={isCollapsed} />
+            <NavItem
+              to="/customers"
+              icon={Users}
+              label="Customers"
+              active={isActive('/customers')}
+              collapsed={isCollapsed}
+            />
+            <NavItem
+              to="/companies"
+              icon={Building2}
+              label="Companies"
+              active={isActive('/companies')}
+              collapsed={isCollapsed}
+            />
 
-            <div className="px-4 py-2 mt-6 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
-              Staff
-            </div>
-            <NavItem to="/drivers" icon={Truck} label="Drivers" />
-            <NavItem to="/salesmen" icon={UserCheck} label="Salesmen" />
+            <SectionHeader label="Staff" collapsed={isCollapsed} />
+            <NavItem
+              to="/drivers"
+              icon={Truck}
+              label="Drivers"
+              active={isActive('/drivers')}
+              collapsed={isCollapsed}
+            />
+            <NavItem
+              to="/salesmen"
+              icon={UserCheck}
+              label="Salesmen"
+              active={isActive('/salesmen')}
+              collapsed={isCollapsed}
+            />
 
-            <div className="px-4 py-2 mt-6 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
-              Operations
-            </div>
-            <NavItem to="/deliveries" icon={ClipboardList} label="Deliveries" />
-            <NavItem to="/onboarding" icon={UserPlus} label="Onboarding" />
+            <SectionHeader label="Operations" collapsed={isCollapsed} />
+            <NavItem
+              to="/deliveries"
+              icon={ClipboardList}
+              label="Deliveries"
+              active={isActive('/deliveries')}
+              collapsed={isCollapsed}
+            />
+            <NavItem
+              to="/onboarding"
+              icon={UserPlus}
+              label="Onboarding"
+              active={isActive('/onboarding')}
+              collapsed={isCollapsed}
+            />
 
-            <div className="px-4 py-2 mt-6 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
-              Finance
-            </div>
-            <NavItem to="/invoices" icon={Receipt} label="Invoices" />
+            <SectionHeader label="Finance" collapsed={isCollapsed} />
+            <NavItem
+              to="/invoices"
+              icon={Receipt}
+              label="Invoices"
+              active={isActive('/invoices')}
+              collapsed={isCollapsed}
+            />
             <NavItem
               to="/company-invoices"
               icon={Receipt}
               label="Company SOA"
+              active={isActive('/company-invoices')}
+              collapsed={isCollapsed}
             />
 
-            <div className="px-4 py-2 mt-6 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
-              Engagement
-            </div>
-            <NavItem to="/rewards" icon={Gift} label="Rewards" />
-            <NavItem to="/content" icon={FileImage} label="Content" />
-            <NavItem to="/notifications" icon={Bell} label="Notifications" />
+            <SectionHeader label="Engagement" collapsed={isCollapsed} />
+            <NavItem
+              to="/rewards"
+              icon={Gift}
+              label="Rewards"
+              active={isActive('/rewards')}
+              collapsed={isCollapsed}
+            />
+            <NavItem
+              to="/content"
+              icon={FileImage}
+              label="Content"
+              active={isActive('/content')}
+              collapsed={isCollapsed}
+            />
+            <NavItem
+              to="/notifications"
+              icon={Bell}
+              label="Notifications"
+              active={isActive('/notifications')}
+              collapsed={isCollapsed}
+            />
 
-            <div className="px-4 py-2 mt-6 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
-              System
-            </div>
-            <NavItem to="/settings" icon={Settings} label="Settings" />
+            <SectionHeader label="System" collapsed={isCollapsed} />
+            <NavItem
+              to="/settings"
+              icon={Settings}
+              label="Settings"
+              active={isActive('/settings')}
+              collapsed={isCollapsed}
+            />
           </nav>
 
           <div className="pt-4 mt-auto border-t border-[var(--border-subtle)] space-y-2">
-            <div className="flex items-center justify-between px-4 py-2">
-              <span className="text-sm font-medium text-[var(--text-secondary)]">
-                Dark Mode
-              </span>
-              <button
-                onClick={toggleTheme}
-                className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 transition-colors focus:outline-none dark:bg-gray-700"
-              >
-                <span
-                  className={`${
-                    theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
-                  } inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200`}
-                />
-              </button>
+            {/* Profile */}
+            <div
+              className={`flex items-center gap-3 rounded-lg py-2 ${isCollapsed ? 'justify-center px-2' : 'px-4'}`}
+            >
+              <div className="h-8 w-8 rounded-full bg-[var(--color-primary)] flex items-center justify-center text-white font-bold text-xs shrink-0">
+                {user.name ? user.name.charAt(0).toUpperCase() : 'A'}
+              </div>
+              {!isCollapsed && (
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-[var(--text-primary)] truncate leading-tight">
+                    {user.name || 'Admin'}
+                  </p>
+                  <p className="text-xs text-[var(--text-tertiary)] truncate">
+                    {user.email || 'admin@easi.sg'}
+                  </p>
+                </div>
+              )}
             </div>
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className={`hidden lg:flex w-full items-center gap-3 py-2 text-sm font-medium text-[var(--text-secondary)] hover:bg-gray-50 rounded-lg transition-colors ${isCollapsed ? 'justify-center px-2' : 'px-4'}`}
+            >
+              {isCollapsed ? (
+                <ChevronRight size={20} />
+              ) : (
+                <ChevronLeft size={20} />
+              )}
+              {!isCollapsed && <span>Collapse</span>}
+            </button>
             <button
               type="button"
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              className={`flex w-full items-center gap-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors ${isCollapsed ? 'justify-center px-2' : 'px-4'}`}
             >
               <LogOut size={18} />
-              <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+              {!isCollapsed && (
+                <span>{isLoggingOut ? 'Signing out...' : 'Sign out'}</span>
+              )}
             </button>
           </div>
         </div>
@@ -228,67 +367,16 @@ export const Layout = () => {
 
       {/* Main Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top Header */}
-        <header className="flex h-20 items-center justify-between gap-4 px-8 bg-[var(--bg-app)]">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="lg:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
-            >
-              <Menu size={20} />
-            </button>
-            <h1 className="text-2xl font-bold text-[var(--text-primary)] hidden sm:block">
-              {ROUTE_TITLES[location.pathname] ??
-                ROUTE_TITLES['/' + location.pathname.split('/')[1]] ??
-                location.pathname.split('/')[1].charAt(0).toUpperCase() +
-                  location.pathname.split('/')[1].slice(1)}
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-4 flex-1 justify-end max-w-4xl">
-            {/* Search */}
-            <div className="hidden md:flex relative w-full max-w-md">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                size={18}
-              />
-              <input
-                type="text"
-                placeholder="Search"
-                className="w-full pl-10 pr-12 py-2.5 bg-white rounded-xl border-none shadow-sm text-sm focus:ring-2 focus:ring-[var(--color-primary)] placeholder-gray-400"
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                <span className="p-1 bg-gray-100 rounded text-[10px] font-medium text-gray-500">
-                  ⌘
-                </span>
-                <span className="p-1 bg-gray-100 rounded text-[10px] font-medium text-gray-500">
-                  K
-                </span>
-              </div>
-            </div>
-
-            {/* Profile */}
-            <div className="flex items-center gap-3 pl-2">
-              <div className="h-10 w-10 rounded-full bg-[var(--color-primary)] flex items-center justify-center text-white font-bold text-sm border-2 border-white shadow-sm">
-                {user.name ? user.name.charAt(0).toUpperCase() : 'A'}
-              </div>
-              <div className="hidden xl:block">
-                <p className="text-sm font-bold text-[var(--text-primary)]">
-                  {user.name || 'Admin'}
-                </p>
-                <p className="text-xs text-[var(--text-secondary)]">
-                  {user.role || 'Admin'}
-                </p>
-              </div>
-              <button className="p-1 hover:bg-gray-200 rounded-full transition-colors">
-                <ChevronDown size={16} className="text-gray-400" />
-              </button>
-            </div>
-          </div>
-        </header>
+        {/* Mobile menu button */}
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="lg:hidden absolute top-4 left-4 z-10 p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
+        >
+          <Menu size={20} />
+        </button>
 
         {/* Content Scroll Area */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-8 pt-0">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 sm:px-8">
           <Outlet />
         </main>
       </div>

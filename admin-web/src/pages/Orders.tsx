@@ -44,12 +44,7 @@ export default function Orders() {
   };
 
   const handleDeleteOrder = async (orderId: string) => {
-    if (
-      !confirm(
-        'Are you sure you want to delete this order? This action cannot be undone.'
-      )
-    )
-      return;
+    if (!confirm('Delete this order? This cannot be undone.')) return;
 
     try {
       const { error } = await supabase
@@ -65,7 +60,7 @@ export default function Orders() {
   };
 
   const handleCancelOrder = async (orderId: string) => {
-    if (!confirm('Are you sure you want to cancel this order?')) return;
+    if (!confirm('Cancel this order?')) return;
 
     try {
       const { error } = await supabase
@@ -143,7 +138,7 @@ export default function Orders() {
             className="flex items-center justify-center gap-2 rounded-lg bg-[var(--text-primary)] text-[var(--bg-primary)] px-4 py-2.5 font-semibold transition-all hover:opacity-90 shadow-sm min-h-[44px] touch-manipulation"
           >
             <Plus size={20} />
-            New Order
+            Add Order
           </Link>
 
           <div className="relative">
@@ -186,17 +181,27 @@ export default function Orders() {
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[900px]">
-            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
+            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-secondary)] font-medium tracking-wider">
               <tr>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Order Number</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Customer</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Date</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">Total</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Order Number
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Customer
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Date
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Status
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
+                  Total
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
                   Payment
                 </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
                   Actions
                 </th>
               </tr>
@@ -207,7 +212,7 @@ export default function Orders() {
                   key={order.id}
                   className="group hover:bg-[var(--bg-tertiary)] transition-colors"
                 >
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-[var(--text-primary)]">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium text-[var(--text-primary)]">
                     <Link
                       to={`/orders/${order.id}`}
                       className="flex items-center gap-2 hover:underline transition-colors"
@@ -219,11 +224,11 @@ export default function Orders() {
                       <span className="truncate">#{order.order_number}</span>
                     </Link>
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-primary)]">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-primary)]">
                     {/* @ts-expect-error */}
                     {order.user?.name || 'Unknown'}
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-secondary)]">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
                       <span>
                         {new Date(order.created_at).toLocaleDateString()}
@@ -236,28 +241,28 @@ export default function Orders() {
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm">
                     <Badge variant={getStatusVariant(order.status)}>
                       {order.status}
                     </Badge>
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-right font-medium text-[var(--text-primary)]">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-right font-medium text-[var(--text-primary)]">
                     $
                     {order.total?.toLocaleString('en-US', {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-right text-[var(--text-tertiary)] text-xs uppercase tracking-wide">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-right text-[var(--text-tertiary)] text-xs uppercase tracking-wide">
                     {order.payment_method || 'CC'}
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-right">
                     <div className="flex justify-end gap-1 sm:gap-2">
                       {order.status !== 'cancelled' &&
                         order.status !== 'delivered' && (
                           <button
                             onClick={() => handleCancelOrder(order.id)}
-                            className="rounded-lg p-2 text-[var(--text-tertiary)] transition-colors hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
+                            className="rounded-lg p-2 text-[var(--text-tertiary)] transition-colors hover:bg-red-50 hover:text-red-600 min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
                             title="Cancel Order"
                           >
                             <XIcon size={18} />
@@ -272,7 +277,7 @@ export default function Orders() {
                       </Link>
                       <button
                         onClick={() => handleDeleteOrder(order.id)}
-                        className="rounded-lg p-2 text-[var(--text-tertiary)] transition-colors hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
+                        className="rounded-lg p-2 text-[var(--text-tertiary)] transition-colors hover:bg-red-50 hover:text-red-600 min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
                         title="Delete Order"
                       >
                         <Trash2 size={18} />
@@ -292,7 +297,7 @@ export default function Orders() {
               <p className="text-lg font-medium text-[var(--text-primary)]">
                 No orders found
               </p>
-              <p className="text-sm">Try adjusting your filters.</p>
+              <p className="text-sm">Adjust your filters</p>
             </div>
           </div>
         )}

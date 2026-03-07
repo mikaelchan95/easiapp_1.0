@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import { Gift, Ticket, AlertTriangle } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { PageHeader } from '../components/ui/PageHeader';
+import { TabNavigation } from '../components/ui/TabNavigation';
 import { RewardList } from '../components/Rewards/RewardList';
 import { RewardForm } from '../components/Rewards/RewardForm';
 import { RewardVouchers } from '../components/Rewards/RewardVouchers';
@@ -17,8 +19,6 @@ export default function Rewards() {
   const [vouchers, setVouchers] = useState<any[]>([]);
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Modal State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingReward, setEditingReward] = useState<RewardCatalogItem | null>(
     null
@@ -49,17 +49,13 @@ export default function Rewards() {
         if (error) throw error;
         setVouchers(data || []);
       } else if (activeTab === 'reports') {
-        // Fetch audit logs for missing points
         const { data, error } = await supabase
           .from('audit_log')
           .select('*')
           .eq('action', 'missing_points_reported')
           .order('created_at', { ascending: false });
-
         if (error) throw error;
 
-        // Transform audit logs to reports
-        // Need to fetch user details associated with these logs
         const enrichedReports = await Promise.all(
           (data || []).map(async log => {
             const { data: user } = await supabase
@@ -77,7 +73,6 @@ export default function Rewards() {
             };
           })
         );
-
         setReports(enrichedReports);
       }
     } catch (error) {
@@ -89,10 +84,7 @@ export default function Rewards() {
 
   const handleSaveReward = async (data: Partial<RewardCatalogItem>) => {
     let error;
-    // Sanitize data: remove id, created_at, updated_at from payload
     const { id, created_at, updated_at, ...payload } = data;
-
-    console.log('Saving reward payload:', payload);
 
     if (editingReward) {
       const { error: updateError } = await supabase
@@ -113,17 +105,12 @@ export default function Rewards() {
       throw error;
     }
 
-    toast(
-      editingReward
-        ? 'Reward updated successfully'
-        : 'Reward created successfully',
-      'success'
-    );
-    fetchData(); // Refresh
+    toast(editingReward ? 'Reward updated' : 'Reward created', 'success');
+    fetchData();
   };
 
   const handleDeleteReward = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this reward?')) {
+    if (window.confirm('Delete this reward?')) {
       await supabase.from('reward_catalog').delete().eq('id', id);
       fetchData();
     }
@@ -140,7 +127,6 @@ export default function Rewards() {
   const handleResolveReport = async (report: any, approved: boolean) => {
     try {
       if (approved) {
-        // 1. Credit points
         const { data: user } = await supabase
           .from('users')
           .select('points')
@@ -153,10 +139,8 @@ export default function Rewards() {
           .from('users')
           .update({ points: currentPoints + pointsToAdd })
           .eq('id', report.user_id);
-
         if (updateError) throw updateError;
 
-        // 2. Log credit audit
         await supabase.from('points_audit_log').insert({
           user_id: report.user_id,
           transaction_type: 'adjustment',
@@ -167,9 +151,6 @@ export default function Rewards() {
         });
       }
 
-      // 3. Update the original audit log metadata to show status
-      // Note: Updating audit log isn't ideal but we are using it as storage here.
-      // Ideally we would move to a real table. For now, we update the metadata.
       const newMetadata = {
         ...report.metadata,
         report_status: approved ? 'resolved' : 'rejected',
@@ -180,77 +161,51 @@ export default function Rewards() {
         .update({ metadata: newMetadata })
         .eq('id', report.id);
 
-      alert(
-        approved ? 'Points credited and report resolved.' : 'Report rejected.'
+      toast(
+        approved ? 'Points credited and report resolved' : 'Report rejected',
+        'success'
       );
       fetchData();
     } catch (error) {
       console.error('Error resolving report', error);
-      alert('Failed to resolve report');
+      toast('Could not resolve report. Try again.', 'error');
     }
   };
 
+  const pendingCount = reports.filter(
+    r => r.metadata?.report_status === 'reported'
+  ).length;
+
+  const tabs = [
+    { label: 'Catalog', value: 'catalog', icon: <Gift size={16} /> },
+    { label: 'Vouchers', value: 'vouchers', icon: <Ticket size={16} /> },
+    {
+      label: 'Reports',
+      value: 'reports',
+      icon: <AlertTriangle size={16} />,
+      badge:
+        pendingCount > 0 ? (
+          <span className="ml-1 bg-black text-white text-[10px] leading-none px-1.5 py-0.5 rounded-full">
+            {pendingCount}
+          </span>
+        ) : undefined,
+    },
+  ];
+
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] tracking-tight">
-          Loyalty & Rewards
-        </h1>
-        <p className="text-[var(--text-secondary)] text-sm sm:text-base">
-          Manage reward catalog, vouchers, and user requests.
-        </p>
-      </div>
+      <PageHeader
+        title="Rewards"
+        description="Rewards catalog, vouchers, and point requests"
+      />
 
-      {/* Tabs */}
-      <div className="flex gap-3 sm:gap-4 border-b border-[var(--border-primary)] overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-        <button
-          onClick={() => setActiveTab('catalog')}
-          className={`pb-3 flex items-center gap-2 text-sm sm:text-base font-medium transition-colors border-b-2 whitespace-nowrap min-h-[44px] touch-manipulation ${
-            activeTab === 'catalog'
-              ? 'border-[var(--text-primary)] text-[var(--text-primary)]'
-              : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-          }`}
-        >
-          <Gift size={18} />
-          <span>Catalog</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('vouchers')}
-          className={`pb-3 flex items-center gap-2 text-sm sm:text-base font-medium transition-colors border-b-2 whitespace-nowrap min-h-[44px] touch-manipulation ${
-            activeTab === 'vouchers'
-              ? 'border-[var(--text-primary)] text-[var(--text-primary)]'
-              : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-          }`}
-        >
-          <Ticket size={18} />
-          <span className="hidden sm:inline">Issued Vouchers</span>
-          <span className="sm:hidden">Vouchers</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('reports')}
-          className={`pb-3 flex items-center gap-2 text-sm sm:text-base font-medium transition-colors border-b-2 whitespace-nowrap min-h-[44px] touch-manipulation ${
-            activeTab === 'reports'
-              ? 'border-[var(--text-primary)] text-[var(--text-primary)]'
-              : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-          }`}
-        >
-          <AlertTriangle size={18} />
-          <span className="hidden sm:inline">Missing Points</span>
-          <span className="sm:hidden">Reports</span>
-          {reports.filter(r => r.metadata?.report_status === 'reported')
-            .length > 0 && (
-            <span className="bg-red-500 dark:bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full">
-              {
-                reports.filter(r => r.metadata?.report_status === 'reported')
-                  .length
-              }
-            </span>
-          )}
-        </button>
-      </div>
+      <TabNavigation
+        tabs={tabs}
+        activeTab={activeTab}
+        onChange={v => setActiveTab(v as Tab)}
+      />
 
-      {/* Content */}
-      <div className="min-h-[500px]">
+      <div className="min-h-[400px]">
         {activeTab === 'catalog' && (
           <RewardList
             rewards={rewards}
@@ -267,11 +222,9 @@ export default function Rewards() {
             onToggleStatus={handleToggleStatus}
           />
         )}
-
         {activeTab === 'vouchers' && (
           <RewardVouchers vouchers={vouchers} isLoading={loading} />
         )}
-
         {activeTab === 'reports' && (
           <MissingPointsReports
             reports={reports}

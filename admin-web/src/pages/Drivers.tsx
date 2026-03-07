@@ -141,16 +141,24 @@ export default function Drivers() {
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[800px]">
-            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
+            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-secondary)] font-medium tracking-wider">
               <tr>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Name</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Email</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Phone</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-center">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Name
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Email
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Phone
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-center">
                   Active Deliveries
                 </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Status
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
                   Actions
                 </th>
               </tr>
@@ -163,7 +171,7 @@ export default function Drivers() {
                     key={driver.id}
                     className="group hover:bg-[var(--bg-tertiary)] transition-colors"
                   >
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-[var(--text-primary)]">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium text-[var(--text-primary)]">
                       <Link
                         to={`/drivers/${driver.id}`}
                         className="flex items-center gap-2 hover:underline transition-colors"
@@ -175,35 +183,32 @@ export default function Drivers() {
                         <span className="truncate">{driver.full_name}</span>
                       </Link>
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-secondary)]">
                       {driver.email}
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-secondary)]">
                       {driver.phone || '—'}
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-center">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-center">
                       {activeCount > 0 ? (
                         <Badge variant="info">{activeCount}</Badge>
                       ) : (
                         <span className="text-[var(--text-tertiary)]">0</span>
                       )}
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm">
                       <Badge variant={driver.is_active ? 'success' : 'default'}>
                         {driver.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-right">
                       <button
                         onClick={() => handleToggleActive(driver)}
                         className="rounded-lg p-2 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation ml-auto"
                         title={driver.is_active ? 'Deactivate' : 'Activate'}
                       >
                         {driver.is_active ? (
-                          <ToggleRight
-                            size={22}
-                            className="text-green-600 dark:text-green-400"
-                          />
+                          <ToggleRight size={22} className="text-green-600" />
                         ) : (
                           <ToggleLeft size={22} />
                         )}
@@ -223,7 +228,7 @@ export default function Drivers() {
               <p className="text-lg font-medium text-[var(--text-primary)]">
                 No drivers found
               </p>
-              <p className="text-sm">Try adjusting your search or filters.</p>
+              <p className="text-sm">Adjust your search or filters</p>
             </div>
           </div>
         )}

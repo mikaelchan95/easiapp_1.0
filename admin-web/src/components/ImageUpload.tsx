@@ -25,7 +25,7 @@ export default function ImageUpload({
     try {
       setUploading(true);
       if (!event.target.files || event.target.files.length === 0) {
-        throw new Error('You must select an image to upload.');
+        throw new Error('Select an image to upload');
       }
 
       const file = event.target.files[0];
@@ -42,7 +42,7 @@ export default function ImageUpload({
       }
 
       onChange(filePath);
-      toast('Image uploaded successfully', 'success');
+      toast('Image uploaded', 'success');
     } catch (error) {
       console.error('Upload error:', error);
       toast((error as Error).message, 'error');
@@ -74,7 +74,7 @@ export default function ImageUpload({
             <button
               type="button"
               onClick={handleRemove}
-              className="absolute top-2 right-2 rounded-full bg-red-100 dark:bg-red-900/50 p-2 text-red-600 dark:text-red-400 transition-colors hover:bg-red-200 dark:hover:bg-red-900/70 shadow-lg min-w-[36px] min-h-[36px] touch-manipulation"
+              className="absolute top-2 right-2 rounded-full bg-red-100 p-2 text-red-600 transition-colors hover:bg-red-200 shadow-lg min-w-[36px] min-h-[36px] touch-manipulation"
             >
               <X size={20} />
             </button>
@@ -91,7 +91,7 @@ export default function ImageUpload({
           <div className="flex flex-col items-center justify-center pb-6 pt-5 px-4">
             <ImageIcon className="mb-4 h-10 w-10 sm:h-12 sm:w-12 text-[var(--text-tertiary)]" />
             <p className="mb-2 text-sm text-[var(--text-primary)] text-center">
-              <span className="font-bold">Click to upload</span>
+              <span className="font-bold">Upload image</span>
             </p>
             <p className="text-xs text-[var(--text-tertiary)]">
               {helperText || 'PNG, JPG or WEBP'}

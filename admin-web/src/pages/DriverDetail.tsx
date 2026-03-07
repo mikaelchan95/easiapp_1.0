@@ -359,15 +359,27 @@ export default function DriverDetail() {
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm min-w-[900px]">
-              <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
+              <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-secondary)] font-medium tracking-wider">
                 <tr>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Order #</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Company</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Address</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Zone</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Assigned At</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Order #
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Company
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Address
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Zone
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Status
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Assigned At
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
                     Actions
                   </th>
                 </tr>
@@ -457,13 +469,23 @@ export default function DriverDetail() {
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm min-w-[800px]">
-              <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
+              <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-secondary)] font-medium tracking-wider">
                 <tr>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Order #</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Company</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Completed At</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4">Failure Reason</th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Order #
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Company
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Status
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Completed At
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Failure Reason
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-primary)]">

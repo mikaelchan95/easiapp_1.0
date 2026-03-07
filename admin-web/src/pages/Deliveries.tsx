@@ -291,10 +291,7 @@ export default function Deliveries() {
       {/* Upcoming Deliveries */}
       <Card className="border-l-4 border-l-blue-500">
         <div className="flex items-center gap-2 mb-4">
-          <CalendarClock
-            size={20}
-            className="text-blue-600 dark:text-blue-400"
-          />
+          <CalendarClock size={20} className="text-blue-600" />
           <h2 className="font-semibold text-[var(--text-primary)]">
             Upcoming Deliveries (Next 3 Days)
           </h2>
@@ -361,16 +358,30 @@ export default function Deliveries() {
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[1000px]">
-            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
+            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-secondary)] font-medium tracking-wider">
               <tr>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Order #</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Driver</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Company</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Address</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Zone</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Assigned</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Order #
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Driver
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Company
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Address
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Zone
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Status
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Assigned
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
                   Actions
                 </th>
               </tr>
@@ -387,7 +398,7 @@ export default function Deliveries() {
                     key={a.id}
                     className="group hover:bg-[var(--bg-tertiary)] transition-colors"
                   >
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-[var(--text-primary)]">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium text-[var(--text-primary)]">
                       <Link
                         to={`/deliveries/${a.id}`}
                         className="flex items-center gap-2 hover:underline transition-colors"
@@ -401,7 +412,7 @@ export default function Deliveries() {
                         </span>
                       </Link>
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-primary)]">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-primary)]">
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/drivers/${driver?.id}`}
@@ -428,10 +439,10 @@ export default function Deliveries() {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-secondary)]">
                       {order?.company?.name || '—'}
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-secondary)]">
                       <span
                         className="block max-w-[180px] truncate"
                         title={address}
@@ -439,7 +450,7 @@ export default function Deliveries() {
                         {address}
                       </span>
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm">
                       {order?.delivery_zone ? (
                         <Badge variant={getZoneVariant(order.delivery_zone)}>
                           {order.delivery_zone}
@@ -448,12 +459,12 @@ export default function Deliveries() {
                         <span className="text-[var(--text-tertiary)]">—</span>
                       )}
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm">
                       <Badge variant={getStatusVariant(a.status)}>
                         {formatLabel(a.status)}
                       </Badge>
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-secondary)]">
                       <div className="flex flex-col">
                         <span>
                           {new Date(a.assigned_at).toLocaleDateString()}
@@ -466,7 +477,7 @@ export default function Deliveries() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-right">
                       <div className="flex justify-end gap-1.5">
                         <button
                           onClick={() => {
@@ -481,7 +492,7 @@ export default function Deliveries() {
                         {nextStatus && (
                           <button
                             onClick={() => handleAdvanceStatus(a)}
-                            className="rounded-lg p-2 text-[var(--text-tertiary)] transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
+                            className="rounded-lg p-2 text-[var(--text-tertiary)] transition-colors hover:bg-blue-50 hover:text-blue-600 min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
                             title={`Advance to ${formatLabel(nextStatus)}`}
                           >
                             <ArrowRight size={16} />
@@ -503,7 +514,7 @@ export default function Deliveries() {
               <p className="text-lg font-medium text-[var(--text-primary)]">
                 No deliveries found
               </p>
-              <p className="text-sm">Try adjusting your search or filters.</p>
+              <p className="text-sm">Adjust your search or filters</p>
             </div>
           </div>
         )}

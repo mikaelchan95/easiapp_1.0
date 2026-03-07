@@ -134,7 +134,7 @@ export default function CompanyForm() {
             <Building2 size={20} />
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">
-            {isEditMode ? 'Edit Company' : 'New Company'}
+            {isEditMode ? 'Edit Company' : 'Add Company'}
           </h1>
         </div>
       </div>
@@ -149,8 +149,7 @@ export default function CompanyForm() {
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div>
               <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                Company Name{' '}
-                <span className="text-red-500 dark:text-red-400">*</span>
+                Company Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -164,8 +163,7 @@ export default function CompanyForm() {
 
             <div>
               <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                Display Name{' '}
-                <span className="text-red-500 dark:text-red-400">*</span>
+                Display Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -179,7 +177,7 @@ export default function CompanyForm() {
 
             <div>
               <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                UEN <span className="text-red-500 dark:text-red-400">*</span>
+                UEN <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -193,7 +191,7 @@ export default function CompanyForm() {
 
             <div>
               <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                Status <span className="text-red-500 dark:text-red-400">*</span>
+                Status <span className="text-red-500">*</span>
               </label>
               <select
                 name="status"
@@ -211,8 +209,7 @@ export default function CompanyForm() {
 
             <div className="md:col-span-2">
               <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                Address{' '}
-                <span className="text-red-500 dark:text-red-400">*</span>
+                Address <span className="text-red-500">*</span>
               </label>
               <textarea
                 name="address"
@@ -339,7 +336,7 @@ export default function CompanyForm() {
                   Require Approval for Orders
                 </span>
                 <p className="text-sm text-[var(--text-tertiary)]">
-                  Enable order approval workflow for this company
+                  Require approval for this company's orders
                 </p>
               </div>
             </label>
@@ -403,7 +400,7 @@ export default function CompanyForm() {
                       Multi-Level Approval
                     </span>
                     <p className="text-sm text-[var(--text-tertiary)]">
-                      Require multiple approvers for large orders
+                      Multiple approvers for large orders
                     </p>
                   </div>
                 </label>

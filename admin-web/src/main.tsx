@@ -5,7 +5,6 @@ console.log('App starting...');
 
 import './index.css';
 import App from './App.tsx';
-import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './components/ui/Toast';
 
 const rootElement = document.getElementById('root');
@@ -16,11 +15,9 @@ if (!rootElement) {
   const root = createRoot(rootElement);
   root.render(
     <StrictMode>
-      <ThemeProvider>
-        <ToastProvider>
-          <App />
-        </ToastProvider>
-      </ThemeProvider>
+      <ToastProvider>
+        <App />
+      </ToastProvider>
     </StrictMode>
   );
 }

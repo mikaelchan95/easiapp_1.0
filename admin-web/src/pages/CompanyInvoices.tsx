@@ -132,9 +132,7 @@ export default function CompanyInvoices() {
         return;
       }
 
-      alert(
-        `Invoice ${invoiceNumber} generated successfully for $${totalAmount.toFixed(2)}`
-      );
+      alert(`Invoice ${invoiceNumber} generated — $${totalAmount.toFixed(2)}`);
       fetchInvoices();
     } catch (error) {
       console.error('Error generating invoice:', error);
@@ -154,7 +152,7 @@ export default function CompanyInvoices() {
         throw error;
       }
 
-      alert('Invoice email sent successfully!');
+      alert('Invoice email sent');
     } catch (error) {
       console.error('Error sending invoice:', error);
       alert('Failed to send invoice email.');
@@ -295,18 +293,32 @@ export default function CompanyInvoices() {
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[1000px]">
-            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
+            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-secondary)] font-medium tracking-wider">
               <tr>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Invoice #</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Company</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Invoice Date</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Due Date</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">Amount</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Invoice #
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Company
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Invoice Date
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Due Date
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Status
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
+                  Amount
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
                   Outstanding
                 </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Actions</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-primary)]">

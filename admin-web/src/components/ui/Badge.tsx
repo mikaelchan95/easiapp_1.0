@@ -9,7 +9,9 @@ interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
     | 'error'
     | 'outline'
     | 'info'
-    | 'purple';
+    | 'purple'
+    | 'mono'
+    | 'mono-outline';
 }
 
 export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
@@ -25,6 +27,9 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
       info: 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/20',
       purple: 'bg-purple-50 text-purple-700 ring-1 ring-purple-600/20',
       outline: 'text-gray-700 border border-gray-300 bg-transparent',
+      mono: 'bg-black text-white',
+      'mono-outline':
+        'bg-white text-[var(--text-primary)] ring-1 ring-gray-200',
     };
 
     return (

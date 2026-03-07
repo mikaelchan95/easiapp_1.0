@@ -243,7 +243,7 @@ export default function ProductImport({
 
   const handleImport = async () => {
     if (errors.length > 0) {
-      alert('Please fix validation errors before importing');
+      alert('Fix validation errors to continue');
       return;
     }
 
@@ -356,7 +356,7 @@ export default function ProductImport({
                 >
                   <Upload size={24} />
                   <span className="font-medium">
-                    {file ? file.name : 'Click to upload CSV file'}
+                    {file ? file.name : 'Upload CSV file'}
                   </span>
                 </button>
               </div>
@@ -413,8 +413,9 @@ export default function ProductImport({
                 Import Complete
               </div>
               <p className="mt-1 text-sm text-green-700">
-                Successfully imported {importResult.success} product(s).
-                {importResult.failed > 0 && ` Failed: ${importResult.failed}`}
+                Imported {importResult.success}{' '}
+                {importResult.success === 1 ? 'product' : 'products'}.
+                {importResult.failed > 0 && ` ${importResult.failed} failed.`}
               </p>
             </div>
           )}
@@ -433,15 +434,29 @@ export default function ProductImport({
               </h3>
               <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-gray-100 text-xs font-bold uppercase text-gray-700">
+                  <thead className="bg-gray-100 font-medium text-[var(--text-secondary)]">
                     <tr>
-                      <th className="px-4 py-2">Name</th>
-                      <th className="px-4 py-2">Category</th>
-                      <th className="px-4 py-2">SKU</th>
-                      <th className="px-4 py-2">Retail Price</th>
-                      <th className="px-4 py-2">Promo Price</th>
-                      <th className="px-4 py-2">Stock</th>
-                      <th className="px-4 py-2">Status</th>
+                      <th className="px-4 py-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                        Name
+                      </th>
+                      <th className="px-4 py-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                        Category
+                      </th>
+                      <th className="px-4 py-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                        SKU
+                      </th>
+                      <th className="px-4 py-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                        Retail Price
+                      </th>
+                      <th className="px-4 py-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                        Promo Price
+                      </th>
+                      <th className="px-4 py-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                        Stock
+                      </th>
+                      <th className="px-4 py-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                        Status
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">

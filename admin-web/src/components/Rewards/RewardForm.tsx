@@ -82,7 +82,7 @@ export const RewardForm = ({
       <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] w-full max-w-2xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[var(--border-primary)]">
           <h2 className="text-lg sm:text-xl font-bold text-[var(--text-primary)]">
-            {reward ? 'Edit Reward' : 'New Reward'}
+            {reward ? 'Edit Reward' : 'Add Reward'}
           </h2>
           <button
             onClick={onClose}

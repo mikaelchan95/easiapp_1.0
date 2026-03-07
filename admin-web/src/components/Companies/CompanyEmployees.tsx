@@ -41,7 +41,7 @@ export const CompanyEmployees = ({
         .single();
 
       if (error) {
-        setSearchError('User not found. They must be registered first.');
+        setSearchError('User not found. Register them first.');
         return;
       }
 
@@ -74,7 +74,7 @@ export const CompanyEmployees = ({
       setSearchEmail('');
       setSearchResult(null);
       onRefresh();
-      alert('Employee added successfully');
+      alert('Employee added');
     } catch (err: any) {
       alert('Failed to add employee: ' + err.message);
     }
@@ -83,7 +83,7 @@ export const CompanyEmployees = ({
   const handleRemoveEmployee = async (userId: string) => {
     if (
       !window.confirm(
-        'Are you sure you want to remove this employee? They will become an individual user.'
+        'Remove this employee? They will revert to an individual account.'
       )
     )
       return;
@@ -130,7 +130,9 @@ export const CompanyEmployees = ({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-bold text-brand-dark">Team Members</h3>
+        <h3 className="text-sm font-bold text-[var(--text-primary)]">
+          Team Members
+        </h3>
         <Button
           size="sm"
           onClick={() => setIsAddModalOpen(true)}
@@ -142,45 +144,57 @@ export const CompanyEmployees = ({
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-500">
-            <thead className="bg-brand-light text-xs uppercase text-brand-dark font-bold tracking-wider">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-secondary)] font-medium tracking-wider">
               <tr>
-                <th className="px-6 py-4 font-semibold">Name</th>
-                <th className="px-6 py-4 font-semibold">Role</th>
-                <th className="px-6 py-4 font-semibold">Contact</th>
-                <th className="px-6 py-4 font-semibold">Joined At</th>
-                <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Name
+                </th>
+                <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Role
+                </th>
+                <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Contact
+                </th>
+                <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Joined At
+                </th>
+                <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
+                  Actions
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[var(--border-primary)]">
               {employees.map(employee => (
                 <tr
                   key={employee.id}
-                  className="hover:bg-brand-light/50 transition-colors"
+                  className="hover:bg-[var(--bg-tertiary)] transition-colors"
                 >
-                  <td className="px-6 py-4 font-medium text-brand-dark">
+                  <td className="px-6 py-4 text-sm font-medium text-[var(--text-primary)]">
                     <Link
                       to={`/customers/${employee.id}`}
-                      className="hover:text-brand-accent transition-colors"
+                      className="hover:underline transition-colors"
                     >
                       {employee.name}
                     </Link>
                   </td>
-                  <td className="px-6 py-4 capitalize">
+                  <td className="px-6 py-4 text-sm text-[var(--text-secondary)] capitalize">
                     {employee.role || 'Employee'}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 text-sm">
                     <div className="flex flex-col">
-                      <span className="text-gray-900">{employee.email}</span>
-                      <span className="text-xs text-brand-accent/80 hover:text-brand-accent transition-colors cursor-pointer flex items-center gap-1">
+                      <span className="text-[var(--text-primary)]">
+                        {employee.email}
+                      </span>
+                      <span className="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors cursor-pointer flex items-center gap-1">
                         <Mail size={10} /> Send Email
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 text-sm text-[var(--text-secondary)]">
                     {new Date(employee.created_at).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-sm text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => openEditModal(employee)}
@@ -235,8 +249,7 @@ export const CompanyEmployees = ({
             {!searchResult ? (
               <div className="space-y-4">
                 <p className="text-sm text-gray-500">
-                  Search for an existing user by email to add them to this
-                  company.
+                  Search by email to add a user
                 </p>
                 <div className="flex gap-2">
                   <input

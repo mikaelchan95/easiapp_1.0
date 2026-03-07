@@ -86,13 +86,23 @@ export const CustomerVouchers = ({ userId }: CustomerVouchersProps) => {
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm text-gray-500">
-          <thead className="bg-brand-light text-xs uppercase text-brand-dark font-bold tracking-wider">
+          <thead className="bg-brand-light font-medium text-[var(--text-secondary)]">
             <tr>
-              <th className="px-6 py-4 font-semibold">Code</th>
-              <th className="px-6 py-4 font-semibold">Value</th>
-              <th className="px-6 py-4 font-semibold">Status</th>
-              <th className="px-6 py-4 font-semibold">Expires</th>
-              <th className="px-6 py-4 font-semibold">Details</th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Code
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Value
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Status
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Expires
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Details
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">

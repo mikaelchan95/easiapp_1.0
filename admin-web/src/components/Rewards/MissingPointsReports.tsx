@@ -39,14 +39,26 @@ export const MissingPointsReports = ({
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-brand-white shadow-sm">
         <table className="w-full text-left text-sm">
-          <thead className="bg-brand-light text-xs uppercase text-brand-dark font-bold">
+          <thead className="bg-brand-light font-medium text-[var(--text-secondary)]">
             <tr>
-              <th className="px-6 py-4">Date</th>
-              <th className="px-6 py-4">User</th>
-              <th className="px-6 py-4">Order / Reason</th>
-              <th className="px-6 py-4">Expected</th>
-              <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4 text-right">Actions</th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Date
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                User
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Order / Reason
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Expected
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Status
+              </th>
+              <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">

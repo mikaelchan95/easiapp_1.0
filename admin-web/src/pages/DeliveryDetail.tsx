@@ -330,21 +330,21 @@ export default function DeliveryDetail() {
 
       {/* Failed reason banner */}
       {assignment.status === 'failed' && assignment.failure_reason && (
-        <Card className="border-l-4 border-l-red-500 bg-red-50/50 dark:bg-red-900/10">
+        <Card className="border-l-4 border-l-red-500 bg-red-50/50">
           <div className="flex items-start gap-3">
             <AlertTriangle
               size={20}
-              className="text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0"
+              className="text-red-600 mt-0.5 flex-shrink-0"
             />
             <div>
-              <p className="font-semibold text-red-800 dark:text-red-300 text-sm">
+              <p className="font-semibold text-red-800 text-sm">
                 Delivery Failed
               </p>
-              <p className="text-sm text-red-700 dark:text-red-400 mt-1">
+              <p className="text-sm text-red-700 mt-1">
                 {assignment.failure_reason}
               </p>
               {assignment.failed_at && (
-                <p className="text-xs text-red-500 dark:text-red-500 mt-1">
+                <p className="text-xs text-red-500 mt-1">
                   Failed at {new Date(assignment.failed_at).toLocaleString()}
                 </p>
               )}
@@ -393,9 +393,9 @@ export default function DeliveryDetail() {
                   <span
                     className={`mt-2 text-[10px] sm:text-xs font-medium text-center ${
                       isCompleted
-                        ? 'text-green-700 dark:text-green-400'
+                        ? 'text-green-700'
                         : isCurrent && !isFailed
-                          ? 'text-blue-700 dark:text-blue-400'
+                          ? 'text-blue-700'
                           : 'text-[var(--text-tertiary)]'
                     }`}
                   >
@@ -705,10 +705,7 @@ export default function DeliveryDetail() {
                   </span>
                   <div className="flex items-center gap-2">
                     {handshake.driver_confirmed ? (
-                      <CheckCircle2
-                        size={18}
-                        className="text-green-600 dark:text-green-400"
-                      />
+                      <CheckCircle2 size={18} className="text-green-600" />
                     ) : (
                       <XCircle
                         size={18}
@@ -733,10 +730,7 @@ export default function DeliveryDetail() {
                   </span>
                   <div className="flex items-center gap-2">
                     {handshake.customer_confirmed ? (
-                      <CheckCircle2
-                        size={18}
-                        className="text-green-600 dark:text-green-400"
-                      />
+                      <CheckCircle2 size={18} className="text-green-600" />
                     ) : (
                       <XCircle
                         size={18}

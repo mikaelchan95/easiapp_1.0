@@ -185,7 +185,7 @@ export default function CompanyImport({
 
   const handleImport = async () => {
     if (errors.length > 0) {
-      alert('Please fix validation errors before importing');
+      alert('Fix validation errors to continue');
       return;
     }
 
@@ -291,7 +291,7 @@ export default function CompanyImport({
                 >
                   <Upload size={24} />
                   <span className="font-medium">
-                    {file ? file.name : 'Click to upload CSV file'}
+                    {file ? file.name : 'Upload CSV file'}
                   </span>
                 </button>
               </div>
@@ -344,9 +344,9 @@ export default function CompanyImport({
                 Import Complete
               </div>
               <p className="mt-1 text-sm text-green-700">
-                Successfully imported {importResult.success} compan
-                {importResult.success === 1 ? 'y' : 'ies'}.
-                {importResult.failed > 0 && ` Failed: ${importResult.failed}`}
+                Imported {importResult.success}{' '}
+                {importResult.success === 1 ? 'company' : 'companies'}.
+                {importResult.failed > 0 && ` ${importResult.failed} failed.`}
               </p>
             </div>
           )}
@@ -365,14 +365,26 @@ export default function CompanyImport({
               </h3>
               <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-gray-100 text-xs font-bold uppercase text-gray-700">
+                  <thead className="bg-gray-100 font-medium text-[var(--text-secondary)]">
                     <tr>
-                      <th className="px-4 py-2">Company Name</th>
-                      <th className="px-4 py-2">UEN</th>
-                      <th className="px-4 py-2">Address</th>
-                      <th className="px-4 py-2">Credit Limit</th>
-                      <th className="px-4 py-2">Payment Terms</th>
-                      <th className="px-4 py-2">Status</th>
+                      <th className="px-4 py-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                        Company Name
+                      </th>
+                      <th className="px-4 py-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                        UEN
+                      </th>
+                      <th className="px-4 py-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                        Address
+                      </th>
+                      <th className="px-4 py-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                        Credit Limit
+                      </th>
+                      <th className="px-4 py-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                        Payment Terms
+                      </th>
+                      <th className="px-4 py-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                        Status
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">

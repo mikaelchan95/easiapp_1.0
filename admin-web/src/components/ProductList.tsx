@@ -77,7 +77,7 @@ export default function ProductList() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
+    if (!confirm('Delete this product?')) return;
 
     const { error } = await supabase.from('products').delete().eq('id', id);
 
@@ -175,14 +175,26 @@ export default function ProductList() {
 
       <div className="overflow-x-auto rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-sm">
         <table className="w-full text-left min-w-[800px]">
-          <thead className="bg-[var(--bg-tertiary)] text-xs font-bold uppercase text-[var(--text-primary)] tracking-wider">
+          <thead className="bg-[var(--bg-tertiary)] text-xs font-medium uppercase text-[var(--text-secondary)] tracking-wider">
             <tr>
-              <th className="px-4 sm:px-6 py-3 sm:py-4">Product</th>
-              <th className="px-4 sm:px-6 py-3 sm:py-4">Category</th>
-              <th className="px-4 sm:px-6 py-3 sm:py-4">Price</th>
-              <th className="px-4 sm:px-6 py-3 sm:py-4">Stock</th>
-              <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
-              <th className="px-4 sm:px-6 py-3 sm:py-4 text-right">Actions</th>
+              <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Product
+              </th>
+              <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Category
+              </th>
+              <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Price
+              </th>
+              <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Stock
+              </th>
+              <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Status
+              </th>
+              <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-right">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border-primary)]">
@@ -226,23 +238,23 @@ export default function ProductList() {
                         </div>
                       )}
                       <div className="min-w-0">
-                        <div className="font-medium text-[var(--text-primary)] truncate">
+                        <div className="text-sm font-medium text-[var(--text-primary)] truncate">
                           {product.name}
                         </div>
-                        <div className="text-sm text-[var(--text-secondary)] truncate">
+                        <div className="text-xs text-[var(--text-secondary)] truncate">
                           {product.sku}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-secondary)]">
                     {product.category}
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm">
                     <div className="flex flex-col gap-1">
                       {isPromoActive(product) ? (
                         <>
-                          <div className="font-medium text-red-600 dark:text-red-400">
+                          <div className="font-medium text-red-600">
                             S$
                             {product.promo_price!.toLocaleString('en-US', {
                               minimumFractionDigits: 2,
@@ -306,7 +318,7 @@ export default function ProductList() {
                         }
                         className={`rounded-lg p-2 transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation ${
                           product.is_active
-                            ? 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                            ? 'text-blue-600 hover:bg-blue-50'
                             : 'text-[var(--text-tertiary)] hover:bg-[var(--bg-tertiary)]'
                         }`}
                         title={
@@ -327,7 +339,7 @@ export default function ProductList() {
                       </Link>
                       <button
                         onClick={() => handleDelete(product.id)}
-                        className="rounded-lg p-2 text-[var(--text-tertiary)] hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
+                        className="rounded-lg p-2 text-[var(--text-tertiary)] hover:bg-red-50 hover:text-red-600 transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
                       >
                         <Trash2 size={18} />
                       </button>

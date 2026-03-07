@@ -314,7 +314,7 @@ export default function OrderForm() {
               <ShoppingBag size={20} />
             </div>
             <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-              {isEditMode ? 'Edit Order' : 'New Order'}
+              {isEditMode ? 'Edit Order' : 'Add Order'}
             </h1>
           </div>
         </div>
@@ -403,7 +403,7 @@ export default function OrderForm() {
             {formData.items.length === 0 ? (
               <div className="rounded-lg border border-dashed border-[var(--border-primary)] bg-[var(--bg-tertiary)] p-8 text-center">
                 <p className="text-[var(--text-secondary)]">
-                  No items added. Search and add products above.
+                  No items yet. Search products above to add.
                 </p>
               </div>
             ) : (

@@ -152,7 +152,7 @@ export function DataTable<
       <div className="overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[800px]">
-            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
+            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-secondary)] font-medium tracking-wider">
               <tr>
                 {selectable && (
                   <th className="px-4 sm:px-6 py-3 sm:py-4 w-4">
@@ -170,7 +170,7 @@ export function DataTable<
                 {columns.map(column => (
                   <th
                     key={column.key}
-                    className={`px-4 sm:px-6 py-3 sm:py-4 font-semibold ${
+                    className={`px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] ${
                       column.sortable
                         ? 'cursor-pointer select-none hover:bg-[var(--bg-secondary)] transition-colors'
                         : ''
@@ -209,7 +209,7 @@ export function DataTable<
                     colSpan={columns.length + (selectable ? 1 : 0)}
                     className="px-6 py-12 text-center text-[var(--text-secondary)]"
                   >
-                    No data found.
+                    No results
                   </td>
                 </tr>
               ) : (
@@ -250,7 +250,7 @@ export function DataTable<
                     {columns.map(column => (
                       <td
                         key={`${row.id}-${column.key}`}
-                        className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-primary)]"
+                        className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-primary)]"
                       >
                         {column.render ? column.render(row) : row[column.key]}
                       </td>

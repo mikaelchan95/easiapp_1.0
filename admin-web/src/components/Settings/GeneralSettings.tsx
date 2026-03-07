@@ -66,7 +66,7 @@ export const GeneralSettings = () => {
         .upsert(updates, { onConflict: 'key' });
       if (error) throw error;
 
-      setMessage({ type: 'success', text: 'Settings saved successfully.' });
+      setMessage({ type: 'success', text: 'Settings saved' });
     } catch (err: any) {
       console.error('Error saving settings:', err);
       setMessage({
@@ -111,7 +111,7 @@ export const GeneralSettings = () => {
               step="0.1"
             />
             <p className="text-xs text-[var(--text-tertiary)] mt-2">
-              How many points a user earns for every dollar spent.
+              Points earned per $1 spent
             </p>
           </div>
           <div>
@@ -131,7 +131,7 @@ export const GeneralSettings = () => {
               step="0.001"
             />
             <p className="text-xs text-[var(--text-tertiary)] mt-2">
-              The value of 1 point in currency (e.g., 0.01 = 1 cent).
+              Dollar value per point (e.g. 0.01 = 1c)
             </p>
           </div>
         </div>
@@ -177,7 +177,7 @@ export const GeneralSettings = () => {
               step="0.5"
             />
             <p className="text-xs text-[var(--text-tertiary)] mt-2">
-              Fee for express/priority delivery.
+              Express delivery surcharge
             </p>
           </div>
           <div>
@@ -197,7 +197,7 @@ export const GeneralSettings = () => {
               step="10"
             />
             <p className="text-xs text-[var(--text-tertiary)] mt-2">
-              Order value above which delivery is free.
+              Free delivery above this amount
             </p>
           </div>
         </div>
@@ -207,8 +207,8 @@ export const GeneralSettings = () => {
         <div
           className={`p-4 rounded-lg border ${
             message.type === 'success'
-              ? 'bg-green-50 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
-              : 'bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
+              ? 'bg-green-50 text-green-800 border-green-200'
+              : 'bg-red-50 text-red-800 border-red-200'
           }`}
         >
           {message.text}

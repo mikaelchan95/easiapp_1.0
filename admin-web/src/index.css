@@ -37,22 +37,7 @@
   --color-primary-bg: #f3f4f6;
 }
 
-.dark {
-  /* Dark Mode - Kept for compatibility but prioritized Light Mode for design match */
-  --bg-app: #111827;
-  --bg-sidebar: #1f2937;
-  --bg-card: #1f2937;
-
-  --text-primary: #f9fafb;
-  --text-secondary: #d1d5db;
-  --text-tertiary: #9ca3af;
-
-  --border-subtle: #374151;
-  --border-default: #374151;
-
-  --color-primary: #34d399;
-  --color-primary-bg: #064e3b;
-}
+/* Dark Mode removed */
 
 html {
   scroll-behavior: smooth;
@@ -63,6 +48,7 @@ body {
   color: black;
   margin: 0;
   display: block;
+  font-size: 14px; /* Standardize base font size to 14px */
 }
 
 /* Custom Scrollbar */

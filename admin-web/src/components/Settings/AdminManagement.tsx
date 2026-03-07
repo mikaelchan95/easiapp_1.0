@@ -71,8 +71,8 @@ export const AdminManagement = () => {
           <h3 className="text-lg font-bold text-brand-dark">
             Admin User Management
           </h3>
-          <p className="text-sm text-gray-500">
-            Grant or revoke admin access to users.
+          <p className="text-sm text-[var(--text-secondary)]">
+            Control admin access for users
           </p>
         </div>
         <div className="relative w-full sm:w-64">
@@ -92,21 +92,27 @@ export const AdminManagement = () => {
 
       <div className="overflow-hidden rounded-lg border border-gray-100">
         <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-semibold">
+          <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3">User</th>
-              <th className="px-4 py-3">Current Role</th>
-              <th className="px-4 py-3 text-right">Actions</th>
+              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                User
+              </th>
+              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Current Role
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filteredUsers.map(user => (
               <tr key={user.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 text-sm">
                   <div className="font-medium text-gray-900">{user.name}</div>
                   <div className="text-xs text-gray-500">{user.email}</div>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 text-sm">
                   {user.role === 'admin' ? (
                     <Badge
                       variant="success"
@@ -118,7 +124,7 @@ export const AdminManagement = () => {
                     <Badge variant="default">User</Badge>
                   )}
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3 text-right text-sm">
                   {currentUser === user.id ? (
                     <span className="text-xs text-gray-400 italic">
                       Current User
@@ -148,7 +154,10 @@ export const AdminManagement = () => {
             ))}
             {filteredUsers.length === 0 && (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
+                <td
+                  colSpan={3}
+                  className="px-4 py-8 text-center text-sm text-[var(--text-secondary)]"
+                >
                   No users found matching "{searchTerm}"
                 </td>
               </tr>

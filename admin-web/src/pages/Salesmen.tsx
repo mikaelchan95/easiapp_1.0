@@ -160,19 +160,29 @@ export default function Salesmen() {
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[900px]">
-            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-primary)] font-bold tracking-wider">
+            <thead className="bg-[var(--bg-tertiary)] text-xs uppercase text-[var(--text-secondary)] font-medium tracking-wider">
               <tr>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Name</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Email</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Phone</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-center">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Name
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Email
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Phone
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-center">
                   Orders Placed
                 </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-center">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)] text-center">
                   Pending Onboardings
                 </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Status</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">Actions</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Status
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-primary)]">
@@ -188,22 +198,22 @@ export default function Salesmen() {
                       </div>
                       <Link
                         to={`/salesmen/${salesman.id}`}
-                        className="font-medium text-[var(--text-primary)] hover:underline transition-colors"
+                        className="text-sm font-medium text-[var(--text-primary)] hover:underline transition-colors"
                       >
                         {salesman.full_name}
                       </Link>
                     </div>
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-secondary)]">
                     {salesman.email}
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-[var(--text-secondary)]">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-[var(--text-secondary)]">
                     {salesman.phone || '—'}
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-center font-mono text-[var(--text-primary)]">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-center text-sm font-mono text-[var(--text-primary)]">
                     {salesman.ordersCount}
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-center font-mono text-[var(--text-primary)]">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-center text-sm font-mono text-[var(--text-primary)]">
                     {salesman.pendingOnboardings > 0 ? (
                       <Badge variant="warning">
                         {salesman.pendingOnboardings}
@@ -212,12 +222,12 @@ export default function Salesmen() {
                       0
                     )}
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm">
                     <Badge variant={salesman.is_active ? 'success' : 'default'}>
                       {salesman.is_active ? 'Active' : 'Inactive'}
                     </Badge>
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm">
                     <Button
                       variant={salesman.is_active ? 'outline' : 'primary'}
                       size="sm"
@@ -240,7 +250,7 @@ export default function Salesmen() {
               <p className="text-lg font-medium text-[var(--text-primary)]">
                 No salesmen found
               </p>
-              <p className="text-sm">Try adjusting your search or filter.</p>
+              <p className="text-sm">Adjust your search or filters</p>
             </div>
           </div>
         )}
